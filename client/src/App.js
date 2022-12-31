@@ -1,7 +1,9 @@
-export default function App() {
-  return (
-    <div className="App">
+import FileUpload from "./components/FileUpload";
 
-    </div>
-  );
+export default function App() {
+    return (
+		<div className="App">
+			<FileUpload />
+        </div>
+    );
 }
