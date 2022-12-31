@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Box, Button } from '@mui/material';
+import { Box, Button, CircularProgress } from '@mui/material';
+import axios from 'axios'
 import cuid from 'cuid';
 import './Dropzone.css';
 
@@ -12,6 +13,7 @@ export default function Dropzone() {
     const fileInputRef = useRef();
     const imageModalRef = useRef();
     const modalRef = useRef();
+    const uploadModalRef = useRef();
 
     useEffect(() => {
         const filteredArray = [...new Map(selectedFiles.map(file => [file.name, file])).values()];
@@ -144,9 +146,34 @@ export default function Dropzone() {
         }
     }
 
-    // TODO: Functionality to upload/send files to backend
-    function uploadFiles() {
+    async function handleSubmit() {
+        uploadModalRef.current.style.display = 'flex';
+        const files = await uploadFiles();
+        const res = await axios.post('/upload-files', { files: files });
+        console.log(res);
+        closeUploadModal();
+    }
 
+    // TODO: Functionality to upload/send files to backend
+    async function uploadFiles() {
+        const files = [];
+        for (let i = 0; i < filteredFiles.length; i++) {
+            const formData = new FormData();
+            formData.append('image', filteredFiles[i]);
+            formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
+            const res = await axios.post('https://api.imgbb.com/1/upload', formData);
+            console.log(res.data.data.delete_url)
+            files.push({
+                clientId: 'clientId',
+                categoryId: 'categoryId',
+                fileName: res.data.data.title,
+                fileUrl: res.data.data.url,
+                fileId: res.data.data.id,
+                delete_url: res.data.data.delete_url
+            });
+        }
+        
+        return files;
     }
 
     function openImageModal(file) {
@@ -159,9 +186,18 @@ export default function Dropzone() {
         imageModalRef.current.style.backgroundImage = 'none';
     }
 
+    function closeUploadModal() {
+        uploadModalRef.current.style.display = 'none';
+    }
+
+    function testDelete() {
+        axios.delete('/delete-files');
+    }
+
     return (
         <>
-            {invalidFiles.length === 0 && filteredFiles.length ? <Button onClick={uploadFiles} variant="contained">Submit File(s)</Button> : ''}
+            <Button onClick={testDelete}>Test Delete</Button>
+            {invalidFiles.length === 0 && filteredFiles.length ? <Button onClick={handleSubmit} variant="contained">Submit File(s)</Button> : ''}
             {invalidFiles.length ? <p>Please remove all unsupported files.</p> : ''}
             <div className="drop-container" style={{ border: `4px dashed ${borderColor}` }}
                 onDragOver={dragOver}
@@ -208,6 +244,11 @@ export default function Dropzone() {
                 <div className="overlay"></div>
                 <span className="close" onClick={closeModal}>X</span>
                 <div className="modal-image" ref={imageModalRef}></div>
+            </div>
+            <div className="upload-modal" ref={uploadModalRef} style={{ color: 'white' }}>
+                <div className="overlay"></div>
+                <div className="close" onClick={closeUploadModal}>X</div>
+                <CircularProgress />
             </div>
         </>
     );

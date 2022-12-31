@@ -21,6 +21,12 @@ db.once('open', () => console.log('Connected to database')); */
 const subscribersRouter = require('./routes/subscribers');
 app.use('/subscribers', subscribersRouter);
 
+const uploadFiles = require('./routes/uploadFiles');
+app.use('/upload-files', uploadFiles);
+
+const deleteFiles = require('./routes/deleteFiles');
+app.use('/delete-files', deleteFiles);
+
 
 const server = app.listen(process.env.port || port, () => {
     const serverPort = server.address().port;
