@@ -1,0 +1,22 @@
+:root {
+    --black: #231f20;
+    --white: #fff;
+    --primary: #8cc640;
+    --light-secondary: #f4ccc1;
+    --secondary: #f47853;
+}
+
+@font-face {
+    font-family: 'Mallows';
+    src: url(./fonts/Mallows.ttf);
+}
+
+@font-face {
+    font-family: 'Fashion';
+    src: url(./fonts/Fashion.ttf);
+}
+
+body {
+    margin: 0;
+    font-family: 'Fashion';
+}

@@ -27,7 +27,6 @@ app.use('/upload-files', uploadFiles);
 const deleteFiles = require('./routes/deleteFiles');
 app.use('/delete-files', deleteFiles);
 
-
 const server = app.listen(process.env.port || port, () => {
     const serverPort = server.address().port;
     console.log(`Server started on port ${serverPort}`);

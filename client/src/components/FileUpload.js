@@ -1,4 +1,4 @@
-import Dropzone from "./Dropzone/Dropzone";
+import Dropzone from './Dropzone/Dropzone';
 
 export default function FileUpload() {
     return (

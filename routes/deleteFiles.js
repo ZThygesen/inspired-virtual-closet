@@ -5,7 +5,7 @@ const puppeteer = require('puppeteer');
 router.delete('/', async (req, res) => {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
-    await page.goto('https://ibb.co/J3J7Xty/25bcc340799325cca827c8b7d061a37e');
+    await page.goto('https://ibb.co/MsBPQNT/17649ebe4a18392d31a477655ff774c8');
 
     const deleteBtn = '.link.link--delete';
     await page.waitForSelector(deleteBtn);

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Box, Button, CircularProgress } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import axios from 'axios'
 import cuid from 'cuid';
+import Loading from '../Loading';
 import './Dropzone.css';
+import ImageModal from '../ImageModal';
 
 export default function Dropzone() {
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -10,10 +12,10 @@ export default function Dropzone() {
     const [invalidFiles, setInvalidFiles] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [borderColor, setBorderColor] = useState('#4aa1f3');
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
+    const [imageModalOpen, setImageModalOpen] = useState(false);
+    const [imageModal, setImageModal] = useState({});
     const fileInputRef = useRef();
-    const imageModalRef = useRef();
-    const modalRef = useRef();
-    const uploadModalRef = useRef();
 
     useEffect(() => {
         const filteredArray = [...new Map(selectedFiles.map(file => [file.name, file])).values()];
@@ -147,7 +149,7 @@ export default function Dropzone() {
     }
 
     async function handleSubmit() {
-        uploadModalRef.current.style.display = 'flex';
+        setUploadModalOpen(current => !current);
         const files = await uploadFiles();
         const res = await axios.post('/upload-files', { files: files });
         console.log(res);
@@ -162,7 +164,7 @@ export default function Dropzone() {
             formData.append('image', filteredFiles[i]);
             formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
             const res = await axios.post('https://api.imgbb.com/1/upload', formData);
-            console.log(res.data.data.delete_url)
+            console.log(res.data.data)
             files.push({
                 clientId: 'clientId',
                 categoryId: 'categoryId',
@@ -177,17 +179,17 @@ export default function Dropzone() {
     }
 
     function openImageModal(file) {
-        modalRef.current.style.display = 'block';
-        imageModalRef.current.style.backgroundImage = `url(${file.src})`;
+        setImageModalOpen(current => !current);
+        setImageModal({ src: file.src, alt: file.name });
     }
 
     function closeModal() {
-        modalRef.current.style.display = 'none';
-        imageModalRef.current.style.backgroundImage = 'none';
+        setImageModalOpen(false);
+        setImageModal({});
     }
 
     function closeUploadModal() {
-        uploadModalRef.current.style.display = 'none';
+        setUploadModalOpen(false);
     }
 
     function testDelete() {
@@ -240,16 +242,8 @@ export default function Dropzone() {
                     ))
                 }
             </div>
-            <div className="modal" ref={modalRef}>
-                <div className="overlay"></div>
-                <span className="close" onClick={closeModal}>X</span>
-                <div className="modal-image" ref={imageModalRef}></div>
-            </div>
-            <div className="upload-modal" ref={uploadModalRef} style={{ color: 'white' }}>
-                <div className="overlay"></div>
-                <div className="close" onClick={closeUploadModal}>X</div>
-                <CircularProgress />
-            </div>
+            <ImageModal open={imageModalOpen} image={imageModal} closeModal={closeModal} />
+            <Loading open={uploadModalOpen} />
         </>
     );
 }
