@@ -1,7 +1,30 @@
+import { Link } from 'react-router-dom';
+import styled from 'styled-components';
+
+const AppBar = styled.header`
+        height: var(--header-height);
+        width: 100vw;
+        background-color: var(--secondary);
+        box-shadow: var(--box-shadow);
+        display: flex;
+        align-items: center;
+        z-index: 1;
+
+        .logo {
+            text-decoration: none;
+            font-family: 'Mallows';
+            color: var(--white);
+            font-size: 40px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+    `;
+
 export default function Header() {
+    
     return (
-        <header>
-            Edie Styles
-        </header>
+        <AppBar>
+            <Link to="/" className="logo">Edie Styles</Link>
+        </AppBar>
     );
 }
