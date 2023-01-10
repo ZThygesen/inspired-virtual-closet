@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import styled from 'styled-components';
 import cuid from 'cuid';
 import { Add, ChevronLeft } from '@mui/icons-material';
 
 const categories = [
+    'All',
     'Belts',
     'Blazers',
     'Boots',
@@ -44,21 +46,17 @@ const Sidebar = styled.div`
     align-items: center;
     position: sticky;
     height: calc(100vh - var(--header-height));
-    overflow-y: auto;
     bottom: ${sidebarBottomPadding}px;
     background-color: var(--secondary-light);
     transition: 0.3s;
 
     #categories-title {
         position: sticky;
-        top: 0;
-        box-sizing: border-box;
         width: 100%;
-        text-align: center;
         font-size: 32px;
         font-weight: bold;
         background-color: var(--secondary);
-        padding: 15px 0;
+        min-height: var(--subheader-height);
         text-decoration: underline;
         color: var(--white);
         box-shadow: var(--box-shadow);
@@ -77,6 +75,14 @@ const Sidebar = styled.div`
         &:hover {
             background-color: rgba(0, 0, 0, 0.3);
         }
+    }
+
+    .categories-container {
+        overflow-y: auto;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
     .add-category-footer {
@@ -113,13 +119,14 @@ const CategoryButton = styled.button`
         transition: all 0.1s;
         cursor: pointer;
 
-        &:hover {
+        &:hover, &.active {
             background-color: var(--secondary);
             color: var(--white);
         }
     `;
 
-export default function CategoriesSidebar({ open, closeSidebar }) {
+export default function CategoriesSidebar({ open, closeSidebar, selectCategory }) {
+    const [activeCategory, setActiveCategory] = useState(0);
 
     return (
         <>
@@ -128,14 +135,25 @@ export default function CategoriesSidebar({ open, closeSidebar }) {
                     CATEGORIES
                     <ChevronLeft onClick={closeSidebar} sx={{ fontSize: 45 }} className="close-sidebar" />
                 </div>
-                {
-                    categories.map(category => (
-                        <CategoryButton key={cuid()}>{category.toUpperCase()}</CategoryButton>
-                    ))
-                }
-                <div className="add-category-footer">
-                    <Add fontSize="large"/>
-                    ADD CATEGORY
+                <div className="categories-container">
+                    {
+                        categories.map((category, index) => (
+                            <CategoryButton
+                                key={cuid()}
+                                onClick={() => {
+                                    setActiveCategory(index);
+                                    selectCategory(category);
+                                }}
+                                className={index === activeCategory ? 'active' : ''}
+                            >
+                                {category.toUpperCase()}
+                            </CategoryButton>
+                        ))
+                    }
+                    <div className="add-category-footer">
+                        <Add fontSize="large"/>
+                        ADD CATEGORY
+                    </div>
                 </div>
             </Sidebar>
         </>

@@ -11,6 +11,7 @@ const Container = styled.div`
 
 export default function DigitalCloset() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [category, setCategory] = useState('All');
 
     function openSidebar() {
         setSidebarOpen(true);
@@ -20,11 +21,15 @@ export default function DigitalCloset() {
         setSidebarOpen(false);
     }
 
+    function selectCategory(category) {
+        setCategory(category);
+    }
+
     return (
         <>
             <Container>
-                <CategoriesSidebar open={sidebarOpen} closeSidebar={closeSidebar} />
-                <ClosetNavigation open={sidebarOpen} openSidebar={openSidebar} />
+                <CategoriesSidebar open={sidebarOpen} closeSidebar={closeSidebar} selectCategory={selectCategory} />
+                <ClosetNavigation open={sidebarOpen} openSidebar={openSidebar} category={category} />
             </Container>
         </>
     )

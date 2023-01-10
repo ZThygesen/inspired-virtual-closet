@@ -4,7 +4,7 @@ import styled from 'styled-components';
 const AppBar = styled.header`
         height: var(--header-height);
         width: 100vw;
-        background-color: var(--secondary);
+        background-color: var(--primary);
         box-shadow: var(--box-shadow);
         display: flex;
         align-items: center;
@@ -14,8 +14,8 @@ const AppBar = styled.header`
             text-decoration: none;
             font-family: 'Mallows';
             color: var(--white);
-            font-size: 40px;
-            margin-left: 10px;
+            font-size: 60px;
+            margin-left: 50px;
             cursor: pointer;
         }
     `;
