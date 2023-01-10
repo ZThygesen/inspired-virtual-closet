@@ -56,6 +56,7 @@ const Container = styled.div`
 
         &.active {
             background-color: var(--white);
+            box-shadow: var(--tab-shadow);
         }
     }
 
