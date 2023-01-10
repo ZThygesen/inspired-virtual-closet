@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import cuid from 'cuid';
-import { Add } from '@mui/icons-material';
+import { Add, ChevronLeft } from '@mui/icons-material';
 
 const categories = [
     'Belts',
@@ -43,11 +43,11 @@ const Sidebar = styled.div`
     flex-direction: column;
     align-items: center;
     position: sticky;
-    width: 250px;
     height: calc(100vh - var(--header-height));
     overflow-y: auto;
     bottom: ${sidebarBottomPadding}px;
     background-color: var(--secondary-light);
+    transition: 0.3s;
 
     #categories-title {
         position: sticky;
@@ -62,6 +62,21 @@ const Sidebar = styled.div`
         text-decoration: underline;
         color: var(--white);
         box-shadow: var(--box-shadow);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .close-sidebar {
+        position: absolute;
+        right: 5px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.1s;
+
+        &:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+        }
     }
 
     .add-category-footer {
@@ -104,20 +119,25 @@ const CategoryButton = styled.button`
         }
     `;
 
-export default function CategoriesSidebar() {
+export default function CategoriesSidebar({ open, closeSidebar }) {
 
     return (
-        <Sidebar>
-            <div id="categories-title">CATEGORIES</div>
-            {
-                categories.map(category => (
-                    <CategoryButton key={cuid()}>{category.toUpperCase()}</CategoryButton>
-                ))
-            }
-            <div className="add-category-footer">
-                <Add fontSize="large"/>
-                ADD CATEGORY
-            </div>
-        </Sidebar>
+        <>
+            <Sidebar style={{ minWidth: open ? '260px' : '0px', width: open ? '260px' : '0px' }}>
+                <div id="categories-title">
+                    CATEGORIES
+                    <ChevronLeft onClick={closeSidebar} sx={{ fontSize: 45 }} className="close-sidebar" />
+                </div>
+                {
+                    categories.map(category => (
+                        <CategoryButton key={cuid()}>{category.toUpperCase()}</CategoryButton>
+                    ))
+                }
+                <div className="add-category-footer">
+                    <Add fontSize="large"/>
+                    ADD CATEGORY
+                </div>
+            </Sidebar>
+        </>
     );
 }
