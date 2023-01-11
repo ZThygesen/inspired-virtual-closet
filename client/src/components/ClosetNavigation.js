@@ -8,6 +8,7 @@ import Outfits from './Outfits';
 import AddClothes from './AddClothes';
 
 const Container = styled.div`
+    flex-grow: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -21,7 +22,7 @@ const Container = styled.div`
         font-size: 32px;
         font-weight: bold;
         background-color: var(--primary-light);
-        min-height: var(--subheader-height);
+        height: var(--subheader-height);
         color: var(--black);
         display: flex;
         align-items: center;
@@ -41,7 +42,6 @@ const Container = styled.div`
     }
 
     .closet-options {
-        //box-shadow: var(--box-shadow);
         display: flex;
         align-items: flex-end;
     }
@@ -53,19 +53,12 @@ const Container = styled.div`
     li {
         padding: 15px;
         transition: all 0.3s;
+        box-sizing: border-box;
 
         &.active {
             background-color: var(--white);
             box-shadow: var(--tab-shadow);
         }
-    }
-
-    .closet-content {
-        flex-grow: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 32px;
     }
 `;
 
@@ -106,6 +99,18 @@ const ClosetButton = styled.button`
         }
 `;
 
+const ClosetContainer = styled.div`
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    height: calc(100vh - var(--header-height) - (2 * var(--subheader-height)));
+    overflow-y: auto;
+`;
+
 export default function ClosetNavigation({ open, openSidebar, category }) {
     const [closetMode, setClosetMode] = useState(0);
     const [currCategory, setCurrCategory] = useState(category);
@@ -113,9 +118,11 @@ export default function ClosetNavigation({ open, openSidebar, category }) {
     useEffect(() => {
         if (category !== currCategory) {
             setCurrCategory(category);
-            setClosetMode(0);
+            if (closetMode !== 0 && closetMode !== 3) {
+                setClosetMode(0);
+            }
         }
-    }, [category, currCategory])
+    }, [category, currCategory, closetMode]);
 
     const closetModes = ['CLOTHES', 'CANVAS', 'OUTFITS', 'ADD CLOTHES'];
 
@@ -142,12 +149,12 @@ export default function ClosetNavigation({ open, openSidebar, category }) {
                        }
                     </ul>
                 </div>
-                <div className="closet-content">
+                <ClosetContainer>
                     {closetMode === 0 && <Clothes category={category} />}
                     {closetMode === 1 && <Canvas />}
                     {closetMode === 2 && <Outfits />}
-                    {closetMode === 3 && <AddClothes />}
-                </div>
+                    {closetMode === 3 && <AddClothes category={category} />}
+                </ClosetContainer>
             </Container>
         </>
     );

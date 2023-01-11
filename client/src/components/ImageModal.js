@@ -1,4 +1,21 @@
 import { Backdrop } from '@mui/material';
+import { Close } from '@mui/icons-material';
+import styled from 'styled-components';
+
+const CloseModal = styled.div`
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+
+    &:hover {
+        transform: scale(1.12);
+    }
+`;
 
 export default function ImageModal({ open, image, closeModal }) {
     return (
@@ -8,11 +25,13 @@ export default function ImageModal({ open, image, closeModal }) {
                 open={open}
                 onClick={closeModal}
             >
-                <span className="close" onClick={closeModal}>X</span>
+                <CloseModal onClick={closeModal}>
+                    <Close sx={{ fontSize: 45 }} />
+                </CloseModal>
                 <img
                     style={{
-                        width: 'auto',
-                        height: '500px'
+                        width: '400px',
+                        height: 'auto'
                     }}
                     className="modal-image"
                     src={image.src}

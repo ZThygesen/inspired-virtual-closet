@@ -137,7 +137,7 @@ const ModalContent = styled.div`
     left: 50%;
     transform: translate(-50%, -50%);
     width: 400px;
-    background-color: var(--grey);
+    background-color: var(--white);
     border: 2px solid var(--black);
     border-radius: 20px;
     padding: 40px;

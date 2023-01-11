@@ -1,7 +1,17 @@
-export default function AddClothes() {
+import styled from 'styled-components';
+import Dropzone from './Dropzone';
+
+const CategorySelect = styled.div`
+
+`;
+
+export default function AddClothes({ category }) {
     return (
         <>
-            ADD CLOTHES
+            <CategorySelect>
+                <p>{category}</p>
+            </CategorySelect>
+            <Dropzone />
         </>
     );
 }
