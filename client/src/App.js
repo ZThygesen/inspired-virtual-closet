@@ -6,10 +6,10 @@ import DigitalCloset from './pages/DigitalCloset';
 import './App.css';
 
 const Container = styled.div`
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    `;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+`;
 
 export default function App() {
 

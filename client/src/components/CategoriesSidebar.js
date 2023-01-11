@@ -112,7 +112,7 @@ const Sidebar = styled.div`
             transform: scale(1.03);
         }
     }
-    `;
+`;
 
 const CategoryButton = styled.button`
         background: none;
@@ -128,7 +128,7 @@ const CategoryButton = styled.button`
             background-color: var(--secondary);
             color: var(--white);
         }
-    `;
+`;
 
 const ModalContent = styled.div`
     font-family: 'Fashion';

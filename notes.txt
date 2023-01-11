@@ -2,6 +2,8 @@
 - local storage for add clothes section
 - add confirmation modal for submitting files to db
 
+- remove background from pictures before posting to imgbb and db
+
 - check duplicate files in db when submitting
 
 - options for a clothing item:
