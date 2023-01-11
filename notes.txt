@@ -1,6 +1,5 @@
 - if category is selected as "ALL" when adding files, don't allow submission
 - local storage for add clothes section
-- add confirmation modal for submitting files to db
 
 - remove background from pictures before posting to imgbb and db
 
@@ -11,3 +10,7 @@
     - send item to canvas
     - delete item
     - change category of item
+
+- error handling on api calls
+    - dropzone submission to imgbb
+    - dropzone submission to db

@@ -33,7 +33,7 @@ export default function AddItems({ openSidebar, category }) {
                 <p className="first">Add items to <span className="category" onClick={openSidebar}>{category.toUpperCase()}</span></p>
                 <p className="second">(Select the category you want to add items to from the sidebar)</p>
             </CategorySelect>
-            <Dropzone />
+            <Dropzone category={category} />
         </>
     );
 }

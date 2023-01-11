@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Divider } from '@mui/material';
+import { Modal } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import styled from 'styled-components';
 import axios from 'axios'
@@ -204,7 +204,59 @@ const FileCard = styled.div`
     }
 `;
 
-export default function Dropzone() {
+const ModalContent = styled.div`
+    font-family: 'Fashion';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    background-color: var(--white);
+    border: 2px solid var(--black);
+    border-radius: 20px;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+
+    p {
+        font-size: 32px;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .category {
+        color: var(--secondary);
+        text-decoration: underline;
+    }
+
+    .modal-options {
+        display: flex;
+        gap: 50px;
+    }
+
+    button {
+        background: none;
+        border: 1px solid var(--black);
+        width: 100%;
+        border-radius: 8px;
+        padding: 12px;
+        font-family: 'Fashion';
+        font-size: 24px;
+        transition: all 0.1s;
+        cursor: pointer;
+
+        &:hover {
+            background-color: var(--secondary);
+            border-color: var(--secondary);
+            color: var(--white);
+        }
+    }
+`;
+
+export default function Dropzone({ category }) {
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [filteredFiles, setFilteredFiles] = useState([]);
     const [invalidFiles, setInvalidFiles] = useState([]);
@@ -213,6 +265,9 @@ export default function Dropzone() {
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [imageModal, setImageModal] = useState({});
+    const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+    const [resultModalOpen, setResultModalOpen] = useState(false);
+    //const [submitError, setSubmitError] = useState(false);
     const fileInputRef = useRef();
 
     useEffect(() => {
@@ -220,7 +275,6 @@ export default function Dropzone() {
         setFilteredFiles([...filteredArray]);
         fileInputRef.current.value = null;
     }, [selectedFiles]);
-
 
     function dragOver(e) {
         e.preventDefault();
@@ -352,7 +406,8 @@ export default function Dropzone() {
         const files = await uploadFiles();
         const res = await axios.post('/upload-files', { files: files });
         console.log(res);
-        closeUploadModal();
+        setUploadModalOpen(false);
+        setResultModalOpen(true);
     }
 
     // TODO: Functionality to upload/send files to backend
@@ -385,10 +440,6 @@ export default function Dropzone() {
     function closeModal() {
         setImageModalOpen(false);
         setImageModal({});
-    }
-
-    function closeUploadModal() {
-        setUploadModalOpen(false);
     }
 
     /* function testDelete() {
@@ -424,12 +475,11 @@ export default function Dropzone() {
             </DropContainer>
             <Button
                     className="submit"
-                    onClick={handleSubmit}
+                    onClick={() => setConfirmModalOpen(true)}
                     disabled={!(invalidFiles.length === 0 && filteredFiles.length)}
                 >
                     Submit File(s)
             </Button>
-            <Divider variant="middle" />
             {filteredFiles.length > 0 &&
                 <FileContainer>
                     <p className="title">Current Files</p>
@@ -466,6 +516,29 @@ export default function Dropzone() {
             }
             <ImageModal open={imageModalOpen} image={imageModal} closeModal={closeModal} />
             <Loading open={uploadModalOpen} />
+            <Modal
+                open={confirmModalOpen}
+                onClose={() => setConfirmModalOpen(false)}
+            >
+                <ModalContent>
+                    <p>Are you sure you want to add these items to <span className="category">{category}</span>?</p>
+                    <div className="modal-options">
+                        <button onClick={() => setConfirmModalOpen(false)}>Cancel</button>
+                        <button onClick={() => { setConfirmModalOpen(false); handleSubmit(); }}>Submit</button>
+                    </div>
+                </ModalContent>
+            </Modal>
+            <Modal
+                open={resultModalOpen}
+                onClose={() => setResultModalOpen(false)}
+            >
+                <ModalContent>
+                    <p>Items added successfully to {category}!</p>
+                    <div className="modal-options">
+                        <button onClick={() => setResultModalOpen(false)}>OK</button>
+                    </div>
+                </ModalContent>
+            </Modal>
         </>
     );
 }
