@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button } from '@mui/material';
+import { Divider } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import styled from 'styled-components';
 import axios from 'axios'
 import cuid from 'cuid';
 import Loading from './Loading';
 import ImageModal from './ImageModal';
-import uploadImg from '../images/upload.svg';
+import uploadImg from '../images/upload.png';
 import invalidImg from '../images/invalid.png';
 
 const DropContainer = styled.div`
@@ -18,6 +18,7 @@ const DropContainer = styled.div`
     max-width: 800px;
     box-sizing: border-box;
     padding: 30px;
+    margin-bottom: 15px;
 
     .upload-icon {
         width: 80px;
@@ -25,6 +26,12 @@ const DropContainer = styled.div`
         background: url(${uploadImg}) no-repeat center center;
         background-size: 100%;
         padding-bottom: 20px;
+        cursor: pointer;
+        transition: all 0.1s;
+
+        &:hover {
+            transform: scale(1.05);
+        }
     }
 
     p {
@@ -33,20 +40,38 @@ const DropContainer = styled.div`
         font-size: 28px;
     }
 
-    button {
+    .click-upload {
+        color: var(--secondary);
+        font-weight: bold;
         background: none;
-        border: 2px solid var(--black);
-        border-radius: 25px;
-        font-family: 'Fashion';
-        font-size: 28px;
-        background-color: var(--primary-light);
-        color: var(--black);
-        padding: 10px 20px;
+        border: none;
+        width: 100%;
         cursor: pointer;
-        transition: all 0.1s;
+        position: relative;
 
-        &:hover {
-            background-color: var(--primary);
+        &:after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            transform: scaleX(0);
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background-color: var(--secondary);
+            transform-origin: bottom right;
+            transition: transform 0.15s ease-out;
+        }
+
+        &.active {
+            &:after {
+                transform: scaleX(1);
+            }
+
+        }
+
+        &:not(.active):hover:after {
+            transform: scaleX(1);
+            transform-origin: bottom left;
         }
     }
 
@@ -55,13 +80,45 @@ const DropContainer = styled.div`
     }
 `;
 
+const Button = styled.button`
+    background: none;
+    border: 2px solid var(--black);
+    border-radius: 25px;
+    font-family: 'Fashion';
+    font-size: 28px;
+    background-color: var(--primary-light);
+    color: var(--black);
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.1s;
+
+    &:hover {
+        background-color: var(--primary);
+    }
+
+    &:disabled, &:disabled:hover {
+        background-color: var(--grey);
+        color: var(--black);
+        cursor: default;
+    }
+`;
+
 const FileContainer = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 30px;
+    padding: 15px;
+    margin-top: 15px;
     width: 100%;
     box-sizing: border-box;
+    background-color: var(--grey);
+    border: 2px solid var(--black);
+    border-radius: 25px;
+
+    .title {
+        text-decoration: underline;
+        font-weight: bold;
+    }
 
     p {
         text-align: center;
@@ -134,8 +191,8 @@ const FileCard = styled.div`
 
     .file-remove {
         position: absolute;
-        top: 3px;
-        right: 3px;
+        top: 7px;
+        right: 7px;
         cursor: pointer;
         color: var(--black);
         border-radius: 50%;
@@ -341,59 +398,72 @@ export default function Dropzone() {
     return (
         <>
             {/* <Button onClick={testDelete}>Test Delete</Button> */}
-            {invalidFiles.length === 0 && filteredFiles.length ? <Button onClick={handleSubmit} variant="contained">Submit File(s)</Button> : ''}
             <DropContainer style={{ border: `4px dashed ${borderColor}` }}
                 onDragOver={dragOver}
                 onDragEnter={dragEnter}
                 onDragLeave={dragLeave}
                 onDrop={fileDrop}
             >
-                <div className="upload-icon"></div>
-                <p>Drag & drop file(s) here</p>
-                <p>or</p>
-                <button onClick={fileInputClicked} variant="contained">
-                    <input
-                        ref={fileInputRef}
-                        className="file-input"
-                        type="file"
-                        multiple
-                        onChange={fileSelected}
-                    />
-                    Click to Upload
-                </button>
-            </DropContainer>
-            <FileContainer>
-                <p>Files</p>
-                {invalidFiles.length ?
-                    <p
-                        className="file-error-message"
-                        style={{ margin: '0 0 15px' }}
+                <div className="upload-icon" onClick={fileInputClicked}></div>
+                <p>
+                    <span
+                        className="click-upload"
+                        onClick={fileInputClicked}
                     >
-                        Please remove all unsupported files.
-                    </p> : ''
-                }
-                <div className="file-preview-container">
-                    {
-                        filteredFiles.map(file => (
-                            <FileCard key={file.id}>
-                                {file.invalid && <div className="file-error-message">{errorMessage}</div>}
-                                <img
-                                    src={file.invalid ? invalidImg : file.src}
-                                    alt={file.name}
-                                    id={file.id}
-                                    className={`file-img ${file.invalid ? 'invalid' : ''}`}
-                                    onClick={!file.invalid ? () => openImageModal(file) : () => removeFile(file)}
-                                />
-                                <div className="file-info">
-                                    <p className="file-name">{file.name}</p>
-                                    <p className="file-size">({file.fileSize})</p>
-                                </div>
-                                <div className="file-remove" onClick={() => removeFile(file)}><Close /></div>
-                            </FileCard>
-                        ))
+                        <input
+                            ref={fileInputRef}
+                            className="file-input"
+                            type="file"
+                            onChange={fileSelected}
+                            multiple
+                        />
+                        Choose file(s)
+                    </span>
+                    &nbsp;or drag & drop here
+                </p>
+            </DropContainer>
+            <Button
+                    className="submit"
+                    onClick={handleSubmit}
+                    disabled={!(invalidFiles.length === 0 && filteredFiles.length)}
+                >
+                    Submit File(s)
+            </Button>
+            <Divider variant="middle" />
+            {filteredFiles.length > 0 &&
+                <FileContainer>
+                    <p className="title">Current Files</p>
+                    {invalidFiles.length ?
+                        <p
+                            className="file-error-message"
+                            style={{ margin: '0 0 15px' }}
+                        >
+                            Please remove all unsupported files.
+                        </p> : ''
                     }
-                </div>
-            </FileContainer>
+                    <div className="file-preview-container">
+                        {
+                            filteredFiles.map(file => (
+                                <FileCard key={file.id}>
+                                    {file.invalid && <div className="file-error-message">{errorMessage}</div>}
+                                    <img
+                                        src={file.invalid ? invalidImg : file.src}
+                                        alt={file.name}
+                                        id={file.id}
+                                        className={`file-img ${file.invalid ? 'invalid' : ''}`}
+                                        onClick={!file.invalid ? () => openImageModal(file) : () => removeFile(file)}
+                                    />
+                                    <div className="file-info">
+                                        <p className="file-name">{file.name}</p>
+                                        <p className="file-size">({file.fileSize})</p>
+                                    </div>
+                                    <div className="file-remove" onClick={() => removeFile(file)}><Close /></div>
+                                </FileCard>
+                            ))
+                        }
+                    </div>
+                </FileContainer>
+            }
             <ImageModal open={imageModalOpen} image={imageModal} closeModal={closeModal} />
             <Loading open={uploadModalOpen} />
         </>

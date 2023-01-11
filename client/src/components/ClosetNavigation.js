@@ -5,7 +5,7 @@ import { ChevronRight } from '@mui/icons-material';
 import Clothes from './Clothes';
 import Canvas from './Canvas';
 import Outfits from './Outfits';
-import AddClothes from './AddClothes';
+import AddItems from './AddItems';
 
 const Container = styled.div`
     flex-grow: 1;
@@ -124,7 +124,7 @@ export default function ClosetNavigation({ open, openSidebar, category }) {
         }
     }, [category, currCategory, closetMode]);
 
-    const closetModes = ['CLOTHES', 'CANVAS', 'OUTFITS', 'ADD CLOTHES'];
+    const closetModes = ['CLOTHES', 'CANVAS', 'OUTFITS', 'ADD ITEMS'];
 
     return (
         <>
@@ -153,7 +153,7 @@ export default function ClosetNavigation({ open, openSidebar, category }) {
                     {closetMode === 0 && <Clothes category={category} />}
                     {closetMode === 1 && <Canvas />}
                     {closetMode === 2 && <Outfits />}
-                    {closetMode === 3 && <AddClothes category={category} />}
+                    {closetMode === 3 && <AddItems openSidebar={openSidebar} category={category} />}
                 </ClosetContainer>
             </Container>
         </>
