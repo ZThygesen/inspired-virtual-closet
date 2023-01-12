@@ -1,13 +1,16 @@
 // set up express app
-const express = require('express');
+import express from 'express';
+import { config } from 'dotenv';
+import { mongoConnect } from './mongoConnect.js';
+
 const app = express();
 const port = 5000;
-require('dotenv').config();
 app.use(express.json());
+config();
 
 // connect to mongo db
-const connect = require('./mongoConnect');
-connect();
+const mongoClient = await mongoConnect();
+const db = mongoClient.db('digitalCloset');
 
 /* // set up mongo db
 const mongoose = require('mongoose');
@@ -18,16 +21,21 @@ db.on('error', (error) => console.error(error));
 db.once('open', () => console.log('Connected to database')); */
     
 // app routes
-const subscribersRouter = require('./routes/subscribers');
-app.use('/subscribers', subscribersRouter);
+/* import subscribersRouter from './routes/subscribers.js';
+app.use('/subscribers', subscribersRouter); */
 
-const uploadFiles = require('./routes/uploadFiles');
+import categories from './routes/categories.js';
+app.use('/categories', categories);
+
+import uploadFiles from './routes/uploadFiles.js';
 app.use('/upload-files', uploadFiles);
 
-const deleteFiles = require('./routes/deleteFiles');
+import deleteFiles from './routes/deleteFiles.js';
 app.use('/delete-files', deleteFiles);
 
 const server = app.listen(process.env.port || port, () => {
     const serverPort = server.address().port;
     console.log(`Server started on port ${serverPort}`);
 });
+
+export { db };

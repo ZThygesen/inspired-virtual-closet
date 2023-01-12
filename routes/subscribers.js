@@ -1,8 +1,8 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const Subscriber = require('../models/subscriber');
+import { Subscriber } from '../models/subscriber';
 
-// Getting all
+/* // Getting all
 router.get('/', async (req, res) => {
     try {
         const subscribers = await Subscriber.find();
@@ -75,5 +75,5 @@ async function getSubscriber(req, res, next) {
     res.subscriber = subscriber;
     next();
 }
-
+ */
 module.exports = router;

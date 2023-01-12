@@ -1,6 +1,6 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const puppeteer = require('puppeteer');
+import puppeteer from 'puppeteer';
 
 router.delete('/', async (req, res) => {
     const browser = await puppeteer.launch();
@@ -18,4 +18,4 @@ router.delete('/', async (req, res) => {
     await browser.close();
 });
 
-module.exports = router;
+export default router;

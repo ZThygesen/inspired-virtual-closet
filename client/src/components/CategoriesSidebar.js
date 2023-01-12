@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import axios from 'axios';
 import cuid from 'cuid';
 import { Modal, TextField } from '@mui/material';
 import { Add, ChevronLeft } from '@mui/icons-material';
@@ -39,7 +40,7 @@ const categories = [
     'Ties'
 ];
 
-const sidebarBottomPadding = 10;
+const sidebarBottomPadding = 20;
 
 const Sidebar = styled.div`
     display: flex;
@@ -84,19 +85,19 @@ const Sidebar = styled.div`
         display: flex;
         flex-direction: column;
         align-items: center;
+        flex-grow: 1;
     }
 
-    .add-category-footer {
+    /* .add-category-footer {
         background: none;
         border: none;
-        font-family: 'Fashion';
         position: sticky;
+        font-family: 'Fashion';
         bottom: ${sidebarBottomPadding}px;
         z-index: 1;
-        margin-top: auto;
         background-color: var(--white);
-        padding: 20px 0;
-        width: 200px;
+        padding: 20px 10px;
+        //width: 200px;
         border-radius: 20px;
         margin-top: ${sidebarBottomPadding}px;
         display: flex;
@@ -107,9 +108,51 @@ const Sidebar = styled.div`
         cursor: pointer;
         transition: all 0.1s;
         box-shadow: var(--button-shadow);
+    } */
 
-        &:hover {
-            transform: scale(1.03);
+    .add-category-footer {
+        position: sticky;
+        width: 100%;
+        font-size: 32px;
+        font-weight: bold;
+        background-color: var(--grey);
+        min-height: var(--subheader-height);
+        color: var(--black);
+        box-shadow: var(--top-shadow);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        box-sizing: border-box;
+        padding-right: 20px;
+        cursor: pointer; 
+        transition: 0.3s;
+        z-index: -1;
+    }
+
+    .footer-container {
+        position: relative;
+    }
+
+    .footer-text {
+        white-space: nowrap;
+
+        &:after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            transform: scaleX(0);
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background-color: var(--black);
+            transform-origin: bottom right;
+            transition: transform 0.15s ease-out;
+        }
+
+        &:hover:after {
+            transform: scaleX(1);
+            transform-origin: bottom left;
         }
     }
 `;
@@ -215,6 +258,17 @@ export default function CategoriesSidebar({ open, closeSidebar, selectCategory }
     const [activeCategory, setActiveCategory] = useState(0);
     const [openModal, setOpenModal] = useState(false);
     const [newCategory, setNewCategory] = useState('');
+    const [ategories, setCategories] = useState([]);
+
+    /* useEffect(() => {
+        getCategories();
+    }, []); */
+
+    async function getCategories() {
+        const categories = await axios.get('/categories')
+            .catch(err => console.log(err));
+        setCategories(categories.data);
+    } 
 
     function handleOpen() {
         setOpenModal(true);
@@ -225,9 +279,11 @@ export default function CategoriesSidebar({ open, closeSidebar, selectCategory }
         setNewCategory('');
     }
 
-    function addCategory() {
-        alert(newCategory);
+    async function addCategory() {
+        await axios.post('/categories', { category: newCategory })
+            .catch(err => console.log(err));
         handleClose();
+        getCategories();
     }
 
     return (
@@ -239,6 +295,7 @@ export default function CategoriesSidebar({ open, closeSidebar, selectCategory }
                 </div>
                 <div className="categories-container">
                     {
+                        categories.length > 0 &&
                         categories.map((category, index) => (
                             <CategoryButton
                                 key={cuid()}
@@ -252,10 +309,16 @@ export default function CategoriesSidebar({ open, closeSidebar, selectCategory }
                             </CategoryButton>
                         ))
                     }
-                    <button className="add-category-footer" onClick={handleOpen}>
-                        <Add fontSize="large"/>
-                        ADD CATEGORY
-                    </button>
+                </div>
+                <div
+                    className="add-category-footer"
+                    onClick={handleOpen}
+                    style={{ visibility: open ? 'visible' : 'hidden', opacity: open ? 1 : 0 }}
+                >
+                    <Add fontSize="large"/>
+                    <div className="footer-container">
+                        <p className="footer-text">ADD CATEGORY</p>
+                    </div>
                 </div>
             </Sidebar>
             <Modal

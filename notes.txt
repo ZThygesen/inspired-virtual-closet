@@ -1,5 +1,12 @@
 - if category is selected as "ALL" when adding files, don't allow submission
 
+- fix add category animation
+
+- add error handling
+- protection against putting '.'s incorrectly in category names:
+    - cannot start or end with '.'
+    - cannot have more than 1 consecutive '.' in name
+
 - remove background from pictures before posting to imgbb and db
 
 - check duplicate files in db when submitting

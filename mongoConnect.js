@@ -1,6 +1,6 @@
-const { MongoClient } = require('mongodb');
+import { MongoClient } from 'mongodb';
 
-async function mongoConnect(uri) {
+export async function mongoConnect() {
     let mongoClient;
     try {
         mongoClient = new MongoClient(process.env.DB_URI);
@@ -13,5 +13,3 @@ async function mongoConnect(uri) {
         console.error(err);
     }
 }
-
-module.exports = mongoConnect;

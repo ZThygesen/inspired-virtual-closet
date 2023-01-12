@@ -3,6 +3,7 @@
     --subheader-height: 60px;
 
     --box-shadow: 0 3px 5px rgba(57, 63, 72, 0.4);
+    --top-shadow: 0 -3px 3px rgba(57, 63, 72, 0.4);
     --button-shadow: 0 3px 5px rgba(57, 63, 72, 0.4);
     --tab-shadow: 2px -3px 3px rgba(57, 63, 72, 0.4);
     --file-card-shadow: 2px 6px 6px rgba(57, 63, 72, 0.4);

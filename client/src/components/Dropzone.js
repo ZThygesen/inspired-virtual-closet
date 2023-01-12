@@ -62,14 +62,7 @@ const DropContainer = styled.div`
             transition: transform 0.15s ease-out;
         }
 
-        &.active {
-            &:after {
-                transform: scaleX(1);
-            }
-
-        }
-
-        &:not(.active):hover:after {
+        &:hover:after {
             transform: scaleX(1);
             transform-origin: bottom left;
         }
