@@ -20,3 +20,7 @@
 - error handling on api calls
     - dropzone submission to imgbb
     - dropzone submission to db
+
+- email/share outfits
+
+- invalid files not showing up
