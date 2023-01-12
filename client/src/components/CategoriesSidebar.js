@@ -37,7 +37,9 @@ const categories = [
     'Suits',
     'Sunglasses',
     'Sweaters',
-    'Ties'
+    'Ties',
+    'This is a test for long text',
+    'sdugfwuiygdfiuywguofydgowegfw'
 ];
 
 const sidebarBottomPadding = 20;
@@ -86,29 +88,8 @@ const Sidebar = styled.div`
         flex-direction: column;
         align-items: center;
         flex-grow: 1;
+        overflow-x: hidden;
     }
-
-    /* .add-category-footer {
-        background: none;
-        border: none;
-        position: sticky;
-        font-family: 'Fashion';
-        bottom: ${sidebarBottomPadding}px;
-        z-index: 1;
-        background-color: var(--white);
-        padding: 20px 10px;
-        //width: 200px;
-        border-radius: 20px;
-        margin-top: ${sidebarBottomPadding}px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        font-size: 28px;
-        cursor: pointer;
-        transition: all 0.1s;
-        box-shadow: var(--button-shadow);
-    } */
 
     .add-category-footer {
         position: sticky;
@@ -119,19 +100,20 @@ const Sidebar = styled.div`
         min-height: var(--subheader-height);
         color: var(--black);
         box-shadow: var(--top-shadow);
+        cursor: pointer; 
+        overflow: hidden;
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 10px;
-        box-sizing: border-box;
-        padding-right: 20px;
-        cursor: pointer; 
-        transition: 0.3s;
-        z-index: -1;
     }
 
     .footer-container {
         position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-left: 15px;
+        box-sizing: border-box;
+        padding-right: 10px;
     }
 
     .footer-text {
@@ -288,7 +270,13 @@ export default function CategoriesSidebar({ open, closeSidebar, selectCategory }
 
     return (
         <>
-            <Sidebar style={{ minWidth: open ? '260px' : '0px', width: open ? '260px' : '0px' }}>
+            <Sidebar
+                style={{
+                    minWidth: open ? '260px' : '0px',
+                    width: open ? '260px' : '0px',
+                    whiteSpace: open ? 'normal' : 'nowrap',
+                    wordWrap: open ? 'break-word' : 'normal',
+                }}>
                 <div id="categories-title">
                     CATEGORIES
                     <ChevronLeft onClick={closeSidebar} sx={{ fontSize: 45 }} className="close-sidebar" />
@@ -313,11 +301,12 @@ export default function CategoriesSidebar({ open, closeSidebar, selectCategory }
                 <div
                     className="add-category-footer"
                     onClick={handleOpen}
-                    style={{ visibility: open ? 'visible' : 'hidden', opacity: open ? 1 : 0 }}
                 >
-                    <Add fontSize="large"/>
                     <div className="footer-container">
-                        <p className="footer-text">ADD CATEGORY</p>
+                        <Add sx={{ fontSize: 40 }} />
+                        <p className="footer-text">
+                            ADD CATEGORY
+                        </p>
                     </div>
                 </div>
             </Sidebar>

@@ -8,7 +8,7 @@ const AppBar = styled.header`
     box-shadow: var(--box-shadow);
     display: flex;
     align-items: center;
-    z-index: 1;
+    z-index: 999;
 
     .logo {
         text-decoration: none;
