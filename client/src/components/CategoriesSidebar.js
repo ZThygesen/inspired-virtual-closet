@@ -227,13 +227,15 @@ const Input = styled(TextField)`
     & .MuiOutlinedInput-root {
         & fieldset {
             font-family: 'Fashion';
-        border-color: var(--black);
+            border-color: var(--black);
         }
+
         &:hover fieldset {
-        border-color: var(--secondary);
+            border-color: var(--secondary);
         }
+
         &.Mui-focused fieldset {
-        border-color: var(--secondary);
+            border-color: var(--secondary);
         }
     }
 `;

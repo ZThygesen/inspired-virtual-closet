@@ -1,8 +1,8 @@
-import { Routes, Route } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import styled from 'styled-components';
 import Header from './components/Header';
 import Home from './pages/Home';
-import DigitalCloset from './pages/DigitalCloset';
+import Router from './pages/Router';
 import './App.css';
 
 const Container = styled.div`
@@ -17,8 +17,8 @@ export default function App() {
         <Container>
             <Header />
             <Routes>
-                <Route index element={<Home />} />
-                <Route path="/digital-closet" element={<DigitalCloset />} />
+                <Route path="/*" element={<Home />} />
+                <Route path="manage-clients/*" element={<Router />} />
             </Routes>
         </Container>
     );

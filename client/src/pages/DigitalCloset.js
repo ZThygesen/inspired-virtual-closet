@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
 import ClosetNavigation from '../components/ClosetNavigation';
@@ -11,6 +12,9 @@ const Container = styled.div`
 `;
 
 export default function DigitalCloset() {
+    const { clientName } = useLocation().state;
+    console.log(clientName);
+
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [category, setCategory] = useState({});
     const [categories, setCategories] = useState([]);
@@ -25,7 +29,6 @@ export default function DigitalCloset() {
         
         let categories = response.data;
         const allItems = [];
-        console.log(categories)
         if (categories.length !== 0) {
             categories.forEach(category => {
                 allItems.push(category.items);
