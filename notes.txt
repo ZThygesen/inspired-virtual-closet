@@ -1,15 +1,14 @@
-- if category is selected as "ALL" when adding files, don't allow submission
+- change font
 
-- fix add category animation
+- loading screens
 
 - add error handling
-- protection against putting '.'s incorrectly in category names:
-    - cannot start or end with '.'
-    - cannot have more than 1 consecutive '.' in name
 
 - remove background from pictures before posting to imgbb and db
 
 - check duplicate files in db when submitting
+
+- check for duplicate category names?
 
 - options for a clothing item:
     - edit item name
@@ -23,4 +22,18 @@
 
 - email/share outfits
 
-- invalid files not showing up
+Collection clients = [
+
+]
+
+Collection categories = [
+    {
+        _id: "_id",
+        name: "categoryName",
+        items: [
+            {
+                ...
+            },
+        ]
+    }
+]

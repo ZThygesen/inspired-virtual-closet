@@ -249,7 +249,7 @@ const ModalContent = styled.div`
     }
 `;
 
-export default function Dropzone({ category }) {
+export default function Dropzone({ category, disabled }) {
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [filteredFiles, setFilteredFiles] = useState([]);
     const [invalidFiles, setInvalidFiles] = useState([]);
@@ -469,7 +469,7 @@ export default function Dropzone({ category }) {
             <Button
                     className="submit"
                     onClick={() => setConfirmModalOpen(true)}
-                    disabled={!(invalidFiles.length === 0 && filteredFiles.length)}
+                    disabled={!(invalidFiles.length === 0 && filteredFiles.length) || disabled}
                 >
                     Submit File(s)
             </Button>

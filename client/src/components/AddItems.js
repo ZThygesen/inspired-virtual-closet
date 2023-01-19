@@ -31,16 +31,34 @@ const CategorySelect = styled.div`
         text-decoration: underline;
         cursor: pointer;
     }
+    
+    .error {
+        color: red;
+    }
+
+    .error.category {
+        color: red;
+    }
 `;
 
 export default function AddItems({ display, openSidebar, category }) {
     return (
         <Container style={{ display: display ? 'flex' : 'none' }}>
             <CategorySelect>
-                <p className="first">Add items to <span className="category" onClick={openSidebar}>{category.toUpperCase()}</span></p>
-                <p className="second">(Select the category you want to add items to from the sidebar)</p>
+                {
+                    category._id === -1 ?
+                        <>
+                            <p className="first error">Cannot add items to <span className="category error" onClick={openSidebar}>{category.name?.toUpperCase()}</span></p> 
+                            <p className="second">(Select a specific category you want to add items to)</p>
+                        </>
+                        :
+                        <>
+                            <p className="first">Add items to <span className="category" onClick={openSidebar}>{category.name?.toUpperCase()}</span></p>
+                            <p className="second">(Select the category you want to add items to from the sidebar)</p>
+                        </>
+                }
             </CategorySelect>
-            <Dropzone category={category} />
+            <Dropzone category={category.name} disabled={category._id === -1} />
         </Container>
     );
 }

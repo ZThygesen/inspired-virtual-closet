@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import axios from 'axios';
 import ClosetNavigation from '../components/ClosetNavigation';
 import CategoriesSidebar from '../components/CategoriesSidebar';
 
@@ -11,7 +12,37 @@ const Container = styled.div`
 
 export default function DigitalCloset() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [category, setCategory] = useState('All');
+    const [category, setCategory] = useState({});
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        getCategories();
+    }, []);
+    
+    async function getCategories() {
+        const response = await axios.get('/categories')
+            .catch(err => console.log(err));
+        
+        let categories = response.data;
+        const allItems = [];
+        console.log(categories)
+        if (categories.length !== 0) {
+            categories.forEach(category => {
+                allItems.push(category.items);
+            });
+
+            const allCategory = {
+                _id: -1,
+                name: 'All',
+                items: allItems
+            };
+
+            categories = [allCategory, ...categories];
+            setCategory(allCategory);
+        }
+
+        setCategories(categories);
+    } 
 
     function openSidebar() {
         setSidebarOpen(true);
@@ -23,13 +54,23 @@ export default function DigitalCloset() {
 
     function selectCategory(category) {
         setCategory(category);
-    }
+    };
 
     return (
         <>
             <Container>
-                <CategoriesSidebar open={sidebarOpen} closeSidebar={closeSidebar} selectCategory={selectCategory} />
-                <ClosetNavigation open={sidebarOpen} openSidebar={openSidebar} category={category} />
+                <CategoriesSidebar
+                    open={sidebarOpen}
+                    closeSidebar={closeSidebar}
+                    categories={categories}
+                    selectCategory={selectCategory}
+                    updateCategories={getCategories}
+                />
+                <ClosetNavigation
+                    open={sidebarOpen}
+                    openSidebar={openSidebar}
+                    category={category}
+                />
             </Container>
         </>
     )

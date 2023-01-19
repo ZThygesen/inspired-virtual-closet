@@ -9,8 +9,16 @@ app.use(express.json());
 config();
 
 // connect to mongo db
-const mongoClient = await mongoConnect();
-const db = mongoClient.db('digitalCloset');
+let db;
+async function connect() {
+    try {
+        const mongoClient = await mongoConnect();
+        db = mongoClient.db('digitalCloset');
+    } catch (err) {
+        console.error(err);
+    }
+}
+connect();
 
 /* // set up mongo db
 const mongoose = require('mongoose');
@@ -33,9 +41,13 @@ app.use('/upload-files', uploadFiles);
 import deleteFiles from './routes/deleteFiles.js';
 app.use('/delete-files', deleteFiles);
 
-const server = app.listen(process.env.port || port, () => {
-    const serverPort = server.address().port;
-    console.log(`Server started on port ${serverPort}`);
+app.use((err, req, res, next) => {
+    console.log('here');
+    console.log(`error: ${err.message}, status: ${err.status}`);
+    const status = err.status || 500;
+    res.status(status).json({ message: err.message });
 });
+
+app.listen(process.env.port || port, () => console.log(`Server started on port ${process.env.port || port}`));
 
 export { db };

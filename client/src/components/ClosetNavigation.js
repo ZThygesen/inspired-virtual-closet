@@ -114,11 +114,11 @@ const ClosetContainer = styled.div`
 
 export default function ClosetNavigation({ open, openSidebar, category }) {
     const [closetMode, setClosetMode] = useState(0);
-    const [currCategory, setCurrCategory] = useState(category);
+    const [currCategory, setCurrCategory] = useState(category?.name);
 
     useEffect(() => {
-        if (category !== currCategory) {
-            setCurrCategory(category);
+        if (category.name !== currCategory) {
+            setCurrCategory(category.name);
             if (closetMode !== 0 && closetMode !== 3) {
                 setClosetMode(0);
             }

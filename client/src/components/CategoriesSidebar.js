@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
 import cuid from 'cuid';
 import { Modal, TextField } from '@mui/material';
 import { Add, ChevronLeft } from '@mui/icons-material';
+import NoCategories from './NoCategories';
 
-const categories = [
+/* const categories = [
     'All',
     'Belts',
     'Blazers',
@@ -40,7 +41,7 @@ const categories = [
     'Ties',
     'This is a test for long text',
     'sdugfwuiygdfiuywguofydgowegfw'
-];
+]; */
 
 const sidebarBottomPadding = 20;
 
@@ -87,6 +88,7 @@ const Sidebar = styled.div`
         display: flex;
         flex-direction: column;
         align-items: center;
+        text-align: center;
         flex-grow: 1;
         overflow-x: hidden;
     }
@@ -236,21 +238,10 @@ const Input = styled(TextField)`
     }
 `;
 
-export default function CategoriesSidebar({ open, closeSidebar, selectCategory }) {
+export default function CategoriesSidebar({ open, closeSidebar, categories, selectCategory, updateCategories }) {
     const [activeCategory, setActiveCategory] = useState(0);
     const [openModal, setOpenModal] = useState(false);
     const [newCategory, setNewCategory] = useState('');
-    const [ategories, setCategories] = useState([]);
-
-    /* useEffect(() => {
-        getCategories();
-    }, []); */
-
-    async function getCategories() {
-        const categories = await axios.get('/categories')
-            .catch(err => console.log(err));
-        setCategories(categories.data);
-    } 
 
     function handleOpen() {
         setOpenModal(true);
@@ -265,7 +256,7 @@ export default function CategoriesSidebar({ open, closeSidebar, selectCategory }
         await axios.post('/categories', { category: newCategory })
             .catch(err => console.log(err));
         handleClose();
-        getCategories();
+        updateCategories();
     }
 
     return (
@@ -283,7 +274,7 @@ export default function CategoriesSidebar({ open, closeSidebar, selectCategory }
                 </div>
                 <div className="categories-container">
                     {
-                        categories.length > 0 &&
+                        categories.length === 0 ? <NoCategories fontSize={30} /> :
                         categories.map((category, index) => (
                             <CategoryButton
                                 key={cuid()}
@@ -293,7 +284,7 @@ export default function CategoriesSidebar({ open, closeSidebar, selectCategory }
                                 }}
                                 className={index === activeCategory ? 'active' : ''}
                             >
-                                {category}
+                                {category.name}
                             </CategoryButton>
                         ))
                     }
