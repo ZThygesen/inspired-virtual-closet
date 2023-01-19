@@ -18,6 +18,11 @@ router.get('/', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
     try {
         const collection = db.collection('categories');
+
+        if ((await collection.find({ name: req.body.category }).toArray()).length > 0) {
+            throw new Error(`A category with the name "${req.body.category}" already exists`);
+        }
+
         const category = {
             name: req.body.category,
             items: []

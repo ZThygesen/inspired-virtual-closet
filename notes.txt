@@ -8,7 +8,7 @@
 
 - check duplicate files in db when submitting
 
-- check for duplicate category names?
+- ability to edit and delete categories
 
 - options for a clothing item:
     - edit item name
