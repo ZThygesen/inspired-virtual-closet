@@ -17,7 +17,7 @@ export default function App() {
         <Container>
             <Header />
             <Routes>
-                <Route path="/*" element={<Home />} />
+                <Route index element={<Home />} />
                 <Route path="manage-clients/*" element={<Router />} />
             </Routes>
         </Container>
