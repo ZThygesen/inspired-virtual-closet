@@ -44,9 +44,11 @@ const Container = styled.div`
         font-weight: bold;
         transition: all 0.1s;
         margin: 10px;
+        color: var(--white);
 
         &:hover {
             background-color: var(--secondary-light);
+            color: var(--black);
         }
     }
 

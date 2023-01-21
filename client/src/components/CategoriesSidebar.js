@@ -245,16 +245,14 @@ export default function CategoriesSidebar({ open, closeSidebar, categories, sele
     const [openModal, setOpenModal] = useState(false);
     const [newCategory, setNewCategory] = useState('');
 
-    function handleOpen() {
-        setOpenModal(true);
-    }
-
     function handleClose() {
         setOpenModal(false);
         setNewCategory('');
     }
 
-    async function addCategory() {
+    async function addCategory(e) {
+        e.preventDefault();
+        
         await axios.post('/categories', { category: newCategory })
             .catch(err => console.log(err));
         handleClose();
@@ -293,7 +291,7 @@ export default function CategoriesSidebar({ open, closeSidebar, categories, sele
                 </div>
                 <div
                     className="add-category-footer"
-                    onClick={handleOpen}
+                    onClick={() => setOpenModal(true)}
                 >
                     <div className="footer-container">
                         <Add sx={{ fontSize: 40 }} />
@@ -307,21 +305,25 @@ export default function CategoriesSidebar({ open, closeSidebar, categories, sele
                 open={openModal}
                 onClose={handleClose}
             >
-                <ModalContent>
-                    <p>ADD CATEGORY</p>
-                    <Input
-                        id="outlined-category-name"
-                        variant="outlined"
-                        label="CATEGORY NAME"
-                        value={newCategory}
-                        onChange={e => setNewCategory(e.target.value)}
-                        fullWidth
-                    />
-                    <div className="modal-options">
-                        <button onClick={handleClose}>Cancel</button>
-                        <button onClick={addCategory}>Submit</button>
-                    </div>
-                </ModalContent>
+                <form onSubmit={addCategory}>
+                    <ModalContent>
+                        <p>ADD CATEGORY</p>
+                        <Input
+                            InputLabelProps={{ required: false }}
+                            id="outlined-category-name"
+                            variant="outlined"
+                            label="CATEGORY NAME"
+                            value={newCategory}
+                            onChange={e => setNewCategory(e.target.value)}
+                            fullWidth
+                            required
+                        />
+                        <div className="modal-options">
+                            <button type="button" onClick={handleClose}>Cancel</button>
+                            <button type="submit">Submit</button>
+                        </div>
+                    </ModalContent>
+                </form>
             </Modal>
         </>
     );

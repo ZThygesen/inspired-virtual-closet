@@ -32,6 +32,9 @@ db.once('open', () => console.log('Connected to database')); */
 /* import subscribersRouter from './routes/subscribers.js';
 app.use('/subscribers', subscribersRouter); */
 
+import clients from './routes/clients.js';
+app.use('/clients', clients);
+
 import categories from './routes/categories.js';
 app.use('/categories', categories);
 
