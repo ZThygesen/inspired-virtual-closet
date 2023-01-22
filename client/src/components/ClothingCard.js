@@ -2,6 +2,7 @@ import { useState } from 'react';
 import styled from 'styled-components';
 import { Modal, TextField, Tooltip } from '@mui/material';
 import { Delete, Edit, Shortcut, SwapVert } from '@mui/icons-material';
+import ImageModal from './ImageModal';
 
 const Container = styled.div`
     display: flex;
@@ -23,6 +24,7 @@ const Container = styled.div`
     img {
         width: 250px;
         height: auto;
+        cursor: pointer;
     }
 
     .item-options {
@@ -73,7 +75,7 @@ const ModalContent = styled.div`
         text-align: center;
     }
 
-    .delete-img {
+    .delete-img, .edit-img {
         width: 150px;
         height: auto;
     }
@@ -143,6 +145,7 @@ export default function ClothingCard({ item, sendToCanvas, swapCategory, editIte
     const [editOpen, setEditOpen] = useState(false);
     const [newItemName, setNewItemName] = useState(item.fileName);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+    const [imageModalOpen, setImageModalOpen] = useState(false);
 
     function handleSubmitEdit(e) {
         e.preventDefault();
@@ -159,7 +162,11 @@ export default function ClothingCard({ item, sendToCanvas, swapCategory, editIte
         <>
             <Container>
                 <p>{item.fileName}</p>
-                <img src={item.fileUrl} alt={item.fileName} />
+                <img
+                    src={item.fileUrl}
+                    alt={item.fileName}
+                    onClick={() => setImageModalOpen(true)}
+                />
                 <div className="item-options">
                     <Tooltip title="Send to Canvas">
                         <Shortcut
@@ -191,6 +198,11 @@ export default function ClothingCard({ item, sendToCanvas, swapCategory, editIte
                     </Tooltip>
                 </div>
             </Container>
+            <ImageModal
+                open={imageModalOpen}
+                image={{ src: item.fileUrl, alt: item.fileName }}
+                closeModal={() => setImageModalOpen(false)}
+            />
             <Modal
                 open={confirmDeleteOpen}
                 onClose={() => setConfirmDeleteOpen(false)}
@@ -198,7 +210,11 @@ export default function ClothingCard({ item, sendToCanvas, swapCategory, editIte
                 <ModalContent>
                     <p>Are you sure you want to delete this item?</p>
                     <p>{item.fileName}</p>
-                    <img src={item.fileUrl} alt={item.fileName} className="delete-img" />
+                    <img
+                        src={item.fileUrl}
+                        alt={item.fileName}
+                        className="delete-img"
+                    />
                     <div className="modal-options">
                         <button onClick={() => setConfirmDeleteOpen(false)}>Cancel</button>
                         <button onClick={() => { setConfirmDeleteOpen(false); deleteItem(item); }}>Delete</button>
@@ -221,7 +237,12 @@ export default function ClothingCard({ item, sendToCanvas, swapCategory, editIte
                             onChange={e => setNewItemName(e.target.value)}
                             fullWidth
                             required
-                            />
+                        />
+                        <img
+                        src={item.fileUrl}
+                        alt={item.fileName}
+                        className="edit-img"
+                    />
                         <div className="modal-options">
                             <button type="button" onClick={handleCloseEdit}>Cancel</button>
                             <button type="submit">Save</button>

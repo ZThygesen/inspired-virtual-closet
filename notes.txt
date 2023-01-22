@@ -4,6 +4,9 @@
 
 - add error handling
 
+- add an "Other" category
+    - if you delete a category, all the items will move to "Other"
+
 - set things to null upon deletion?
 
 - add image modal option for clothing cards
@@ -15,9 +18,7 @@
 - ability to edit and delete categories
 
 - options for a clothing item:
-    - edit item name
     - send item to canvas
-    - delete item
     - change category of item
 
 - error handling on api calls
@@ -25,10 +26,6 @@
     - dropzone submission to db
 
 - email/share outfits
-
-Collection clients = [
-
-]
 
 Collection categories = [
     {

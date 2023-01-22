@@ -30,7 +30,7 @@ export default function ImageModal({ open, image, closeModal }) {
                 </CloseModal>
                 <img
                     style={{
-                        width: '400px',
+                        width: '450px',
                         height: 'auto'
                     }}
                     className="modal-image"
