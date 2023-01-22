@@ -38,8 +38,8 @@ app.use('/clients', clients);
 import categories from './routes/categories.js';
 app.use('/categories', categories);
 
-import uploadFiles from './routes/uploadFiles.js';
-app.use('/upload-files', uploadFiles);
+import files from './routes/files.js';
+app.use('/files', files);
 
 import deleteFiles from './routes/deleteFiles.js';
 app.use('/delete-files', deleteFiles);

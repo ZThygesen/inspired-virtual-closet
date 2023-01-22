@@ -43,7 +43,7 @@ const CategorySelect = styled.div`
     }
 `;
 
-export default function AddItems({ display, openSidebar, category }) {
+export default function AddItems({ display, client, category, openSidebar, updateItems }) {
     return (
         <Container style={{ display: display ? 'flex' : 'none' }}>
             <CategorySelect>
@@ -65,7 +65,7 @@ export default function AddItems({ display, openSidebar, category }) {
                             </>
                 }
             </CategorySelect>
-            <Dropzone category={category.name} disabled={category._id === -1} />
+            <Dropzone client={client} category={category} disabled={category._id === -1} updateItems={updateItems} />
         </Container>
     );
 }

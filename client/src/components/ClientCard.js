@@ -60,7 +60,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                     <Checkroom
                         className="client-option-btn large"
                         sx={{ fontSize: 75 }}
-                        onClick={() => navigate(`${client.firstName.toLowerCase()}`, { state: { client: client } })}
+                        onClick={() => navigate(`${client.firstName.toLowerCase()}-${client.lastName.toLowerCase()}`, { state: { client: client } })}
                     />
                 </Tooltip>
                 <Tooltip title="Delete">

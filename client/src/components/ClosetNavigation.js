@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
+import axios from 'axios';
 import cuid from 'cuid';
 import { ChevronRight } from '@mui/icons-material';
 import Clothes from './Clothes';
@@ -112,9 +113,11 @@ const ClosetContainer = styled.div`
     overflow-y: auto;
 `;
 
-export default function ClosetNavigation({ open, openSidebar, category }) {
+export default function ClosetNavigation({ client, category, open, openSidebar }) {
     const [closetMode, setClosetMode] = useState(0);
     const [currCategory, setCurrCategory] = useState(category?.name);
+    const [allClothes, setAllClothes] = useState([]);
+    const [currClothes, setCurrClothes] = useState([]);
 
     useEffect(() => {
         if (category.name !== currCategory) {
@@ -125,6 +128,37 @@ export default function ClosetNavigation({ open, openSidebar, category }) {
         }
     }, [category, currCategory, closetMode]);
 
+    useEffect(() => {
+        let clothes = [];
+        if (category._id === -1) {
+            allClothes.forEach(category => {
+                clothes = [...clothes, ...category.items];
+            });
+        } else {
+            for (let i = 0; i < allClothes.length; i++) {
+                if (allClothes[i]._id === category._id) {
+                    clothes = [...allClothes[i].items];
+                    break;
+                }
+            }
+        }
+
+        setCurrClothes(clothes);
+    }, [category, allClothes]);
+
+    const getClothes = useCallback(async () => {
+        const response = await axios.get(`/files/${client._id}`)
+            .catch(err => console.log(err));
+        
+        setAllClothes(response.data.files);
+        setClosetMode(0);
+    }, [client._id]);
+
+    useEffect(() => {
+        getClothes();
+    }, [getClothes]);
+
+
     const closetModes = ['CLOTHES', 'CANVAS', 'OUTFITS', 'ADD ITEMS'];
 
     return (
@@ -132,7 +166,7 @@ export default function ClosetNavigation({ open, openSidebar, category }) {
             <Container >
                 <div id="client-closet-title">
                     {!open && <ChevronRight onClick={openSidebar} sx={{ fontSize: 45 }} className="open-sidebar" />}
-                    LIZETTE'S CLOSET
+                    {`${client.firstName.toUpperCase()} ${client.lastName.toUpperCase()}'S CLOSET`}
                 </div>
                 <div className="closet-options">
                     <ul>
@@ -151,10 +185,10 @@ export default function ClosetNavigation({ open, openSidebar, category }) {
                     </ul>
                 </div>
                 <ClosetContainer>
-                    <Clothes display={closetMode === 0} category={category} />
+                    <Clothes display={closetMode === 0} category={category} clothes={currClothes} />
                     <Canvas display={closetMode === 1} />
                     <Outfits display={closetMode === 2} />
-                    <AddItems display={closetMode === 3} openSidebar={openSidebar} category={category} />
+                    <AddItems display={closetMode === 3} client={client} category={category} openSidebar={openSidebar} updateItems={getClothes} />
                 </ClosetContainer>
             </Container>
         </>

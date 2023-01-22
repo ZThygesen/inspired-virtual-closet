@@ -13,7 +13,6 @@ const Container = styled.div`
 
 export default function DigitalCloset() {
     const { client } = useLocation().state;
-    console.log(client);
 
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [category, setCategory] = useState({});
@@ -70,9 +69,10 @@ export default function DigitalCloset() {
                     updateCategories={getCategories}
                 />
                 <ClosetNavigation
+                    client={client}
+                    category={category}
                     open={sidebarOpen}
                     openSidebar={openSidebar}
-                    category={category}
                 />
             </Container>
         </>

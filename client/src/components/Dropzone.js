@@ -249,7 +249,7 @@ const ModalContent = styled.div`
     }
 `;
 
-export default function Dropzone({ category, disabled }) {
+export default function Dropzone({ client, category, disabled, updateItems }) {
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [filteredFiles, setFilteredFiles] = useState([]);
     const [invalidFiles, setInvalidFiles] = useState([]);
@@ -260,7 +260,6 @@ export default function Dropzone({ category, disabled }) {
     const [imageModal, setImageModal] = useState({});
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
     const [resultModalOpen, setResultModalOpen] = useState(false);
-    //const [submitError, setSubmitError] = useState(false);
     const fileInputRef = useRef();
 
     useEffect(() => {
@@ -397,13 +396,20 @@ export default function Dropzone({ category, disabled }) {
     async function handleSubmit() {
         setUploadModalOpen(current => !current);
         const files = await uploadFiles();
-        const res = await axios.post('/upload-files', { files: files });
-        console.log(res);
+        await axios.post('/files', {
+            categoryId: category._id,
+            files: files
+        });
+
         setUploadModalOpen(false);
         setResultModalOpen(true);
+        updateItems();
+        setSelectedFiles([]);
+        setFilteredFiles([]);
+        setInvalidFiles([]);
     }
 
-    // TODO: Functionality to upload/send files to backend
+    // TODO: Remove background from images before storing
     async function uploadFiles() {
         const files = [];
         for (let i = 0; i < filteredFiles.length; i++) {
@@ -411,14 +417,13 @@ export default function Dropzone({ category, disabled }) {
             formData.append('image', filteredFiles[i]);
             formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
             const res = await axios.post('https://api.imgbb.com/1/upload', formData);
-            console.log(res.data.data)
+
             files.push({
-                clientId: 'clientId',
-                categoryId: 'categoryId',
+                clientId: client._id,
                 fileName: res.data.data.title,
                 fileUrl: res.data.data.url,
                 fileId: res.data.data.id,
-                delete_url: res.data.data.delete_url
+                deleteUrl: res.data.data.delete_url
             });
         }
         
@@ -435,13 +440,8 @@ export default function Dropzone({ category, disabled }) {
         setImageModal({});
     }
 
-    /* function testDelete() {
-        axios.delete('/delete-files');
-    } */
-
     return (
         <>
-            {/* <Button onClick={testDelete}>Test Delete</Button> */}
             <DropContainer style={{ border: `4px dashed ${borderColor}` }}
                 onDragOver={dragOver}
                 onDragEnter={dragEnter}
@@ -514,7 +514,7 @@ export default function Dropzone({ category, disabled }) {
                 onClose={() => setConfirmModalOpen(false)}
             >
                 <ModalContent>
-                    <p>Are you sure you want to add these items to <span className="category">{category}</span>?</p>
+                    <p>Are you sure you want to add these items to <span className="category">{category.name}</span>?</p>
                     <div className="modal-options">
                         <button onClick={() => setConfirmModalOpen(false)}>Cancel</button>
                         <button onClick={() => { setConfirmModalOpen(false); handleSubmit(); }}>Submit</button>
@@ -526,7 +526,7 @@ export default function Dropzone({ category, disabled }) {
                 onClose={() => setResultModalOpen(false)}
             >
                 <ModalContent>
-                    <p>Items added successfully to {category}!</p>
+                    <p>Items added successfully to {category.name}!</p>
                     <div className="modal-options">
                         <button onClick={() => setResultModalOpen(false)}>OK</button>
                     </div>
