@@ -35,6 +35,7 @@ const Container = styled.div`
         flex-grow: 1;
         display: flex;
         justify-content: center;
+        align-items: center;
         align-content: flex-start;
         gap: 40px;
         flex-wrap: wrap;

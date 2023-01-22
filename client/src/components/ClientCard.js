@@ -13,11 +13,14 @@ const Container = styled.div`
     padding: 40px 20px;
     background-color: var(--white);
     height: min-content;
+    max-width: 300px;
 
     p {
         font-family: 'Fashion';
         font-size: 40px;
         font-weight: bold;
+        word-break: break-word;
+        text-align: center;
     }
 
     .client-options {
