@@ -4,6 +4,7 @@ import cuid from 'cuid';
 import { Modal, TextField } from '@mui/material';
 import styled from 'styled-components';
 import ClientCard from '../components/ClientCard';
+import Loading from '../components/Loading';
 
 const subHeaderHeight = 100;
 const footer = 100;
@@ -163,16 +164,19 @@ export default function ManageClients() {
     const [openModal, setOpenModal] = useState(false);
     const [newClientFName, setNewClientFName] = useState('');
     const [newClientLName, setNewClientLName] = useState('');
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         getClients();
     }, []);
 
     async function getClients() {
+        setLoading(true);
         const response = await axios.get('/clients')
             .catch(err => console.log(err));
         
         setClients(response.data);
+        setLoading(false);
     }
 
     function handleClose() {
@@ -183,6 +187,7 @@ export default function ManageClients() {
 
     async function addClient(e) {
         e.preventDefault();
+        setLoading(true);
 
         await axios.post('/clients', {
             firstName: newClientFName,
@@ -191,15 +196,31 @@ export default function ManageClients() {
             .catch(err => console.log(err));
 
         handleClose();
-        getClients();
+        await getClients();
+        setLoading(false);
     }
 
-    function editClient(client) {
-        alert(`Edit client: ${client.firstName} ${client.lastName}`);
+    async function editClient(client, newFirstName, newLastName) {
+        setLoading(true);
+        if (client.firstName === newFirstName && client.lastName === newLastName) {
+            setLoading(false);
+            return;
+        }
+
+        await axios.patch('/clients', { clientId: client._id, newFirstName: newFirstName, newLastName: newLastName })
+            .catch(err => console.log(err));
+        
+        await getClients();
+        setLoading(false);
     }
 
-    function deleteClient(client) {
-        alert(`Delete client: ${client.firstName} ${client.lastName}`);
+    async function deleteClient(client) {
+        setLoading(true);
+        await axios.delete(`/clients/${client._id}`)
+            .catch(err => console.log(err));
+        
+        await getClients();
+        setLoading(false);
     }
 
     return (
@@ -217,6 +238,7 @@ export default function ManageClients() {
                     <button className="add-client" onClick={() => setOpenModal(true)}>ADD CLIENT</button>
                 </div>
             </Container>
+            <Loading open={loading} />
             <Modal
                     open={openModal}
                     onClose={handleClose}

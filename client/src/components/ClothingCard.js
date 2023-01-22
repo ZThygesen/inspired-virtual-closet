@@ -209,7 +209,7 @@ export default function ClothingCard({ item, sendToCanvas, swapCategory, editIte
             >
                 <ModalContent>
                     <p>Are you sure you want to delete this item?</p>
-                    <p>{item.fileName}</p>
+                    <p style={{ textDecoration: 'underline' }}>{item.fileName}</p>
                     <img
                         src={item.fileUrl}
                         alt={item.fileName}

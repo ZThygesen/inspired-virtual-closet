@@ -41,6 +41,7 @@ export default function Clothes({ display, category, clothes, updateItems }) {
     async function editItem(item, newName) {
         setLoading(true);
         if (item.fileName === newName) {
+            setLoading(false);
             return;
         }
 

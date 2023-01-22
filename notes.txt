@@ -9,6 +9,10 @@
 
 - set things to null upon deletion?
 
+- if no clients or images, say so
+
+- number of items in each category shown on sidebar
+
 - add image modal option for clothing cards
 
 - remove background from pictures before posting to imgbb and db
@@ -38,3 +42,10 @@ Collection categories = [
         ]
     }
 ]
+
+10 neck
+8 blazers
+---------
+5 sun
+3 sneak
+4 fancy shoes

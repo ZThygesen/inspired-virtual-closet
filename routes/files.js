@@ -26,17 +26,17 @@ router.post('/', async (req, res, next) => {
 });
 
 // get files
-router.get('/:id', async (req, res, next) => {
+router.get('/:clientId', async (req, res, next) => {
     try {
         const collection = db.collection('categories');
         const files = await collection.aggregate([
-            { $match: { 'items.clientId': req.params.id } },
+            { $match: { 'items.clientId': req.params.clientId } },
             {
                 $project: {
                     items: { $filter: {
                         input: '$items',
                         as: 'item',
-                        cond: { $eq: ['$$item.clientId', req.params.id] }
+                        cond: { $eq: ['$$item.clientId', req.params.clientId] }
                     }},
                 }
             }
@@ -53,7 +53,7 @@ router.patch('/', async (req, res, next) => {
     try {
         const collection = db.collection('categories');
         await collection.updateOne(
-            { _id: ObjectId(req.body.categoryId), 'items.fileId': req.body.item.fileId },
+            { _id: ObjectId(req.body.categoryId) },
             {
                 $set: {
                     'items.$.fileName': req.body.newName
