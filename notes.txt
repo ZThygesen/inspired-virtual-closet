@@ -4,6 +4,8 @@
 
 - add error handling
 
+- set things to null upon deletion?
+
 - add image modal option for clothing cards
 
 - remove background from pictures before posting to imgbb and db

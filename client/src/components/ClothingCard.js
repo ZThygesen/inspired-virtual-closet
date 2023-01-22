@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import styled from 'styled-components';
-import { Tooltip } from '@mui/material';
+import { Modal, TextField, Tooltip } from '@mui/material';
 import { Delete, Edit, Shortcut, SwapVert } from '@mui/icons-material';
 
 const Container = styled.div`
@@ -49,37 +50,185 @@ const Container = styled.div`
     }
 `;
 
-export default function ClothingCard({ item }) {
+const ModalContent = styled.div`
+    font-family: 'Fashion';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    background-color: var(--white);
+    border: 2px solid var(--black);
+    border-radius: 20px;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+
+    p {
+        font-size: 32px;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .delete-img {
+        width: 150px;
+        height: auto;
+    }
+
+    .modal-options {
+        display: flex;
+        gap: 50px;
+    }
+
+    button {
+        background: none;
+        border: 1px solid var(--black);
+        width: 100%;
+        border-radius: 8px;
+        padding: 12px;
+        font-family: 'Fashion';
+        font-size: 24px;
+        transition: all 0.1s;
+        cursor: pointer;
+
+        &:hover {
+            background-color: var(--secondary);
+            border-color: var(--secondary);
+            color: var(--white);
+        }
+    }
+`;
+
+const Input = styled(TextField)`
+    & label {
+        font-family: 'Fashion';
+        font-weight: bold;
+        color: var(--black);
+    }
+
+    .MuiInput-underline:before {
+        border-bottom: 2px solid var(--black);
+    }
+
+    && .MuiInput-underline:hover:before {
+        border-bottom: 2px solid var(--secondary);
+    }
+
+    & label.Mui-focused {
+        color: var(--secondary);
+    }
+    & .MuiInput-underline:after {
+        border-bottom-color: var(--secondary);
+    }
+    & .MuiOutlinedInput-root {
+        & fieldset {
+            font-family: 'Fashion';
+            border-color: var(--black);
+        }
+
+        &:hover fieldset {
+            border-color: var(--secondary);
+        }
+
+        &.Mui-focused fieldset {
+            border-color: var(--secondary);
+        }
+    }
+`;
+
+export default function ClothingCard({ item, sendToCanvas, swapCategory, editItem, deleteItem }) {
+    const [editOpen, setEditOpen] = useState(false);
+    const [newItemName, setNewItemName] = useState(item.fileName);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+    function handleSubmitEdit(e) {
+        e.preventDefault();
+        setEditOpen(false);
+        editItem(item, newItemName); 
+    }
+
+    function handleCloseEdit() {
+        setEditOpen(false);
+        setNewItemName(item.fileName);
+    }
+
     return (
-        <Container>
-            <p>{item.fileName}</p>
-            <img src={item.fileUrl} alt={item.fileName} />
-            <div className="item-options">
-                <Tooltip title="Send to Canvas">
-                    <Shortcut
-                        className="item-option important"
-                        sx={{ fontSize: 45 }}
-                    />
-                </Tooltip>
-                <Tooltip title="Change Category">
-                    <SwapVert
-                        className="item-option"
-                        sx={{ fontSize: 45 }}
-                    />
-                </Tooltip>
-                <Tooltip title="Edit">
-                    <Edit
-                        className="item-option"
-                        sx={{ fontSize: 45 }}
-                    />
-                </Tooltip>
-                <Tooltip title="Delete">
-                    <Delete
-                        className="item-option"
-                        sx={{ fontSize: 45 }}
-                    />
-                </Tooltip>
-            </div>
-        </Container>
+        <>
+            <Container>
+                <p>{item.fileName}</p>
+                <img src={item.fileUrl} alt={item.fileName} />
+                <div className="item-options">
+                    <Tooltip title="Send to Canvas">
+                        <Shortcut
+                            className="item-option important"
+                            sx={{ fontSize: 45 }}
+                            onClick={() => sendToCanvas(item)}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Change Category">
+                        <SwapVert
+                            className="item-option"
+                            sx={{ fontSize: 45 }}
+                            onClick={() => swapCategory(item)}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Edit">
+                        <Edit
+                            className="item-option"
+                            sx={{ fontSize: 45 }}
+                            onClick={() => setEditOpen(true)}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                        <Delete
+                            className="item-option"
+                            sx={{ fontSize: 45 }}
+                            onClick={() => setConfirmDeleteOpen(true)}
+                        />
+                    </Tooltip>
+                </div>
+            </Container>
+            <Modal
+                open={confirmDeleteOpen}
+                onClose={() => setConfirmDeleteOpen(false)}
+            >
+                <ModalContent>
+                    <p>Are you sure you want to delete this item?</p>
+                    <p>{item.fileName}</p>
+                    <img src={item.fileUrl} alt={item.fileName} className="delete-img" />
+                    <div className="modal-options">
+                        <button onClick={() => setConfirmDeleteOpen(false)}>Cancel</button>
+                        <button onClick={() => { setConfirmDeleteOpen(false); deleteItem(item); }}>Delete</button>
+                    </div>
+                </ModalContent>
+            </Modal>
+            <Modal
+                open={editOpen}
+                onClose={handleCloseEdit}
+            >
+                <form onSubmit={handleSubmitEdit}>
+                    <ModalContent>
+                        <p>EDIT ITEM</p>
+                        <Input
+                            InputLabelProps={{ required: false }}
+                            id="outlined-item-name"
+                            variant="outlined"
+                            label="ITEM NAME"
+                            value={newItemName}
+                            onChange={e => setNewItemName(e.target.value)}
+                            fullWidth
+                            required
+                            />
+                        <div className="modal-options">
+                            <button type="button" onClick={handleCloseEdit}>Cancel</button>
+                            <button type="submit">Save</button>
+                        </div>
+                    </ModalContent>
+                </form>
+            </Modal>
+        </>
     );
 }

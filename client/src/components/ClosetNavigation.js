@@ -185,7 +185,7 @@ export default function ClosetNavigation({ client, category, open, openSidebar }
                     </ul>
                 </div>
                 <ClosetContainer>
-                    <Clothes display={closetMode === 0} category={category} clothes={currClothes} />
+                    <Clothes display={closetMode === 0} category={category} clothes={currClothes} updateItems={getClothes} />
                     <Canvas display={closetMode === 1} />
                     <Outfits display={closetMode === 2} />
                     <AddItems display={closetMode === 3} client={client} category={category} openSidebar={openSidebar} updateItems={getClothes} />
