@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import Dropzone from './Dropzone';
-import NoCategories from './NoCategories';
 
 const Container = styled.div`
     display: flex;
@@ -48,12 +47,12 @@ export default function AddItems({ display, client, category, openSidebar, updat
         <Container style={{ display: display ? 'flex' : 'none' }}>
             <CategorySelect>
                 {
-                    category.name === undefined ?
+                    /* category.name === undefined ?
                         <>
                             <NoCategories fontSize={32} />
                         </>
-                        :
-                        category._id === -1 ?
+                        : */
+                        (category._id === -1/*  || category._id === 0 */) ?
                             <>
                                 <p className="first error">Cannot add items to <span className="category error" onClick={openSidebar}>{category.name?.toUpperCase()}</span></p> 
                                 <p className="second">(Select a specific category you want to add items to)</p>
@@ -65,7 +64,7 @@ export default function AddItems({ display, client, category, openSidebar, updat
                             </>
                 }
             </CategorySelect>
-            <Dropzone client={client} category={category} disabled={category._id === -1} updateItems={updateItems} />
+            <Dropzone client={client} category={category} disabled={category._id === -1 || category._id === 0} updateItems={updateItems} />
         </Container>
     );
 }

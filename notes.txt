@@ -7,9 +7,14 @@
 - add an "Other" category
     - if you delete a category, all the items will move to "Other"
 
+- adding/editing categories switches properly in sidebar
+
+- store the smaller image size for preview purposes
+
 - set things to null upon deletion?
 
 - if no clients or images, say so
+    - change <NoCategories /> logic?
 
 - number of items in each category shown on sidebar
 

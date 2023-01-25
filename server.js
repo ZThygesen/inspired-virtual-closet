@@ -45,7 +45,6 @@ import deleteFiles from './routes/deleteFiles.js';
 app.use('/delete-files', deleteFiles);
 
 app.use((err, req, res, next) => {
-    console.log('here');
     console.log(`error: ${err.message}, status: ${err.status}`);
     const status = err.status || 500;
     res.status(status).json({ message: err.message });

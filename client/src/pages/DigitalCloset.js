@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import axios from 'axios';
 import ClosetNavigation from '../components/ClosetNavigation';
 import CategoriesSidebar from '../components/CategoriesSidebar';
+import Loading from '../components/Loading';
 
 const Container = styled.div`
     flex: 1;
@@ -17,6 +18,7 @@ export default function DigitalCloset() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [category, setCategory] = useState({});
     const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         getCategories();
@@ -28,7 +30,7 @@ export default function DigitalCloset() {
         
         let categories = response.data;
         const allItems = [];
-        if (categories.length !== 0) {
+        if (categories.length > 1) {
             categories.forEach(category => {
                 allItems.push(category.items);
             });
@@ -44,7 +46,31 @@ export default function DigitalCloset() {
         }
 
         setCategories(categories);
-    } 
+    }
+
+    async function editCategory(category, newName) {
+        setLoading(true);
+        if (category.name === newName) {
+            setLoading(false);
+            return;
+        }
+
+        await axios.patch('/categories', { categoryId: category._id, newName: newName })
+            .catch(err => console.log(err));
+        
+        await getCategories();
+        setLoading(false);
+    }
+    
+    async function deleteCategory(category) {
+        setLoading(true);
+        
+        await axios.delete(`/categories/${category._id}`)
+            .catch(err => console.log(err));
+        
+        await getCategories();
+        setLoading(false);
+    }
 
     function openSidebar() {
         setSidebarOpen(true);
@@ -67,6 +93,8 @@ export default function DigitalCloset() {
                     categories={categories}
                     selectCategory={selectCategory}
                     updateCategories={getCategories}
+                    editCategory={editCategory}
+                    deleteCategory={deleteCategory}
                 />
                 <ClosetNavigation
                     client={client}
@@ -75,6 +103,7 @@ export default function DigitalCloset() {
                     openSidebar={openSidebar}
                 />
             </Container>
+            <Loading open={loading} />
         </>
     )
 }

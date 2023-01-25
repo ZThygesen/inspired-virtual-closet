@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
 import cuid from 'cuid';
+import { Tooltip } from '@mui/material';
 import { ChevronRight } from '@mui/icons-material';
 import Clothes from './Clothes';
 import Canvas from './Canvas';
@@ -165,7 +166,10 @@ export default function ClosetNavigation({ client, category, open, openSidebar }
         <>
             <Container >
                 <div id="client-closet-title">
-                    {!open && <ChevronRight onClick={openSidebar} sx={{ fontSize: 45 }} className="open-sidebar" />}
+                    {!open &&
+                        <Tooltip title="Open Sidebar">
+                            <ChevronRight onClick={openSidebar} sx={{ fontSize: 45 }} className="open-sidebar" />
+                        </Tooltip>}
                     {`${client.firstName.toUpperCase()} ${client.lastName.toUpperCase()}'S CLOSET`}
                 </div>
                 <div className="closet-options">

@@ -186,7 +186,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                 >
                     <form onSubmit={handleSubmitEdit}>
                         <ModalContent>
-                            <p>ADD CLIENT</p>
+                            <p>EDIT CLIENT</p>
                             <Input
                                 InputLabelProps={{ required: false }}
                                 id="outlined-client-first-name"
@@ -209,7 +209,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                             />
                             <div className="modal-options">
                                 <button type="button" onClick={handleCloseEdit}>Cancel</button>
-                                <button type="submit">Submit</button>
+                                <button type="submit">Save</button>
                             </div>
                         </ModalContent>
                     </form>

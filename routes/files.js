@@ -16,7 +16,7 @@ router.post('/', async (req, res, next) => {
                     }
                 }
             }
-        )
+        );
 
         res.status(201).json({ message: 'Success!'});
     } catch (err) {
@@ -48,12 +48,13 @@ router.get('/:clientId', async (req, res, next) => {
     }
 });
 
-// update file
+// update file name
 router.patch('/', async (req, res, next) => {
     try {
         const collection = db.collection('categories');
+        const id = req.body.categoryId === 0 ? 0 : ObjectId(req.body.categoryId);
         await collection.updateOne(
-            { _id: ObjectId(req.body.categoryId) },
+            { _id: id, 'items.fileId': req.body.item.fileId },
             {
                 $set: {
                     'items.$.fileName': req.body.newName
@@ -68,12 +69,17 @@ router.patch('/', async (req, res, next) => {
     }
 });
 
+// switch file category
+
+
 // delete file
 router.delete('/:categoryId/:fileId', async (req, res, next) => {
     try {
         const collection = db.collection('categories');
+        const id = req.params.categoryId === '0' ? 0 : ObjectId(req.params.categoryId);
+            
         await collection.updateOne(
-            { _id: ObjectId(req.params.categoryId) },
+            { _id: id },
             {
                 $pull: {
                     items: { fileId: req.params.fileId }

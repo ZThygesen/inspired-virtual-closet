@@ -9,11 +9,11 @@ const CloseModal = styled.div`
     color: #f1f1f1;
     font-size: 40px;
     font-weight: bold;
-    transition: 0.3s;
+    transition: 0.1s;
     cursor: pointer;
 
     &:hover {
-        transform: scale(1.12);
+        transform: scale(1.05);
     }
 `;
 

@@ -3,7 +3,6 @@ import axios from 'axios';
 import cuid from 'cuid';
 import styled from 'styled-components';
 import ClothingCard from './ClothingCard';
-import NoCategories from './NoCategories';
 import Loading from './Loading';
 
 const Container = styled.div`
@@ -65,7 +64,7 @@ export default function Clothes({ display, category, clothes, updateItems }) {
         <>
             <Container style={{ display: display ? 'flex' : 'none' }}>
                 {
-                    category.name === undefined ? <NoCategories fontSize={28} /> :
+                    /* category.name === undefined ? <NoCategories fontSize={28} /> : */
                         <>
                             <p className="category-title">{category.name}</p>
                             <div className="items">

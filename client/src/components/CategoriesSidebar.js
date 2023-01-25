@@ -2,9 +2,8 @@ import { useState } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
 import cuid from 'cuid';
-import { Modal, TextField } from '@mui/material';
-import { Add, ChevronLeft } from '@mui/icons-material';
-import NoCategories from './NoCategories';
+import { Modal, TextField, Tooltip } from '@mui/material';
+import { Add, ChevronLeft, Close, Delete, Edit, Settings } from '@mui/icons-material';
 
 /* const categories = [
     'All',
@@ -70,7 +69,7 @@ const Sidebar = styled.div`
         justify-content: center;
     }
 
-    .close-sidebar {
+    .close-sidebar, .settings {
         position: absolute;
         right: 5px;
         border-radius: 50%;
@@ -80,6 +79,11 @@ const Sidebar = styled.div`
         &:hover {
             background-color: rgba(0, 0, 0, 0.3);
         }
+    }
+
+    .settings {
+        left: 5px;
+        padding: 5px;
     }
 
     .categories-container {
@@ -173,10 +177,26 @@ const ModalContent = styled.div`
     align-items: center;
     justify-content: center;
     gap: 40px;
+    max-height: 70vh;
+    overflow-y: auto;
 
-    p {
+    .title, .cat-to-edit {
         font-size: 32px;
         font-weight: bold;
+    }
+
+    .cat-to-edit {
+        font-weight: normal;
+    }
+
+    .delete-content {
+        font-size: 32px;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .warning {
+        color: red;
     }
 
     .modal-options {
@@ -199,6 +219,37 @@ const ModalContent = styled.div`
             background-color: var(--secondary);
             border-color: var(--secondary);
             color: var(--white);
+        }
+    }
+
+    .category-settings {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .category-setting {
+        display: grid;
+        grid-template-columns: 250px 50px 50px;
+        align-items: center;
+    }
+
+    .category {
+        font-size: 26px;
+    }
+
+    .category-option-btn {
+        justify-self: center;
+        padding: 5px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.1s;
+        color: #a7a7a7;
+
+        &:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+            color: var(--black);
         }
     }
 `;
@@ -240,10 +291,74 @@ const Input = styled(TextField)`
     }
 `;
 
-export default function CategoriesSidebar({ open, closeSidebar, categories, selectCategory, updateCategories }) {
+const CloseModal = styled.div`
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    transition: all 0.1s;
+    cursor: pointer;
+    color: #a7a7a7;
+    //padding: 5px;
+    border-radius: 50%;
+
+    &:hover {
+        //background-color: rgba(0, 0, 0, 0.2);
+        color: var(--black);
+    }
+`;
+
+export default function CategoriesSidebar({ open, closeSidebar, categories, selectCategory, updateCategories, editCategory, deleteCategory }) {
     const [activeCategory, setActiveCategory] = useState(0);
     const [openModal, setOpenModal] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
+    const [categoryToEdit, setCategoryToEdit] = useState({});
     const [newCategory, setNewCategory] = useState('');
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+    const [categoryToDelete, setCategoryToDelete] = useState({});
+    const [settingsOpen, setSettingsOpen] = useState(false);
+
+    function handleSettingsClose() {
+        handleClose();
+        setSettingsOpen(false);
+    }
+
+    function handleEditOpen(category) {
+        setCategoryToEdit(category);
+        setNewCategory(category.name);
+        setSettingsOpen(false);
+        setEditOpen(true);
+    }
+
+    function handleEditClose() {
+        setCategoryToEdit({});
+        setNewCategory('');
+        setSettingsOpen(true);
+        setEditOpen(false);
+    }
+
+    function handleEdit(e) {
+        e.preventDefault();
+
+        editCategory(categoryToEdit, newCategory);
+        handleEditClose();
+    }
+
+    function handleOpenDelete(category) {
+        setCategoryToDelete(category);
+        setSettingsOpen(false);
+        setConfirmDeleteOpen(true);
+    }
+
+    function handleCloseDelete() {
+        setCategoryToDelete({});
+        setSettingsOpen(true);
+        setConfirmDeleteOpen(false);
+    }
+
+    function handleDelete() {
+        deleteCategory(categoryToDelete);
+        handleCloseDelete();
+    }
 
     function handleClose() {
         setOpenModal(false);
@@ -269,12 +384,17 @@ export default function CategoriesSidebar({ open, closeSidebar, categories, sele
                     wordWrap: open ? 'break-word' : 'normal',
                 }}>
                 <div id="categories-title">
+                    <Tooltip title="Manage Categories">
+                        <Settings onClick={() => setSettingsOpen(true)} sx={{ fontSize: 35 }} className="settings" />
+                    </Tooltip>
                     CATEGORIES
-                    <ChevronLeft onClick={closeSidebar} sx={{ fontSize: 45 }} className="close-sidebar" />
+                    <Tooltip title="Close Sidebar">
+                        <ChevronLeft onClick={closeSidebar} sx={{ fontSize: 45 }} className="close-sidebar" />
+                    </Tooltip>
                 </div>
                 <div className="categories-container">
                     {
-                        categories.length === 0 ? <NoCategories fontSize={30} /> :
+                        /* categories.length <= 1 ? <NoCategories fontSize={30} /> : */
                         categories.map((category, index) => (
                             <CategoryButton
                                 key={cuid()}
@@ -302,12 +422,47 @@ export default function CategoriesSidebar({ open, closeSidebar, categories, sele
                 </div>
             </Sidebar>
             <Modal
+                open={settingsOpen}
+                onClose={handleSettingsClose}
+            >
+                <ModalContent>
+                    <CloseModal onClick={handleSettingsClose}>
+                        <Close sx={{ fontSize: 35 }} />
+                    </CloseModal>
+                    <p className="title">MANAGE CATEGORIES</p>
+                    <div className="category-settings">
+                        {
+                            categories.map(category => (
+                                (category._id !== -1 && category._id !== 0) &&
+                                <div className="category-setting" key={cuid()}>
+                                    <p className="category">{category.name}</p>
+                                    <Tooltip title="Edit" placement="left">
+                                        <Edit
+                                            sx={{ fontSize: 30 }}
+                                            className="category-option-btn"
+                                            onClick={() => handleEditOpen(category)}
+                                        />
+                                    </Tooltip>
+                                    <Tooltip title="Delete" placement="right">
+                                        <Delete
+                                            sx={{ fontSize: 30 }}
+                                            className="category-option-btn"
+                                            onClick={() => handleOpenDelete(category)}
+                                        />
+                                    </Tooltip>
+                                </div>
+                            ))
+                        }
+                    </div>
+                </ModalContent>
+            </Modal>
+            <Modal
                 open={openModal}
                 onClose={handleClose}
             >
                 <form onSubmit={addCategory}>
                     <ModalContent>
-                        <p>ADD CATEGORY</p>
+                        <p className="title">ADD CATEGORY</p>
                         <Input
                             InputLabelProps={{ required: false }}
                             id="outlined-category-name"
@@ -324,6 +479,45 @@ export default function CategoriesSidebar({ open, closeSidebar, categories, sele
                         </div>
                     </ModalContent>
                 </form>
+            </Modal>
+            <Modal
+                open={editOpen}
+                onClose={handleEditClose}
+            >
+                <form onSubmit={handleEdit}>
+                    <ModalContent>
+                        <p className="title">EDIT CATEGORY</p>
+                        <p className="cat-to-edit">{categoryToEdit.name}</p>
+                        <Input
+                            InputLabelProps={{ required: false }}
+                            id="outlined-category-name"
+                            variant="outlined"
+                            label="NEW CATEGORY NAME"
+                            value={newCategory}
+                            onChange={e => setNewCategory(e.target.value)}
+                            fullWidth
+                            required
+                        />
+                        <div className="modal-options">
+                            <button type="button" onClick={handleEditClose}>Cancel</button>
+                            <button type="submit">Save</button>
+                        </div>
+                    </ModalContent>
+                </form>
+            </Modal>
+            <Modal
+                open={confirmDeleteOpen}
+                onClose={handleCloseDelete}
+            >
+                <ModalContent>
+                    <p className="delete-content">Are you sure you want to delete this category?</p>
+                    <p className="delete-content" style={{ textDecoration: 'underline' }}>{categoryToDelete.name}</p>
+                    <p className="delete-content warning">Deleting this category will move ALL items for ALL clients who have items in this category to the "Other" category!</p>
+                    <div className="modal-options">
+                        <button onClick={handleCloseDelete}>Cancel</button>
+                        <button onClick={handleDelete}>Delete</button>
+                    </div>
+                </ModalContent>
             </Modal>
         </>
     );

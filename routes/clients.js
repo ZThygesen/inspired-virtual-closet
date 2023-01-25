@@ -39,7 +39,7 @@ router.get('/', async (req, res, next) => {
 router.patch('/', async (req, res, next) => {
     try {
         const collection = db.collection('clients');
-        await collection.updateMany(
+        await collection.updateOne(
             { _id: ObjectId(req.body.clientId) },
             {
                 $set: {
