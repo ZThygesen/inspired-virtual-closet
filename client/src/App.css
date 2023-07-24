@@ -27,6 +27,11 @@
     src: url(./fonts/Fashion.ttf);
 }
 
+@font-face {
+    font-family: 'Poppins';
+    src: url('./fonts/Poppins-Regular.ttf');
+}
+
 /* Reset Styles */
 html,
 body,

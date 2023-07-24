@@ -19,7 +19,6 @@ export default function DigitalCloset() {
     const [category, setCategory] = useState({});
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
-
     useEffect(() => {
         getCategories();
     }, []);
@@ -42,10 +41,16 @@ export default function DigitalCloset() {
             };
 
             categories = [allCategory, ...categories];
-            setCategory(allCategory);
         }
-
+        selectCategory(categories[0]);
         setCategories(categories);
+    }
+
+    async function addCategory(newCategory) {
+        await axios.post('/categories', { category: newCategory })
+            .catch(err => console.log(err));
+        
+        await getCategories();
     }
 
     async function editCategory(category, newName) {
@@ -92,6 +97,7 @@ export default function DigitalCloset() {
                     closeSidebar={closeSidebar}
                     categories={categories}
                     selectCategory={selectCategory}
+                    addCategory={addCategory}
                     updateCategories={getCategories}
                     editCategory={editCategory}
                     deleteCategory={deleteCategory}

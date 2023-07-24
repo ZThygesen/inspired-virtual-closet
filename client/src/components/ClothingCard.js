@@ -141,7 +141,7 @@ const Input = styled(TextField)`
     }
 `;
 
-export default function ClothingCard({ item, sendToCanvas, swapCategory, editItem, deleteItem }) {
+export default function ClothingCard({ item, editable, sendToCanvas, swapCategory, editItem, deleteItem }) {
     const [editOpen, setEditOpen] = useState(false);
     const [newItemName, setNewItemName] = useState(item.fileName);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -163,7 +163,7 @@ export default function ClothingCard({ item, sendToCanvas, swapCategory, editIte
             <Container>
                 <p>{item.fileName}</p>
                 <img
-                    src={item.fileUrl}
+                    src={item.mediumFileUrl}
                     alt={item.fileName}
                     onClick={() => setImageModalOpen(true)}
                 />
@@ -175,32 +175,37 @@ export default function ClothingCard({ item, sendToCanvas, swapCategory, editIte
                             onClick={() => sendToCanvas(item)}
                         />
                     </Tooltip>
-                    <Tooltip title="Change Category">
-                        <SwapVert
-                            className="item-option"
-                            sx={{ fontSize: 45 }}
-                            onClick={() => swapCategory(item)}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Edit">
-                        <Edit
-                            className="item-option"
-                            sx={{ fontSize: 45 }}
-                            onClick={() => setEditOpen(true)}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                        <Delete
-                            className="item-option"
-                            sx={{ fontSize: 45 }}
-                            onClick={() => setConfirmDeleteOpen(true)}
-                        />
-                    </Tooltip>
+                    {
+                        editable &&
+                        <>
+                            <Tooltip title="Change Category">
+                                <SwapVert
+                                    className="item-option"
+                                    sx={{ fontSize: 45 }}
+                                    onClick={() => swapCategory(item)}
+                                />
+                            </Tooltip>
+                            <Tooltip title="Edit">
+                                <Edit
+                                    className="item-option"
+                                    sx={{ fontSize: 45 }}
+                                    onClick={() => setEditOpen(true)}
+                                />
+                            </Tooltip>
+                            <Tooltip title="Delete">
+                                <Delete
+                                    className="item-option"
+                                    sx={{ fontSize: 45 }}
+                                    onClick={() => setConfirmDeleteOpen(true)}
+                                />
+                            </Tooltip>
+                        </>
+                    }
                 </div>
             </Container>
             <ImageModal
                 open={imageModalOpen}
-                image={{ src: item.fileUrl, alt: item.fileName }}
+                image={{ src: item.fullFileUrl, alt: item.fileName }}
                 closeModal={() => setImageModalOpen(false)}
             />
             <Modal
@@ -211,7 +216,7 @@ export default function ClothingCard({ item, sendToCanvas, swapCategory, editIte
                     <p>Are you sure you want to delete this item?</p>
                     <p style={{ textDecoration: 'underline' }}>{item.fileName}</p>
                     <img
-                        src={item.fileUrl}
+                        src={item.fullFileUrl}
                         alt={item.fileName}
                         className="delete-img"
                     />

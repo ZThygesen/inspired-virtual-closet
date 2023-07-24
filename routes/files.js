@@ -2,6 +2,7 @@ import express from 'express';
 const router = express.Router();
 import { db } from '../server.js';
 import { ObjectId } from 'mongodb';
+import puppeteer from 'puppeteer';
 
 // upload files
 router.post('/', async (req, res, next) => {
@@ -75,7 +76,38 @@ router.patch('/', async (req, res, next) => {
 // delete file
 router.delete('/:categoryId/:fileId', async (req, res, next) => {
     try {
+        // first delete from imgbb
+        // get file from database
         const collection = db.collection('categories');
+        //const id = req.params.categoryId === '0' ? 0 : req.params.categoryId;
+        const file = await collection.aggregate([
+            {
+                $match: {
+                    items: {
+                        $elemMatch: {
+                            fileId: req.params.fileId
+                        }
+                    }
+                },
+            },
+            {
+                $project: {
+                    items: {
+                        $filter: {
+                            input: '$items',
+                            as: 'item',
+                            cond: {
+                                $eq: ['$$item.fileId', req.params.fileId] 
+                            }
+                        }
+                    }
+                }
+            }
+        ]).toArray();
+
+        await deleteFromWeb(file[0].items[0]);
+
+        // then delete from db
         const id = req.params.categoryId === '0' ? 0 : ObjectId(req.params.categoryId);
             
         await collection.updateOne(
@@ -92,6 +124,26 @@ router.delete('/:categoryId/:fileId', async (req, res, next) => {
         next(err);
     }
 });
+
+async function deleteFromWeb(file) {
+    try {
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        await page.goto(file.deleteUrl);
+
+        const deleteBtn = '.link.link--delete';
+        await page.waitForSelector(deleteBtn);
+        await page.click(deleteBtn);
+
+        const confirmDeleteBtn = '.btn.btn-input.default';
+        await page.waitForSelector(confirmDeleteBtn);
+        await page.click(confirmDeleteBtn);
+
+        await browser.close();
+    } catch (err) {
+        console.log(err);
+    }
+}
 
 export default router;
 

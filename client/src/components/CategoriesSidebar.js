@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import styled from 'styled-components';
-import axios from 'axios';
 import cuid from 'cuid';
 import { Modal, TextField, Tooltip } from '@mui/material';
 import { Add, ChevronLeft, Close, Delete, Edit, Settings } from '@mui/icons-material';
@@ -307,9 +306,9 @@ const CloseModal = styled.div`
     }
 `;
 
-export default function CategoriesSidebar({ open, closeSidebar, categories, selectCategory, updateCategories, editCategory, deleteCategory }) {
+export default function CategoriesSidebar({ open, closeSidebar, categories, selectCategory, addCategory, editCategory, deleteCategory }) {
     const [activeCategory, setActiveCategory] = useState(0);
-    const [openModal, setOpenModal] = useState(false);
+    const [addOpen, setAddOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [categoryToEdit, setCategoryToEdit] = useState({});
     const [newCategory, setNewCategory] = useState('');
@@ -318,8 +317,19 @@ export default function CategoriesSidebar({ open, closeSidebar, categories, sele
     const [settingsOpen, setSettingsOpen] = useState(false);
 
     function handleSettingsClose() {
-        handleClose();
         setSettingsOpen(false);
+    }
+
+    function handleCloseAdd() {
+        setAddOpen(false);
+        setNewCategory('');
+    }
+
+    function handleAdd(e) {
+        e.preventDefault();
+
+        addCategory(newCategory)
+        handleCloseAdd();
     }
 
     function handleEditOpen(category) {
@@ -360,20 +370,6 @@ export default function CategoriesSidebar({ open, closeSidebar, categories, sele
         handleCloseDelete();
     }
 
-    function handleClose() {
-        setOpenModal(false);
-        setNewCategory('');
-    }
-
-    async function addCategory(e) {
-        e.preventDefault();
-        
-        await axios.post('/categories', { category: newCategory })
-            .catch(err => console.log(err));
-        handleClose();
-        updateCategories();
-    }
-
     return (
         <>
             <Sidebar
@@ -411,7 +407,7 @@ export default function CategoriesSidebar({ open, closeSidebar, categories, sele
                 </div>
                 <div
                     className="add-category-footer"
-                    onClick={() => setOpenModal(true)}
+                    onClick={() => setAddOpen(true)}
                 >
                     <div className="footer-container">
                         <Add sx={{ fontSize: 40 }} />
@@ -457,10 +453,10 @@ export default function CategoriesSidebar({ open, closeSidebar, categories, sele
                 </ModalContent>
             </Modal>
             <Modal
-                open={openModal}
-                onClose={handleClose}
+                open={addOpen}
+                onClose={handleCloseAdd}
             >
-                <form onSubmit={addCategory}>
+                <form onSubmit={handleAdd}>
                     <ModalContent>
                         <p className="title">ADD CATEGORY</p>
                         <Input
@@ -474,7 +470,7 @@ export default function CategoriesSidebar({ open, closeSidebar, categories, sele
                             required
                         />
                         <div className="modal-options">
-                            <button type="button" onClick={handleClose}>Cancel</button>
+                            <button type="button" onClick={handleCloseAdd}>Cancel</button>
                             <button type="submit">Submit</button>
                         </div>
                     </ModalContent>
