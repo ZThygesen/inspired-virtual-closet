@@ -5,8 +5,9 @@ import Home from './pages/Home';
 import Router from './pages/Router';
 import './App.css';
 
-const Container = styled.div`
-    min-height: 100vh;
+const AppContainer = styled.div`
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
 `;
@@ -14,12 +15,12 @@ const Container = styled.div`
 export default function App() {
 
     return (
-        <Container>
+        <AppContainer>
             <Header />
             <Routes>
                 <Route index element={<Home />} />
                 <Route path="manage-clients/*" element={<Router />} />
             </Routes>
-        </Container>
+        </AppContainer>
     );
 }

@@ -27,11 +27,6 @@
     src: url(./fonts/Fashion.ttf);
 }
 
-@font-face {
-    font-family: 'Poppins';
-    src: url('./fonts/Poppins-Regular.ttf');
-}
-
 /* Reset Styles */
 html,
 body,
@@ -163,3 +158,20 @@ table {
     border-spacing: 0;
 }
 /* End Reset */
+
+* {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    text-decoration: none;
+    box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--black);
+}
+
+#root {
+    width: 100vw;
+    height: 100vh;
+}

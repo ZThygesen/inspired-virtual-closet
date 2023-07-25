@@ -2,21 +2,25 @@ import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 
 const AppBar = styled.header`
+    width: 100%;
     height: var(--header-height);
-    width: 100vw;
-    background-color: var(--primary);
-    box-shadow: var(--box-shadow);
     display: flex;
     align-items: center;
-    z-index: 999;
+    padding: 0 24px;
+    background-color: var(--primary);
+    box-shadow: var(--box-shadow);
+    z-index: 1000;
 
     .logo {
         text-decoration: none;
         font-family: 'Mallows';
         color: var(--white);
         font-size: 60px;
-        margin-left: 50px;
         cursor: pointer;
+    }
+
+    @media (min-width: 500px) {
+        padding: 0 48px;
     }
 `;
 
