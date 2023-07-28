@@ -22,13 +22,17 @@ const AppBar = styled.header`
     @media (min-width: 500px) {
         padding: 0 48px;
     }
+
+    @media (min-width: 768px) {
+        padding: 0 60px;
+    }
 `;
 
 export default function Header() {
     
     return (
         <AppBar>
-            <Link to="/" className="logo">Edie Styles</Link>
+            <Link to="/" className="logo">Edie styles</Link>
         </AppBar>
     );
 }

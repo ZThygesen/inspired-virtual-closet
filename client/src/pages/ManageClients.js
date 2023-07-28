@@ -6,7 +6,7 @@ import styled from 'styled-components';
 import ClientCard from '../components/ClientCard';
 import Loading from '../components/Loading';
 
-const subHeaderHeight = 100;
+const subheaderHeight = 100;
 const footer = 100;
 
 const Container = styled.div`
@@ -22,7 +22,7 @@ const Container = styled.div`
         align-items: center;
         justify-content: center;
         width: 100%;
-        min-height: ${subHeaderHeight}px;
+        min-height: ${subheaderHeight}px;
         background-color: var(--primary-light);
         font-family: 'Mallows';
         font-size: 70px;

@@ -8,4 +8,8 @@ export const PageContainer = styled.div`
     @media (min-width: 500px) {
         padding: 24px 48px;
     }
+
+    @media (min-width: 768px) {
+        padding: 24px 60px;
+    }
 `;
