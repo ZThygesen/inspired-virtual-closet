@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 
-const AppBar = styled.header`
+const AppHeader = styled.header`
     width: 100%;
     height: var(--header-height);
     display: flex;
@@ -31,8 +31,8 @@ const AppBar = styled.header`
 export default function Header() {
     
     return (
-        <AppBar>
+        <AppHeader>
             <Link to="/" className="logo">Edie styles</Link>
-        </AppBar>
+        </AppHeader>
     );
 }

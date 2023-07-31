@@ -1,80 +1,11 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import cuid from 'cuid';
-import { Modal, TextField } from '@mui/material';
 import styled from 'styled-components';
+import { ManageClientsContainer } from '../styles/ManageClients';
 import ClientCard from '../components/ClientCard';
 import Loading from '../components/Loading';
-
-const subheaderHeight = 100;
-const footer = 100;
-
-const Container = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex-grow: 1;
-    background-color: var(--white);
-    height: calc(100vh - var(--header-height));
-
-    .title {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        min-height: ${subheaderHeight}px;
-        background-color: var(--primary-light);
-        font-family: 'Mallows';
-        font-size: 70px;
-        color: var(--black);
-        position: sticky;
-        z-index: 1;
-        box-shadow: var(--box-shadow);
-    }
-
-    .clients {
-        flex-grow: 1;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        align-content: flex-start;
-        gap: 40px;
-        flex-wrap: wrap;
-        max-width: 1400px;
-        padding: 20px;
-        width: 100%;
-        box-sizing: border-box;
-        overflow-y: auto;
-    }
-
-    .footer {
-        width: 100%;
-        background-color: var(--primary-light);
-        min-height: ${footer}px;
-        position: sticky;
-        box-shadow: var(--top-shadow);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    button {
-        border: 2px solid var(--black);
-        border-radius: 40px;
-        padding: 15px 30px;
-        font-family: 'Fashion';
-        font-size: 40px;
-        letter-spacing: 1px;
-        background-color: var(--white);
-        cursor: pointer;
-        transition: all 0.1s;
-
-        &:hover {
-            background-color: var(--secondary);
-            color: var(--white);
-        }
-    }
-`;
+import { Modal, TextField } from '@mui/material';
 
 const ModalContent = styled.div`
     font-family: 'Fashion';
@@ -225,8 +156,8 @@ export default function ManageClients() {
 
     return (
         <>
-            <Container>
-                <p className="title">Manage Clients</p>
+            <ManageClientsContainer>
+                <h1 className="title">Manage Clients</h1>
                 <div className="clients">
                     {
                         clients.map(client => (
@@ -237,7 +168,7 @@ export default function ManageClients() {
                 <div className="footer">
                     <button className="add-client" onClick={() => setOpenModal(true)}>ADD CLIENT</button>
                 </div>
-            </Container>
+            </ManageClientsContainer>
             <Loading open={loading} />
             <Modal
                     open={openModal}

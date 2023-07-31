@@ -105,7 +105,7 @@ const ModalContent = styled.div`
 
 const Input = styled(TextField)`
     & label {
-        font-family: 'Fashion';
+        /* font-family: 'Fashion'; */
         font-weight: bold;
         color: var(--black);
     }
@@ -126,7 +126,7 @@ const Input = styled(TextField)`
     }
     & .MuiOutlinedInput-root {
         & fieldset {
-            font-family: 'Fashion';
+            /* font-family: 'Fashion'; */
             border-color: var(--black);
         }
 
@@ -196,7 +196,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                                 onChange={e => setNewFirstName(e.target.value)}
                                 fullWidth
                                 required
-                                />
+                            />
                             <Input
                                 InputLabelProps={{ required: false }}
                                 id="outlined-client-last-name"
