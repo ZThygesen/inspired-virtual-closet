@@ -28,7 +28,36 @@ export const ModalContentContainer = styled.div`
         width: 100%;
         display: flex;
         flex-direction: column;
+        align-items: center;
         gap: 20px;
+    }
+
+    .modal-content p {
+        text-align: center;
+    }
+
+    .modal-content p.large {
+        font-size: 28px;
+    }
+
+    .modal-content p.medium {
+        font-size: 24px;
+    }
+
+    .modal-content p.small {
+        font-size: 20px;
+    }
+
+    .modal-content p.bold {
+        font-weight: 700;
+    }
+
+    .modal-content p.underline {
+        text-decoration: underline;
+    }
+
+    .modal-content p.warning {
+        color: red;
     }
 
     .modal-options {
@@ -36,14 +65,10 @@ export const ModalContentContainer = styled.div`
         gap: 20px;
     }
 
-    .warning {
-        color: red;
-    }
-
-    .delete-img, .edit-img {
+    /* .delete-img, .edit-img {
         width: 150px;
         height: auto;
-    }
+    } */
 
     button {
         font-size: 24px;

@@ -18,15 +18,14 @@ export const ManageClientsContainer = styled(PageContainer)`
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 40px;
+        font-size: 36px;
         font-weight: 600;
         font-family: 'Fashion';
         color: var(--black);
-        text-transform: uppercase;
         letter-spacing: 4px;
         white-space: nowrap;
         background-color: var(--primary-light);
-        padding: 20px;
+        padding: 0 20px;
         position: absolute;
         top: 0;
         margin-top: var(--header-height);
@@ -37,8 +36,11 @@ export const ManageClientsContainer = styled(PageContainer)`
     .clients {
         width: 100%;
         max-width: 1400px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 40px;
         flex-wrap: wrap;
         margin-top: ${subheaderHeight}px;
@@ -58,5 +60,17 @@ export const ManageClientsContainer = styled(PageContainer)`
         position: absolute;
         bottom: 0;
         box-shadow: var(--top-shadow);
+    }
+
+    @media (min-width: 480px) {
+        .title {
+            font-size: 44px;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .title {
+            font-size: 56px;
+        }
     }
 `;

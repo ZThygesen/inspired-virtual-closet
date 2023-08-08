@@ -75,7 +75,7 @@ export default function ManageClients() {
     return (
         <>
             <ManageClientsContainer>
-                <h1 className="title">Manage Clients</h1>
+                <h1 className="title">MANAGE CLIENTS</h1>
                 <div className="clients">
                     {
                         clients.map(client => (
@@ -95,7 +95,7 @@ export default function ManageClients() {
                 submitFn={addClient}
             >
                 <>
-                <h2 className="modal-title">ADD CLIENT</h2>
+                    <h2 className="modal-title">ADD CLIENT</h2>
                     <div className="modal-content">
                         <Input
                             type="text"
@@ -111,11 +111,11 @@ export default function ManageClients() {
                             value={newClientLName}
                             onChange={e => setNewClientLName(e.target.value)}
                         />
-                </div>
-                <div className="modal-options">
-                    <button type="button" onClick={handleClose}>Cancel</button>
-                    <button type="submit">Submit</button>
-                </div>
+                    </div>
+                    <div className="modal-options">
+                        <button type="button" onClick={handleClose}>Cancel</button>
+                        <button type="submit">Submit</button>
+                    </div>
                 </>
             </Modal>
         </>

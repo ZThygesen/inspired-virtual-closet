@@ -4,23 +4,24 @@ import styled from 'styled-components';
 import { Tooltip } from '@mui/material';  
 import { Checkroom, Delete, Edit } from '@mui/icons-material';
 import Modal from './Modal';
-import Input from '../styles/Input';
+import Input from './Input';
 
-const Container = styled.div`
+const ClientCardContainer = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 8px;
     box-shadow: var(--box-shadow);
     border-radius: 25px;
     padding: 40px 20px;
     background-color: var(--white);
 
-    p {
+    .client-name {
         font-family: 'Fashion';
-        font-size: 40px;
-        font-weight: bold;
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: 2px;
         word-break: break-word;
         text-align: center;
     }
@@ -28,14 +29,17 @@ const Container = styled.div`
     .client-options {
         display: flex;
         align-items: flex-end;
+        gap: 4px;
     }
 
-    .client-option-btn {
-        padding: 5px;
+    .client-options button {
+        font-size: 36px;
+        color: #a7a7a7;
+        background: transparent;
         border-radius: 50%;
+        padding: 8px;
         cursor: pointer;
         transition: all 0.1s;
-        color: #a7a7a7;
 
         &:hover {
             background-color: rgba(0, 0, 0, 0.1);
@@ -43,8 +47,15 @@ const Container = styled.div`
         }
     }
 
-    .client-option-btn.large {
-        color: var(--secondary);
+    .closet-icon {
+        font-size: 60px !important;
+        color: var(--secondary) !important;
+    }
+
+    @media (min-width: 480px) {
+        .client-name {
+            font-size: 36px;
+        }
     }
 `;
 
@@ -71,71 +82,69 @@ export default function ClientCard({ client, editClient, deleteClient }) {
 
     return (
         <>
-            <Container>
-                <p>{`${client.firstName} ${client.lastName}`}</p>
+            <ClientCardContainer>
+                <p className="client-name">{`${client.firstName} ${client.lastName}`}</p>
                 <div className="client-options">
                     <Tooltip title="Edit">
-                        <Edit onClick={() => setEditOpen(true)} sx={{ fontSize: 45 }} className="client-option-btn" />
+                        <button className="material-icons edit-icon" onClick={() => setEditOpen(true)}>edit</button>
                     </Tooltip>
                     <Tooltip title="Digital Closet">
-                        <Checkroom
-                            className="client-option-btn large"
-                            sx={{ fontSize: 75 }}
+                        <button
+                            className="material-icons closet-icon"
                             onClick={() => navigate(`${client.firstName.toLowerCase()}-${client.lastName.toLowerCase()}`, { state: { client: client } })}
-                        />
+                        >
+                            checkroom
+                        </button>
                     </Tooltip>
                     <Tooltip title="Delete">
-                        <Delete onClick={() => setConfirmDeleteOpen(true)} sx={{ fontSize: 45 }} className="client-option-btn" />
+                        <button className="material-icons delete-icon" onClick={() => setConfirmDeleteOpen(true)}>delete</button>
                     </Tooltip>
                 </div>
-            </Container>
+            </ClientCardContainer>
             <Modal
-                    open={editOpen}
-                    onClose={handleCloseEdit}
-                >
-                    {/* <form onSubmit={handleSubmitEdit}>
-                        <ModalContent>
-                            <p>EDIT CLIENT</p>
-                            <Input
-                                InputLabelProps={{ required: false }}
-                                id="outlined-client-first-name"
-                                variant="outlined"
-                                label="FIRST NAME"
-                                value={newFirstName}
-                                onChange={e => setNewFirstName(e.target.value)}
-                                fullWidth
-                                required
-                            />
-                            <Input
-                                InputLabelProps={{ required: false }}
-                                id="outlined-client-last-name"
-                                variant="outlined"
-                                label="LAST NAME"
-                                value={newLastName}
-                                onChange={e => setNewLastName(e.target.value)}
-                                fullWidth
-                                required
-                            />
-                            <div className="modal-options">
-                                <button type="button" onClick={handleCloseEdit}>Cancel</button>
-                                <button type="submit">Save</button>
-                            </div>
-                        </ModalContent>
-                    </form> */}
+                open={editOpen}
+                onClose={handleCloseEdit}
+                isForm={true}
+                submitFn={handleSubmitEdit}
+            >
+                <>
+                    <h2 className="modal-title">EDIT CLIENT</h2>
+                    <Input
+                        type="text"
+                        id="first-name"
+                        label="First Name"
+                        value={newFirstName}
+                        onChange={e => setNewFirstName(e.target.value)}
+                    />
+                    <Input
+                        type="text"
+                        id="last-name"
+                        label="Last Name"
+                        value={newLastName}
+                        onChange={e => setNewLastName(e.target.value)}
+                    />
+                    <div className="modal-options">
+                        <button type="button" onClick={handleCloseEdit}>Cancel</button>
+                        <button type="submit">Save</button>
+                    </div>
+                </>
             </Modal>
             <Modal
                 open={confirmDeleteOpen}
                 onClose={() => setConfirmDeleteOpen(false)}
             >
-                {/* <ModalContent>
-                    <p>Are you sure you want to delete this client?</p>
-                    <p style={{ textDecoration: 'underline' }}>{client.firstName} {client.lastName}</p>
-                    <p className="warning">Deleting this client will permanently delete all image files in their digital closet!</p>
+                <>
+                    <h2 className="modal-title">DELETE CLIENT</h2>
+                    <div className="modal-content">
+                        <p className="medium">Are you sure you want to delete this client?</p>
+                        <p className="large bold underline">{client.firstName} {client.lastName}</p>
+                        <p className="small bold warning">Deleting this client will permanently delete all image files in their digital closet!</p>
+                    </div>
                     <div className="modal-options">
                         <button onClick={() => setConfirmDeleteOpen(false)}>Cancel</button>
                         <button onClick={() => { setConfirmDeleteOpen(false); deleteClient(client); }}>Delete</button>
                     </div>
-                </ModalContent> */}
+                </>
             </Modal>
         </>
     );
