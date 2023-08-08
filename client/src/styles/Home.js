@@ -29,25 +29,6 @@ export const HomeContainer = styled(PageContainer)`
         white-space: nowrap;
     }
 
-    a {
-        font-size: 24px;
-        font-family: 'Fashion';
-        font-weight: 600;
-        color: var(--white);
-        letter-spacing: 2px;
-        white-space: nowrap;
-        background-color: var(--secondary);
-        border: 1.5px solid var(--black);
-        border-radius: 56px;
-        padding: 20px 20px;
-        transition: all 0.1s;
-
-        &:hover {
-            color: var(--black);
-            background-color: var(--secondary-light);
-        }
-    }
-
     @media (min-width: 500px) {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -61,19 +42,11 @@ export const HomeContainer = styled(PageContainer)`
         h1 {
             font-size: 72px;
         }
-
-        a {
-            font-size: 28px;
-        }
     }
 
     @media (min-width: 768px) {
         h1 {
             font-size: 92px;
-        }
-
-        a {
-            font-size: 32px;
         }
     }
 `;

@@ -1,20 +1,21 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { Modal, TextField, Tooltip } from '@mui/material';  
+import { Tooltip } from '@mui/material';  
 import { Checkroom, Delete, Edit } from '@mui/icons-material';
+import Modal from './Modal';
+import Input from '../styles/Input';
 
 const Container = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: space-between;
     gap: 10px;
     box-shadow: var(--box-shadow);
     border-radius: 25px;
     padding: 40px 20px;
     background-color: var(--white);
-    height: min-content;
-    max-width: 300px;
 
     p {
         font-family: 'Fashion';
@@ -47,98 +48,6 @@ const Container = styled.div`
     }
 `;
 
-const ModalContent = styled.div`
-    font-family: 'Fashion';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 400px;
-    background-color: var(--white);
-    border: 2px solid var(--black);
-    border-radius: 20px;
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 40px;
-
-    p {
-        font-size: 32px;
-        font-weight: bold;
-        text-align: center;
-    }
-
-    .warning {
-        color: red;
-    }
-
-    .delete-img, .edit-img {
-        width: 150px;
-        height: auto;
-    }
-
-    .modal-options {
-        display: flex;
-        gap: 50px;
-    }
-
-    button {
-        background: none;
-        border: 1px solid var(--black);
-        width: 100%;
-        border-radius: 8px;
-        padding: 12px;
-        font-family: 'Fashion';
-        font-size: 24px;
-        transition: all 0.1s;
-        cursor: pointer;
-
-        &:hover {
-            background-color: var(--secondary);
-            border-color: var(--secondary);
-            color: var(--white);
-        }
-    }
-`;
-
-const Input = styled(TextField)`
-    & label {
-        /* font-family: 'Fashion'; */
-        font-weight: bold;
-        color: var(--black);
-    }
-
-    .MuiInput-underline:before {
-        border-bottom: 2px solid var(--black);
-    }
-
-    && .MuiInput-underline:hover:before {
-        border-bottom: 2px solid var(--secondary);
-    }
-
-    & label.Mui-focused {
-        color: var(--secondary);
-    }
-    & .MuiInput-underline:after {
-        border-bottom-color: var(--secondary);
-    }
-    & .MuiOutlinedInput-root {
-        & fieldset {
-            /* font-family: 'Fashion'; */
-            border-color: var(--black);
-        }
-
-        &:hover fieldset {
-            border-color: var(--secondary);
-        }
-
-        &.Mui-focused fieldset {
-            border-color: var(--secondary);
-        }
-    }
-`;
 
 export default function ClientCard({ client, editClient, deleteClient }) {
     const [editOpen, setEditOpen] = useState(false);
@@ -184,7 +93,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                     open={editOpen}
                     onClose={handleCloseEdit}
                 >
-                    <form onSubmit={handleSubmitEdit}>
+                    {/* <form onSubmit={handleSubmitEdit}>
                         <ModalContent>
                             <p>EDIT CLIENT</p>
                             <Input
@@ -212,13 +121,13 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                                 <button type="submit">Save</button>
                             </div>
                         </ModalContent>
-                    </form>
+                    </form> */}
             </Modal>
             <Modal
                 open={confirmDeleteOpen}
                 onClose={() => setConfirmDeleteOpen(false)}
             >
-                <ModalContent>
+                {/* <ModalContent>
                     <p>Are you sure you want to delete this client?</p>
                     <p style={{ textDecoration: 'underline' }}>{client.firstName} {client.lastName}</p>
                     <p className="warning">Deleting this client will permanently delete all image files in their digital closet!</p>
@@ -226,7 +135,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                         <button onClick={() => setConfirmDeleteOpen(false)}>Cancel</button>
                         <button onClick={() => { setConfirmDeleteOpen(false); deleteClient(client); }}>Delete</button>
                     </div>
-                </ModalContent>
+                </ModalContent> */}
             </Modal>
         </>
     );

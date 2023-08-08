@@ -23,7 +23,7 @@ export const ManageClientsContainer = styled(PageContainer)`
         font-family: 'Fashion';
         color: var(--black);
         text-transform: uppercase;
-        letter-spacing: 2px;
+        letter-spacing: 4px;
         white-space: nowrap;
         background-color: var(--primary-light);
         padding: 20px;
@@ -37,10 +37,8 @@ export const ManageClientsContainer = styled(PageContainer)`
     .clients {
         width: 100%;
         max-width: 1400px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        align-content: flex-start;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 40px;
         flex-wrap: wrap;
         margin-top: ${subheaderHeight}px;
@@ -60,22 +58,5 @@ export const ManageClientsContainer = styled(PageContainer)`
         position: absolute;
         bottom: 0;
         box-shadow: var(--top-shadow);
-    }
-
-    button {
-        border: 2px solid var(--black);
-        border-radius: 40px;
-        padding: 15px 30px;
-        font-family: 'Fashion';
-        font-size: 40px;
-        letter-spacing: 1px;
-        background-color: var(--white);
-        cursor: pointer;
-        transition: all 0.1s;
-
-        &:hover {
-            background-color: var(--secondary);
-            color: var(--white);
-        }
     }
 `;
