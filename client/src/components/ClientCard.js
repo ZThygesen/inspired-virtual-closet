@@ -1,64 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
-import { Tooltip } from '@mui/material';  
-import { Checkroom, Delete, Edit } from '@mui/icons-material';
+import { ClientCardContainer } from '../styles/ClientCard';
+import { Tooltip } from '@mui/material';
 import Modal from './Modal';
 import Input from './Input';
-
-const ClientCardContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    box-shadow: var(--box-shadow);
-    border-radius: 25px;
-    padding: 40px 20px;
-    background-color: var(--white);
-
-    .client-name {
-        font-family: 'Fashion';
-        font-size: 28px;
-        font-weight: 600;
-        letter-spacing: 2px;
-        word-break: break-word;
-        text-align: center;
-    }
-
-    .client-options {
-        display: flex;
-        align-items: flex-end;
-        gap: 4px;
-    }
-
-    .client-options button {
-        font-size: 36px;
-        color: #a7a7a7;
-        background: transparent;
-        border-radius: 50%;
-        padding: 8px;
-        cursor: pointer;
-        transition: all 0.1s;
-
-        &:hover {
-            background-color: rgba(0, 0, 0, 0.1);
-            color: var(--black);
-        }
-    }
-
-    .closet-icon {
-        font-size: 60px !important;
-        color: var(--secondary) !important;
-    }
-
-    @media (min-width: 480px) {
-        .client-name {
-            font-size: 36px;
-        }
-    }
-`;
-
 
 export default function ClientCard({ client, editClient, deleteClient }) {
     const [editOpen, setEditOpen] = useState(false);

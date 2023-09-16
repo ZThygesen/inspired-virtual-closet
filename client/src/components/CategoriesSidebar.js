@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import styled from 'styled-components';
 import cuid from 'cuid';
+import { CategoriesSidebarContainer } from '../styles/CategoriesSidebar';
 import { Modal, TextField, Tooltip } from '@mui/material';
 import { Add, ChevronLeft, Close, Delete, Edit, Settings } from '@mui/icons-material';
 
-/* const categories = [
+const categories = [
     'All',
     'Belts',
     'Blazers',
@@ -39,126 +40,7 @@ import { Add, ChevronLeft, Close, Delete, Edit, Settings } from '@mui/icons-mate
     'Ties',
     'This is a test for long text',
     'sdugfwuiygdfiuywguofydgowegfw'
-]; */
-
-const sidebarBottomPadding = 20;
-
-const Sidebar = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: sticky;
-    height: calc(100vh - var(--header-height));
-    bottom: ${sidebarBottomPadding}px;
-    background-color: var(--secondary-light);
-    transition: 0.3s;
-
-    #categories-title {
-        position: sticky;
-        width: 100%;
-        font-size: 32px;
-        font-weight: bold;
-        background-color: var(--secondary);
-        min-height: var(--subheader-height);
-        text-decoration: underline;
-        color: var(--white);
-        box-shadow: var(--box-shadow);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .close-sidebar, .settings {
-        position: absolute;
-        right: 5px;
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.1s;
-
-        &:hover {
-            background-color: rgba(0, 0, 0, 0.3);
-        }
-    }
-
-    .settings {
-        left: 5px;
-        padding: 5px;
-    }
-
-    .categories-container {
-        overflow-y: auto;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        flex-grow: 1;
-        overflow-x: hidden;
-    }
-
-    .add-category-footer {
-        position: sticky;
-        width: 100%;
-        font-size: 32px;
-        font-weight: bold;
-        background-color: var(--grey);
-        min-height: var(--subheader-height);
-        color: var(--black);
-        box-shadow: var(--top-shadow);
-        cursor: pointer; 
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-    }
-
-    .footer-container {
-        position: relative;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-left: 15px;
-        box-sizing: border-box;
-        padding-right: 10px;
-    }
-
-    .footer-text {
-        white-space: nowrap;
-
-        &:after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            transform: scaleX(0);
-            height: 2px;
-            bottom: 0;
-            left: 0;
-            background-color: var(--black);
-            transform-origin: bottom right;
-            transition: transform 0.15s ease-out;
-        }
-
-        &:hover:after {
-            transform: scaleX(1);
-            transform-origin: bottom left;
-        }
-    }
-`;
-
-const CategoryButton = styled.button`
-        background: none;
-        border: none;
-        width: 100%;
-        padding: 8px;
-        font-family: 'Fashion';
-        font-size: 28px;
-        transition: all 0.1s;
-        cursor: pointer;
-
-        &:hover, &.active {
-            background-color: var(--secondary);
-            color: var(--white);
-        }
-`;
+];
 
 const ModalContent = styled.div`
     font-family: 'Fashion';
@@ -306,7 +188,7 @@ const CloseModal = styled.div`
     }
 `;
 
-export default function CategoriesSidebar({ open, closeSidebar, categories, selectCategory, addCategory, editCategory, deleteCategory }) {
+export default function CategoriesSidebar({ open, closeSidebar, /*categories,*/ selectCategory, addCategory, editCategory, deleteCategory }) {
     const [activeCategory, setActiveCategory] = useState(0);
     const [addOpen, setAddOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
@@ -369,44 +251,40 @@ export default function CategoriesSidebar({ open, closeSidebar, categories, sele
         deleteCategory(categoryToDelete);
         handleCloseDelete();
     }
+    // open = true;
 
     return (
         <>
-            <Sidebar
-                style={{
-                    minWidth: open ? '260px' : '0px',
-                    width: open ? '260px' : '0px',
-                    whiteSpace: open ? 'normal' : 'nowrap',
-                    wordWrap: open ? 'break-word' : 'normal',
-                }}>
-                <div id="categories-title">
+            <CategoriesSidebarContainer className={open ? 'open' : ''}>
+                <div className="categories-header">
                     <Tooltip title="Manage Categories">
-                        <Settings onClick={() => setSettingsOpen(true)} sx={{ fontSize: 35 }} className="settings" />
+                        <button className="material-icons settings-icon" onClick={() => setSettingsOpen(true)}>settings</button>
                     </Tooltip>
-                    CATEGORIES
+                    <p className="header-title">CATEGORIES</p>
                     <Tooltip title="Close Sidebar">
-                        <ChevronLeft onClick={closeSidebar} sx={{ fontSize: 45 }} className="close-sidebar" />
+                        <button className="material-icons close-sidebar-icon" onClick={closeSidebar}>chevron_left</button>
                     </Tooltip>
                 </div>
                 <div className="categories-container">
                     {
                         /* categories.length <= 1 ? <NoCategories fontSize={30} /> : */
                         categories.map((category, index) => (
-                            <CategoryButton
+                            <button
                                 key={cuid()}
                                 onClick={() => {
                                     setActiveCategory(index);
                                     selectCategory(category);
                                 }}
-                                className={index === activeCategory ? 'active' : ''}
+                                className={index === activeCategory ? 'active category-button' : 'category-button'}
                             >
-                                {category.name}
-                            </CategoryButton>
+                                {/* {category.name} */}
+                                {category}
+                            </button>
                         ))
                     }
                 </div>
                 <div
-                    className="add-category-footer"
+                    className="categories-footer"
                     onClick={() => setAddOpen(true)}
                 >
                     <div className="footer-container">
@@ -416,7 +294,7 @@ export default function CategoriesSidebar({ open, closeSidebar, categories, sele
                         </p>
                     </div>
                 </div>
-            </Sidebar>
+            </CategoriesSidebarContainer>
             <Modal
                 open={settingsOpen}
                 onClose={handleSettingsClose}

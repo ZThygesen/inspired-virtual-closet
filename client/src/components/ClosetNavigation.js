@@ -15,8 +15,9 @@ const Container = styled.div`
     flex-direction: column;
     align-items: center;
     background-color: var(--white);
-    width: 100%;
-    transition: 0.3s;
+    width: 100vw;
+    transition: all 0.5s;
+
 
     #client-closet-title, .closet-options {
         position: sticky;
@@ -61,6 +62,12 @@ const Container = styled.div`
         &.active {
             background-color: var(--white);
             box-shadow: var(--tab-shadow);
+        }
+    }
+
+    @media (min-width: 768px) {
+        &.sidebar-open {
+            margin-left: 320px;
         }
     }
 `;
@@ -164,7 +171,7 @@ export default function ClosetNavigation({ client, category, open, openSidebar }
 
     return (
         <>
-            <Container >
+            <Container className={open ? 'sidebar-open' : ''}>
                 <div id="client-closet-title">
                     {!open &&
                         <Tooltip title="Open Sidebar">

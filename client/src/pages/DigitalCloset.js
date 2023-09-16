@@ -14,8 +14,7 @@ const Container = styled.div`
 
 export default function DigitalCloset() {
     const { client } = useLocation().state;
-
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768 ? true : false);
     const [category, setCategory] = useState({});
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
