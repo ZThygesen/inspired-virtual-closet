@@ -1,7 +1,5 @@
 import styled from 'styled-components';
 
-const sidebarBottomPadding = 20;
-
 export const CategoriesSidebarContainer = styled.div`
     width: 320px;
     display: flex;
@@ -22,7 +20,7 @@ export const CategoriesSidebarContainer = styled.div`
 
     .categories-header {
         width: 100%;
-        height: var(--subheader-height);
+        min-height: var(--subheader-height);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -68,7 +66,7 @@ export const CategoriesSidebarContainer = styled.div`
     .category-button {
         width: 100%;
         max-width: 100%;
-        min-height: 45px;
+        padding: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -76,7 +74,7 @@ export const CategoriesSidebarContainer = styled.div`
         font-weight: 600;
         font-family: 'Fashion';
         letter-spacing: 2px;
-        word-wrap: break-word;
+        word-break: break-word;
         background: none;
         transition: all 0.1s;
         cursor: pointer;
@@ -90,6 +88,9 @@ export const CategoriesSidebarContainer = styled.div`
     .categories-footer {
         width: 100%;
         height: var(--subheader-height);
+        display: flex;
+        align-items: center;
+        justify-content: center;
         position: absolute;
         bottom: 0;
         left: 0;
@@ -102,8 +103,6 @@ export const CategoriesSidebarContainer = styled.div`
         box-shadow: var(--top-shadow);
         cursor: pointer; 
         overflow: hidden;
-        display: flex;
-        align-items: center;
     }
 
     .footer-container {
@@ -111,13 +110,17 @@ export const CategoriesSidebarContainer = styled.div`
         display: flex;
         align-items: center;
         gap: 10px;
-        margin-left: 15px;
-        box-sizing: border-box;
-        padding-right: 10px;
-    }
 
-    .footer-text {
-        white-space: nowrap;
+        & .footer-text{
+            font-family: 'Fashion';
+            font-size: 32px;
+            font-weight: 600;
+            letter-spacing: 4px;
+        }
+
+        & .add-category-icon {
+            font-size: 36px !important;
+        }
 
         &:after {
             content: '';
@@ -135,6 +138,43 @@ export const CategoriesSidebarContainer = styled.div`
         &:hover:after {
             transform: scaleX(1);
             transform-origin: bottom left;
+        }
+    }
+`;
+
+export const CategorySettings = styled.div`
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .category-setting {
+        display: grid;
+        grid-template-columns: 1fr 50px 50px;
+        gap: 4px;
+        justify-items: start;
+        align-items: center;
+    }
+
+    .category {
+        font-family: 'Fashion';
+        font-size: 32px;
+        letter-spacing: 2px;
+        max-width: 100%;
+        word-break: break-word;
+    }
+
+    .category-option-btn {
+        justify-self: center;
+        padding: 5px;
+        cursor: pointer;
+        font-size: 32px !important;
+        background: none;
+        transition: all 0.1s;
+        color: var(--material-btn);
+
+        &:hover {
+            color: var(--black);
         }
     }
 `;

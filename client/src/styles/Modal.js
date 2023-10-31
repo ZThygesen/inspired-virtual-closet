@@ -2,6 +2,7 @@ import styled from 'styled-components';
 
 export const ModalContentContainer = styled.div`
     width: min(90%, 500px);
+    max-height: 80%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -16,6 +17,21 @@ export const ModalContentContainer = styled.div`
     left: 50%;
     transform: translate(-50%, -50%);
 
+    .close-modal {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        color: var(--material-btn);
+        font-size: 36px !important;
+        background: none;
+        transition: all 0.1s;
+        cursor: pointer;
+
+        &:hover {
+            color: var(--black);
+        }
+    }
+
     .modal-title {
         font-size: 40px;
         font-weight: 600;
@@ -26,10 +42,12 @@ export const ModalContentContainer = styled.div`
 
     .modal-content {
         width: 100%;
+        overflow-y: auto;
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 20px;
+        padding: 8px 0;
     }
 
     .modal-content p {
@@ -70,7 +88,7 @@ export const ModalContentContainer = styled.div`
         height: auto;
     } */
 
-    button {
+    button:not(.material-icons) {
         font-size: 24px;
         font-family: 'Fashion', sans-serif;
         letter-spacing: 2px;

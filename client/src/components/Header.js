@@ -3,7 +3,7 @@ import styled from 'styled-components';
 
 const AppHeader = styled.header`
     width: 100%;
-    height: var(--header-height);
+    min-height: var(--header-height);
     display: flex;
     align-items: center;
     padding: 0 24px;

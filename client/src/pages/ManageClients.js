@@ -5,8 +5,8 @@ import ClientCard from '../components/ClientCard';
 import Loading from '../components/Loading';
 import ActionButton from '../components/ActionButton';
 import Modal from '../components/Modal';
-import { ManageClientsContainer } from '../styles/ManageClients';
 import Input from '../components/Input';
+import { ManageClientsContainer } from '../styles/ManageClients';
 
 export default function ManageClients() {
     const [clients, setClients] = useState([]);
