@@ -47,3 +47,7 @@
     width: 100vw;
     height: 100vh;
 }
+
+.material-icons {
+    user-select: none;
+}

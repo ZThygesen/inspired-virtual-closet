@@ -18,6 +18,17 @@ export default function DigitalCloset() {
     const [category, setCategory] = useState({});
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
+    
+    useEffect(() => {
+        function handleResize() {
+            if (window.innerWidth <= 768) {
+                setSidebarOpen(false);
+            }
+        }
+
+        window.addEventListener('resize', handleResize);
+    }, []);
+    
     useEffect(() => {
         getCategories();
     }, []);
