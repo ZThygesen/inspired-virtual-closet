@@ -129,7 +129,7 @@ export default function CategoriesSidebar({ open, closeSidebar, /*categories,*/ 
                     <Tooltip title="Manage Categories">
                         <button className="material-icons settings-icon" onClick={() => setSettingsOpen(true)}>settings</button>
                     </Tooltip>
-                    <p className="header-title">CATEGORIES</p>
+                    <h2 className="header-title">CATEGORIES</h2>
                     <Tooltip title="Close Sidebar">
                         <button className="material-icons close-sidebar-icon" onClick={closeSidebar}>chevron_left</button>
                     </Tooltip>

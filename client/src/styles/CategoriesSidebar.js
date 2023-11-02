@@ -113,7 +113,7 @@ export const CategoriesSidebarContainer = styled.div`
 
         & .footer-text{
             font-family: 'Fashion';
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 600;
             letter-spacing: 4px;
         }

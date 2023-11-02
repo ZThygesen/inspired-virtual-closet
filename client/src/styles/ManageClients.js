@@ -36,13 +36,9 @@ export const ManageClientsContainer = styled(PageContainer)`
     .clients {
         width: 100%;
         max-width: 1400px;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 40px;
-        flex-wrap: wrap;
         margin-top: ${subheaderHeight}px;
         margin-bottom: ${footerHeight}px;
         padding: 20px;

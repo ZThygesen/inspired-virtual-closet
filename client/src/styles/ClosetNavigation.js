@@ -7,19 +7,19 @@ export const ClosetNavigationContainer = styled.div`
     align-items: center;
     background-color: var(--white);
     transition: all 0.5s;
+    position: relative;
+    z-index: 500;
 
-    #client-closet-title, .closet-options {
-        position: sticky;
+    .closet-title,
+    .closet-options {
         width: 100%;
-        font-size: 32px;
-        font-weight: bold;
-        background-color: var(--primary-light);
         height: var(--subheader-height);
-        color: var(--black);
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 2;
+        background-color: var(--primary-light);
+        position: sticky;
+        z-index: 250;
     }
 
     .open-sidebar-icon {
@@ -38,19 +38,25 @@ export const ClosetNavigationContainer = styled.div`
         }
     }
 
+    .client-closet {
+        font-family: 'Fashion';
+        font-size: 40px;
+        letter-spacing: 2px;
+        font-weight: 600;
+    }
+
     .closet-options {
-        display: flex;
         align-items: flex-end;
     }
 
     ul {
         display: flex;
+        list-style: none;
     }
 
     li {
         padding: 15px;
         transition: all 0.3s;
-        box-sizing: border-box;
 
         &.active {
             background-color: var(--white);
@@ -59,9 +65,7 @@ export const ClosetNavigationContainer = styled.div`
     }
 
     .closet-button {
-        display: inline-block;
         background: none;
-        border: none;
         width: 100%;
         font-family: 'Fashion';
         color: var(--black);
@@ -96,13 +100,12 @@ export const ClosetNavigationContainer = styled.div`
     }
 
     .closet-container {
+        width: 100%;
+        height: calc(100vh - var(--header-height) - (2 * var(--subheader-height)));
         display: flex;
         flex-direction: column;
         align-items: center;
-        width: 100%;
         padding: 20px;
-        box-sizing: border-box;
-        height: calc(100vh - var(--header-height) - (2 * var(--subheader-height)));
         overflow-y: auto;
     }
 
