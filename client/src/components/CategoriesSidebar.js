@@ -221,14 +221,16 @@ export default function CategoriesSidebar({ open, closeSidebar, /*categories,*/ 
             >
                 <>
                     <h2 className="modal-title">EDIT CATEGORY</h2>
-                    <p className="cat-to-edit" style={{fontFamily: 'Fashion', fontSize: '32px'}}>{categoryToEdit.name}</p>
-                    <Input
-                        type="text"
-                        id="category-name"
-                        label="Category Name"
-                        value={newCategory}
-                        onChange={e => setNewCategory(e.target.value)}
-                    />
+                    <div className="modal-content">
+                        <p className="cat-to-edit" style={{fontFamily: 'Fashion', fontSize: '32px'}}>{categoryToEdit.name}</p>
+                        <Input
+                            type="text"
+                            id="category-name"
+                            label="Category Name"
+                            value={newCategory}
+                            onChange={e => setNewCategory(e.target.value)}
+                        />
+                    </div>
                     <div className="modal-options">
                         <button type="button" onClick={handleEditClose}>Cancel</button>
                         <button type="submit">Save</button>

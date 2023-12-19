@@ -11,7 +11,6 @@ export const ClothesContainer = styled.div`
         font-size: 36px;
         font-weight: 600;
         letter-spacing: 2px;
-        margin-bottom: 8px;
     }
 
     .items {
@@ -35,9 +34,12 @@ export const ClothingCardContainer = styled.div`
     word-wrap: break-word;
 
     p {
-        font-size: 32px;
+        font-size: 28px;
         color: var(--black);
-
+        font-family: 'Fashion';
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-align: center;
     }
 
     img {
@@ -54,11 +56,13 @@ export const ClothingCardContainer = styled.div`
     }
 
     .item-option {
+        font-size: 38px !important;
         padding: 5px;
         border-radius: 50%;
         cursor: pointer;
         transition: all 0.1s;
         color: #a7a7a7;
+        background: none;
 
         &:hover {
             background-color: rgba(0, 0, 0, 0.1);

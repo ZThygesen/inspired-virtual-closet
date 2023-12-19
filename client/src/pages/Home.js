@@ -8,8 +8,8 @@ export default function Home() {
             <img src={logo} alt="Edie Styles" className="big-logo" />
             
             <div className="home-options">
-                <h1>Digital Closet</h1>
-                <ActionButton variant={'primary'} isLink={true} linkPath={'manage-clients'}>MANAGE CLIENTS</ActionButton>
+                <h1>Virtual Closet</h1>
+                <ActionButton variant={'primary'} isLink={true} linkPath={'manage-clients'}>CLIENTS</ActionButton>
             </div>
         </HomeContainer>
     );

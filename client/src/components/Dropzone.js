@@ -1,17 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Modal } from '@mui/material';
-import { Close } from '@mui/icons-material';
 import axios from 'axios'
 import cuid from 'cuid';
-import { DropContainer, Button, FileContainer, FileCard, ModalContent } from '../styles/Dropzone';
+import { DropContainer, Button, FileContainer, FileCard } from '../styles/Dropzone';
+import Modal from './Modal';
 import Loading from './Loading';
-import ImageModal from './ImageModal';
 import invalidImg from '../images/invalid.png';
-import styled from 'styled-components';
-
-const NewDropContainer = styled(DropContainer)`
-    padding: 100px;
-`;
 
 export default function Dropzone({ client, category, disabled, updateItems }) {
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -201,14 +194,14 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
         setImageModal({ src: file.src, alt: file.name });
     }
 
-    function closeModal() {
+    function closeImageModal() {
         setImageModalOpen(false);
         setImageModal({});
     }
 
     return (
         <>
-            <NewDropContainer style={{ border: `4px dashed ${borderColor}` }}
+            <DropContainer style={{ border: `4px dashed ${borderColor}` }}
                 onDragOver={dragOver}
                 onDragEnter={dragEnter}
                 onDragLeave={dragLeave}
@@ -231,7 +224,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                     </span>
                     &nbsp;or drag & drop here
                 </p>
-            </NewDropContainer>
+            </ DropContainer>
             <Button
                     className="submit"
                     onClick={() => setConfirmModalOpen(true)}
@@ -241,12 +234,9 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             </Button>
             {filteredFiles.length > 0 &&
                 <FileContainer>
-                    <p className="title">Current Files</p>
+                    <h2 className="title">Current Files</h2>
                     {invalidFiles.length ?
-                        <p
-                            className="file-error-message"
-                            style={{ margin: '0 0 15px' }}
-                        >
+                        <p className="file-error-message">
                             Please remove all unsupported files.
                         </p> : ''
                     }
@@ -254,6 +244,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                         {
                             filteredFiles.map(file => (
                                 <FileCard key={file.id}>
+                                    <button className="material-icons file-remove" onClick={() => removeFile(file)}>close</button>
                                     {file.invalid && <div className="file-error-message">{errorMessage}</div>}
                                     <img
                                         src={file.invalid ? invalidImg : file.src}
@@ -266,37 +257,45 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                                         <p className="file-name">{file.name}</p>
                                         <p className="file-size">({file.fileSize})</p>
                                     </div>
-                                    <div className="file-remove" onClick={() => removeFile(file)}><Close /></div>
                                 </FileCard>
                             ))
                         }
                     </div>
                 </FileContainer>
             }
-            <ImageModal open={imageModalOpen} image={imageModal} closeModal={closeModal} />
-            <Loading open={uploadModalOpen} />
+            <Loading open={true} />
+            <Modal
+                open={imageModalOpen}
+                closeModal={closeImageModal}
+                isImage={true}
+            >
+                <>
+                    <button className="material-icons close-modal" onClick={closeImageModal}>close</button>
+                    <img src={imageModal.src} alt={imageModal.alt} className="image-modal" />
+                </>
+            </Modal>
             <Modal
                 open={confirmModalOpen}
                 onClose={() => setConfirmModalOpen(false)}
             >
-                <ModalContent>
-                    <p>Are you sure you want to add these items to <span className="category">{category.name}</span>?</p>
-                    <div className="modal-options">
-                        <button onClick={() => setConfirmModalOpen(false)}>Cancel</button>
-                        <button onClick={() => { setConfirmModalOpen(false); handleSubmit(); }}>Submit</button>
-                    </div>
-                </ModalContent>
+                <div className="modal-content">
+                    <p className="large bold">Are you sure you want to add these items to <span className="category large bold">{category.name}</span>?</p>
+                </div>
+                <div className="modal-options">
+                    <button onClick={() => setConfirmModalOpen(false)}>Cancel</button>
+                    <button onClick={() => { setConfirmModalOpen(false); handleSubmit(); }}>Submit</button>
+                </div>
             </Modal>
             <Modal
                 open={resultModalOpen}
                 onClose={() => setResultModalOpen(false)}
             >
-                <ModalContent>
-                    <p>Items added successfully to {category.name}!</p>
-                    <div className="modal-options">
+                <div className="modal-content">
+                    <p className="large bold">Items added successfully to <span className="category large bold">{category.name}</span>!</p>
+                </div>
+                <div className="modal-options">
                         <button onClick={() => setResultModalOpen(false)}>OK</button>
-                    </div>
-                </ModalContent>
+                </div>
             </Modal>
         </>
     );

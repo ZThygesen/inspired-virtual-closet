@@ -1,5 +1,5 @@
 {
-  "name": "digital-closet",
+  "name": "virtual-closet",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ZThygesen/digital-closet.git"
+    "url": "git+https://github.com/ZThygesen/virtual-closet.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/ZThygesen/digital-closet/issues"
+    "url": "https://github.com/ZThygesen/virtual-closet/issues"
   },
-  "homepage": "https://github.com/ZThygesen/digital-closet#readme",
+  "homepage": "https://github.com/ZThygesen/virtual-closet#readme",
   "dependencies": {
     "express": "^4.18.2",
     "mongodb": "^4.13.0",

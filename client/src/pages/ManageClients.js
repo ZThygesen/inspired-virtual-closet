@@ -24,7 +24,17 @@ export default function ManageClients() {
         const response = await axios.get('/clients')
             .catch(err => console.log(err));
         
-        setClients(response.data);
+        setClients(response.data.sort(function (a, b) {
+            if (a.firstName < b.firstName) {
+                return -1;
+            } 
+            else if (a.firstName > b.firstName) {
+                return 1;
+            }
+            else {
+                return 0;
+            }
+        }));
         setLoading(false);
     }
 
@@ -75,7 +85,7 @@ export default function ManageClients() {
     return (
         <>
             <ManageClientsContainer>
-                <h1 className="title">MANAGE CLIENTS</h1>
+                <h1 className="title">CLIENTS</h1>
                 <div className="clients">
                     {
                         clients.map(client => (

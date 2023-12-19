@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-import DigitalCloset from './DigitalCloset';
+import VirtualCloset from './VirtualCloset';
 import ManageClients from './ManageClients';
 
 export default function Router() {
@@ -7,7 +7,7 @@ export default function Router() {
         <>
             <Routes>
                 <Route index element={<ManageClients />} />
-                <Route path=":client" element={<DigitalCloset />} />
+                <Route path=":client" element={<VirtualCloset />} />
             </Routes>
         </>
     );

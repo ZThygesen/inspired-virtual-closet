@@ -6,18 +6,17 @@ const DropContainer = styled.div`
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 20px;
     width: 100%;
     max-width: 800px;
-    box-sizing: border-box;
     padding: 30px;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 
-    .upload-icon {
+    & .upload-icon {
         width: 80px;
         height: 80px;
         background: url(${uploadImg}) no-repeat center center;
         background-size: 100%;
-        padding-bottom: 20px;
         cursor: pointer;
         transition: all 0.1s;
 
@@ -26,15 +25,16 @@ const DropContainer = styled.div`
         }
     }
 
-    p {
+    & p,
+    & p > * {
         text-align: center;
         margin-bottom: 10px;
-        font-size: 28px;
+        font-size: 24px;
     }
 
     .click-upload {
         color: var(--secondary);
-        font-weight: bold;
+        font-weight: 600;
         background: none;
         border: none;
         width: 100%;
@@ -71,6 +71,7 @@ const Button = styled.button`
     border-radius: 25px;
     font-family: 'Fashion';
     font-size: 28px;
+    letter-spacing: 2px;
     background-color: var(--primary-light);
     color: var(--black);
     padding: 10px 20px;
@@ -92,23 +93,19 @@ const FileContainer = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 15px;
-    margin-top: 15px;
+    padding: 20px;
+    margin-top: 20px;
     width: 100%;
-    box-sizing: border-box;
     background-color: var(--grey);
     border: 2px solid var(--black);
-    border-radius: 25px;
+    border-radius: 20px;
 
-    .title {
-        text-decoration: underline;
-        font-weight: bold;
-    }
-
-    p {
-        text-align: center;
-        margin-bottom: 10px;
-        font-size: 28px;
+    h2 {
+        font-family: 'Fashion';
+        font-size: 36px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        margin-bottom: 20px;
     }
 
     .file-preview-container {
@@ -121,10 +118,11 @@ const FileContainer = styled.div`
 
     .file-error-message {
         color: #cc2d2d;
-        margin: 15px 0;
-        font-size: 20px;
+        margin: -20px 0 20px 0;
+        font-size: 24px;
         font-weight: bold;
         text-decoration: underline;
+        text-align: center;
     }
 `;
 
@@ -134,11 +132,10 @@ const FileCard = styled.div`
     align-items: center;
     justify-content: center;
     background-color: var(--primary-light);
-    padding: 15px;
-    border-radius: 25px;
+    padding: 20px;
+    border-radius: 20px;
     position: relative;
     width: 230px;
-    box-sizing: border-box;
     box-shadow: var(--file-card-shadow);
     
     .file-img {
@@ -160,85 +157,35 @@ const FileCard = styled.div`
     }
 
     .file-name {
-        color: var(--black);
-        font-size: 24px;
-        font-weight: bold;
+        font-size: 20px;
+        font-weight: 600;
         margin-top: 10px;
         max-width: 200px;
         word-wrap: break-word;
+        text-align: center;
     }
 
     .file-size {
-        color: var(--black);
-        font-size: 20px;
-
+        font-size: 16px;
+        text-align: center;
     }
 
     .file-remove {
+        background: none;
         position: absolute;
         top: 7px;
         right: 7px;
         cursor: pointer;
-        color: var(--black);
-        border-radius: 50%;
         transition: all 0.1s;
 
         &:hover {
-            transform: scale(1.12);
+            transform: scale(1.075);
         }
+    }
+
+    & .file-error-message {
+        margin-top: 0;
     }
 `;
 
-const ModalContent = styled.div`
-    font-family: 'Fashion';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 400px;
-    background-color: var(--white);
-    border: 2px solid var(--black);
-    border-radius: 20px;
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 40px;
-
-    p {
-        font-size: 32px;
-        font-weight: bold;
-        text-align: center;
-    }
-
-    .category {
-        color: var(--secondary);
-        text-decoration: underline;
-    }
-
-    .modal-options {
-        display: flex;
-        gap: 50px;
-    }
-
-    button {
-        background: none;
-        border: 1px solid var(--black);
-        width: 100%;
-        border-radius: 8px;
-        padding: 12px;
-        font-family: 'Fashion';
-        font-size: 24px;
-        transition: all 0.1s;
-        cursor: pointer;
-
-        &:hover {
-            background-color: var(--secondary);
-            border-color: var(--secondary);
-            color: var(--white);
-        }
-    }
-`;
-
-export { DropContainer, Button, FileContainer, FileCard, ModalContent };
+export { DropContainer, Button, FileContainer, FileCard };

@@ -1,21 +1,34 @@
 import styled from 'styled-components';
 
 export const ModalContentContainer = styled.div`
-    width: min(90%, 500px);
-    max-height: 80%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 24px;
-    background-color: var(--white);
-    border: 2px solid var(--black);
-    border-radius: 20px;
-    padding: 20px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+
+    &.image-modal {
+        width: 100%;
+        height: 100%;
+        
+        & img {
+            width: 450px;
+            height: auto;
+        }
+    }
+
+    &:not(.image-modal) {
+        width: min(90%, 500px);
+        max-height: 80%;
+        gap: 24px;
+        background-color: var(--white);
+        border: 2px solid var(--black);
+        border-radius: 20px;
+        padding: 20px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
 
     .close-modal {
         position: absolute;
@@ -54,27 +67,27 @@ export const ModalContentContainer = styled.div`
         text-align: center;
     }
 
-    .modal-content p.large {
+    .modal-content .large {
         font-size: 28px;
     }
 
-    .modal-content p.medium {
+    .modal-content .medium {
         font-size: 24px;
     }
 
-    .modal-content p.small {
+    .modal-content .small {
         font-size: 20px;
     }
 
-    .modal-content p.bold {
+    .modal-content .bold {
         font-weight: 700;
     }
 
-    .modal-content p.underline {
+    .modal-content .underline {
         text-decoration: underline;
     }
 
-    .modal-content p.warning {
+    .modal-content .warning {
         color: red;
     }
 
@@ -83,10 +96,15 @@ export const ModalContentContainer = styled.div`
         gap: 20px;
     }
 
-    /* .delete-img, .edit-img {
+    .delete-img, .edit-img {
         width: 150px;
         height: auto;
-    } */
+    }
+
+    .modal-content .category {
+        color: var(--secondary);
+        text-decoration: underline;
+    }
 
     button:not(.material-icons) {
         font-size: 24px;
@@ -107,7 +125,9 @@ export const ModalContentContainer = styled.div`
     }
 
     @media (min-width: 480px) {
-        padding: 40px;
+        &:not(.image-modal) {
+            padding: 40px;
+        }
 
         .modal-options {
             display: flex;
