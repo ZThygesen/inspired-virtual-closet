@@ -5,7 +5,7 @@ import ClothingCard from './ClothingCard';
 import Loading from './Loading';
 import { ClothesContainer } from '../styles/Clothes';
 
-export default function Clothes({ display, category, clothes, updateItems }) {
+export default function Clothes({ display, category, updateItems }) {
     const [loading, setLoading] = useState(false);
 
     function sendToCanvas(item) {
@@ -43,25 +43,24 @@ export default function Clothes({ display, category, clothes, updateItems }) {
         <>
             <ClothesContainer style={{ display: display ? 'flex' : 'none' }}>
                 {
-                    /* category.name === undefined ? <NoCategories fontSize={28} /> : */
-                        <>
-                            <h2 className="category-title">{category.name}</h2>
-                            <div className="items">
-                                {
-                                    clothes.map(item => (
-                                        <ClothingCard
-                                            item={item}
-                                            editable={category._id !== -1}
-                                            sendToCanvas={sendToCanvas}
-                                            swapCategory={swapCategory}
-                                            editItem={editItem}
-                                            deleteItem={deleteItem}
-                                            key={cuid()}
-                                        />
-                                    ))
-                                }
-                            </div>
-                        </>
+                    <>
+                        <h2 className="category-title">{category.name}</h2>
+                        <div className="items">
+                            {
+                                category?.items?.map(item => (
+                                    <ClothingCard
+                                        item={item}
+                                        editable={category._id !== -1}
+                                        sendToCanvas={sendToCanvas}
+                                        swapCategory={swapCategory}
+                                        editItem={editItem}
+                                        deleteItem={deleteItem}
+                                        key={cuid()}
+                                    />
+                                ))
+                            }
+                        </div>
+                    </>
                 }
             </ClothesContainer>
             <Loading open={loading} />

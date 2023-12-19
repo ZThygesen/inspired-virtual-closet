@@ -27,16 +27,16 @@ router.post('/', async (req, res, next) => {
 });
 
 // get categories
-router.get('/', async (req, res, next) => {
-    try {
-        const collection = db.collection('categories');
-        const categories = await collection.find({ }).toArray();
+// router.get('/', async (req, res, next) => {
+//     try {
+//         const collection = db.collection('categories');
+//         const categories = await collection.find({ }).toArray();
 
-        res.json(categories);
-    } catch (err) {
-        next(err);
-    }
-});
+//         res.json(categories);
+//     } catch (err) {
+//         next(err);
+//     }
+// });
 
 // update category
 router.patch('/', async (req, res, next) => {

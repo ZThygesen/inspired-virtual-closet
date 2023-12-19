@@ -101,7 +101,7 @@ export const ModalContentContainer = styled.div`
         height: auto;
     }
 
-    .modal-content .category {
+    .modal-content .category-name {
         color: var(--secondary);
         text-decoration: underline;
     }

@@ -67,15 +67,11 @@ export const CategoriesSidebarContainer = styled.div`
     .category-button {
         width: 100%;
         max-width: 100%;
-        padding: 6px;
+        padding: 12px 20px;
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 28px;
-        font-weight: 600;
-        font-family: 'Fashion';
-        letter-spacing: 2px;
-        word-break: break-word;
+        justify-content: space-between;
+        gap: 20px;
         background: none;
         transition: all 0.1s;
         cursor: pointer;
@@ -83,6 +79,16 @@ export const CategoriesSidebarContainer = styled.div`
         &:hover, &.active {
             background-color: var(--secondary);
             color: var(--white);
+        }
+
+        & .category-name,
+        & .num-items {
+            font-size: 28px;
+            font-weight: 600;
+            font-family: 'Fashion';
+            letter-spacing: 2px;
+            word-break: break-word;
+            text-align: left;
         }
     }
 

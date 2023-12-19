@@ -48,7 +48,7 @@ export default function ClothingCard({ item, editable, sendToCanvas, swapCategor
                         </button>
                     </Tooltip>
                     {
-                        true &&
+                        editable &&
                         <>
                             <Tooltip title="Change Category">
                                 <button

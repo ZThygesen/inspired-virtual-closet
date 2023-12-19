@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import cuid from 'cuid';
 import { CategoriesSidebarContainer } from '../styles/CategoriesSidebar';
 import { Tooltip } from '@mui/material';
@@ -6,60 +6,56 @@ import Modal from './Modal';
 import Input from './Input';
 import { CategorySettings } from '../styles/CategoriesSidebar';
 
-const categories = [
-    {name: 'All', _id: 0},
-    {name: 'Belts', _id: 1},
-    {name: 'Blazers', _id: 2},
-    {name: 'Boots', _id: 3},
-    {name: 'Bracelets', _id: 4},
-    {name: 'Coats', _id: 5},
-    {name: 'Dresses', _id: 6},
-    {name: 'Earrings', _id: 7},
-    {name: 'Flats', _id: 8},
-    {name: 'Handbags', _id: 9},
-    {name: 'Hats', _id: 10},
-    {name: 'Heels', _id: 11},
-    {name: 'Jackets', _id: 12},
-    {name: 'Jeans', _id: 13},
-    {name: 'Leggings', _id: 14},
-/*
-    'Belts',
-    'Blazers',
-    'Boots',
-    'Bracelets',
-    'Coats',
-    'Dresses',
-    'Earrings',
-    'Flats',
-    'Handbags',
-    'Hats',
-    'Heels',
-    'Jackets',
-    'Jeans',
-    'Leggings',
-    'Long sleeve tops',
-    'Necklaces',
-    'Pants',
-    'Rings',
-    'Sandals',
-    'Scarves',
-    'Shorts',
-    'Short sleeve tops',
-    'Sleeveless tops',
-    'Mens shoes',
-    'Shirts',
-    'Skirts',
-    'Sneakers',
-    'Suits',
-    'Sunglasses',
-    'Sweaters',
-    'Ties',
-    'This is a test for long text',
-    'sdugfwuiygdfiuywguofydgowegfw'*/
-];
+// const categories = [
+//     {name: 'All', _id: 0},
+//     {name: 'Belts', _id: 1},
+//     {name: 'Blazers', _id: 2},
+//     {name: 'Boots', _id: 3},
+//     {name: 'Bracelets', _id: 4},
+//     {name: 'Coats', _id: 5},
+//     {name: 'Dresses', _id: 6},
+//     {name: 'Earrings', _id: 7},
+//     {name: 'Flats', _id: 8},
+//     {name: 'Handbags', _id: 9},
+//     {name: 'Hats', _id: 10},
+//     {name: 'Heels', _id: 11},
+//     {name: 'Jackets', _id: 12},
+//     {name: 'Jeans', _id: 13},
+//     {name: 'Leggings', _id: 14},
+//     'Belts',
+//     'Blazers',
+//     'Boots',
+//     'Bracelets',
+//     'Coats',
+//     'Dresses',
+//     'Earrings',
+//     'Flats',
+//     'Handbags',
+//     'Hats',
+//     'Heels',
+//     'Jackets',
+//     'Jeans',
+//     'Leggings',
+//     'Long sleeve tops',
+//     'Necklaces',
+//     'Pants',
+//     'Rings',
+//     'Sandals',
+//     'Scarves',
+//     'Shorts',
+//     'Short sleeve tops',
+//     'Sleeveless tops',
+//     'Mens shoes',
+//     'Shirts',
+//     'Skirts',
+//     'Sneakers',
+//     'Suits',
+//     'Sunglasses',
+//     'Sweaters',
+//     'Ties',
+//     'This is a test for long text','sdugfwuiygdfiuywguofydgowegfw'];
 
-export default function CategoriesSidebar({ open, closeSidebar, /*categories,*/ selectCategory, addCategory, editCategory, deleteCategory }) {
-    const [activeCategory, setActiveCategory] = useState(0);
+export default function CategoriesSidebar({ open, closeSidebar, closeSidebarOnSelect, categories, activeCategory, setCategory, addCategory, editCategory, deleteCategory }) {
     const [addOpen, setAddOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [categoryToEdit, setCategoryToEdit] = useState({});
@@ -67,6 +63,14 @@ export default function CategoriesSidebar({ open, closeSidebar, /*categories,*/ 
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState({});
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const ref = useRef();
+
+    function scrollToRef(ref) {
+        ref.current.scroll({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
 
     function handleSettingsClose() {
         setSettingsOpen(false);
@@ -98,10 +102,10 @@ export default function CategoriesSidebar({ open, closeSidebar, /*categories,*/ 
         setEditOpen(false);
     }
 
-    function handleEdit(e) {
+    async function handleEdit(e) {
         e.preventDefault();
 
-        editCategory(categoryToEdit, newCategory);
+        await editCategory(categoryToEdit, newCategory);
         handleEditClose();
     }
 
@@ -117,9 +121,18 @@ export default function CategoriesSidebar({ open, closeSidebar, /*categories,*/ 
         setConfirmDeleteOpen(false);
     }
 
-    function handleDelete() {
-        deleteCategory(categoryToDelete);
+    async function handleDelete() {
+        const stay = categoryToDelete._id !== activeCategory._id;
+
+        await deleteCategory(categoryToDelete);
         handleCloseDelete();
+
+        if (stay) { 
+            setCategory(activeCategory);
+        } else {
+            setCategory(categories[0]);
+            scrollToRef(ref);
+        }
     }
 
     return (
@@ -134,19 +147,21 @@ export default function CategoriesSidebar({ open, closeSidebar, /*categories,*/ 
                         <button className="material-icons close-sidebar-icon" onClick={closeSidebar}>chevron_left</button>
                     </Tooltip>
                 </div>
-                <div className="categories-container">
+                <div className="categories-container" ref={ref}>
                     {
-                        /* categories.length <= 1 ? <NoCategories fontSize={30} /> : */
-                        categories.map((category, index) => (
+                        categories.map(category => (
                             <button
                                 key={cuid()}
                                 onClick={() => {
-                                    setActiveCategory(index);
-                                    selectCategory(category);
+                                    setCategory(category);
+                                    if (closeSidebarOnSelect) {
+                                        closeSidebar();
+                                    }
                                 }}
-                                className={index === activeCategory ? 'active category-button' : 'category-button'}
+                                className={category._id === activeCategory?._id ? 'active category-button' : 'category-button'}
                             >
-                                {category.name}
+                                <p className="category-name">{category.name}</p>
+                                <p className="num-items">{category.items.length}</p>
                             </button>
                         ))
                     }

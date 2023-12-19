@@ -279,7 +279,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                 onClose={() => setConfirmModalOpen(false)}
             >
                 <div className="modal-content">
-                    <p className="large bold">Are you sure you want to add these items to <span className="category large bold">{category.name}</span>?</p>
+                    <p className="large bold">Are you sure you want to add these items to <span className="category-name large bold">{category.name}</span>?</p>
                 </div>
                 <div className="modal-options">
                     <button onClick={() => setConfirmModalOpen(false)}>Cancel</button>
@@ -291,7 +291,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                 onClose={() => setResultModalOpen(false)}
             >
                 <div className="modal-content">
-                    <p className="large bold">Items added successfully to <span className="category large bold">{category.name}</span>!</p>
+                    <p className="large bold">Items added successfully to <span className="category-name large bold">{category.name}</span>!</p>
                 </div>
                 <div className="modal-options">
                         <button onClick={() => setResultModalOpen(false)}>OK</button>

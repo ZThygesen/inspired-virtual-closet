@@ -57,7 +57,7 @@ export const ClothingCardContainer = styled.div`
 
     .item-option {
         font-size: 38px !important;
-        padding: 5px;
+        padding: 6px;
         border-radius: 50%;
         cursor: pointer;
         transition: all 0.1s;

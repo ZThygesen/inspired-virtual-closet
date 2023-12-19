@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
 import cuid from 'cuid';
 import { Tooltip } from '@mui/material';
 import Clothes from './Clothes';
@@ -10,12 +9,18 @@ import AddItems from './AddItems';
 import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
 
 
-export default function ClosetNavigation({ client, category, open, openSidebar }) {
+export default function ClosetNavigation({ open, openSidebar, client, category, setCategory, getCategories }) {
     const [closetMode, setClosetMode] = useState(0);
     const [currCategory, setCurrCategory] = useState(category?.name);
-    const [allClothes, setAllClothes] = useState([]);
-    const [currClothes, setCurrClothes] = useState([]);
     const [showIcons, setShowIcons] = useState(window.innerWidth > 480 ? false : true);
+    const ref = useRef();
+
+    function scrollToRef(ref) {
+        ref.current.scroll({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
 
     useEffect(() => {
         function handleResize() {
@@ -32,42 +37,17 @@ export default function ClosetNavigation({ client, category, open, openSidebar }
     useEffect(() => {
         if (category.name !== currCategory) {
             setCurrCategory(category.name);
+            scrollToRef(ref);
             if (closetMode !== 0 && closetMode !== 3) {
                 setClosetMode(0);
             }
         }
     }, [category, currCategory, closetMode]);
 
-    useEffect(() => {
-        let clothes = [];
-        if (category._id === -1) {
-            allClothes.forEach(category => {
-                clothes = [...clothes, ...category.items];
-            });
-        } else {
-            for (let i = 0; i < allClothes.length; i++) {
-                if (allClothes[i]._id === category._id) {
-                    clothes = [...allClothes[i].items];
-                    break;
-                }
-            }
-        }
-
-        setCurrClothes(clothes);
-    }, [category, allClothes]);
-
-    const getClothes = useCallback(async () => {
-        const response = await axios.get(`/files/${client._id}`)
-            .catch(err => console.log(err));
-        
-        setAllClothes(response.data.files);
+    async function updateItems() {
+        await getCategories(category);
         setClosetMode(0);
-    }, [client._id]);
-
-    useEffect(() => {
-        getClothes();
-    }, [getClothes]);
-
+    }
 
     const closetModes = [
         { name: 'CLOTHES', icon: 'checkroom'},
@@ -112,11 +92,11 @@ export default function ClosetNavigation({ client, category, open, openSidebar }
                        }
                     </ul>
                 </div>
-                <div className="closet-container">
-                    <Clothes display={closetMode === 0} category={category} clothes={currClothes} updateItems={getClothes} />
+                <div ref={ref} className="closet-container">
+                    <Clothes display={closetMode === 0} category={category} updateItems={updateItems} />
                     <Canvas display={closetMode === 1} />
                     <Outfits display={closetMode === 2} />
-                    <AddItems display={closetMode === 3} client={client} category={category} openSidebar={openSidebar} updateItems={getClothes} />
+                    <AddItems display={closetMode === 3} client={client} category={category} openSidebar={openSidebar} updateItems={updateItems} />
                 </div>
             </ClosetNavigationContainer>
         </>

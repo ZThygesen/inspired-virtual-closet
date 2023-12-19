@@ -1,11 +1,8 @@
-- change font
-
-- loading screens
+- close modals when clicking on backdrop
 
 - add error handling
 
-- add an "Other" category
-    - if you delete a category, all the items will move to "Other"
+- when switching categories, scroll to the top again
 
 - adding/editing categories switches properly in sidebar
 
@@ -18,39 +15,12 @@
 
 - number of items in each category shown on sidebar
 
-- add image modal option for clothing cards
-
 - remove background from pictures before posting to imgbb and db
 
 - check duplicate files in db when submitting
-
-- ability to edit and delete categories
-
-- options for a clothing item:
-    - send item to canvas
-    - change category of item
 
 - error handling on api calls
     - dropzone submission to imgbb
     - dropzone submission to db
 
 - email/share outfits
-
-Collection categories = [
-    {
-        _id: "_id",
-        name: "categoryName",
-        items: [
-            {
-                ...
-            },
-        ]
-    }
-]
-
-10 neck
-8 blazers
----------
-5 sun
-3 sneak
-4 fancy shoes

@@ -23,17 +23,17 @@ export const ClosetNavigationContainer = styled.div`
     }
 
     .closet-title {
-        padding: 12px 52px;
+        padding: 12px 60px;
         text-align: center;
     }
 
     .open-sidebar-icon,
     .clients-icon {
         position: absolute;
-        left: 4px;
-        padding: 4px;
+        left: 6px;
+        padding: 6px;
         background: none;
-        font-size: 32px !important;
+        font-size: 38px !important;
         color: var(--black);
         border-radius: 50%;
         cursor: pointer;
@@ -46,7 +46,7 @@ export const ClosetNavigationContainer = styled.div`
 
     .clients-icon {
         left: unset;
-        right: 4px;
+        right: 6px;
     }
 
     .client-closet {
