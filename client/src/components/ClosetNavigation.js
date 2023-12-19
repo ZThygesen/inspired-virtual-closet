@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import cuid from 'cuid';
 import { Tooltip } from '@mui/material';
@@ -8,11 +9,25 @@ import Outfits from './Outfits';
 import AddItems from './AddItems';
 import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
 
+
 export default function ClosetNavigation({ client, category, open, openSidebar }) {
     const [closetMode, setClosetMode] = useState(0);
     const [currCategory, setCurrCategory] = useState(category?.name);
     const [allClothes, setAllClothes] = useState([]);
     const [currClothes, setCurrClothes] = useState([]);
+    const [showIcons, setShowIcons] = useState(window.innerWidth > 480 ? false : true);
+
+    useEffect(() => {
+        function handleResize() {
+            if (window.innerWidth <= 480) {
+                setShowIcons(true);
+            } else {
+                setShowIcons(false);
+            }
+        }
+
+        window.addEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         if (category.name !== currCategory) {
@@ -54,7 +69,12 @@ export default function ClosetNavigation({ client, category, open, openSidebar }
     }, [getClothes]);
 
 
-    const closetModes = ['CLOTHES', 'CANVAS', 'OUTFITS', 'ADD ITEMS'];
+    const closetModes = [
+        { name: 'CLOTHES', icon: 'checkroom'},
+        { name: 'CANVAS', icon: 'swipe'},
+        { name: 'OUTFITS', icon: 'dry_cleaning'},
+        { name: 'ADD ITEMS', icon: 'add_box'}
+    ];
 
     return (
         <>
@@ -66,6 +86,9 @@ export default function ClosetNavigation({ client, category, open, openSidebar }
                         </Tooltip>
                     }
                     <h1 className="client-closet">{`${client.firstName.toUpperCase()} ${client.lastName.toUpperCase()}'S CLOSET`}</h1>
+                    <Tooltip title="Clients">
+                        <Link to={'/manage-clients'} className="material-icons clients-icon">people</Link>
+                    </Tooltip>
                 </div>
                 <div className="closet-options">
                     <ul>
@@ -76,7 +99,13 @@ export default function ClosetNavigation({ client, category, open, openSidebar }
                                         className={ index === closetMode ? 'closet-button active' : 'closet-button' }
                                         onClick={() => setClosetMode(index)}
                                     >
-                                        {mode}
+                                        {showIcons ?
+                                            <Tooltip title={mode.name}>
+                                                <p className="material-icons closet-mode-icon">{mode.icon}</p>
+                                            </Tooltip> 
+                                            :
+                                            <p className="closet-mode-text">{mode.name}</p>
+                                        }
                                     </button>
                                 </li>
                             ))

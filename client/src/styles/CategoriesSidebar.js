@@ -10,9 +10,10 @@ export const CategoriesSidebarContainer = styled.div`
     bottom: 0;
     left: 0;
     background-color: var(--secondary-light);
-    z-index: 50;
+    z-index: 501;
     transition: 0.5s;
     transform: translateX(-100%);
+    box-shadow: var(--sidebar-shadow);
 
     &.open {
         transform: translateX(0%);
@@ -86,7 +87,6 @@ export const CategoriesSidebarContainer = styled.div`
     }
 
     .categories-footer {
-        width: 100%;
         height: var(--subheader-height);
         display: flex;
         align-items: center;
@@ -103,6 +103,7 @@ export const CategoriesSidebarContainer = styled.div`
         box-shadow: var(--top-shadow);
         cursor: pointer; 
         overflow: hidden;
+        /* clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 1px, 100% 1px); */
     }
 
     .footer-container {

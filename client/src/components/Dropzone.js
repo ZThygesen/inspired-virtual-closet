@@ -263,7 +263,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                     </div>
                 </FileContainer>
             }
-            <Loading open={true} />
+            <Loading open={uploadModalOpen} />
             <Modal
                 open={imageModalOpen}
                 closeModal={closeImageModal}

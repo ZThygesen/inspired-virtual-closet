@@ -13,7 +13,7 @@ export const ClosetNavigationContainer = styled.div`
     .closet-title,
     .closet-options {
         width: 100%;
-        height: var(--subheader-height);
+        min-height: var(--subheader-height);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -22,7 +22,13 @@ export const ClosetNavigationContainer = styled.div`
         z-index: 250;
     }
 
-    .open-sidebar-icon {
+    .closet-title {
+        padding: 12px 52px;
+        text-align: center;
+    }
+
+    .open-sidebar-icon,
+    .clients-icon {
         position: absolute;
         left: 4px;
         padding: 4px;
@@ -38,9 +44,14 @@ export const ClosetNavigationContainer = styled.div`
         }
     }
 
+    .clients-icon {
+        left: unset;
+        right: 4px;
+    }
+
     .client-closet {
         font-family: 'Fashion';
-        font-size: 40px;
+        font-size: 36px;
         letter-spacing: 2px;
         font-weight: 600;
     }
@@ -67,9 +78,6 @@ export const ClosetNavigationContainer = styled.div`
     .closet-button {
         background: none;
         width: 100%;
-        font-family: 'Fashion';
-        color: var(--black);
-        font-size: 28px;
         cursor: pointer;
         position: relative;
 
@@ -90,26 +98,42 @@ export const ClosetNavigationContainer = styled.div`
             &:after {
                 transform: scaleX(1);
             }
-
         }
 
         &:not(.active):hover:after {
             transform: scaleX(1);
             transform-origin: bottom left;
         }
+
+        & .closet-mode-text {
+            font-family: 'Fashion';
+            color: var(--black);
+            font-size: 28px;
+        }
+
+        & .closet-mode-icon {
+            font-size: 32px !important;
+        }
     }
 
     .closet-container {
         width: 100%;
-        height: calc(100vh - var(--header-height) - (2 * var(--subheader-height)));
+        flex: 1 1 auto;
+        overflow-y: auto;
+        height: 0px;
         display: flex;
         flex-direction: column;
         align-items: center;
         padding: 20px;
-        overflow-y: auto;
     }
 
-    @media (min-width: 768px) {
+    @media (min-width: 481px) {
+        .client-closet {
+            font-size: 40px;
+        }
+    }
+
+    @media (min-width: 800px) {
         &.sidebar-open {
             margin-left: 320px;
         }

@@ -3,10 +3,11 @@
     --subheader-height: 60px;
 
     --box-shadow: 0 3px 5px rgba(57, 63, 72, 0.4);
-    --top-shadow: 0 -3px 3px rgba(57, 63, 72, 0.4);
+    --top-shadow: 0px -3px 3px rgba(57, 63, 72, 0.4);
     --button-shadow: 0 3px 5px rgba(57, 63, 72, 0.4);
     --tab-shadow: 2px -3px 3px rgba(57, 63, 72, 0.4);
     --file-card-shadow: 2px 6px 6px rgba(57, 63, 72, 0.4);
+    --sidebar-shadow: 1.5px 3px 8px rgba(57, 63, 72, 0.4);
 
     --black: #231f20;
     --white: #fff;
@@ -50,4 +51,8 @@
 
 .material-icons {
     user-select: none;
+}
+
+div[role="tooltip"] {
+    pointer-events: none;
 }

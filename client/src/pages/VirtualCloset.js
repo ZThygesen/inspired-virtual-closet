@@ -14,20 +14,23 @@ const Container = styled.div`
 
 export default function VirtualCloset() {
     const { client } = useLocation().state;
-    const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768 ? true : false);
+    const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 800 ? true : false);
     const [category, setCategory] = useState({});
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
     
     useEffect(() => {
         function handleResize() {
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 800 && sidebarOpen) {
                 setSidebarOpen(false);
             }
+            // } else {
+            //     setSidebarOpen(true)
+            // }
         }
 
         window.addEventListener('resize', handleResize);
-    }, []);
+    }, [sidebarOpen]);
     
     useEffect(() => {
         getCategories();
@@ -88,6 +91,7 @@ export default function VirtualCloset() {
     }
 
     function openSidebar() {
+        console.log('HERE')
         setSidebarOpen(true);
     }
 
