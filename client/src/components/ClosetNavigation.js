@@ -9,10 +9,11 @@ import AddItems from './AddItems';
 import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
 
 
-export default function ClosetNavigation({ open, openSidebar, client, category, setCategory, getCategories }) {
+export default function ClosetNavigation({ open, openSidebar, client, category, getCategories }) {
     const [closetMode, setClosetMode] = useState(0);
     const [currCategory, setCurrCategory] = useState(category?.name);
     const [showIcons, setShowIcons] = useState(window.innerWidth > 480 ? false : true);
+    const [canvasItems, setCanvasItems] = useState([]);
     const ref = useRef();
 
     function scrollToRef(ref) {
@@ -49,9 +50,21 @@ export default function ClosetNavigation({ open, openSidebar, client, category, 
         setClosetMode(0);
     }
 
+    function addCanvasItem(item) {
+        setCanvasItems([...canvasItems, item]);
+    }
+
+    function removeCanvasItems(itemsToRemove) {
+        let updatedCanvasItems = canvasItems;
+        itemsToRemove.forEach(itemToRemove => {
+            updatedCanvasItems = updatedCanvasItems.filter(item => item.fileId !== itemToRemove.fileId);
+        });
+        setCanvasItems(updatedCanvasItems)
+    }
+
     const closetModes = [
         { name: 'CLOTHES', icon: 'checkroom'},
-        { name: 'CANVAS', icon: 'swipe'},
+        { name: `CANVAS (${canvasItems.length})`, icon: 'swipe'},
         { name: 'OUTFITS', icon: 'dry_cleaning'},
         { name: 'ADD ITEMS', icon: 'add_box'}
     ];
@@ -93,8 +106,8 @@ export default function ClosetNavigation({ open, openSidebar, client, category, 
                     </ul>
                 </div>
                 <div ref={ref} className="closet-container">
-                    <Clothes display={closetMode === 0} category={category} updateItems={updateItems} />
-                    <Canvas display={closetMode === 1} />
+                    <Clothes display={closetMode === 0} category={category} updateItems={updateItems} addCanvasItem={addCanvasItem} />
+                    <Canvas display={closetMode === 1} open={open} itemList={canvasItems} removeCanvasItems={removeCanvasItems} />
                     <Outfits display={closetMode === 2} />
                     <AddItems display={closetMode === 3} client={client} category={category} openSidebar={openSidebar} updateItems={updateItems} />
                 </div>

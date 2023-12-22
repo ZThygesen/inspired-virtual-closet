@@ -1,5 +1,13 @@
 - close modals when clicking on backdrop
 
+- throttle event listeners?
+
+- change item.fileId to proper id when image DB is changed
+
+- handle files on back end
+
+- handle files by an ID (whenever new file system employed for images)
+
 - add error handling
 
 - when switching categories, scroll to the top again

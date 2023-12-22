@@ -180,7 +180,6 @@ export default function VirtualCloset() {
                     openSidebar={openSidebar}
                     client={client}
                     category={category}
-                    setCategory={setCategory}
                     getCategories={getCategories}
                 />
             </Container>

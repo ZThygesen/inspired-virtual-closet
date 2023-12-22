@@ -65,30 +65,6 @@ const DropContainer = styled.div`
     }
 `;
 
-const Button = styled.button`
-    background: none;
-    border: 2px solid var(--black);
-    border-radius: 25px;
-    font-family: 'Fashion';
-    font-size: 28px;
-    letter-spacing: 2px;
-    background-color: var(--primary-light);
-    color: var(--black);
-    padding: 10px 20px;
-    cursor: pointer;
-    transition: all 0.1s;
-
-    &:hover {
-        background-color: var(--primary);
-    }
-
-    &:disabled, &:disabled:hover {
-        background-color: var(--grey);
-        color: var(--black);
-        cursor: default;
-    }
-`;
-
 const FileContainer = styled.div`
     display: flex;
     flex-direction: column;
@@ -188,4 +164,4 @@ const FileCard = styled.div`
     }
 `;
 
-export { DropContainer, Button, FileContainer, FileCard };
+export { DropContainer, FileContainer, FileCard };
