@@ -1,36 +1,15 @@
 import { useState } from 'react';
 import axios from 'axios';
 import cuid from 'cuid';
-import styled from 'styled-components';
 import ClothingCard from './ClothingCard';
 import Loading from './Loading';
+import { ClothesContainer } from '../styles/Clothes';
 
-const Container = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    text-align: center;
-
-    .category-title {
-        font-size: 50px;
-        margin-bottom: 10px;
-    }
-
-    .items {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: center;
-        gap: 30px;
-    }
-`;
-
-export default function Clothes({ display, category, clothes, updateItems }) {
+export default function Clothes({ display, category, updateItems, addCanvasItem }) {
     const [loading, setLoading] = useState(false);
 
     function sendToCanvas(item) {
-        alert(`Send to canvas: ${item.fileName}`);
+        addCanvasItem(item);
     }
 
     function swapCategory(item) {
@@ -62,29 +41,28 @@ export default function Clothes({ display, category, clothes, updateItems }) {
 
     return (
         <>
-            <Container style={{ display: display ? 'flex' : 'none' }}>
+            <ClothesContainer style={{ display: display ? 'flex' : 'none' }}>
                 {
-                    /* category.name === undefined ? <NoCategories fontSize={28} /> : */
-                        <>
-                            <p className="category-title">{category.name}</p>
-                            <div className="items">
-                                {
-                                    clothes.map(item => (
-                                        <ClothingCard
-                                            item={item}
-                                            editable={category._id !== -1}
-                                            sendToCanvas={sendToCanvas}
-                                            swapCategory={swapCategory}
-                                            editItem={editItem}
-                                            deleteItem={deleteItem}
-                                            key={cuid()}
-                                        />
-                                    ))
-                                }
-                            </div>
-                        </>
+                    <>
+                        <h2 className="category-title">{category.name}</h2>
+                        <div className="items">
+                            {
+                                category?.items?.map(item => (
+                                    <ClothingCard
+                                        item={item}
+                                        editable={category._id !== -1}
+                                        sendToCanvas={sendToCanvas}
+                                        swapCategory={swapCategory}
+                                        editItem={editItem}
+                                        deleteItem={deleteItem}
+                                        key={cuid()}
+                                    />
+                                ))
+                            }
+                        </div>
+                    </>
                 }
-            </Container>
+            </ClothesContainer>
             <Loading open={loading} />
         </>
         

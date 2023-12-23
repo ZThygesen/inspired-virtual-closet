@@ -1,14 +1,20 @@
-import { Backdrop, CircularProgress } from '@mui/material';
+import { CircularProgress } from '@mui/material';
+import styled from 'styled-components';
+import Modal from './Modal';
+
+const CircleProgress = styled(CircularProgress)`
+    & * {
+        color: #FFF;
+    }
+`;
 
 export default function Loading({ open }) {
     return (
-        <div className="loading-screen">
-            <Backdrop
-                sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
-                open={open}
-            >
-                <CircularProgress color="inherit" />
-            </Backdrop>
-        </div>
+        <Modal
+            open={open}
+            isImage={true}
+        >
+            <CircleProgress color="inherit" />
+        </Modal>
     );
 }

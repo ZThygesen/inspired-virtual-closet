@@ -8,6 +8,7 @@ import puppeteer from 'puppeteer';
 router.post('/', async (req, res, next) => {
     try {
         const collection = db.collection('categories');
+
         await collection.updateOne(
             { _id: ObjectId(req.body.categoryId) },
             {
@@ -26,14 +27,15 @@ router.post('/', async (req, res, next) => {
     }
 });
 
-// get files
+// get files for given client
 router.get('/:clientId', async (req, res, next) => {
     try {
         const collection = db.collection('categories');
         const files = await collection.aggregate([
-            { $match: { 'items.clientId': req.params.clientId } },
             {
                 $project: {
+                    _id: 1,
+                    name: 1,
                     items: { $filter: {
                         input: '$items',
                         as: 'item',
