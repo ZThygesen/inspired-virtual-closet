@@ -1,5 +1,21 @@
 - close modals when clicking on backdrop
 
+- loading screens working properly everywhere
+
+- indicator that item is in canvas from clothes page view?
+
+- double click to push images to back layer?
+- press delete to delete selected images
+
+- throttle event listeners?
+- make sure to clean them up in useEffect
+
+- change item.fileId to proper id when image DB is changed
+
+- handle files on back end
+
+- handle files by an ID (whenever new file system employed for images)
+
 - add error handling
 
 - when switching categories, scroll to the top again

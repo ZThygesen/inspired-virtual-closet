@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios'
 import cuid from 'cuid';
-import { DropContainer, Button, FileContainer, FileCard } from '../styles/Dropzone';
+import { DropContainer, FileContainer, FileCard } from '../styles/Dropzone';
+import { ActionButton } from '../styles/ActionButton';
 import Modal from './Modal';
 import Loading from './Loading';
 import invalidImg from '../images/invalid.png';
@@ -225,13 +226,13 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                     &nbsp;or drag & drop here
                 </p>
             </ DropContainer>
-            <Button
-                    className="submit"
+            <ActionButton
+                    className="tertiary small"
                     onClick={() => setConfirmModalOpen(true)}
                     disabled={!(invalidFiles.length === 0 && filteredFiles.length) || disabled}
                 >
                     Submit File(s)
-            </Button>
+            </ActionButton>
             {filteredFiles.length > 0 &&
                 <FileContainer>
                     <h2 className="title">Current Files</h2>

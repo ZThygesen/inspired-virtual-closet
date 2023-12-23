@@ -8,6 +8,7 @@ import puppeteer from 'puppeteer';
 router.post('/', async (req, res, next) => {
     try {
         const collection = db.collection('categories');
+
         await collection.updateOne(
             { _id: ObjectId(req.body.categoryId) },
             {

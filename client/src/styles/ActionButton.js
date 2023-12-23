@@ -15,27 +15,57 @@ const ActionButton = styled.button`
     cursor: pointer;
     transition: all 0.1s;
 
-    &.secondary {
-        color: var(--black);
-        background-color: var(--white); 
+    &.small {
+        font-size: 20px;
     }
 
     &:hover {
+            color: var(--black);
+            background-color: var(--secondary-light);
+        }
+
+    &.secondary {
         color: var(--black);
-        background-color: var(--secondary-light);
+        background-color: var(--white);
+
+        &:hover {
+            color: var(--white);
+            background-color: var(--secondary); 
+        }
     }
 
-    &.secondary:hover {
-        color: var(--white);
-        background-color: var(--secondary); 
+    &.tertiary {
+        color: var(--black);
+        background-color: var(--primary-light);
+
+        &:hover {
+            background-color: var(--primary);
+        }
     }
+
+    &:disabled,
+    &:disabled:hover {
+        color: var(--black);
+        background-color: var(--grey);
+        cursor: default;
+    }
+
+    
 
     @media (min-width: 500px) {   
         font-size: 28px;
+
+        &.small {
+            font-size: 24px;
+        }
     }
 
     @media (min-width: 768px) {
         font-size: 36px;
+
+        &.small {
+            font-size: 28px;
+        }
     }
 `;
 
