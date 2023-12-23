@@ -8,6 +8,8 @@
     --tab-shadow: 2px -3px 3px rgba(57, 63, 72, 0.4);
     --file-card-shadow: 2px 6px 6px rgba(57, 63, 72, 0.4);
     --sidebar-shadow: 1.5px 3px 8px rgba(57, 63, 72, 0.4);
+    --canvas-shadow: 0 0 6px 1px rgba(57, 63, 72, 0.4);
+    --canvas-header-shadow: 0 1.5px 6px 1px rgba(57, 63, 72, 0.4);
 
     --black: #231f20;
     --white: #fff;
@@ -36,8 +38,6 @@
     border: 0;
     text-decoration: none;
     box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
-    font-family: 'Montserrat', sans-serif;
     font-family: 'Roboto', sans-serif;
     font-size: 16px;
     font-weight: 400;
@@ -53,6 +53,8 @@
     user-select: none;
 }
 
-div[role="tooltip"] {
+div[role="tooltip"] > * {
     pointer-events: none;
+    font-size: 18px !important;
+    font-family: 'Roboto', sans-serif;
 }

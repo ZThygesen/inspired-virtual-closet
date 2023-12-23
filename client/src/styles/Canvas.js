@@ -5,55 +5,58 @@ export const CanvasContainer = styled.div`
     width: 100%;
     height: 100%;
     flex-direction: column;
-    align-items: center;
-
-    & canvas {
-        box-shadow: var(--box-shadow);
-        border-radius: 25px;
-        transition: 0.5s !important;
-    }
 
     & .canvas-header {
         width: 100%;
-        height: 100%;
+        min-height: var(--header-height);
         display: flex;
         align-items: center;
-        padding: 12px 20px;
-        border-bottom: 1px solid var(--black);
+        justify-content: space-between;
+        padding: 0 20px;
+        box-shadow: var(--canvas-header-shadow);
+        border-radius: 25px 25px 0 0;
+        background-color: var(--white);
+        z-index: 100;
     }
 
-    & .remove-canvas-item-btn {
-        padding: 12px;
+    & .canvas-title {
+        font-size: 36px;
+        font-family: 'Fashion';
+        font-weight: 600;
+        letter-spacing: 2px;
+    }
+
+    & .remove-canvas-item-btn,
+    & .save-outfit-btn {
+        padding: 6px;
         background: none;
         border-radius: 50%;
-        border: 1.5px solid var(--black);
         cursor: pointer;
-        font-size: 32px !important;
-        background-color: var(--secondary-light);
+        font-size: 38px !important;
+        color: var(--black) !important;
         transition: all 0.1s;
-        margin-bottom: 12px;
 
-        &:hover,
-        &.active {
-            background-color: var(--secondary);
-            color: var(--white) !important;
-        }
-
-        &.active:hover {
-            transform: scale(1.2);
+        &:hover {
+            background-color: var(--material-btn-bg);
         }
 
         &:disabled,
         &:disabled:hover {
-            background-color: var(--grey);
-            color: var(--black) !important;
+            background-color: var(--white);
+            color: var(--grey) !important;
             cursor: default;
         }
+    } 
+    
+    & .konvajs-content {
+        width: 100% !important;
+    }
 
-        &.active {
-
-        }
-    }   
+    & canvas {
+        box-shadow: var(--canvas-shadow);
+        border-radius: 0 0 25px 25px;
+        width: 100% !important;
+    }
 `;
 
 export const CanvasImageContainer = styled(Image)`

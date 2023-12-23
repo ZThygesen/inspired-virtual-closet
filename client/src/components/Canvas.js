@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Layer, Stage, Rect, Transformer } from "react-konva";
-import { Html } from "react-konva-utils";
 import CanvasImage from "./CanvasImage";
 import { CanvasContainer } from "../styles/Canvas";
 import { Tooltip } from "@mui/material";
 
-export default function Canvas({ display, open, itemList, removeCanvasItems }) {
-    const [containerSize, setContainerSize] = useState({ w: 100, h: 100 });
+export default function Canvas({ sidebarRef, display, itemList, removeCanvasItems }) {
+    const [containerSize, setContainerSize] = useState({ w: 1, h: 1 });
     const [selectedItems, setSelectedItems] = useState([]);
     const [selecting, setSelecting] = useState(false);
     const [selectionStartCoords, setSelectionStartCoords] = useState({ x1: 0, y1: 0 });
     const [selectionEndCoords, setSelectionEndCoords] = useState({ x2: 0, y2: 0 });
+    const [shiftKeyPressed, setShiftKeyPressed] = useState(false);
+    const [ctrlKeyPressed, setCtrlKeyPressed] = useState(false);
+
     const containerRef = useRef();
     const stageRef = useRef();
     const transformerRef = useRef();
@@ -18,30 +20,44 @@ export default function Canvas({ display, open, itemList, removeCanvasItems }) {
 
     const handleResize = useCallback(() => {
         if (display) {
-            console.log('here')
             const { clientWidth, clientHeight } = containerRef?.current;
-            const { offsetWidth, offsetHeight } = containerRef?.current;
-            console.log(clientWidth, offsetWidth, containerRef.current.getBoundingClientRect().width);
-            setContainerSize({ w: clientWidth, h: clientHeight });
+            setContainerSize({ w: clientWidth, h: clientHeight - 75 });
         }
     }, [display]);
 
-    useEffect(() =>{
-        const currWidth = containerSize.w;
-        const currHeight = containerSize.h;
-        if (open) {
-            setContainerSize({ w: currWidth - 320, h: currHeight }) 
-        } else {
-            setContainerSize({ w: currWidth + 320, h: currHeight }) 
-        }
-        
-    }, [open]);
+    useEffect(() => {
+        handleResize();
+        window.addEventListener('resize', handleResize);
+
+        return () => { window.removeEventListener('resize', handleResize); }
+    }, [handleResize]);
 
     useEffect(() => {
-        // const resizeObserver = new ResizeObserver(handleResize);
-        // resizeObserver.observe(document.querySelector('.closet-container'));
-        window.addEventListener('resize', handleResize);
-    }, [handleResize]);
+        let animationId;
+        
+        function handleTransitionStart(e) {
+            if (e.target === sidebarRef.current && display) {
+                handleResize();
+                animationId = requestAnimationFrame(() => handleTransitionStart(e));
+            }
+        }
+
+        function handleTransitionEnd(e) {
+            if (e.target === sidebarRef.current && display) {
+                cancelAnimationFrame(animationId);
+            }
+        }
+
+        sidebarRef.current.addEventListener('transitionstart', handleTransitionStart);
+        sidebarRef.current.addEventListener('transitionend', handleTransitionEnd);
+
+        const sidebarCurr = sidebarRef.current;
+        return () => {
+            sidebarCurr.removeEventListener('transitionstart', handleTransitionStart);
+            sidebarCurr.removeEventListener('transitionend', handleTransitionEnd);
+        }
+
+    }, [handleResize, sidebarRef, display])
 
     function handleRemoveItems() {
         removeCanvasItems(selectedItems);
@@ -128,50 +144,109 @@ export default function Canvas({ display, open, itemList, removeCanvasItems }) {
         }
 
         // do nothing if not clicked on image
-        if (!e.target.hasName('image')) {
+        if (e.target.hasName('image')) {
             return;
         }
-
-        // handle shift/control keyboard functionality
-        const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey;
-        const isSelected = transformerRef.current.nodes().indexOf(e.target) >= 0;
-
-        // normal select (via clicking)
-        if (!metaPressed && !isSelected) {
-            transformerRef.current.nodes([e.target]);
-        
-        } else if (metaPressed && isSelected) {
-            const nodes = transformerRef.current.nodes().slice();
-            nodes.splice(nodes.indexOf(e.target), 1);
-            transformerRef.current.nodes(nodes);
-        } else if (metaPressed && !isSelected) {
-            const nodes = transformerRef.current.nodes().concat([e.target]);
-            transformerRef.current.nodes(nodes)
-        }
-
-        handleSelectItems();
     }
 
-    function handleSelectItems(newItem = null) {
+    function handleSelectItems(newItem = undefined) {
         const nodes = transformerRef.current.nodes();
-        if (newItem && !nodes.some(node => node.attrs.item.fileId === newItem.attrs.item.fileId)) {
+        if (newItem && !shiftKeyPressed && !nodes.some(node => node.attrs.item.canvasId === newItem.attrs.item.canvasId)) {
             transformerRef.current.nodes([newItem]);
         }
 
+        // if item clicked while shift pressed
+        if (newItem && shiftKeyPressed) {
+            // if item already selected, remove from selected
+            if (nodes.some(node => node.attrs.item.canvasId === newItem.attrs.item.canvasId)) {
+                nodes.splice(nodes.indexOf(newItem), 1);
+                transformerRef.current.nodes(nodes);
+            } 
+            // if item not already selected, add to selected
+            else {
+                transformerRef.current.nodes([...nodes, newItem]);
+            }
+        }
+
         const selected = transformerRef.current.nodes().map(image => {
-            image.moveToTop();
+            if (ctrlKeyPressed && image === newItem) {
+                transformerRef.current.moveToBottom();
+                image.moveToBottom();
+            } else {
+                image.moveToTop();
+            }
 
             return image.attrs.item;
         });
 
         setSelectedItems(selected);
 
-        transformerRef.current.moveToTop();
+        if (!ctrlKeyPressed) {
+            transformerRef.current.moveToTop();
+        } 
+
         selectionRectRef.current.moveToTop();
+    }
+
+    useEffect(() => {
+        function handleKeydown(e) {
+            if (display) {
+                if (e.key === 'Shift') {
+                    setShiftKeyPressed(true);
+                } else if (e.key === 'Control') {
+                    setCtrlKeyPressed(true);
+                }
+            }
+        }
+
+        function handleKeyup(e) {
+            if (e.key === 'Shift') {
+                setShiftKeyPressed(false);
+            } else if (e.key === 'Control') {
+                setCtrlKeyPressed(false);
+            }
+        }
+
+        document.addEventListener('keydown', handleKeydown);
+        document.addEventListener('keyup', handleKeyup);
+
+        return () => { 
+            document.removeEventListener('keydown', handleKeydown);
+            document.removeEventListener('keyup', handleKeyup);
+        }
+    }, [display]);
+
+    function handleSaveOutfit() {
+        alert('save outfit');
     }
 
     return (
         <CanvasContainer style={{ display: display ? 'flex' : 'none' }} ref={containerRef}>
+            <div className="canvas-header">
+                <Tooltip title="Remove Selected Items">
+                    <span>
+                        <button
+                            className={`material-icons remove-canvas-item-btn`}
+                            onClick={handleRemoveItems}
+                            disabled={selectedItems.length > 0 ? false : true}
+                        >
+                            delete
+                        </button>
+                    </span>
+                </Tooltip>
+                <h2 className="canvas-title">CANVAS</h2>
+                <Tooltip title="Save Outfit">
+                    <span>
+                        <button
+                            className={`material-icons save-outfit-btn`}
+                            onClick={handleSaveOutfit}
+                            disabled={itemList.length > 0 ? false : true}
+                        > 
+                            save
+                        </button>
+                    </span>
+                </Tooltip>
+            </div>
             <Stage 
                 width={containerSize.w}
                 height={containerSize.h}
@@ -182,36 +257,31 @@ export default function Canvas({ display, open, itemList, removeCanvasItems }) {
                 onClick={handleClick}
             >
                 <Layer>
-                    <Html>
-                    <div className="canvas-header">
-                        <Tooltip title="Remove Item">
-                            <span>
-                                <button
-                                    className={`material-icons remove-canvas-item-btn ${true ? "active" : ""}`}
-                                    onClick={handleRemoveItems}
-                                    disabled={selectedItems.length > 0 ? false : true}
-                                >
-                                    
-                                    {true ?
-                                        "delete_forever" : "delete"
-                                    }
-                                </button>
-                            </span>
-                        </Tooltip>
-                    </div>
-                    </Html>
                     {
-                        itemList?.map((item, index) => (
+                        itemList?.map(item => (
                             <CanvasImage
                                 item={item}
                                 handleDragImage={handleSelectItems}
                                 canvasResized={containerSize}
-                                key={index}
+                                key={item.canvasId}
                             />
                         ))
                     }
-                    <Transformer ref={transformerRef} />
-                    <Rect fill="#f478534d" stroke="#f47853" dash={[9, 3]} visible={false} ref={selectionRectRef} />
+                    <Transformer 
+                        ref={transformerRef} 
+                        borderStroke="#f47853" 
+                        anchorStroke="#f47853" 
+                        anchorFill="#f47853" 
+                        anchorCornerRadius={100} 
+                        rotationSnaps={[0, 90, 180, 270]}
+                    />
+                    <Rect
+                        ref={selectionRectRef} 
+                        fill="#f478534d" 
+                        stroke="#f47853" 
+                        dash={[9, 3]} 
+                        visible={false} 
+                    />
                 </Layer>
             </Stage>
         </CanvasContainer>

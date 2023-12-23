@@ -55,7 +55,7 @@ import { CategorySettings } from '../styles/CategoriesSidebar';
 //     'Ties',
 //     'This is a test for long text','sdugfwuiygdfiuywguofydgowegfw'];
 
-export default function CategoriesSidebar({ open, closeSidebar, closeSidebarOnSelect, categories, activeCategory, setCategory, addCategory, editCategory, deleteCategory }) {
+export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, closeSidebarOnSelect, categories, activeCategory, setCategory, addCategory, editCategory, deleteCategory }) {
     const [addOpen, setAddOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [categoryToEdit, setCategoryToEdit] = useState({});
@@ -137,7 +137,7 @@ export default function CategoriesSidebar({ open, closeSidebar, closeSidebarOnSe
 
     return (
         <>
-            <CategoriesSidebarContainer className={open ? 'open' : ''}>
+            <CategoriesSidebarContainer id="sidebar" className={open ? 'open' : ''} ref={sidebarRef}>
                 <div className="categories-header">
                     <Tooltip title="Manage Categories">
                         <button className="material-icons settings-icon" onClick={() => setSettingsOpen(true)}>settings</button>

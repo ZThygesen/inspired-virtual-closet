@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import useImage from "use-image";
 import { CanvasImageContainer } from "../styles/Canvas";
 
@@ -54,6 +54,8 @@ export default function CanvasImage({ item, handleDragImage, canvasResized }) {
                 name="image"
                 image={image}
                 ref={imageRef}
+                x={20}
+                y={120}
                 draggable
                 onDragMove={handleDrag}
                 onMouseDown={onMouseDown}
@@ -61,9 +63,6 @@ export default function CanvasImage({ item, handleDragImage, canvasResized }) {
                 onMouseLeave={onMouseLeave}
                 item={item}
                 globalCompositeOperation="multiply"
-                style={{
-                    cursor: "pointer !important"
-                }}
             />
         </>
     )

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
@@ -16,10 +16,12 @@ const Container = styled.div`
 export default function VirtualCloset() {
     const { client } = useLocation().state;
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 800 ? true : false);
-    const [closeSidebarOnSelect, setCloseSidebarOnSelect] = useState(window.innerWidth > 800 ? true : false);
+    const [closeSidebarOnSelect, setCloseSidebarOnSelect] = useState(window.innerWidth > 800 ? false : true);
     const [category, setCategory] = useState({});
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    const sidebarRef = useRef();
     
     useEffect(() => {
         function handleResize() {
@@ -164,6 +166,7 @@ export default function VirtualCloset() {
         <>
             <Container>
                 <CategoriesSidebar
+                    sidebarRef={sidebarRef}
                     open={sidebarOpen}
                     closeSidebar={closeSidebar}
                     closeSidebarOnSelect={closeSidebarOnSelect}
@@ -176,6 +179,7 @@ export default function VirtualCloset() {
                     deleteCategory={deleteCategory}
                 />
                 <ClosetNavigation
+                    sidebarRef={sidebarRef}
                     open={sidebarOpen}
                     openSidebar={openSidebar}
                     client={client}
