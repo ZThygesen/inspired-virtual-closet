@@ -234,7 +234,7 @@ export default function Canvas({ sidebarRef, display, itemList, removeCanvasItem
                         </button>
                     </span>
                 </Tooltip>
-                <h2 className="canvas-title">CANVAS</h2>
+                <h2 className="canvas-title">Canvas</h2>
                 <Tooltip title="Save Outfit">
                     <span>
                         <button

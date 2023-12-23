@@ -1,5 +1,7 @@
 - close modals when clicking on backdrop
 
+- does konva image resizing have snap points just like anchor rotation with transformer?
+
 - loading screens working properly everywhere
 
 - indicator that item is in canvas from clothes page view?
