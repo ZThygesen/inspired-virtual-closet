@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Layer, Stage, Rect, Transformer } from "react-konva";
 import CanvasImage from "./CanvasImage";
+import CanvasTextbox from "./CanvasTextbox";
 import { CanvasContainer } from "../styles/Canvas";
 import { Tooltip } from "@mui/material";
+import cuid from "cuid";
 
-export default function Canvas({ sidebarRef, display, itemList, removeCanvasItems }) {
+export default function Canvas({ sidebarRef, display, imageList, removeCanvasImages }) {
     const [containerSize, setContainerSize] = useState({ w: 1, h: 1 });
     const [selectedItems, setSelectedItems] = useState([]);
     const [selecting, setSelecting] = useState(false);
@@ -12,6 +14,7 @@ export default function Canvas({ sidebarRef, display, itemList, removeCanvasItem
     const [selectionEndCoords, setSelectionEndCoords] = useState({ x2: 0, y2: 0 });
     const [shiftKeyPressed, setShiftKeyPressed] = useState(false);
     const [ctrlKeyPressed, setCtrlKeyPressed] = useState(false);
+    const [textboxes, setTextboxes] = useState([]);
 
     const containerRef = useRef();
     const stageRef = useRef();
@@ -57,13 +60,62 @@ export default function Canvas({ sidebarRef, display, itemList, removeCanvasItem
             sidebarCurr.removeEventListener('transitionend', handleTransitionEnd);
         }
 
-    }, [handleResize, sidebarRef, display])
+    }, [handleResize, sidebarRef, display]);
 
-    function handleRemoveItems() {
-        removeCanvasItems(selectedItems);
+    const handleSelectItems = useCallback((newItem = undefined) => {
+        const nodes = transformerRef.current.nodes();
+        if (newItem && !shiftKeyPressed && !nodes.some(node => node.attrs.item.canvasId === newItem.attrs.item.canvasId)) {
+            transformerRef.current.nodes([newItem]);
+        }
+
+        // if item clicked while shift pressed
+        if (newItem && shiftKeyPressed) {
+            // if item already selected, remove from selected
+            if (nodes.some(node => node.attrs.item.canvasId === newItem.attrs.item.canvasId)) {
+                nodes.splice(nodes.indexOf(newItem), 1);
+                transformerRef.current.nodes(nodes);
+            } 
+            // if item not already selected, add to selected
+            else {
+                transformerRef.current.nodes([...nodes, newItem]);
+            }
+        }
+
+        const selected = transformerRef.current.nodes().map(item => {
+            if (ctrlKeyPressed && item === newItem) {
+                transformerRef.current.moveToBottom();
+                item.moveToBottom();
+            } else {
+                item.moveToTop();
+            }
+
+            return item.attrs.item;
+        });
+
+        setSelectedItems(selected);
+
+        if (!ctrlKeyPressed) {
+            transformerRef.current.moveToTop();
+        } 
+
+        selectionRectRef.current.moveToTop();
+    }, [ctrlKeyPressed, shiftKeyPressed]);
+
+    const handleRemoveItems = useCallback(() => {
+        // remove text boxes
+        const selectedTextboxes = selectedItems.filter(item => item.initialText);
+
+        let updatedTextboxes = textboxes;
+        selectedTextboxes.forEach(selectedTextbox => {
+            updatedTextboxes = updatedTextboxes.filter(textbox => textbox.canvasId !== selectedTextbox.canvasId);
+        });
+        setTextboxes(updatedTextboxes);
+
+        // remove images
+        removeCanvasImages(selectedItems);
         transformerRef.current.nodes([]);
         handleSelectItems();
-    }
+    }, [handleSelectItems, removeCanvasImages, selectedItems, textboxes]);
 
     function onMouseDown(e) {
         if (e.target !== stageRef.current) {
@@ -113,10 +165,14 @@ export default function Canvas({ sidebarRef, display, itemList, removeCanvasItem
 
         e.evt.preventDefault();
         selectionRectRef.current.visible(false);
+
+        // select all items in bounds of selection rect
         const images = stageRef.current.find('.image');
+        const textboxes = stageRef.current.find('.textbox');
+        const items = images.concat(textboxes);
         const selectionArea = selectionRectRef.current.getClientRect();
-        const selectedImages = images.filter(image => hasIntersection(selectionArea, image.getClientRect()));
-        transformerRef.current.nodes(selectedImages);
+        const selectedItems = items.filter(item => hasIntersection(selectionArea, item.getClientRect()));
+        transformerRef.current.nodes(selectedItems);
         handleSelectItems();
     }
 
@@ -149,45 +205,6 @@ export default function Canvas({ sidebarRef, display, itemList, removeCanvasItem
         }
     }
 
-    function handleSelectItems(newItem = undefined) {
-        const nodes = transformerRef.current.nodes();
-        if (newItem && !shiftKeyPressed && !nodes.some(node => node.attrs.item.canvasId === newItem.attrs.item.canvasId)) {
-            transformerRef.current.nodes([newItem]);
-        }
-
-        // if item clicked while shift pressed
-        if (newItem && shiftKeyPressed) {
-            // if item already selected, remove from selected
-            if (nodes.some(node => node.attrs.item.canvasId === newItem.attrs.item.canvasId)) {
-                nodes.splice(nodes.indexOf(newItem), 1);
-                transformerRef.current.nodes(nodes);
-            } 
-            // if item not already selected, add to selected
-            else {
-                transformerRef.current.nodes([...nodes, newItem]);
-            }
-        }
-
-        const selected = transformerRef.current.nodes().map(image => {
-            if (ctrlKeyPressed && image === newItem) {
-                transformerRef.current.moveToBottom();
-                image.moveToBottom();
-            } else {
-                image.moveToTop();
-            }
-
-            return image.attrs.item;
-        });
-
-        setSelectedItems(selected);
-
-        if (!ctrlKeyPressed) {
-            transformerRef.current.moveToTop();
-        } 
-
-        selectionRectRef.current.moveToTop();
-    }
-
     useEffect(() => {
         function handleKeydown(e) {
             if (display) {
@@ -195,6 +212,8 @@ export default function Canvas({ sidebarRef, display, itemList, removeCanvasItem
                     setShiftKeyPressed(true);
                 } else if (e.key === 'Control') {
                     setCtrlKeyPressed(true);
+                } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                    handleRemoveItems();
                 }
             }
         }
@@ -214,10 +233,26 @@ export default function Canvas({ sidebarRef, display, itemList, removeCanvasItem
             document.removeEventListener('keydown', handleKeydown);
             document.removeEventListener('keyup', handleKeyup);
         }
-    }, [display]);
+    }, [display, handleRemoveItems]);
 
     function handleSaveOutfit() {
         alert('save outfit');
+    }
+
+    function handleDblClick(e) {
+        // if double clicking on empty space, add text box
+        if (e.target === stageRef.current) {
+            const {x, y} = stageRef.current.getPointerPosition();
+            const textbox = {
+                canvasId: cuid(),
+                x: x,
+                y: y,
+                width: 100,
+                height: 50,
+                initialText: 'Add text here...'
+            }
+            setTextboxes(current => [...current, textbox]);
+        }
     }
 
     return (
@@ -240,7 +275,7 @@ export default function Canvas({ sidebarRef, display, itemList, removeCanvasItem
                         <button
                             className={`material-icons save-outfit-btn`}
                             onClick={handleSaveOutfit}
-                            disabled={itemList.length > 0 ? false : true}
+                            disabled={imageList.length > 0 ? false : true}
                         > 
                             save
                         </button>
@@ -255,15 +290,27 @@ export default function Canvas({ sidebarRef, display, itemList, removeCanvasItem
                 onMouseMove={onMouseMove}
                 onMouseUp={onMouseUp}
                 onClick={handleClick}
+                onDblClick={handleDblClick}
             >
                 <Layer>
                     {
-                        itemList?.map(item => (
+                        imageList?.map(image => (
                             <CanvasImage
-                                item={item}
-                                handleDragImage={handleSelectItems}
+                                imageObj={image}
+                                handleSelectItems={handleSelectItems}
                                 canvasResized={containerSize}
-                                key={item.canvasId}
+                                key={image.canvasId}
+                            />
+                        ))
+                    }
+                    {
+                        textboxes?.map(textbox => (
+                            <CanvasTextbox 
+                                textbox={textbox}
+                                handleSelectItems={handleSelectItems}
+                                canvasResized={containerSize}
+                                transformerRef={transformerRef}
+                                key={textbox.canvasId}
                             />
                         ))
                     }
@@ -282,6 +329,7 @@ export default function Canvas({ sidebarRef, display, itemList, removeCanvasItem
                         dash={[9, 3]} 
                         visible={false} 
                     />
+                    
                 </Layer>
             </Stage>
         </CanvasContainer>

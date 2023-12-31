@@ -1,5 +1,4 @@
 import styled from "styled-components";
-import { Image } from "react-konva";
 
 export const CanvasContainer = styled.div`
     width: 100%;
@@ -57,8 +56,4 @@ export const CanvasContainer = styled.div`
         border-radius: 0 0 25px 25px;
         width: 100% !important;
     }
-`;
-
-export const CanvasImageContainer = styled(Image)`
-    mix-blend-mode: multiply;
 `;

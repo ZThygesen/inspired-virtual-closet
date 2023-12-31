@@ -5,11 +5,11 @@ import ClothingCard from './ClothingCard';
 import Loading from './Loading';
 import { ClothesContainer } from '../styles/Clothes';
 
-export default function Clothes({ display, category, updateItems, addCanvasItem }) {
+export default function Clothes({ display, category, updateItems, addCanvasImage }) {
     const [loading, setLoading] = useState(false);
 
     function sendToCanvas(item) {
-        addCanvasItem(item);
+        addCanvasImage(item);
     }
 
     function swapCategory(item) {
