@@ -13,7 +13,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
     const [closetMode, setClosetMode] = useState(0);
     const [currCategory, setCurrCategory] = useState(category?.name);
     const [showIcons, setShowIcons] = useState(window.innerWidth > 480 ? false : true);
-    const [canvasItems, setCanvasItems] = useState([]);
+    const [canvasImages, setCanvasImages] = useState([]);
     const ref = useRef();
 
     function scrollToRef(ref) {
@@ -50,23 +50,23 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
         setClosetMode(0);
     }
 
-    function addCanvasItem(item) {
-        const itemCopy = JSON.parse(JSON.stringify(item));
-        itemCopy.canvasId = cuid();
-        setCanvasItems([...canvasItems, itemCopy]);
+    function addCanvasImage(image) {
+        const imageCopy = JSON.parse(JSON.stringify(image));
+        imageCopy.canvasId = cuid();
+        setCanvasImages([...canvasImages, imageCopy]);
     }
 
-    function removeCanvasItems(itemsToRemove) {
-        let updatedCanvasItems = canvasItems;
-        itemsToRemove.forEach(itemToRemove => {
-            updatedCanvasItems = updatedCanvasItems.filter(item => item.canvasId !== itemToRemove.canvasId);
+    function removeCanvasImages(imagesToRemove) {
+        let updatedCanvasImages = canvasImages;
+        imagesToRemove.forEach(imageToRemove => {
+            updatedCanvasImages = updatedCanvasImages.filter(image => image.canvasId !== imageToRemove.canvasId);
         });
-        setCanvasItems(updatedCanvasItems)
+        setCanvasImages(updatedCanvasImages)
     }
 
     const closetModes = [
         { name: 'CLOTHES', icon: 'checkroom'},
-        { name: `CANVAS (${canvasItems.length})`, icon: 'swipe'},
+        { name: `CANVAS (${canvasImages.length})`, icon: 'swipe'},
         { name: 'OUTFITS', icon: 'dry_cleaning'},
         { name: 'ADD ITEMS', icon: 'add_box'}
     ];
@@ -108,8 +108,8 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
                     </ul>
                 </div>
                 <div ref={ref} className="closet-container">
-                    <Clothes display={closetMode === 0} category={category} updateItems={updateItems} addCanvasItem={addCanvasItem} />
-                    <Canvas display={closetMode === 1} sidebarRef={sidebarRef} itemList={canvasItems} removeCanvasItems={removeCanvasItems} />
+                    <Clothes display={closetMode === 0} category={category} updateItems={updateItems} addCanvasImage={addCanvasImage} />
+                    <Canvas display={closetMode === 1} sidebarRef={sidebarRef} imageList={canvasImages} removeCanvasImages={removeCanvasImages} />
                     <Outfits display={closetMode === 2} />
                     <AddItems display={closetMode === 3} client={client} category={category} openSidebar={openSidebar} updateItems={updateItems} />
                 </div>

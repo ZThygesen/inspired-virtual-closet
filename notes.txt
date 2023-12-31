@@ -1,44 +1,40 @@
-- close modals when clicking on backdrop
+add logo on canvas
+add vertical space to canvas
+add limit to number of images that can be uploaded?
+add fields for client email and tags on items
+ability to use canvas on mobile (tap events)
 
-- does konva image resizing have snap points just like anchor rotation with transformer?
+change way to create textboxes (currently dbl click)?
 
-- loading screens working properly everywhere
+close modals when clicking on backdrop
 
-- indicator that item is in canvas from clothes page view?
+loading screens working properly everywhere?
 
-- double click to push images to back layer?
-- press delete to delete selected images
+indicator that item is in canvas from clothes page view?
 
-- throttle event listeners?
-- make sure to clean them up in useEffect
+press delete to delete selected images
 
-- change item.fileId to proper id when image DB is changed
+throttle event listeners?
+make sure to clean them up in useEffect
 
-- handle files on back end
+change item.fileId to proper id when image DB is changed
 
-- handle files by an ID (whenever new file system employed for images)
+handle files on back end
 
-- add error handling
+handle files by an ID (whenever new file system employed for images)
 
-- when switching categories, scroll to the top again
+add error handling
 
-- adding/editing categories switches properly in sidebar
+store the smaller image size for preview purposes
 
-- store the smaller image size for preview purposes
+set things to null upon deletion?
 
-- set things to null upon deletion?
+remove background from pictures before posting to imgbb and db
 
-- if no clients or images, say so
-    - change <NoCategories /> logic?
+check duplicate files in db when submitting
 
-- number of items in each category shown on sidebar
+error handling on api calls
+dropzone submission to imgbb
+dropzone submission to db
 
-- remove background from pictures before posting to imgbb and db
-
-- check duplicate files in db when submitting
-
-- error handling on api calls
-    - dropzone submission to imgbb
-    - dropzone submission to db
-
-- email/share outfits
+email/share outfits

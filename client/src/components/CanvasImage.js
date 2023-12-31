@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
 import useImage from "use-image";
-import { CanvasImageContainer } from "../styles/Canvas";
+import { Image } from "react-konva";
 
-export default function CanvasImage({ item, handleDragImage, canvasResized }) {
-    const [image] = useImage(item.smallFileUrl);
+export default function CanvasImage({ imageObj, handleSelectItems, canvasResized }) {
+    const [image] = useImage(imageObj.smallFileUrl);
     const imageRef = useRef();
 
     useEffect(() => {
@@ -35,7 +35,7 @@ export default function CanvasImage({ item, handleDragImage, canvasResized }) {
     }
 
     function onMouseDown() {
-        handleDragImage(imageRef.current);
+        handleSelectItems(imageRef.current);
     }
 
     function onMouseEnter() {
@@ -50,7 +50,7 @@ export default function CanvasImage({ item, handleDragImage, canvasResized }) {
 
     return (
         <>
-            <CanvasImageContainer
+            <Image
                 name="image"
                 image={image}
                 ref={imageRef}
@@ -61,7 +61,7 @@ export default function CanvasImage({ item, handleDragImage, canvasResized }) {
                 onMouseDown={onMouseDown}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
-                item={item}
+                item={imageObj}
                 globalCompositeOperation="multiply"
             />
         </>
