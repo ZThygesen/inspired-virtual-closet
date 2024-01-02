@@ -26,18 +26,6 @@ router.post('/', async (req, res, next) => {
     }
 });
 
-// get categories
-// router.get('/', async (req, res, next) => {
-//     try {
-//         const collection = db.collection('categories');
-//         const categories = await collection.find({ }).toArray();
-
-//         res.json(categories);
-//     } catch (err) {
-//         next(err);
-//     }
-// });
-
 // update category
 router.patch('/', async (req, res, next) => {
     try {
@@ -82,7 +70,7 @@ router.delete('/:categoryId', async (req, res, next) => {
         );
 
         // delete category
-        await collection.deleteOne({ _id: ObjectId(req.params.categoryId )})
+        await collection.deleteOne({ _id: ObjectId(req.params.categoryId )});
 
         res.json({ message: 'Success!' });
     } catch (err) {

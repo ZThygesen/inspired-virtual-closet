@@ -44,8 +44,8 @@ router.get('/:clientId', async (req, res, next) => {
                 }
             }
         ]).toArray();
-
-        res.json({ files: files });
+        
+        res.json(files);
     } catch (err) {
         next(err);
     }

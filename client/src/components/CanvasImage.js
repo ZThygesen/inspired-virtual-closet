@@ -3,7 +3,7 @@ import useImage from "use-image";
 import { Image } from "react-konva";
 
 export default function CanvasImage({ imageObj, handleSelectItems, canvasResized }) {
-    const [image] = useImage(imageObj.smallFileUrl);
+    const [image] = useImage(imageObj.src);
     const imageRef = useRef();
 
     useEffect(() => {

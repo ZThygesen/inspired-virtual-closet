@@ -44,7 +44,7 @@ export default function VirtualCloset() {
         const response = await axios.get(`/files/${client._id}`)
             .catch(err => console.log(err));
 
-        let categories = response.data.files;
+        let categories = response.data;
 
         // filter out the other category
         const otherCategoryIndex = categories.findIndex(category => category._id === 0);

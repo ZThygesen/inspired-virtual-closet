@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import axios from 'axios';
-import cuid from 'cuid';
 import ClothingCard from './ClothingCard';
 import Loading from './Loading';
 import { ClothesContainer } from '../styles/Clothes';
@@ -42,26 +41,22 @@ export default function Clothes({ display, category, updateItems, addCanvasImage
     return (
         <>
             <ClothesContainer style={{ display: display ? 'flex' : 'none' }}>
-                {
-                    <>
-                        <h2 className="category-title">{category.name}</h2>
-                        <div className="items">
-                            {
-                                category?.items?.map(item => (
-                                    <ClothingCard
-                                        item={item}
-                                        editable={category._id !== -1}
-                                        sendToCanvas={sendToCanvas}
-                                        swapCategory={swapCategory}
-                                        editItem={editItem}
-                                        deleteItem={deleteItem}
-                                        key={cuid()}
-                                    />
-                                ))
-                            }
-                        </div>
-                    </>
-                }
+                <h2 className="category-title">{category.name}</h2>
+                <div className="items">
+                    {
+                        category?.items?.map((item, index) => (
+                            <ClothingCard
+                                item={item}
+                                editable={category._id !== -1}
+                                sendToCanvas={sendToCanvas}
+                                swapCategory={swapCategory}
+                                editItem={editItem}
+                                deleteItem={deleteItem}
+                                key={index}
+                            />
+                        ))
+                    }
+                </div>
             </ClothesContainer>
             <Loading open={loading} />
         </>

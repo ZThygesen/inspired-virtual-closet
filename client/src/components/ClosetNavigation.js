@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import axios from "axios";
 import { Link } from 'react-router-dom';
 import cuid from 'cuid';
 import { Tooltip } from '@mui/material';
@@ -14,6 +15,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
     const [currCategory, setCurrCategory] = useState(category?.name);
     const [showIcons, setShowIcons] = useState(window.innerWidth > 480 ? false : true);
     const [canvasImages, setCanvasImages] = useState([]);
+    const [outfits, setOutfits] = useState([]);
     const ref = useRef();
 
     function scrollToRef(ref) {
@@ -51,9 +53,12 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
     }
 
     function addCanvasImage(image) {
-        const imageCopy = JSON.parse(JSON.stringify(image));
-        imageCopy.canvasId = cuid();
-        setCanvasImages([...canvasImages, imageCopy]);
+        const canvasImage = {
+            src: image.smallFileUrl,
+            canvasId: cuid()
+        }
+
+        setCanvasImages([...canvasImages, canvasImage]);
     }
 
     function removeCanvasImages(imagesToRemove) {
@@ -64,10 +69,33 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
         setCanvasImages(updatedCanvasImages)
     }
 
+    async function addOutfit(imageList, textboxes, stageItems) {
+        await axios.post('/outfits', {
+            clientId: client._id, 
+            imageList: imageList,
+            textboxes: textboxes,
+            stageItems: stageItems,
+            outfitName: '',
+            outfitImage: ''
+        }).catch(err => console.log(err));
+    }
+
+    const getOutfits = useCallback(async () => {
+        const response = await axios.get(`/outfits/${client._id}`)
+            .catch(err => console.log(err));
+            
+        setOutfits(response.data);
+    }, [client]);
+
+
+    useEffect(() => {
+        getOutfits();
+    }, [getOutfits]);
+
     const closetModes = [
         { name: 'CLOTHES', icon: 'checkroom'},
         { name: `CANVAS (${canvasImages.length})`, icon: 'swipe'},
-        { name: 'OUTFITS', icon: 'dry_cleaning'},
+        { name: `OUTFITS (${outfits.length})`, icon: 'dry_cleaning'},
         { name: 'ADD ITEMS', icon: 'add_box'}
     ];
 
@@ -109,8 +137,8 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
                 </div>
                 <div ref={ref} className="closet-container">
                     <Clothes display={closetMode === 0} category={category} updateItems={updateItems} addCanvasImage={addCanvasImage} />
-                    <Canvas display={closetMode === 1} sidebarRef={sidebarRef} imageList={canvasImages} removeCanvasImages={removeCanvasImages} />
-                    <Outfits display={closetMode === 2} />
+                    <Canvas display={closetMode === 1} sidebarRef={sidebarRef} imageList={canvasImages} removeCanvasImages={removeCanvasImages} addOutfit={addOutfit} />
+                    <Outfits display={closetMode === 2} outfits={outfits} updateOutfits={getOutfits} />
                     <AddItems display={closetMode === 3} client={client} category={category} openSidebar={openSidebar} updateItems={updateItems} />
                 </div>
             </ClosetNavigationContainer>

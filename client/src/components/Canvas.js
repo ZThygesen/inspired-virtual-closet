@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Layer, Stage, Rect, Transformer } from "react-konva";
-import CanvasImage from "./CanvasImage";
-import CanvasTextbox from "./CanvasTextbox";
-import { CanvasContainer } from "../styles/Canvas";
-import { Tooltip } from "@mui/material";
-import cuid from "cuid";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Layer, Stage, Rect, Transformer } from 'react-konva';
+import CanvasImage from './CanvasImage';
+import CanvasTextbox from './CanvasTextbox';
+import { CanvasContainer } from '../styles/Canvas';
+import { Tooltip } from '@mui/material';
+import cuid from 'cuid';
 
-export default function Canvas({ sidebarRef, display, imageList, removeCanvasImages }) {
+export default function Canvas({ sidebarRef, display, imageList, removeCanvasImages, addOutfit, editMode, existingNodes }) {
     const [containerSize, setContainerSize] = useState({ w: 1, h: 1 });
     const [selectedItems, setSelectedItems] = useState([]);
     const [selecting, setSelecting] = useState(false);
@@ -15,6 +15,10 @@ export default function Canvas({ sidebarRef, display, imageList, removeCanvasIma
     const [shiftKeyPressed, setShiftKeyPressed] = useState(false);
     const [ctrlKeyPressed, setCtrlKeyPressed] = useState(false);
     const [textboxes, setTextboxes] = useState([]);
+    
+    // editing mode
+    // const existingImages = existingNodes.filter(node => node.className === 'Image');
+    // const existingTextboxes = existingNodes.filter(node => node.className === 'Group');
 
     const containerRef = useRef();
     const stageRef = useRef();
@@ -235,10 +239,6 @@ export default function Canvas({ sidebarRef, display, imageList, removeCanvasIma
         }
     }, [display, handleRemoveItems]);
 
-    function handleSaveOutfit() {
-        alert('save outfit');
-    }
-
     function handleDblClick(e) {
         // if double clicking on empty space, add text box
         if (e.target === stageRef.current) {
@@ -253,6 +253,14 @@ export default function Canvas({ sidebarRef, display, imageList, removeCanvasIma
             }
             setTextboxes(current => [...current, textbox]);
         }
+    }
+
+    function handleAddOutfit() {
+        const stageJSON = JSON.parse(stageRef.current.toJSON());
+        const layerJSON = stageJSON.children[0]
+        const stageItems = layerJSON.children.filter(item => item.className === 'Group' || item.className === 'Image');
+        console.log(stageItems)
+        addOutfit(imageList, textboxes, stageItems);
     }
 
     return (
@@ -274,8 +282,8 @@ export default function Canvas({ sidebarRef, display, imageList, removeCanvasIma
                     <span>
                         <button
                             className={`material-icons save-outfit-btn`}
-                            onClick={handleSaveOutfit}
-                            disabled={imageList.length > 0 ? false : true}
+                            onClick={handleAddOutfit}
+                            disabled={imageList.length > 0 || textboxes.length > 0 ? false : true}
                         > 
                             save
                         </button>
