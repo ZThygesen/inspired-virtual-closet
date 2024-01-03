@@ -8,6 +8,10 @@ log who creates outfits?
 allow admin to hide/unhide outfits
 how will sharing of outfits work?
 
+delete all clients' outfits when that client is deleted
+
+modal for cancelling outfit edit on canvas?
+
 include id in patch requests?
 
 allow editing of items in all category

@@ -7,11 +7,13 @@ export const CanvasContainer = styled.div`
 
     & .canvas-header {
         width: 100%;
+        height: 100%;
         min-height: var(--header-height);
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 20px;
+        gap: 8px;
+        padding: 0 8px;
         box-shadow: var(--canvas-header-shadow);
         border-radius: 25px 25px 0 0;
         background-color: var(--white);
@@ -19,14 +21,35 @@ export const CanvasContainer = styled.div`
     }
 
     & .canvas-title {
-        font-size: 36px;
-        font-family: 'Fashion';
-        font-weight: 600;
-        letter-spacing: 2px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        & .main-title {
+            font-size: 36px;
+            font-family: 'Fashion';
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+
+        & .sub-title,
+        & .sub-title span {
+            max-width: 100%;
+            font-size: 20px;
+            text-align: center;
+
+            & span {
+                font-weight: 600;
+            }
+        }
     }
 
-    & .remove-canvas-item-btn,
-    & .save-outfit-btn {
+    .canvas-options {
+        display: flex;
+        gap: 8px;
+    }
+
+    .canvas-options button {
         padding: 6px;
         background: none;
         border-radius: 50%;

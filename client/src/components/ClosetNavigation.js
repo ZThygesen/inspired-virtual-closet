@@ -7,8 +7,6 @@ import Clothes from './Clothes';
 import Canvas from './Canvas';
 import Outfits from './Outfits';
 import AddItems from './AddItems';
-import Modal from './Modal';
-import Input from './Input';
 import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
 
 
@@ -16,8 +14,11 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
     const [closetMode, setClosetMode] = useState(0);
     const [currCategory, setCurrCategory] = useState(category?.name);
     const [showIcons, setShowIcons] = useState(window.innerWidth > 480 ? false : true);
-    const [canvasImages, setCanvasImages] = useState([]);
+    const [canvasItems, setCanvasItems] = useState([]);
+
     const [outfits, setOutfits] = useState([]);
+    const [outfitEditMode, setOutfitEditMode] = useState(false);
+    const [outfitToEdit, setOutfitToEdit] = useState(null);
 
     const ref = useRef();
 
@@ -55,30 +56,85 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
         setClosetMode(0);
     }
 
-    function addCanvasImage(image) {
-        const canvasImage = {
-            src: image.smallFileUrl,
-            canvasId: cuid()
-        }
+    function addCanvasItem(item, type) {
+        let canvasItem;
 
-        setCanvasImages([...canvasImages, canvasImage]);
+        if (type === 'image') {
+            canvasItem = {
+                canvasId: cuid(),
+                type: type,
+                src: item.smallFileUrl
+            }
+        } else {
+            canvasItem = {
+                canvasId: cuid(),
+                type: type,
+                initialText: item
+            }
+        }  
+
+        setCanvasItems([...canvasItems, canvasItem]);
     }
 
-    function removeCanvasImages(imagesToRemove) {
-        let updatedCanvasImages = canvasImages;
-        imagesToRemove.forEach(imageToRemove => {
-            updatedCanvasImages = updatedCanvasImages.filter(image => image.canvasId !== imageToRemove.canvasId);
+    function sendOutfitToCanvas(outfit) {
+        setCanvasItems([]);
+
+        const stageItems = outfit.stageItems;
+        const items = [];
+        stageItems.forEach(stageItem => {
+            if (stageItem.className === 'Image') {
+                // get the image object from the stageItem
+                const existingItem = stageItem.attrs.item;
+
+                // add the stage item canvas attrs but without the item attribute (bc we already have it)
+                const { item, ...attrs } = stageItem.attrs; 
+                existingItem.attrs = attrs;
+
+                items.push(existingItem)
+            } else {
+                // get the textbox object from the stageItem
+                const existingItem = stageItem.attrs.item;
+                // add the stage item canvas attrs but without the item attribute (bc we already have it)
+                const { item, ...attrs} = stageItem.attrs;
+                existingItem.groupAttrs = attrs;
+
+                // handle the text node attrs
+                const textItem = stageItem.children[0];
+                existingItem.textAttrs = textItem.attrs;
+                
+                items.push(existingItem);
+            }
         });
-        setCanvasImages(updatedCanvasImages)
+        setOutfitEditMode(true);
+        setOutfitToEdit(outfit);
+        setClosetMode(1);
+        setCanvasItems(items);
     }
 
-    const getOutfits = useCallback(async () => {
+    async function cancelOutfitEdit() {
+        setOutfitEditMode(false);
+        setOutfitToEdit(null);
+    }
+
+    function removeCanvasItems(itemsToRemove) {
+        let updatedCanvasItems = canvasItems;
+        itemsToRemove.forEach(itemToRemove => {
+            updatedCanvasItems = updatedCanvasItems.filter(item => item.canvasId !== itemToRemove.canvasId);
+        });
+        setCanvasItems(updatedCanvasItems)
+    }
+
+    const getOutfits = useCallback(async (changeMode = false) => {
         const response = await axios.get(`/outfits/${client._id}`)
             .catch(err => console.log(err));
 
         // reverse outfits to show recently created first
         setOutfits(response.data.reverse());
-        setClosetMode(2);
+
+        if (changeMode) {
+           setClosetMode(2); 
+        }
+        
     }, [client]);
 
 
@@ -88,7 +144,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
 
     const closetModes = [
         { name: 'CLOTHES', icon: 'checkroom'},
-        { name: `CANVAS (${canvasImages.length})`, icon: 'swipe'},
+        { name: `CANVAS (${canvasItems.length})`, icon: 'swipe'},
         { name: `OUTFITS (${outfits.length})`, icon: 'dry_cleaning'},
         { name: 'ADD ITEMS', icon: 'add_box'}
     ];
@@ -130,10 +186,38 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
                     </ul>
                 </div>
                 <div ref={ref} className="closet-container">
-                    <Clothes display={closetMode === 0} category={category} updateItems={updateItems} addCanvasImage={addCanvasImage} />
-                    <Canvas display={closetMode === 1} sidebarRef={sidebarRef} client={client} imageList={canvasImages} removeCanvasImages={removeCanvasImages} updateOutfits={getOutfits} />
-                    <Outfits display={closetMode === 2} outfits={outfits} updateOutfits={getOutfits} />
-                    <AddItems display={closetMode === 3} client={client} category={category} openSidebar={openSidebar} updateItems={updateItems} />
+                    <Clothes 
+                        display={closetMode === 0} 
+                        category={category} 
+                        updateItems={updateItems} 
+                        addCanvasItem={addCanvasItem} 
+                    />
+                    <Canvas 
+                        display={closetMode === 1} 
+                        sidebarRef={sidebarRef} 
+                        client={client} 
+                        images={canvasItems.filter(item => item.type === 'image')}
+                        textboxes={canvasItems.filter(item => item.type === 'textbox')}
+                        addCanvasItem={addCanvasItem}
+                        removeCanvasItems={removeCanvasItems} 
+                        updateOutfits={getOutfits}
+                        editMode={outfitEditMode}
+                        outfitToEdit={outfitToEdit}
+                        cancelEdit={cancelOutfitEdit}
+                    />
+                    <Outfits 
+                        display={closetMode === 2} 
+                        outfits={outfits} 
+                        updateOutfits={getOutfits} 
+                        sendOutfitToCanvas={sendOutfitToCanvas} 
+                    />
+                    <AddItems 
+                        display={closetMode === 3} 
+                        client={client} 
+                        category={category} 
+                        openSidebar={openSidebar} 
+                        updateItems={updateItems} 
+                    />
                 </div>
             </ClosetNavigationContainer>
         </>

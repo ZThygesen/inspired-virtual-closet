@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import OutfitCard from './OutfitCard';
 import { OutfitsContainer } from '../styles/Outfits';
@@ -7,9 +7,8 @@ import Loading from './Loading';
 export default function Outfits({ display, outfits, updateOutfits, sendOutfitToCanvas }) {
     const [loading, setLoading] = useState(false);
 
-    async function editOutfit() {
-        await axios.patch('/outfits', { outfit: 1, newName: 2 })
-            .catch(err => console.log(err));
+    function editOutfit(outfit) {
+        sendOutfitToCanvas(outfit);
     }
 
     async function editOutfitName(outfit, newName) {
@@ -19,7 +18,7 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
             return;
         }
 
-        await axios.patch('/outfits/name', { outfitId: outfit._id, newName: newName })
+        await axios.patch(`/outfits/name/${outfit._id}`, { newName: newName })
             .catch(err => console.log(err));
         await updateOutfits();
         setLoading(false);

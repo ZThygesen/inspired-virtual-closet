@@ -6,9 +6,8 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
     const groupRef = useRef();
     const textboxRef = useRef();
     const inputRef = useRef();
-    const [text, setText] = useState(textbox.initialText);
+    const [text, setText] = useState(textbox.textAttrs?.text || textbox.initialText);
     const [isEditing, setIsEditing] = useState(false);
-    const [size, setSize] = useState({ w: textbox.width, h: textbox.height });
 
     useEffect(() => {
         handleDrag();
@@ -59,27 +58,29 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
     }, [isEditing, text.length]);
 
     function handleDrag() {
-        const node = textboxRef.current;
+        const node = groupRef.current;
         const stage = node.getStage();
         const rect = node.getClientRect();
         const centerX = rect.x + (rect.width / 2);
         const centerY = rect.y + (rect.height / 2);
- 
-        if (centerX < 0) {
-            node.x(node.x() - centerX);
-        }
+        
+        if (stage.width() > 0 && stage.height() > 0) {
+            if (centerX < 0) {
+                node.x(node.x() - centerX);
+            }
 
-        if (centerY < 0) {
-            node.y(node.y() - centerY);
-        }
+            if (centerY < 0) {
+                node.y(node.y() - centerY);
+            }
 
-        if (centerX > stage.width()) {
-            node.x(stage.width() - (centerX - node.x()));
-        }
+            if (centerX > stage.width()) {
+                node.x(stage.width() - (centerX - node.x()));
+            }
 
-        if (centerY > stage.height()) {
-            node.y(stage.height() - (centerY - node.y()));
-        }        
+            if (centerY > stage.height()) {
+                node.y(stage.height() - (centerY - node.y()));
+            }        
+        }
     }
 
     function onMouseDown() {
@@ -109,7 +110,8 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
         const width = textboxRef.current.width();
         const height = textboxRef.current.height();
 
-        setSize({ w: width * scaleX, h: height * scaleY });
+        textboxRef.current.width(width * scaleX);
+        textboxRef.current.height(height * scaleY);
 
         groupRef.current.scaleX(1);
         groupRef.current.scaleY(1);
@@ -118,33 +120,42 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
     return (
         <>
             <Group
-                item={textbox}
                 ref={groupRef}
-                name="textbox"
-                x={textbox.x}
-                y={textbox.y}
-                draggable
                 onDragMove={handleDrag}
                 onMouseDown={onMouseDown}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
                 onClick={onClick}
                 onTransform={onTransform}
+
+                // default attrs
+                name="textbox"
+                x={20}
+                y={20}
+                draggable
+                item={textbox}
+        
+                // if attrs exist (edit mode)
+                {...textbox.groupAttrs}
             >
                 <Text
                     ref={textboxRef}
                     text={text}
-                    width={size.w}
-                    height={size.h}
+                    width={150}
+                    height={100}
                     padding={8}
                     fontSize={16}
                     opacity={isEditing ? 0 : 1}
+                    
+                    // if attrs exist (edit mode)
+                    {...textbox.textAttrs}
                 />
                 {isEditing && 
                     <Html>
                         <textarea
                             ref={inputRef}
                             type="text"
+                            name="textbox"
                             value={text}
                             onChange={e => setText(e.target.value)}
                             style={{

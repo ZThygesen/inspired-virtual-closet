@@ -6,6 +6,7 @@ import { OutfitCardContainer } from '../styles/Outfits';
 
 export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteOutfit }) {
     const [editOpen, setEditOpen] = useState(false);
+    const [editNameOpen, setEditNameOpen] = useState(false);
     const [newOutfitName, setNewOutfitName] = useState(outfit.outfitName);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const [imageModalOpen, setImageModalOpen] = useState(false);
@@ -14,14 +15,19 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
         setImageModalOpen(false);
     }
 
-    function handleSubmitEdit(e) {
-        e.preventDefault();
+    function handleConfirmEdit() {
         setEditOpen(false);
+        editOutfit(outfit);
+    }
+
+    function handleSubmitEditName(e) {
+        e.preventDefault();
+        setEditNameOpen(false);
         editOutfitName(outfit, newOutfitName); 
     }
 
-    function handleCloseEdit() {
-        setEditOpen(false);
+    function handleCloseEditName() {
+        setEditNameOpen(false);
         setNewOutfitName(outfit.outfitName);
     }
 
@@ -54,7 +60,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                     <Tooltip title="Edit Outfit on Canvas">
                         <button 
                             className='material-icons outfit-option important'
-                            onClick={() => editOutfit(outfit)}
+                            onClick={() => setEditOpen(true)}
                         >
                             shortcut
                         </button>
@@ -62,7 +68,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                     <Tooltip title="Edit Outfit Name">
                         <button
                             className='material-icons outfit-option'
-                            onClick={() => setEditOpen(true)}
+                            onClick={() => setEditNameOpen(true)}
                         >
                             edit
                         </button>
@@ -117,10 +123,10 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                 </>
             </Modal>
             <Modal
-                open={editOpen}
-                onClose={handleCloseEdit}
+                open={editNameOpen}
+                onClose={handleCloseEditName}
                 isForm={true}
-                submitFn={handleSubmitEdit}
+                submitFn={handleSubmitEditName}
             >
                 <>
                     <h2 className="modal-title">EDIT OUTFIT NAME</h2>
@@ -139,8 +145,25 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                         />
                     </div>
                     <div className="modal-options">
-                        <button type="button" onClick={handleCloseEdit}>Cancel</button>
+                        <button type="button" onClick={handleCloseEditName}>Cancel</button>
                         <button type="submit">Save</button>
+                    </div>
+                </>
+            </Modal>
+            <Modal
+                open={editOpen}
+                onClose={() => setEditOpen(false)}
+            >
+                <>
+                    <h2 className="modal-title">EDIT OUTFIT ON CANVAS</h2>
+                    <div className="modal-content">
+                    <p className="medium">Are you sure you want to edit this outfit?</p>
+                        {/* <p className="large bold underline">{categoryToDelete.name}</p> */}
+                        <p className="small bold warning">Continuing will wipe out ALL items currently on the canvas!</p>
+                    </div>
+                    <div className="modal-options">
+                        <button onClick={() => setEditOpen(false)}>Cancel</button>
+                        <button onClick={handleConfirmEdit}>Continue</button>
                     </div>
                 </>
             </Modal>

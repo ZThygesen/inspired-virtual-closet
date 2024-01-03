@@ -29,21 +29,33 @@ router.get('/:clientId', async (req, res, next) => {
 });
 
 // update outfit content
-router.patch('/', async (req, res, next) => {
+router.patch('/:outfitId', async (req, res, next) => {
     console.log('HERE')
     try {
+        const collection = db.collection('outfits');
+        await collection.updateOne(
+            { _id: ObjectId(req.params.outfitId) },
+            {
+                $set: {
+                    stageItems: req.body.stageItems,
+                    outfitName: req.body.outfitName,
+                    outfitImage: req.body.outfitImage
+                }
+            }
+        );
 
+        res.json({ message: 'Success!' });
     } catch (err) {
         next(err);
     }
 });
 
 // update only outfit name
-router.patch('/name', async (req, res, next) => {
+router.patch('/name/:outfitId', async (req, res, next) => {
     try {
         const collection = db.collection('outfits');
         await collection.updateOne(
-            { _id: ObjectId(req.body.outfitId) },
+            { _id: ObjectId(req.params.outfitId) },
             { 
                 $set: {
                     outfitName: req.body.newName

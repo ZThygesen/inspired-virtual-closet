@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import cuid from 'cuid';
 import { Layer, Stage, Rect, Transformer } from 'react-konva';
 import Modal from './Modal';
 import Input from './Input';
@@ -10,26 +9,23 @@ import CanvasTextbox from './CanvasTextbox';
 import { CanvasContainer } from '../styles/Canvas';
 import { Tooltip } from '@mui/material';
 
-export default function Canvas({ display, sidebarRef, client, imageList, removeCanvasImages, updateOutfits, editMode, existingNodes }) {
-    const [containerSize, setContainerSize] = useState({ w: 1, h: 1 });
+export default function Canvas({ display, sidebarRef, client, images, textboxes, addCanvasItem, removeCanvasItems, updateOutfits, editMode, outfitToEdit, cancelEdit }) {
+    const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
     const [selectedItems, setSelectedItems] = useState([]);
     const [selecting, setSelecting] = useState(false);
     const [selectionStartCoords, setSelectionStartCoords] = useState({ x1: 0, y1: 0 });
     const [selectionEndCoords, setSelectionEndCoords] = useState({ x2: 0, y2: 0 });
     const [shiftKeyPressed, setShiftKeyPressed] = useState(false);
     const [ctrlKeyPressed, setCtrlKeyPressed] = useState(false);
-    const [textboxes, setTextboxes] = useState([]);
 
-    const [addOutfitOpen, setAddOutfitOpen] = useState(false);
+    // outfit functionality
+    const [saveOutfitOpen, setSaveOutfitOpen] = useState(false);
     const [outfitName, setOutfitName] = useState('');
     const [outfitImageData, setOutfitImageData] = useState('');
     const [loading, setLoading] = useState(false);
-    
-    // editing mode
-    // const existingImages = existingNodes.filter(node => node.className === 'Image');
-    // const existingTextboxes = existingNodes.filter(node => node.className === 'Group');
 
     const containerRef = useRef();
+    const headerRef = useRef();
     const stageRef = useRef();
     const transformerRef = useRef();
     const selectionRectRef = useRef();
@@ -114,27 +110,18 @@ export default function Canvas({ display, sidebarRef, client, imageList, removeC
         selectionRectRef.current.moveToTop();
     }, [ctrlKeyPressed, shiftKeyPressed]);
 
-    const handleRemoveItems = useCallback((clearCanvas = false) => {
-        // remove text boxes
-        const selectedTextboxes = selectedItems.filter(item => item.initialText);
-
-        let updatedTextboxes = textboxes;
-        selectedTextboxes.forEach(selectedTextbox => {
-            updatedTextboxes = updatedTextboxes.filter(textbox => textbox.canvasId !== selectedTextbox.canvasId);
-        });
-        setTextboxes(updatedTextboxes);
-
-        // remove images
-        if (clearCanvas) {
-            removeCanvasImages(imageList);
+    const handleRemoveItems = useCallback((_, doClearCanvas = false) => {
+        if (doClearCanvas) {
+            removeCanvasItems(images.concat(textboxes));
             setSelectedItems([]);
         } else {
-            removeCanvasImages(selectedItems);
+            removeCanvasItems(selectedItems);
         }
+       
         
         transformerRef.current.nodes([]);
         handleSelectItems();
-    }, [handleSelectItems, removeCanvasImages, selectedItems, textboxes, imageList]);
+    }, [handleSelectItems, removeCanvasItems, selectedItems, images, textboxes]);
 
     function onMouseDown(e) {
         if (e.target !== stageRef.current) {
@@ -231,7 +218,7 @@ export default function Canvas({ display, sidebarRef, client, imageList, removeC
                     setShiftKeyPressed(true);
                 } else if (e.key === 'Control') {
                     setCtrlKeyPressed(true);
-                } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                } else if (e.key === 'Delete') {
                     handleRemoveItems();
                 }
             }
@@ -254,38 +241,31 @@ export default function Canvas({ display, sidebarRef, client, imageList, removeC
         }
     }, [display, handleRemoveItems]);
 
-    function handleDblClick(e) {
-        // if double clicking on empty space, add text box
-        if (e.target === stageRef.current) {
-            const {x, y} = stageRef.current.getPointerPosition();
-            const textbox = {
-                canvasId: cuid(),
-                x: x,
-                y: y,
-                width: 100,
-                height: 50,
-                initialText: 'Add text here...'
-            }
-            setTextboxes(current => [...current, textbox]);
-        }
+    function handleAddTextbox() {
+        addCanvasItem('Add text here...', 'textbox');
     }
+
+    useEffect(() => {
+        setOutfitName(outfitToEdit?.outfitName || '');
+    }, [editMode, outfitToEdit]);
 
     async function handleAddOutfitOpen() {
+        transformerRef.current.nodes([]);
         setOutfitImageData(stageRef.current.toDataURL());
-        setAddOutfitOpen(true);
+        setSaveOutfitOpen(true);
     }
 
-    function handleAddOutfitClose() {
-        setAddOutfitOpen(false);
-        setOutfitName('');
+    function handleSaveOutfitClose() {
+        setSaveOutfitOpen(false);
+        setOutfitName(outfitToEdit?.outfitName || '');
         setOutfitImageData('');
     }
 
-    async function handleAddOutfit(e) {
+    async function handleSaveOutfit(e) {
         e.preventDefault();
 
         const stageJSON = JSON.parse(stageRef.current.toJSON());
-        const layerJSON = stageJSON.children[0]
+        const layerJSON = stageJSON.children[0];
         const stageItems = layerJSON.children.filter(item => item.className === 'Group' || item.className === 'Image');
 
         setLoading(true);
@@ -298,51 +278,93 @@ export default function Canvas({ display, sidebarRef, client, imageList, removeC
         const res = await axios.post('https://api.imgbb.com/1/upload', formData);
         const outfitImg = res.data.data.url;
 
-        await axios.post('/outfits', {
-            clientId: client._id, 
-            imageList: imageList,
-            textboxes: textboxes,
-            stageItems: stageItems,
-            outfitName: outfitName,
-            outfitImage: outfitImg
-        })
-            .catch(err => console.log(err));
+        if (editMode) {
+            await axios.patch(`/outfits/${outfitToEdit._id}`, {
+                stageItems: stageItems,
+                outfitName: outfitName,
+                outfitImage: outfitImg
+            })
+                .catch(err => console.log(err));
+        } else {
+           await axios.post('/outfits', {
+                clientId: client._id,
+                stageItems: stageItems,
+                outfitName: outfitName,
+                outfitImage: outfitImg
+            })
+                .catch(err => console.log(err)); 
+        }
 
-        await updateOutfits();
-        setSelectedItems(imageList);
-        handleRemoveItems(true);
-        setTextboxes([]);
-        handleAddOutfitClose();
+        await updateOutfits(true);
+        clearCanvas();
+        handleSaveOutfitClose();
         setLoading(false);
+    }
+
+    function clearCanvas() {
+        handleRemoveItems(null, true);
+    }
+    
+    function handleCancelEdit() {
+        clearCanvas();
+        cancelEdit();
     }
 
     return (
         <>
             <CanvasContainer style={{ display: display ? 'flex' : 'none' }} ref={containerRef}>
-                <div className="canvas-header">
-                    <Tooltip title="Remove Selected Items">
-                        <span>
-                            <button
-                                className={`material-icons remove-canvas-item-btn`}
-                                onClick={handleRemoveItems}
-                                disabled={selectedItems.length > 0 ? false : true}
-                            >
-                                delete
-                            </button>
-                        </span>
-                    </Tooltip>
-                    <h2 className="canvas-title">Canvas</h2>
-                    <Tooltip title="Save Outfit">
-                        <span>
-                            <button
-                                className={`material-icons save-outfit-btn`}
-                                onClick={handleAddOutfitOpen}
-                                disabled={imageList.length > 0 || textboxes.length > 0 ? false : true}
-                            > 
-                                save
-                            </button>
-                        </span>
-                    </Tooltip>
+                <div className="canvas-header" ref={headerRef}>
+                    <div className="canvas-options">
+                        <Tooltip title="Remove Selected Items">
+                            <span>
+                                <button
+                                    className="material-icons remove-canvas-item-btn"
+                                    onClick={handleRemoveItems}
+                                    disabled={selectedItems.length > 0 ? false : true}
+                                >
+                                    delete
+                                </button>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Add Text Box">
+                            <span>
+                                <button
+                                    className="material-icons add-text-btn"
+                                    onClick={handleAddTextbox}
+                                >
+                                    title
+                                </button>
+                            </span>
+                        </Tooltip>
+                    </div>
+                    <div className="canvas-title">
+                        <h2 className="main-title">Canvas</h2>
+                        <p className="sub-title">{editMode && outfitToEdit ? "(editing)" : ""}</p> {/* <span>{outfitToEdit.outfitName}</span></p>} */}
+                    </div>
+                    <div className="canvas-options">
+                        <Tooltip title="Cancel Outfit Edit">
+                            <span>
+                                <button
+                                    className="material-icons cancel-edit-btn"
+                                    onClick={handleCancelEdit}
+                                    disabled={editMode ? false : true}
+                                >
+                                    close
+                                </button>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title={editMode ? "Save Outfit" : "Add Outfit"}>
+                            <span>
+                                <button
+                                    className="material-icons save-outfit-btn"
+                                    onClick={handleAddOutfitOpen}
+                                    disabled={images.length > 0 || textboxes.length > 0 ? false : true}
+                                >
+                                    save
+                                </button>
+                            </span>
+                        </Tooltip>
+                    </div>
                 </div>
                 <Stage 
                     width={containerSize.w}
@@ -352,11 +374,10 @@ export default function Canvas({ display, sidebarRef, client, imageList, removeC
                     onMouseMove={onMouseMove}
                     onMouseUp={onMouseUp}
                     onClick={handleClick}
-                    onDblClick={handleDblClick}
                 >
                     <Layer>
                         {
-                            imageList?.map(image => (
+                            images?.map(image => (
                                 <CanvasImage
                                     imageObj={image}
                                     handleSelectItems={handleSelectItems}
@@ -395,13 +416,13 @@ export default function Canvas({ display, sidebarRef, client, imageList, removeC
                 </Stage>
             </CanvasContainer>
             <Modal
-                open={addOutfitOpen}
-                onClose={handleAddOutfitClose}
+                open={saveOutfitOpen}
+                onClose={handleSaveOutfitClose}
                 isForm={true}
-                submitFn={handleAddOutfit}
+                submitFn={handleSaveOutfit}
             >
                 <>
-                    <h2 className="modal-title">ADD OUTFIT</h2>
+                    <h2 className="modal-title">{editMode ? "SAVE OUTFIT" : "ADD OUTFIT"}</h2>
                     <div className="modal-content">
                         <p className="medium">Provide a name for this outfit:</p>
                         <Input
@@ -419,8 +440,8 @@ export default function Canvas({ display, sidebarRef, client, imageList, removeC
                         
                     </div>
                     <div className="modal-options">
-                        <button type="button" onClick={handleAddOutfitClose}>Cancel</button>
-                        <button type="submit">Save</button>
+                        <button type="button" onClick={handleSaveOutfitClose}>Cancel</button>
+                        <button type="submit">{editMode ? "Save Outfit" : "Add Outfit"}</button>
                     </div>
                 </>
             </Modal>
