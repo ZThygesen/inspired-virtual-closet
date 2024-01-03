@@ -7,6 +7,8 @@ import Clothes from './Clothes';
 import Canvas from './Canvas';
 import Outfits from './Outfits';
 import AddItems from './AddItems';
+import Modal from './Modal';
+import Input from './Input';
 import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
 
 
@@ -16,6 +18,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
     const [showIcons, setShowIcons] = useState(window.innerWidth > 480 ? false : true);
     const [canvasImages, setCanvasImages] = useState([]);
     const [outfits, setOutfits] = useState([]);
+
     const ref = useRef();
 
     function scrollToRef(ref) {
@@ -69,22 +72,13 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
         setCanvasImages(updatedCanvasImages)
     }
 
-    async function addOutfit(imageList, textboxes, stageItems) {
-        await axios.post('/outfits', {
-            clientId: client._id, 
-            imageList: imageList,
-            textboxes: textboxes,
-            stageItems: stageItems,
-            outfitName: '',
-            outfitImage: ''
-        }).catch(err => console.log(err));
-    }
-
     const getOutfits = useCallback(async () => {
         const response = await axios.get(`/outfits/${client._id}`)
             .catch(err => console.log(err));
-            
-        setOutfits(response.data);
+
+        // reverse outfits to show recently created first
+        setOutfits(response.data.reverse());
+        setClosetMode(2);
     }, [client]);
 
 
@@ -137,7 +131,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
                 </div>
                 <div ref={ref} className="closet-container">
                     <Clothes display={closetMode === 0} category={category} updateItems={updateItems} addCanvasImage={addCanvasImage} />
-                    <Canvas display={closetMode === 1} sidebarRef={sidebarRef} imageList={canvasImages} removeCanvasImages={removeCanvasImages} addOutfit={addOutfit} />
+                    <Canvas display={closetMode === 1} sidebarRef={sidebarRef} client={client} imageList={canvasImages} removeCanvasImages={removeCanvasImages} updateOutfits={getOutfits} />
                     <Outfits display={closetMode === 2} outfits={outfits} updateOutfits={getOutfits} />
                     <AddItems display={closetMode === 3} client={client} category={category} openSidebar={openSidebar} updateItems={updateItems} />
                 </div>

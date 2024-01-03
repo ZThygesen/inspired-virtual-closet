@@ -29,6 +29,18 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
         setConfirmDeleteOpen(false);
     }
 
+    async function handleDownloadOutfit() {
+        const image = await fetch(outfit.outfitImage).then(res => res.blob());
+        const imageURL = URL.createObjectURL(image);
+
+        const link = document.createElement('a');
+        link.href = imageURL;
+        link.download = outfit.outfitName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     return (
         <>
             <OutfitCardContainer>
@@ -61,6 +73,14 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                             onClick={() => setConfirmDeleteOpen(true)}
                         >
                             delete
+                        </button>
+                    </Tooltip>
+                    <Tooltip title="Download Outfit">
+                        <button
+                            className='material-icons outfit-option important'
+                            onClick={handleDownloadOutfit}
+                        >
+                            download
                         </button>
                     </Tooltip>
                 </div>

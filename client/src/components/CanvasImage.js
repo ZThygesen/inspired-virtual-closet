@@ -3,7 +3,7 @@ import useImage from "use-image";
 import { Image } from "react-konva";
 
 export default function CanvasImage({ imageObj, handleSelectItems, canvasResized }) {
-    const [image] = useImage(imageObj.src);
+    const [image] = useImage(imageObj.src, 'anonymous');
     const imageRef = useRef();
 
     useEffect(() => {
@@ -63,6 +63,7 @@ export default function CanvasImage({ imageObj, handleSelectItems, canvasResized
                 onMouseLeave={onMouseLeave}
                 item={imageObj}
                 globalCompositeOperation="multiply"
+                
             />
         </>
     )

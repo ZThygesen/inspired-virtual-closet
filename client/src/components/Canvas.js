@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import axios from 'axios';
+import cuid from 'cuid';
 import { Layer, Stage, Rect, Transformer } from 'react-konva';
+import Modal from './Modal';
+import Input from './Input';
+import Loading from './Loading';
 import CanvasImage from './CanvasImage';
 import CanvasTextbox from './CanvasTextbox';
 import { CanvasContainer } from '../styles/Canvas';
 import { Tooltip } from '@mui/material';
-import cuid from 'cuid';
 
-export default function Canvas({ sidebarRef, display, imageList, removeCanvasImages, addOutfit, editMode, existingNodes }) {
+export default function Canvas({ display, sidebarRef, client, imageList, removeCanvasImages, updateOutfits, editMode, existingNodes }) {
     const [containerSize, setContainerSize] = useState({ w: 1, h: 1 });
     const [selectedItems, setSelectedItems] = useState([]);
     const [selecting, setSelecting] = useState(false);
@@ -15,6 +19,11 @@ export default function Canvas({ sidebarRef, display, imageList, removeCanvasIma
     const [shiftKeyPressed, setShiftKeyPressed] = useState(false);
     const [ctrlKeyPressed, setCtrlKeyPressed] = useState(false);
     const [textboxes, setTextboxes] = useState([]);
+
+    const [addOutfitOpen, setAddOutfitOpen] = useState(false);
+    const [outfitName, setOutfitName] = useState('');
+    const [outfitImageData, setOutfitImageData] = useState('');
+    const [loading, setLoading] = useState(false);
     
     // editing mode
     // const existingImages = existingNodes.filter(node => node.className === 'Image');
@@ -105,7 +114,7 @@ export default function Canvas({ sidebarRef, display, imageList, removeCanvasIma
         selectionRectRef.current.moveToTop();
     }, [ctrlKeyPressed, shiftKeyPressed]);
 
-    const handleRemoveItems = useCallback(() => {
+    const handleRemoveItems = useCallback((clearCanvas = false) => {
         // remove text boxes
         const selectedTextboxes = selectedItems.filter(item => item.initialText);
 
@@ -116,10 +125,16 @@ export default function Canvas({ sidebarRef, display, imageList, removeCanvasIma
         setTextboxes(updatedTextboxes);
 
         // remove images
-        removeCanvasImages(selectedItems);
+        if (clearCanvas) {
+            removeCanvasImages(imageList);
+            setSelectedItems([]);
+        } else {
+            removeCanvasImages(selectedItems);
+        }
+        
         transformerRef.current.nodes([]);
         handleSelectItems();
-    }, [handleSelectItems, removeCanvasImages, selectedItems, textboxes]);
+    }, [handleSelectItems, removeCanvasImages, selectedItems, textboxes, imageList]);
 
     function onMouseDown(e) {
         if (e.target !== stageRef.current) {
@@ -255,91 +270,161 @@ export default function Canvas({ sidebarRef, display, imageList, removeCanvasIma
         }
     }
 
-    function handleAddOutfit() {
+    async function handleAddOutfitOpen() {
+        setOutfitImageData(stageRef.current.toDataURL());
+        setAddOutfitOpen(true);
+    }
+
+    function handleAddOutfitClose() {
+        setAddOutfitOpen(false);
+        setOutfitName('');
+        setOutfitImageData('');
+    }
+
+    async function handleAddOutfit(e) {
+        e.preventDefault();
+
         const stageJSON = JSON.parse(stageRef.current.toJSON());
         const layerJSON = stageJSON.children[0]
         const stageItems = layerJSON.children.filter(item => item.className === 'Group' || item.className === 'Image');
-        console.log(stageItems)
-        addOutfit(imageList, textboxes, stageItems);
+
+        setLoading(true);
+
+        // convert konva-generated image to blob and post to imgbb
+        const blob = await fetch(outfitImageData).then(res => res.blob());
+        const formData = new FormData();
+        formData.append('image', blob, `${outfitName}.png`);
+        formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
+        const res = await axios.post('https://api.imgbb.com/1/upload', formData);
+        const outfitImg = res.data.data.url;
+
+        await axios.post('/outfits', {
+            clientId: client._id, 
+            imageList: imageList,
+            textboxes: textboxes,
+            stageItems: stageItems,
+            outfitName: outfitName,
+            outfitImage: outfitImg
+        })
+            .catch(err => console.log(err));
+
+        await updateOutfits();
+        setSelectedItems(imageList);
+        handleRemoveItems(true);
+        setTextboxes([]);
+        handleAddOutfitClose();
+        setLoading(false);
     }
 
     return (
-        <CanvasContainer style={{ display: display ? 'flex' : 'none' }} ref={containerRef}>
-            <div className="canvas-header">
-                <Tooltip title="Remove Selected Items">
-                    <span>
-                        <button
-                            className={`material-icons remove-canvas-item-btn`}
-                            onClick={handleRemoveItems}
-                            disabled={selectedItems.length > 0 ? false : true}
-                        >
-                            delete
-                        </button>
-                    </span>
-                </Tooltip>
-                <h2 className="canvas-title">Canvas</h2>
-                <Tooltip title="Save Outfit">
-                    <span>
-                        <button
-                            className={`material-icons save-outfit-btn`}
-                            onClick={handleAddOutfit}
-                            disabled={imageList.length > 0 || textboxes.length > 0 ? false : true}
-                        > 
-                            save
-                        </button>
-                    </span>
-                </Tooltip>
-            </div>
-            <Stage 
-                width={containerSize.w}
-                height={containerSize.h}
-                ref={stageRef}
-                onMouseDown={onMouseDown}
-                onMouseMove={onMouseMove}
-                onMouseUp={onMouseUp}
-                onClick={handleClick}
-                onDblClick={handleDblClick}
+        <>
+            <CanvasContainer style={{ display: display ? 'flex' : 'none' }} ref={containerRef}>
+                <div className="canvas-header">
+                    <Tooltip title="Remove Selected Items">
+                        <span>
+                            <button
+                                className={`material-icons remove-canvas-item-btn`}
+                                onClick={handleRemoveItems}
+                                disabled={selectedItems.length > 0 ? false : true}
+                            >
+                                delete
+                            </button>
+                        </span>
+                    </Tooltip>
+                    <h2 className="canvas-title">Canvas</h2>
+                    <Tooltip title="Save Outfit">
+                        <span>
+                            <button
+                                className={`material-icons save-outfit-btn`}
+                                onClick={handleAddOutfitOpen}
+                                disabled={imageList.length > 0 || textboxes.length > 0 ? false : true}
+                            > 
+                                save
+                            </button>
+                        </span>
+                    </Tooltip>
+                </div>
+                <Stage 
+                    width={containerSize.w}
+                    height={containerSize.h}
+                    ref={stageRef}
+                    onMouseDown={onMouseDown}
+                    onMouseMove={onMouseMove}
+                    onMouseUp={onMouseUp}
+                    onClick={handleClick}
+                    onDblClick={handleDblClick}
+                >
+                    <Layer>
+                        {
+                            imageList?.map(image => (
+                                <CanvasImage
+                                    imageObj={image}
+                                    handleSelectItems={handleSelectItems}
+                                    canvasResized={containerSize}
+                                    key={image.canvasId}
+                                />
+                            ))
+                        }
+                        {
+                            textboxes?.map(textbox => (
+                                <CanvasTextbox 
+                                    textbox={textbox}
+                                    handleSelectItems={handleSelectItems}
+                                    canvasResized={containerSize}
+                                    transformerRef={transformerRef}
+                                    key={textbox.canvasId}
+                                />
+                            ))
+                        }
+                        <Transformer 
+                            ref={transformerRef} 
+                            borderStroke="#f47853" 
+                            anchorStroke="#f47853" 
+                            anchorFill="#f47853" 
+                            anchorCornerRadius={100} 
+                            rotationSnaps={[0, 90, 180, 270]}
+                        />
+                        <Rect
+                            ref={selectionRectRef} 
+                            fill="#f478534d" 
+                            stroke="#f47853" 
+                            dash={[9, 3]} 
+                            visible={false} 
+                        />
+                    </Layer>
+                </Stage>
+            </CanvasContainer>
+            <Modal
+                open={addOutfitOpen}
+                onClose={handleAddOutfitClose}
+                isForm={true}
+                submitFn={handleAddOutfit}
             >
-                <Layer>
-                    {
-                        imageList?.map(image => (
-                            <CanvasImage
-                                imageObj={image}
-                                handleSelectItems={handleSelectItems}
-                                canvasResized={containerSize}
-                                key={image.canvasId}
-                            />
-                        ))
-                    }
-                    {
-                        textboxes?.map(textbox => (
-                            <CanvasTextbox 
-                                textbox={textbox}
-                                handleSelectItems={handleSelectItems}
-                                canvasResized={containerSize}
-                                transformerRef={transformerRef}
-                                key={textbox.canvasId}
-                            />
-                        ))
-                    }
-                    <Transformer 
-                        ref={transformerRef} 
-                        borderStroke="#f47853" 
-                        anchorStroke="#f47853" 
-                        anchorFill="#f47853" 
-                        anchorCornerRadius={100} 
-                        rotationSnaps={[0, 90, 180, 270]}
-                    />
-                    <Rect
-                        ref={selectionRectRef} 
-                        fill="#f478534d" 
-                        stroke="#f47853" 
-                        dash={[9, 3]} 
-                        visible={false} 
-                    />
-                    
-                </Layer>
-            </Stage>
-        </CanvasContainer>
+                <>
+                    <h2 className="modal-title">ADD OUTFIT</h2>
+                    <div className="modal-content">
+                        <p className="medium">Provide a name for this outfit:</p>
+                        <Input
+                            type="text"
+                            id="outfit-name"
+                            label="Outfit Name"
+                            value={outfitName}
+                            onChange={e => setOutfitName(e.target.value)}
+                        />
+                        <img
+                            src={outfitImageData}
+                            alt="New Outfit Preview"
+                            className="add-outfit-img"
+                        />
+                        
+                    </div>
+                    <div className="modal-options">
+                        <button type="button" onClick={handleAddOutfitClose}>Cancel</button>
+                        <button type="submit">Save</button>
+                    </div>
+                </>
+            </Modal>
+            <Loading open={loading} />
+        </>
     );
 }

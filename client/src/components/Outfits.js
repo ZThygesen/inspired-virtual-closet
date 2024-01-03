@@ -4,7 +4,7 @@ import OutfitCard from './OutfitCard';
 import { OutfitsContainer } from '../styles/Outfits';
 import Loading from './Loading';
 
-export default function Outfits({ display, outfits, updateOutfits }) {
+export default function Outfits({ display, outfits, updateOutfits, sendOutfitToCanvas }) {
     const [loading, setLoading] = useState(false);
 
     async function editOutfit() {
@@ -13,7 +13,6 @@ export default function Outfits({ display, outfits, updateOutfits }) {
     }
 
     async function editOutfitName(outfit, newName) {
-        console.log(outfit, newName)
         setLoading(true);
         if (outfit.outfitName === newName) {
             setLoading(false);

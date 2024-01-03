@@ -11,8 +11,11 @@ export const ModalContentContainer = styled.div`
         height: 100%;
         
         & img {
-            width: 450px;
+            max-width: 80%;
+            max-height: 80%;
+            width: auto;
             height: auto;
+            background-color: var(--white);
         }
     }
 
@@ -96,9 +99,13 @@ export const ModalContentContainer = styled.div`
         gap: 20px;
     }
 
-    .delete-img, .edit-img {
+    .add-outfit-img, .delete-img, .edit-img {
         width: 150px;
         height: auto;
+    }
+
+    .add-outfit-img {
+        width: 200px;
     }
 
     .modal-content .category-name {
