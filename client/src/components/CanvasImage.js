@@ -3,7 +3,7 @@ import useImage from "use-image";
 import { Image } from "react-konva";
 
 export default function CanvasImage({ imageObj, handleSelectItems, canvasResized }) {
-    const [image] = useImage(imageObj.smallFileUrl);
+    const [image] = useImage(imageObj.src, 'anonymous');
     const imageRef = useRef();
 
     useEffect(() => {
@@ -17,21 +17,23 @@ export default function CanvasImage({ imageObj, handleSelectItems, canvasResized
         const centerX = rect.x + (rect.width / 2);
         const centerY = rect.y + (rect.height / 2);
  
-        if (centerX < 0) {
-            node.x(node.x() - centerX);
-        }
+        if (stage.width() > 0 && stage.height() > 0) {
+            if (centerX < 0) {
+                node.x(node.x() - centerX);
+            }
 
-        if (centerY < 0) {
-            node.y(node.y() - centerY);
-        }
+            if (centerY < 0) {
+                node.y(node.y() - centerY);
+            }
 
-        if (centerX > stage.width()) {
-            node.x(stage.width() - (centerX - node.x()));
-        }
+            if (centerX > stage.width()) {
+                node.x(stage.width() - (centerX - node.x()));
+            }
 
-        if (centerY > stage.height()) {
-            node.y(stage.height() - (centerY - node.y()));
-        }        
+            if (centerY > stage.height()) {
+                node.y(stage.height() - (centerY - node.y()));
+            }        
+        }     
     }
 
     function onMouseDown() {
@@ -51,18 +53,23 @@ export default function CanvasImage({ imageObj, handleSelectItems, canvasResized
     return (
         <>
             <Image
-                name="image"
                 image={image}
                 ref={imageRef}
-                x={20}
-                y={120}
-                draggable
                 onDragMove={handleDrag}
                 onMouseDown={onMouseDown}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
+                
+                // default attrs
+                name="image"
+                x={20}
+                y={20}
+                draggable
                 item={imageObj}
                 globalCompositeOperation="multiply"
+                
+                // if attrs exist (edit mode)
+                {...imageObj.attrs}
             />
         </>
     )

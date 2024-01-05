@@ -172,10 +172,11 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
         const files = [];
         for (let i = 0; i < filteredFiles.length; i++) {
             const formData = new FormData();
+            console.log(filteredFiles[i])
             formData.append('image', filteredFiles[i]);
             formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
             const res = await axios.post('https://api.imgbb.com/1/upload', formData);
-            console.log(res);
+            
             files.push({
                 clientId: client._id,
                 fileName: res.data.data.title,

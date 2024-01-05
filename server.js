@@ -44,6 +44,9 @@ app.use('/files', files);
 import deleteFiles from './routes/deleteFiles.js';
 app.use('/delete-files', deleteFiles);
 
+import outfits from './routes/outfits.js';
+app.use('/outfits', outfits);
+
 app.use((err, req, res, next) => {
     console.log(`error: ${err.message}, status: ${err.status}`);
     const status = err.status || 500;

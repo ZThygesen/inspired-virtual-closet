@@ -1,0 +1,89 @@
+{
+    "attrs": {
+        "width": 524,
+        "height": 585
+    },
+    "className": "Stage",
+    "children": [
+        {
+            "attrs": {},
+            "className": "Layer",
+            "children": [
+                {
+                    "attrs": {
+                        "name": "image",
+                        "x": 327.29294711907454,
+                        "y": 133.74143489136318,
+                        "draggable": true,
+                        "item": {
+                            "clientId": "641decb4a8c347069c0c0f1c",
+                            "fileName": "Gold-medalion-chain",
+                            "fullFileUrl": "https://i.ibb.co/PWVVGZL/Gold-medalion-chain.jpg",
+                            "mediumFileUrl": "https://i.ibb.co/09zzyj7/Gold-medalion-chain.jpg",
+                            "smallFileUrl": "https://i.ibb.co/8xQQgDC/Gold-medalion-chain.jpg",
+                            "fileId": "8xQQgDC",
+                            "deleteUrl": "https://ibb.co/8xQQgDC/22380dd02ef221e11a9ecb875d9e473f",
+                            "canvasId": "clqu0pnhe00j4356dbz87nw1p"
+                        },
+                        "globalCompositeOperation": "multiply",
+                        "rotation": 46.03224469156543,
+                        "scaleX": 0.9999999999999938,
+                        "scaleY": 1.0000000000000044,
+                        "skewX": -1.498801083243964e-15
+                    },
+                    "className": "Image"
+                },
+                {
+                    "attrs": {
+                        "name": "image",
+                        "x": 20,
+                        "y": 120,
+                        "draggable": true,
+                        "item": {
+                            "clientId": "641decb4a8c347069c0c0f1c",
+                            "fileName": "LV-gold-with-blue-stones",
+                            "fullFileUrl": "https://i.ibb.co/C8zPS3R/LV-gold-with-blue-stones.jpg",
+                            "mediumFileUrl": "https://i.ibb.co/fF2DTzj/LV-gold-with-blue-stones.jpg",
+                            "smallFileUrl": "https://i.ibb.co/9gNZdkQ/LV-gold-with-blue-stones.jpg",
+                            "fileId": "9gNZdkQ",
+                            "deleteUrl": "https://ibb.co/9gNZdkQ/5303a78819cecba81d6ed0d497437107",
+                            "canvasId": "clqu0rnel00un356dhdhlbtd6"
+                        },
+                        "globalCompositeOperation": "multiply"
+                    },
+                    "className": "Image"
+                },
+                {
+                    "attrs": {
+                        "borderStroke": "#f47853",
+                        "anchorStroke": "#f47853",
+                        "anchorFill": "#f47853",
+                        "anchorCornerRadius": 100,
+                        "rotationSnaps": [
+                            0,
+                            90,
+                            180,
+                            270
+                        ],
+                        "rotation": 46.03224469156587,
+                        "x": 233,
+                        "y": 168
+                    },
+                    "className": "Transformer"
+                },
+                {
+                    "attrs": {
+                        "fill": "#f478534d",
+                        "stroke": "#f47853",
+                        "dash": [
+                            9,
+                            3
+                        ],
+                        "visible": false
+                    },
+                    "className": "Rect"
+                }
+            ]
+        }
+    ]
+}

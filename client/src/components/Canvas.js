@@ -1,22 +1,31 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Layer, Stage, Rect, Transformer } from "react-konva";
-import CanvasImage from "./CanvasImage";
-import CanvasTextbox from "./CanvasTextbox";
-import { CanvasContainer } from "../styles/Canvas";
-import { Tooltip } from "@mui/material";
-import cuid from "cuid";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import axios from 'axios';
+import { Layer, Stage, Rect, Transformer } from 'react-konva';
+import Modal from './Modal';
+import Input from './Input';
+import Loading from './Loading';
+import CanvasImage from './CanvasImage';
+import CanvasTextbox from './CanvasTextbox';
+import { CanvasContainer } from '../styles/Canvas';
+import { Tooltip } from '@mui/material';
 
-export default function Canvas({ sidebarRef, display, imageList, removeCanvasImages }) {
-    const [containerSize, setContainerSize] = useState({ w: 1, h: 1 });
+export default function Canvas({ display, sidebarRef, client, images, textboxes, addCanvasItem, removeCanvasItems, updateOutfits, editMode, outfitToEdit, cancelEdit }) {
+    const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
     const [selectedItems, setSelectedItems] = useState([]);
     const [selecting, setSelecting] = useState(false);
     const [selectionStartCoords, setSelectionStartCoords] = useState({ x1: 0, y1: 0 });
     const [selectionEndCoords, setSelectionEndCoords] = useState({ x2: 0, y2: 0 });
     const [shiftKeyPressed, setShiftKeyPressed] = useState(false);
     const [ctrlKeyPressed, setCtrlKeyPressed] = useState(false);
-    const [textboxes, setTextboxes] = useState([]);
+
+    // outfit functionality
+    const [saveOutfitOpen, setSaveOutfitOpen] = useState(false);
+    const [outfitName, setOutfitName] = useState('');
+    const [outfitImageData, setOutfitImageData] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const containerRef = useRef();
+    const headerRef = useRef();
     const stageRef = useRef();
     const transformerRef = useRef();
     const selectionRectRef = useRef();
@@ -101,21 +110,18 @@ export default function Canvas({ sidebarRef, display, imageList, removeCanvasIma
         selectionRectRef.current.moveToTop();
     }, [ctrlKeyPressed, shiftKeyPressed]);
 
-    const handleRemoveItems = useCallback(() => {
-        // remove text boxes
-        const selectedTextboxes = selectedItems.filter(item => item.initialText);
-
-        let updatedTextboxes = textboxes;
-        selectedTextboxes.forEach(selectedTextbox => {
-            updatedTextboxes = updatedTextboxes.filter(textbox => textbox.canvasId !== selectedTextbox.canvasId);
-        });
-        setTextboxes(updatedTextboxes);
-
-        // remove images
-        removeCanvasImages(selectedItems);
+    const handleRemoveItems = useCallback((_, doClearCanvas = false) => {
+        if (doClearCanvas) {
+            removeCanvasItems(images.concat(textboxes));
+            setSelectedItems([]);
+        } else {
+            removeCanvasItems(selectedItems);
+        }
+       
+        
         transformerRef.current.nodes([]);
         handleSelectItems();
-    }, [handleSelectItems, removeCanvasImages, selectedItems, textboxes]);
+    }, [handleSelectItems, removeCanvasItems, selectedItems, images, textboxes]);
 
     function onMouseDown(e) {
         if (e.target !== stageRef.current) {
@@ -212,7 +218,7 @@ export default function Canvas({ sidebarRef, display, imageList, removeCanvasIma
                     setShiftKeyPressed(true);
                 } else if (e.key === 'Control') {
                     setCtrlKeyPressed(true);
-                } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                } else if (e.key === 'Delete') {
                     handleRemoveItems();
                 }
             }
@@ -235,103 +241,211 @@ export default function Canvas({ sidebarRef, display, imageList, removeCanvasIma
         }
     }, [display, handleRemoveItems]);
 
-    function handleSaveOutfit() {
-        alert('save outfit');
+    function handleAddTextbox() {
+        addCanvasItem('Add text here...', 'textbox');
     }
 
-    function handleDblClick(e) {
-        // if double clicking on empty space, add text box
-        if (e.target === stageRef.current) {
-            const {x, y} = stageRef.current.getPointerPosition();
-            const textbox = {
-                canvasId: cuid(),
-                x: x,
-                y: y,
-                width: 100,
-                height: 50,
-                initialText: 'Add text here...'
-            }
-            setTextboxes(current => [...current, textbox]);
+    useEffect(() => {
+        setOutfitName(outfitToEdit?.outfitName || '');
+    }, [editMode, outfitToEdit]);
+
+    async function handleAddOutfitOpen() {
+        transformerRef.current.nodes([]);
+        setOutfitImageData(stageRef.current.toDataURL());
+        setSaveOutfitOpen(true);
+    }
+
+    function handleSaveOutfitClose() {
+        setSaveOutfitOpen(false);
+        setOutfitName(outfitToEdit?.outfitName || '');
+        setOutfitImageData('');
+    }
+
+    async function handleSaveOutfit(e) {
+        e.preventDefault();
+
+        const stageJSON = JSON.parse(stageRef.current.toJSON());
+        const layerJSON = stageJSON.children[0];
+        const stageItems = layerJSON.children.filter(item => item.className === 'Group' || item.className === 'Image');
+
+        setLoading(true);
+
+        // convert konva-generated image to blob and post to imgbb
+        const blob = await fetch(outfitImageData).then(res => res.blob());
+        const formData = new FormData();
+        formData.append('image', blob, `${outfitName}.png`);
+        formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
+        const res = await axios.post('https://api.imgbb.com/1/upload', formData);
+        const outfitImg = res.data.data.url;
+
+        if (editMode) {
+            await axios.patch(`/outfits/${outfitToEdit._id}`, {
+                stageItems: stageItems,
+                outfitName: outfitName,
+                outfitImage: outfitImg
+            })
+                .catch(err => console.log(err));
+        } else {
+           await axios.post('/outfits', {
+                clientId: client._id,
+                stageItems: stageItems,
+                outfitName: outfitName,
+                outfitImage: outfitImg
+            })
+                .catch(err => console.log(err)); 
         }
+
+        await updateOutfits(true);
+        clearCanvas();
+        handleSaveOutfitClose();
+        setLoading(false);
+    }
+
+    function clearCanvas() {
+        handleRemoveItems(null, true);
+    }
+    
+    function handleCancelEdit() {
+        clearCanvas();
+        cancelEdit();
     }
 
     return (
-        <CanvasContainer style={{ display: display ? 'flex' : 'none' }} ref={containerRef}>
-            <div className="canvas-header">
-                <Tooltip title="Remove Selected Items">
-                    <span>
-                        <button
-                            className={`material-icons remove-canvas-item-btn`}
-                            onClick={handleRemoveItems}
-                            disabled={selectedItems.length > 0 ? false : true}
-                        >
-                            delete
-                        </button>
-                    </span>
-                </Tooltip>
-                <h2 className="canvas-title">Canvas</h2>
-                <Tooltip title="Save Outfit">
-                    <span>
-                        <button
-                            className={`material-icons save-outfit-btn`}
-                            onClick={handleSaveOutfit}
-                            disabled={imageList.length > 0 ? false : true}
-                        > 
-                            save
-                        </button>
-                    </span>
-                </Tooltip>
-            </div>
-            <Stage 
-                width={containerSize.w}
-                height={containerSize.h}
-                ref={stageRef}
-                onMouseDown={onMouseDown}
-                onMouseMove={onMouseMove}
-                onMouseUp={onMouseUp}
-                onClick={handleClick}
-                onDblClick={handleDblClick}
+        <>
+            <CanvasContainer style={{ display: display ? 'flex' : 'none' }} ref={containerRef}>
+                <div className="canvas-header" ref={headerRef}>
+                    <div className="canvas-options">
+                        <Tooltip title="Remove Selected Items">
+                            <span>
+                                <button
+                                    className="material-icons remove-canvas-item-btn"
+                                    onClick={handleRemoveItems}
+                                    disabled={selectedItems.length > 0 ? false : true}
+                                >
+                                    delete
+                                </button>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Add Text Box">
+                            <span>
+                                <button
+                                    className="material-icons add-text-btn"
+                                    onClick={handleAddTextbox}
+                                >
+                                    title
+                                </button>
+                            </span>
+                        </Tooltip>
+                    </div>
+                    <div className="canvas-title">
+                        <h2 className="main-title">Canvas</h2>
+                        <p className="sub-title">{editMode && outfitToEdit ? "(editing)" : ""}</p> {/* <span>{outfitToEdit.outfitName}</span></p>} */}
+                    </div>
+                    <div className="canvas-options">
+                        <Tooltip title="Cancel Outfit Edit">
+                            <span>
+                                <button
+                                    className="material-icons cancel-edit-btn"
+                                    onClick={handleCancelEdit}
+                                    disabled={editMode ? false : true}
+                                >
+                                    close
+                                </button>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title={editMode ? "Save Outfit" : "Add Outfit"}>
+                            <span>
+                                <button
+                                    className="material-icons save-outfit-btn"
+                                    onClick={handleAddOutfitOpen}
+                                    disabled={images.length > 0 || textboxes.length > 0 ? false : true}
+                                >
+                                    save
+                                </button>
+                            </span>
+                        </Tooltip>
+                    </div>
+                </div>
+                <Stage 
+                    width={containerSize.w}
+                    height={containerSize.h}
+                    ref={stageRef}
+                    onMouseDown={onMouseDown}
+                    onMouseMove={onMouseMove}
+                    onMouseUp={onMouseUp}
+                    onClick={handleClick}
+                >
+                    <Layer>
+                        {
+                            images?.map(image => (
+                                <CanvasImage
+                                    imageObj={image}
+                                    handleSelectItems={handleSelectItems}
+                                    canvasResized={containerSize}
+                                    key={image.canvasId}
+                                />
+                            ))
+                        }
+                        {
+                            textboxes?.map(textbox => (
+                                <CanvasTextbox 
+                                    textbox={textbox}
+                                    handleSelectItems={handleSelectItems}
+                                    canvasResized={containerSize}
+                                    transformerRef={transformerRef}
+                                    key={textbox.canvasId}
+                                />
+                            ))
+                        }
+                        <Transformer 
+                            ref={transformerRef} 
+                            borderStroke="#f47853" 
+                            anchorStroke="#f47853" 
+                            anchorFill="#f47853" 
+                            anchorCornerRadius={100} 
+                            rotationSnaps={[0, 90, 180, 270]}
+                        />
+                        <Rect
+                            ref={selectionRectRef} 
+                            fill="#f478534d" 
+                            stroke="#f47853" 
+                            dash={[9, 3]} 
+                            visible={false} 
+                        />
+                    </Layer>
+                </Stage>
+            </CanvasContainer>
+            <Modal
+                open={saveOutfitOpen}
+                onClose={handleSaveOutfitClose}
+                isForm={true}
+                submitFn={handleSaveOutfit}
             >
-                <Layer>
-                    {
-                        imageList?.map(image => (
-                            <CanvasImage
-                                imageObj={image}
-                                handleSelectItems={handleSelectItems}
-                                canvasResized={containerSize}
-                                key={image.canvasId}
-                            />
-                        ))
-                    }
-                    {
-                        textboxes?.map(textbox => (
-                            <CanvasTextbox 
-                                textbox={textbox}
-                                handleSelectItems={handleSelectItems}
-                                canvasResized={containerSize}
-                                transformerRef={transformerRef}
-                                key={textbox.canvasId}
-                            />
-                        ))
-                    }
-                    <Transformer 
-                        ref={transformerRef} 
-                        borderStroke="#f47853" 
-                        anchorStroke="#f47853" 
-                        anchorFill="#f47853" 
-                        anchorCornerRadius={100} 
-                        rotationSnaps={[0, 90, 180, 270]}
-                    />
-                    <Rect
-                        ref={selectionRectRef} 
-                        fill="#f478534d" 
-                        stroke="#f47853" 
-                        dash={[9, 3]} 
-                        visible={false} 
-                    />
-                    
-                </Layer>
-            </Stage>
-        </CanvasContainer>
+                <>
+                    <h2 className="modal-title">{editMode ? "SAVE OUTFIT" : "ADD OUTFIT"}</h2>
+                    <div className="modal-content">
+                        <p className="medium">Provide a name for this outfit:</p>
+                        <Input
+                            type="text"
+                            id="outfit-name"
+                            label="Outfit Name"
+                            value={outfitName}
+                            onChange={e => setOutfitName(e.target.value)}
+                        />
+                        <img
+                            src={outfitImageData}
+                            alt="New Outfit Preview"
+                            className="add-outfit-img"
+                        />
+                        
+                    </div>
+                    <div className="modal-options">
+                        <button type="button" onClick={handleSaveOutfitClose}>Cancel</button>
+                        <button type="submit">{editMode ? "Save Outfit" : "Add Outfit"}</button>
+                    </div>
+                </>
+            </Modal>
+            <Loading open={loading} />
+        </>
     );
 }
