@@ -2,99 +2,54 @@ import express from 'express';
 const router = express.Router();
 import { db } from '../server.js';
 import { ObjectId } from 'mongodb';
-import { exec } from 'child_process';
-import Jimp from 'jimp';
-import fs from 'fs/promises';
 import puppeteer from 'puppeteer';
 import imglyRemoveBackground from '@imgly/background-removal-node'
-import blobToBuffer from 'blob-to-buffer';
+import axios from 'axios';
 
+// upload file
 router.post('/', async (req, res, next) => {
     try {
+        // read in file fields
+        const { fileSrc, fileName, clientId, categoryId } = req.fields;
+
+        // convert file into blob and remove background
+        const blob = await fetch(fileSrc).then(res => res.blob());
+        const output = await imglyRemoveBackground(blob);
+
+        // post processed image to imgbb
+        const formData = new FormData();
+        formData.append('image', output, `${fileName}.png`);
+        formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
+        const response = await axios.post('https://api.imgbb.com/1/upload', formData);
+
+        // create file object 
+        const file = {
+            clientId: clientId,
+            fileName: response.data.data.title,
+            fullFileUrl: response.data.data.url,
+            mediumFileUrl: response.data.data.medium.url,
+            smallFileUrl: response.data.data.thumb.url,
+            fileId: response.data.data.id,
+            deleteUrl: response.data.data.delete_url
+        };
+
+        // enter file object into db
         const collection = db.collection('categories');
-
-        console.log(req.body.test);
-
-        // await collection.updateOne(
-        //     { _id: ObjectId(req.body.categoryId) },
-        //     {
-        //         $push: {
-        //             items: {
-        //                 $each: req.body.files
-        //             }
-        //         }
-        //     }
-        // );
-
+        await collection.updateOne(
+            { _id: ObjectId(categoryId) },
+            {
+                $push: {
+                    items: file
+                }
+            }
+        );
+        
         res.status(201).json({ message: 'Success!'});
     } catch (err) {
         err.status = 400;
         next(err);
     }
 });
-
-// upload files
-router.post('/test', async (req, res, next) => {
-    try {
-        const collection = db.collection('categories');
-        const { filesStr } = req.fields;
-        const files = JSON.parse(filesStr);
-
-        const inputDir = 'temp_uncprocessed_imgs';
-        await fs.mkdir(inputDir, { recursive: true });
-
-        // const outputDir = 'temp_processed_imgs';
-        // await fs.mkdir(outputDir, { recursive: true });
-
-        const processedImgs = await Promise.all(files.map(async (file) => {
-            // const fileName = file.id;
-            // const fileType = file.fileType.split('/')[1];
-            // const imgBuffer = Buffer.from(file.src.split(',')[1], 'base64');
-            // const img = await Jimp.read(imgBuffer);
-            // const test = await img.getBufferAsync(Jimp.MIME_JPEG)
-            // write temporary fie
-            // const inputFilePath = `${inputDir}/${fileName}.${fileType}`;
-            // await fs.writeFile(inputFilePath, imgBuffer);
-            // await img.writeAsync(inputFilePath)
-            const blob = await fetch(file.src).then(res => res.blob());
-            const output = await imglyRemoveBackground(blob);
-            // const result = await Jimp.read(output)
-            // const imageURL = URL.createObjectURL(output);
-            // window.open(imageURL)
-            // const output = await Rembg.remove
-            console.log(output)
-            const outputFilePath = `temp_processed_imgs/test1.png`;
-            const result = await output.arrayBuffer().then(arrayBuffer => Buffer.from(arrayBuffer));
-            await fs.writeFile(outputFilePath, result);
-
-            // execute python script to remove background
-            const pythonScript = 'remove_bg.py';
-            // const command = `python ${pythonScript} ${inputFilePath} ${outputFilePath}`;
-
-            // return new Promise((resolve, reject) => {
-            //     exec(command, (error, stdout, stderr) => {
-            //         if (error) {
-            //             reject(error)
-            //         } else {
-            //             resolve(stdout.trim());
-            //         }
-            //     });
-            // });
-            return 1;
-        }));
-
-        console.log(processedImgs);
-
-        res.status(201).json({ message: 'Success!'});
-    } catch (err) {
-        err.status = 400;
-        next(err);
-    }
-});
-
-function getMIMEType(fileType) {
-
-}
 
 // get files for given client
 router.get('/:clientId', async (req, res, next) => {

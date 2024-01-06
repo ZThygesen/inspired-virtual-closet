@@ -66,7 +66,6 @@ export default function CanvasImage({ imageObj, handleSelectItems, canvasResized
                 y={20}
                 draggable
                 item={imageObj}
-                globalCompositeOperation="multiply"
                 
                 // if attrs exist (edit mode)
                 {...imageObj.attrs}
