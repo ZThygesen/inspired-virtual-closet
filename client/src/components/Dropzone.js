@@ -53,6 +53,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
         for (let i = 0; i < files.length; i++) {
             files[i]['id'] = cuid();
             files[i]['fileSize'] = getFileSize(files[i].size);
+            files[i]['fileType'] = files[i].type;
 
             if (validateFile(files[i])) {
                 convertToImage(files[i]);
@@ -66,7 +67,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     }
 
     function validateFile(file) {
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/x-icon'];
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
 
         if (validTypes.indexOf(file.type) === -1) {
             return false;
@@ -154,10 +155,10 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     async function handleSubmit() {
         setUploadModalOpen(current => !current);
         const files = await uploadFiles();
-        await axios.post('/files', {
-            categoryId: category._id,
-            files: files
-        });
+        // await axios.post('/files', {
+        //     categoryId: category._id,
+        //     files: files
+        // });
 
         setUploadModalOpen(false);
         setResultModalOpen(true);
@@ -169,26 +170,48 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
 
     // TODO: Remove background from images before storing
     async function uploadFiles() {
+        console.log(JSON.stringify(filteredFiles))
+        const formData = new FormData();
+        formData.append('filesStr', JSON.stringify(filteredFiles));
+        await axios.post('/files/test', formData, {
+            headers: { 'Content-Type': 'multipart/form-data'}
+        });
         const files = [];
-        for (let i = 0; i < filteredFiles.length; i++) {
-            const formData = new FormData();
-            console.log(filteredFiles[i])
-            formData.append('image', filteredFiles[i]);
-            formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
-            const res = await axios.post('https://api.imgbb.com/1/upload', formData);
+        // for (let i = 0; i < filteredFiles.length; i++) {
+        //     const formData = new FormData();
+
+        //     for (cost prop in filteredFiles[i])
+        //     formData.append('imgFile', filteredFiles[i]);
+        //     await axios.post('/files/test', 
+        //         formData, { headers: { 'Content-Type': 'multipart/form-data' }})
+        //     return;
+        //     filteredFiles[i].src = removeImageBackground(filteredFiles[i].src);
+
+        //     const formData = new FormData();
+        //     formData.append('image', filteredFiles[i]);
+        //     formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
+        //     const res = await axios.post('https://api.imgbb.com/1/upload', formData);
             
-            files.push({
-                clientId: client._id,
-                fileName: res.data.data.title,
-                fullFileUrl: res.data.data.url,
-                mediumFileUrl: res.data.data.medium.url,
-                smallFileUrl: res.data.data.thumb.url,
-                fileId: res.data.data.id,
-                deleteUrl: res.data.data.delete_url
-            });
-        }
+        //     files.push({
+        //         clientId: client._id,
+        //         fileName: res.data.data.title,
+        //         fullFileUrl: res.data.data.url,
+        //         mediumFileUrl: res.data.data.medium.url,
+        //         smallFileUrl: res.data.data.thumb.url,
+        //         fileId: res.data.data.id,
+        //         deleteUrl: res.data.data.delete_url
+        //     });
+        // }
         
         return files;
+    }
+
+    function removeImageBackground(image) {
+        const img = document.createElement('img');
+        img.src = image;
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        context.drawImage(img, 0, 0);
     }
 
     function openImageModal(file) {
