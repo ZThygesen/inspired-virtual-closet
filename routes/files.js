@@ -5,9 +5,10 @@ import { ObjectId } from 'mongodb';
 import puppeteer from 'puppeteer';
 import imglyRemoveBackground from '@imgly/background-removal-node'
 import axios from 'axios';
+import ExpressFormidable from 'express-formidable';
 
 // upload file
-router.post('/', async (req, res, next) => {
+router.post('/', ExpressFormidable(), async (req, res, next) => {
     try {
         // read in file fields
         const { fileSrc, fileName, clientId, categoryId } = req.fields;

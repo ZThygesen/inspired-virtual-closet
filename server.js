@@ -1,6 +1,5 @@
 // set up express app
 import express from 'express';
-import ExpressFormidable from 'express-formidable';
 import { config } from 'dotenv';
 import { mongoConnect } from './mongoConnect.js';
 
@@ -8,8 +7,6 @@ const app = express();
 const port = 5000;
 app.use(express.json());
 config();
-
-app.use(ExpressFormidable());
 
 // connect to mongo db
 let db;

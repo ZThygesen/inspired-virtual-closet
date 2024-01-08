@@ -4,9 +4,15 @@ add limit to number of images that can be uploaded?
 add fields for client email and tags on items
 ability to use canvas on mobile (tap events)
 
+if textbox is being edited when outfit save is initiated, the textbox won't show up
+
 log who creates outfits?
 allow admin to hide/unhide outfits
 how will sharing of outfits work?
+
+add white background to outfit image
+
+favicon/website title
 
 delete all clients' outfits when that client is deleted
 
@@ -50,3 +56,5 @@ dropzone submission to imgbb
 dropzone submission to db
 
 email/share outfits
+
+password protects url manipulation

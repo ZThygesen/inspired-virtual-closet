@@ -82,6 +82,10 @@ export const ModalContentContainer = styled.div`
         font-size: 20px;
     }
 
+    .modal-content .x-small {
+        font-size: 16px;
+    }
+
     .modal-content .bold {
         font-weight: 700;
     }

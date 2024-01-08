@@ -270,27 +270,20 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
 
         setLoading(true);
 
-        // convert konva-generated image to blob and post to imgbb
-        const blob = await fetch(outfitImageData).then(res => res.blob());
         const formData = new FormData();
-        formData.append('image', blob, `${outfitName}.png`);
-        formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
-        const res = await axios.post('https://api.imgbb.com/1/upload', formData);
-        const outfitImg = res.data.data.url;
+        formData.append('fileSrc', outfitImageData);
+        formData.append('stageItemsStr', JSON.stringify(stageItems));
+        formData.append('outfitName', outfitName);
 
         if (editMode) {
-            await axios.patch(`/outfits/${outfitToEdit._id}`, {
-                stageItems: stageItems,
-                outfitName: outfitName,
-                outfitImage: outfitImg
+            await axios.patch(`/outfits/${outfitToEdit._id}`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data'}
             })
                 .catch(err => console.log(err));
         } else {
-           await axios.post('/outfits', {
-                clientId: client._id,
-                stageItems: stageItems,
-                outfitName: outfitName,
-                outfitImage: outfitImg
+            formData.append('clientId', client._id);
+            await axios.post('/outfits', formData, {
+                headers: { 'Content-Type': 'multipart/form-data'}
             })
                 .catch(err => console.log(err)); 
         }

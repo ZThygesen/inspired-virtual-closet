@@ -2,12 +2,38 @@ import express from 'express';
 const router = express.Router();
 import { db } from '../server.js';
 import { ObjectId } from 'mongodb';
+import axios from 'axios';
+import ExpressFormidable from 'express-formidable';
 
 // create outfit
-router.post('/', async (req, res, next) => {
+router.post('/', ExpressFormidable(), async (req, res, next) => {
     try {
+        // read in outfit fields
+        const { fileSrc, stageItemsStr, outfitName, clientId } = req.fields;
+
+        // convert outfit file to blob and post to imgbb
+        const blob = await fetch(fileSrc).then(res => res.blob());
+
+        const formData = new FormData();
+        formData.append('image', blob, `${outfitName}.png`);
+        formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
+        const response = await axios.post('https://api.imgbb.com/1/upload', formData);
+        
+        // create outfit object
+        const outfitImage = response.data.data.url;
+
+        const stageItems = JSON.parse(stageItemsStr);
+
+        const outfit = {
+            clientId: clientId,
+            stageItems: stageItems,
+            outfitName: outfitName,
+            outfitImage: outfitImage
+        };
+
+        // insert outfit into db
         const collection = db.collection('outfits');
-        await collection.insertOne(req.body);
+        await collection.insertOne(outfit);
 
         res.status(201).json({ message: 'Success!' });
 
@@ -29,17 +55,32 @@ router.get('/:clientId', async (req, res, next) => {
 });
 
 // update outfit content
-router.patch('/:outfitId', async (req, res, next) => {
-    console.log('HERE')
+router.patch('/:outfitId', ExpressFormidable(), async (req, res, next) => {
     try {
+        // read in outfit fields
+        const { fileSrc, stageItemsStr, outfitName } = req.fields;
+
+        // convert outfit image to blob and post to imgbb
+        const blob = await fetch(fileSrc).then(res => res.blob());
+
+        const formData = new FormData();
+        formData.append('image', blob, `${outfitName}.png`);
+        formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
+        const response = await axios.post('https://api.imgbb.com/1/upload', formData);
+
+        const outfitImage = response.data.data.url;
+
+        const stageItems = JSON.parse(stageItemsStr);
+
+        // update outfit in db
         const collection = db.collection('outfits');
         await collection.updateOne(
             { _id: ObjectId(req.params.outfitId) },
             {
                 $set: {
-                    stageItems: req.body.stageItems,
-                    outfitName: req.body.outfitName,
-                    outfitImage: req.body.outfitImage
+                    stageItems: stageItems,
+                    outfitName: outfitName,
+                    outfitImage: outfitImage
                 }
             }
         );

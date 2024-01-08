@@ -1,11 +1,40 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios'
 import cuid from 'cuid';
+import styled from 'styled-components';
 import { DropContainer, FileContainer, FileCard } from '../styles/Dropzone';
 import { ActionButton } from '../styles/ActionButton';
 import Modal from './Modal';
-import Loading from './Loading';
 import invalidImg from '../images/invalid.png';
+import { CircularProgress } from '@mui/material';
+
+const CircleProgress = styled(CircularProgress)`
+    & * {
+        color: #f47853;
+    }
+`;
+
+function CircularProgressWithLabel(props) {
+    return (
+        <div style={{ position: 'relative', display: 'inline-flex' }}>
+            <CircleProgress variant='determinate' size="60px" {...props} />
+            <div
+                style={{
+                    top: 0,
+                    left: 0,
+                    bottom: 0,
+                    right: 0,
+                    position: 'absolute',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}
+            >
+                <p className="x-small">{`${Math.round(props.value)}%`}</p>
+            </div>
+        </div>
+    )
+}
 
 export default function Dropzone({ client, category, disabled, updateItems }) {
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -13,10 +42,11 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     const [invalidFiles, setInvalidFiles] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [borderColor, setBorderColor] = useState('#231f20');
-    const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [imageModal, setImageModal] = useState({});
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+    const [progressModalOpen, setProgressModalOpen] = useState(false);
+    const [numFilesUploaded, setNumFilesUploaded] = useState(0);
     const [resultModalOpen, setResultModalOpen] = useState(false);
     const fileInputRef = useRef();
 
@@ -152,18 +182,22 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     }
 
     async function handleSubmit() {
-        setUploadModalOpen(current => !current);
+        setProgressModalOpen(true);
 
         for (const file of filteredFiles) {
             await uploadFile(file);
+            setNumFilesUploaded(current => current + 1)
         }
 
-        setUploadModalOpen(false);
-        setResultModalOpen(true);
-        updateItems();
-        setSelectedFiles([]);
-        setFilteredFiles([]);
-        setInvalidFiles([]);
+        setTimeout(() => {
+            setProgressModalOpen(false);
+            setNumFilesUploaded(0);
+            setResultModalOpen(true);
+            updateItems();
+            setSelectedFiles([]);
+            setFilteredFiles([]);
+            setInvalidFiles([]);
+        }, 750);
     }
 
     async function uploadFile(file) {
@@ -251,7 +285,6 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                     </div>
                 </FileContainer>
             }
-            <Loading open={uploadModalOpen} />
             <Modal
                 open={imageModalOpen}
                 closeModal={closeImageModal}
@@ -283,6 +316,15 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                 </div>
                 <div className="modal-options">
                         <button onClick={() => setResultModalOpen(false)}>OK</button>
+                </div>
+            </Modal>
+            <Modal
+                open={progressModalOpen}
+            >
+                <h2 className="modal-title">UPLOADING FILES</h2>
+                <div className="modal-content">
+                    <p className="medium">{numFilesUploaded}/{filteredFiles.length} files uploaded...</p>
+                    <CircularProgressWithLabel value={(numFilesUploaded / filteredFiles.length) * 100} />
                 </div>
             </Modal>
         </>

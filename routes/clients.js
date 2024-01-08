@@ -7,6 +7,7 @@ import puppeteer from 'puppeteer';
 // create client
 router.post('/', async (req, res, next) => {
     try {
+        console.log('here')
         const collection = db.collection('clients');
 
         const client = {

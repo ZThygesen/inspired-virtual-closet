@@ -47,7 +47,6 @@ export default function ManageClients() {
     async function addClient(e) {
         e.preventDefault();
         setLoading(true);
-
         await axios.post('/clients', {
             firstName: newClientFName,
             lastName: newClientLName
