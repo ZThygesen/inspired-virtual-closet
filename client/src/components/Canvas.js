@@ -41,7 +41,9 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
         handleResize();
         window.addEventListener('resize', handleResize);
 
-        return () => { window.removeEventListener('resize', handleResize); }
+        return () => { 
+            window.removeEventListener('resize', handleResize); 
+        }
     }, [handleResize]);
 
     useEffect(() => {

@@ -39,6 +39,10 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
         }
 
         window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        }
     }, []);
 
     useEffect(() => {

@@ -203,7 +203,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     async function uploadFile(file) {
         const formData = new FormData();
         formData.append('fileSrc', file.src);
-        formData.append('fileName', file.name);
+        formData.append('fullFileName', file.name);
         formData.append('clientId', client._id);
         formData.append('categoryId', category._id);
         await axios.post('/files', formData, {

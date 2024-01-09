@@ -27,11 +27,11 @@ router.post('/', async (req, res, next) => {
 });
 
 // update category
-router.patch('/', async (req, res, next) => {
+router.patch('/:categoryId', async (req, res, next) => {
     try {
         const collection = db.collection('categories');
         await collection.updateOne(
-            { _id: ObjectId(req.body.categoryId) },
+            { _id: ObjectId(req.params.categoryId) },
             {
                 $set: {
                     name: req.body.newName

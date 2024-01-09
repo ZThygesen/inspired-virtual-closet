@@ -22,7 +22,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
             return;
         }
 
-        await axios.patch('/files', { categoryId: category._id, item: item, newName: newName })
+        await axios.patch(`/files/${category._id}/${item.gcsId}`, { newName: newName })
             .catch(err => console.log(err));
         
         await updateItems();
@@ -31,7 +31,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
 
     async function deleteItem(item) {
         setLoading(true);
-        await axios.delete(`/files/${category._id}/${item.fileId}`)
+        await axios.delete(`/files/${category._id}/${item.gcsId}`)
             .catch(err => console.log(err));
         
         await updateItems();

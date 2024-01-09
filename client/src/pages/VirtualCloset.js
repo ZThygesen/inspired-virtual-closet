@@ -37,6 +37,10 @@ export default function VirtualCloset() {
         }
 
         window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        }
     }, [sidebarOpen]);
     
     const getCategories = useCallback(async (updateCat = undefined) => {
@@ -48,12 +52,18 @@ export default function VirtualCloset() {
 
         // filter out the other category
         const otherCategoryIndex = categories.findIndex(category => category._id === 0);
-        const otherCategory = categories.splice(otherCategoryIndex, 1)[0];    
+        const otherCategory = categories.splice(otherCategoryIndex, 1)[0];
+        
+        const allCategory = {
+            _id: -1,
+            name: 'All',
+            items: []
+        }
 
         // filter out categories with and without items
         const catsWithItems = [];
         const catsWithoutItems = [];
-        if (categories.length > 1) {
+        if (categories.length > 0) {
             categories.forEach(category => {
                 if (category.items.length > 0) {
                     catsWithItems.push(category);
@@ -94,14 +104,13 @@ export default function VirtualCloset() {
             });
             const allItems = [...otherCategory.items, ...catItems];
 
-            const allCategory = {
-                _id: -1,
-                name: 'All',
-                items: allItems
-            };
+            allCategory.items = allItems;
 
             // compile all the categories together
             categories = [allCategory, otherCategory, ...catsWithItems, ...catsWithoutItems];
+        } else {
+            allCategory.items = otherCategory.items;
+            categories = [allCategory, otherCategory];
         }
         
         // on initial render
@@ -137,7 +146,7 @@ export default function VirtualCloset() {
             return;
         }
 
-        await axios.patch('/categories', { categoryId: category._id, newName: newName })
+        await axios.patch(`/categories/${category._id}`, { newName: newName })
             .catch(err => console.log(err));
         
         await getCategories(category);

@@ -65,7 +65,7 @@ export default function ManageClients() {
             return;
         }
 
-        await axios.patch('/clients', { clientId: client._id, newFirstName: newFirstName, newLastName: newLastName })
+        await axios.patch(`/clients/${client._id}`, { newFirstName: newFirstName, newLastName: newLastName })
             .catch(err => console.log(err));
         
         await getClients();
