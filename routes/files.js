@@ -36,11 +36,10 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
             mediumFileUrl: url,
             smallFileUrl: url,
             gcsId: gcsId,
-            gcsDest: gcsDest,
-            deleteUrl: url
+            gcsDest: gcsDest
         };
 
-        // enter file object into db
+        // insert file object into db
         const collection = db.collection('categories');
         const id = categoryId === '0' ? 0 : ObjectId(categoryId);
         await collection.updateOne(
@@ -110,7 +109,7 @@ router.patch('/:categoryId/:gcsId', async (req, res, next) => {
 // delete file
 router.delete('/:categoryId/:gcsId', async (req, res, next) => {
     try {
-        // get file from database
+        // get file from db
         const collection = db.collection('categories');
         const id = req.params.categoryId === '0' ? 0 : ObjectId(req.params.categoryId);
         const document = await collection.findOne({ _id: id });

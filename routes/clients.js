@@ -85,7 +85,7 @@ router.delete('/:clientId', async (req, res, next) => {
             await gcsFile.delete();
         }
         
-        // delete all files associated with client
+        // delete all files associated with client in db
         await collection.updateMany(
             { },
             {
@@ -94,6 +94,19 @@ router.delete('/:clientId', async (req, res, next) => {
                 }
             }
         );
+
+        // get all outfits from db
+        collection = db.collection('outfits');
+        const outfits = await collection.find({ clientId: req.params.clientId }).toArray();
+        
+        // delete all clients' outfits on GCS
+        for (const outfit of outfits) {
+            const gcsFile = bucket.file(outfit.gcsDest);
+            await gcsFile.delete();
+        }
+
+        // delete all clients' files in db
+        await collection.deleteMany({ clientId: req.params.clientId });
 
         // delete client
         collection = db.collection('clients');

@@ -1,9 +1,9 @@
 import express from 'express';
 const router = express.Router();
-import { db } from '../server.js';
+import { db, bucket } from '../server.js';
 import { ObjectId } from 'mongodb';
-import axios from 'axios';
 import ExpressFormidable from 'express-formidable';
+import { createId } from '@paralleldrive/cuid2';
 
 // create outfit
 router.post('/', ExpressFormidable(), async (req, res, next) => {
@@ -11,24 +11,26 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
         // read in outfit fields
         const { fileSrc, stageItemsStr, outfitName, clientId } = req.fields;
 
-        // convert outfit file to blob and post to imgbb
+        // convert outfit file to buffer
         const blob = await fetch(fileSrc).then(res => res.blob());
-
-        const formData = new FormData();
-        formData.append('image', blob, `${outfitName}.png`);
-        formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
-        const response = await axios.post('https://api.imgbb.com/1/upload', formData);
+        const fileBuffer = await blob.arrayBuffer().then(arrayBuffer => Buffer.from(arrayBuffer));
         
+        // upload file to GCS
+        const gcsDest = `outfits/${createId()}.png`;
+
+        const gcsFile = bucket.file(gcsDest);
+        await gcsFile.save(fileBuffer);
+
+        const url = await gcsFile.publicUrl();
+
         // create outfit object
-        const outfitImage = response.data.data.url;
-
         const stageItems = JSON.parse(stageItemsStr);
-
         const outfit = {
             clientId: clientId,
             stageItems: stageItems,
             outfitName: outfitName,
-            outfitImage: outfitImage
+            outfitUrl: url,
+            gcsDest: gcsDest
         };
 
         // insert outfit into db
@@ -58,21 +60,26 @@ router.get('/:clientId', async (req, res, next) => {
 router.patch('/:outfitId', ExpressFormidable(), async (req, res, next) => {
     try {
         // read in outfit fields
-        const { fileSrc, stageItemsStr, outfitName } = req.fields;
+        const { fileSrc, stageItemsStr, outfitName, gcsDest } = req.fields;
 
-        // convert outfit image to blob and post to imgbb
+        // convert outfit file to buffer
         const blob = await fetch(fileSrc).then(res => res.blob());
+        const fileBuffer = await blob.arrayBuffer().then(arrayBuffer => Buffer.from(arrayBuffer));
 
-        const formData = new FormData();
-        formData.append('image', blob, `${outfitName}.png`);
-        formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
-        const response = await axios.post('https://api.imgbb.com/1/upload', formData);
+        // delete original file
+        const gcsFile = bucket.file(gcsDest)
+        await gcsFile.delete();
 
-        const outfitImage = response.data.data.url;
+        // upload new file to GCS
+        const newGcsDest = `outfits/${createId()}.png`;
+        const newGcsFile = bucket.file(newGcsDest)
+        await newGcsFile.save(fileBuffer);
 
-        const stageItems = JSON.parse(stageItemsStr);
+        const url = await newGcsFile.publicUrl();
 
         // update outfit in db
+        const stageItems = JSON.parse(stageItemsStr);
+
         const collection = db.collection('outfits');
         await collection.updateOne(
             { _id: ObjectId(req.params.outfitId) },
@@ -80,7 +87,8 @@ router.patch('/:outfitId', ExpressFormidable(), async (req, res, next) => {
                 $set: {
                     stageItems: stageItems,
                     outfitName: outfitName,
-                    outfitImage: outfitImage
+                    outfitUrl: url,
+                    gcsDest: newGcsDest
                 }
             }
         );
@@ -114,6 +122,15 @@ router.patch('/name/:outfitId', async (req, res, next) => {
 router.delete('/:outfitId', async (req, res, next) => {
     try {
         const collection = db.collection('outfits');
+
+        // get outfit from db
+        const outfit = await collection.findOne({ _id: ObjectId(req.params.outfitId) });
+
+        // delete file from GCS
+        const gcsFile = bucket.file(outfit.gcsDest);
+        await gcsFile.delete();
+
+        // delete from db
         await collection.deleteOne({ _id: ObjectId(req.params.outfitId )});
 
         res.json({ message: 'Success!' });

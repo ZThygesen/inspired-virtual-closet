@@ -278,6 +278,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
         formData.append('outfitName', outfitName);
 
         if (editMode) {
+            formData.append('gcsDest', outfitToEdit.gcsDest);
             await axios.patch(`/outfits/${outfitToEdit._id}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data'}
             })

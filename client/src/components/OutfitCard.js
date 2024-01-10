@@ -36,7 +36,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
     }
 
     async function handleDownloadOutfit() {
-        const image = await fetch(outfit.outfitImage).then(res => res.blob());
+        const image = await fetch(outfit.outfitUrl).then(res => res.blob());
         const imageURL = URL.createObjectURL(image);
 
         const link = document.createElement('a');
@@ -52,7 +52,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
             <OutfitCardContainer>
                 <p>{outfit.outfitName}</p>
                 <img
-                    src={outfit.outfitImage}
+                    src={outfit.outfitUrl}
                     alt={outfit.outfitName}
                     onClick={() => setImageModalOpen(true)}
                 />
@@ -98,7 +98,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
             >
                 <>  
                     <button className="material-icons close-modal" onClick={handleCloseImageModal}>close</button>
-                    <img src={outfit.outfitImage} alt={outfit.outfitName} className="image-modal" />
+                    <img src={outfit.outfitUrl} alt={outfit.outfitName} className="image-modal" />
                 </>
             </Modal>
             <Modal
@@ -111,7 +111,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                         <p className="medium">Are you sure you want to delete this outfit?</p>
                         <p className="large bold underline">{outfit.outfitName}</p>
                         <img
-                            src={outfit.outfitImage}
+                            src={outfit.outfitUrl}
                             alt={outfit.outfitName}
                             className="delete-img"
                         />
@@ -139,7 +139,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                             onChange={e => setNewOutfitName(e.target.value)}
                         />
                         <img
-                            src={outfit.outfitImage}
+                            src={outfit.outfitUrl}
                             alt={outfit.outfitName}
                             className="edit-img"
                         />

@@ -12,6 +12,8 @@ if dealing with other category, add check for making sure id is a number and not
 
 sort things alphabetically?
 
+outfit title doesn't break to new line if too long
+
 log who creates outfits?
 allow admin to hide/unhide outfits
 how will sharing of outfits work?
@@ -20,7 +22,7 @@ add white background to outfit image
 
 favicon/website title
 
-delete all clients' outfits when that client is deleted
+add functionality for switching category
 
 modal for cancelling outfit edit on canvas?
 
