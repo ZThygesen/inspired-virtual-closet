@@ -164,7 +164,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
                     }
                     <h1 className="client-closet">{`${client.firstName.toUpperCase()} ${client.lastName.toUpperCase()}'S CLOSET`}</h1>
                     <Tooltip title="Clients">
-                        <Link to={'/manage-clients'} className="material-icons clients-icon">people</Link>
+                        <Link to={'/clients'} className="material-icons clients-icon">people</Link>
                     </Tooltip>
                 </div>
                 <div className="closet-options">

@@ -37,6 +37,23 @@ app.use('/files', files);
 import outfits from './routes/outfits.js';
 app.use('/outfits', outfits);
 
+app.post('/password', async (req, res, next) => {
+    try {
+        const collection = db.collection('password');
+        const result = await collection.find({ password: req.body.password }).toArray();
+
+        if (result.length === 0) {
+            res.json(false);
+        } else {
+            res.json(true);
+        }
+
+    } catch (err) {
+        err.status = 400;
+        next(err);
+    }
+});
+
 app.use((err, req, res, next) => {
     console.log(`error: ${err.message}, status: ${err.status}`);
     const status = err.status || 500;

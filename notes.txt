@@ -25,5 +25,3 @@ throttle event listeners?
 add error handling
 
 email/share outfits
-
-password protects url manipulation
