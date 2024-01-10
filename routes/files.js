@@ -33,8 +33,6 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
             clientId: clientId,
             fileName: fileName,
             fullFileUrl: url,
-            mediumFileUrl: url,
-            smallFileUrl: url,
             gcsId: gcsId,
             gcsDest: gcsDest
         };

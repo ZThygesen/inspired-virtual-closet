@@ -55,8 +55,8 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
         }
     }, [category, currCategory, closetMode]);
 
-    async function updateItems() {
-        await getCategories(category);
+    async function updateItems(animateLoad = false) {
+        await getCategories(category, animateLoad);
         setClosetMode(0);
     }
 
@@ -67,7 +67,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
             canvasItem = {
                 canvasId: cuid(),
                 type: type,
-                src: item.smallFileUrl
+                src: item.fullFileUrl
             }
         } else {
             canvasItem = {

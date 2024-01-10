@@ -3,6 +3,7 @@ import axios from 'axios';
 import ClothingCard from './ClothingCard';
 import Loading from './Loading';
 import { ClothesContainer } from '../styles/Clothes';
+import cuid from 'cuid';
 
 export default function Clothes({ display, category, updateItems, addCanvasItem }) {
     const [loading, setLoading] = useState(false);
@@ -44,15 +45,15 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
                 <h2 className="category-title">{category.name}</h2>
                 <div className="items">
                     {
-                        category?.items?.map((item, index) => (
+                        category?.items?.map(item => (
                             <ClothingCard
                                 item={item}
-                                editable={category._id !== -1}
+                                allCat={category._id !== -1}
                                 sendToCanvas={sendToCanvas}
                                 swapCategory={swapCategory}
                                 editItem={editItem}
                                 deleteItem={deleteItem}
-                                key={index}
+                                key={cuid()}
                             />
                         ))
                     }

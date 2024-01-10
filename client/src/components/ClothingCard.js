@@ -34,7 +34,7 @@ export default function ClothingCard({ item, editable, sendToCanvas, swapCategor
             <ClothingCardContainer>
                 <p>{item.fileName}</p>
                 <img
-                    src={item.mediumFileUrl}
+                    src={item.smallFileUrl}
                     alt={item.fileName}
                     onClick={() => setImageModalOpen(true)}
                 />

@@ -6,10 +6,6 @@ ability to use canvas on mobile (tap events)
 
 if textbox is being edited when outfit save is initiated, the textbox won't show up
 
-make sure all react children keys are unique
-
-if dealing with other category, add check for making sure id is a number and not a string
-
 sort things alphabetically?
 
 outfit title doesn't break to new line if too long
@@ -26,22 +22,16 @@ add functionality for switching category
 
 modal for cancelling outfit edit on canvas?
 
-allow editing of items in all category
-
 close modals when clicking on backdrop
-
-loading screens working properly everywhere?
 
 indicator that item is in canvas from clothes page view?
 
 throttle event listeners?
 
-handle files by an ID (whenever new file system employed for images)
-
 add error handling
-
-store the smaller image size for preview purposes
 
 email/share outfits
 
 password protects url manipulation
+
+change resize of images from front end to actually storing different-sized images?

@@ -1,59 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import cuid from 'cuid';
 import { CategoriesSidebarContainer } from '../styles/CategoriesSidebar';
 import { Tooltip } from '@mui/material';
 import Modal from './Modal';
 import Input from './Input';
 import { CategorySettings } from '../styles/CategoriesSidebar';
-
-// const categories = [
-//     {name: 'All', _id: 0},
-//     {name: 'Belts', _id: 1},
-//     {name: 'Blazers', _id: 2},
-//     {name: 'Boots', _id: 3},
-//     {name: 'Bracelets', _id: 4},
-//     {name: 'Coats', _id: 5},
-//     {name: 'Dresses', _id: 6},
-//     {name: 'Earrings', _id: 7},
-//     {name: 'Flats', _id: 8},
-//     {name: 'Handbags', _id: 9},
-//     {name: 'Hats', _id: 10},
-//     {name: 'Heels', _id: 11},
-//     {name: 'Jackets', _id: 12},
-//     {name: 'Jeans', _id: 13},
-//     {name: 'Leggings', _id: 14},
-//     'Belts',
-//     'Blazers',
-//     'Boots',
-//     'Bracelets',
-//     'Coats',
-//     'Dresses',
-//     'Earrings',
-//     'Flats',
-//     'Handbags',
-//     'Hats',
-//     'Heels',
-//     'Jackets',
-//     'Jeans',
-//     'Leggings',
-//     'Long sleeve tops',
-//     'Necklaces',
-//     'Pants',
-//     'Rings',
-//     'Sandals',
-//     'Scarves',
-//     'Shorts',
-//     'Short sleeve tops',
-//     'Sleeveless tops',
-//     'Mens shoes',
-//     'Shirts',
-//     'Skirts',
-//     'Sneakers',
-//     'Suits',
-//     'Sunglasses',
-//     'Sweaters',
-//     'Ties',
-//     'This is a test for long text','sdugfwuiygdfiuywguofydgowegfw'];
 
 export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, closeSidebarOnSelect, categories, activeCategory, setCategory, addCategory, editCategory, deleteCategory }) {
     const [addOpen, setAddOpen] = useState(false);
@@ -64,6 +15,13 @@ export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, clos
     const [categoryToDelete, setCategoryToDelete] = useState({});
     const [settingsOpen, setSettingsOpen] = useState(false);
     const ref = useRef();
+
+    // set category to 'All' on first render
+    useEffect(() => {
+        if (JSON.stringify(activeCategory) === '{}' && categories.length > 0) {
+            setCategory(categories[0])
+        }
+    }, [activeCategory, categories, setCategory]);
 
     function scrollToRef(ref) {
         ref.current.scroll({

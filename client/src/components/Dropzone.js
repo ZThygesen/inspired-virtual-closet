@@ -193,7 +193,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             setProgressModalOpen(false);
             setNumFilesUploaded(0);
             setResultModalOpen(true);
-            updateItems();
+            updateItems(true);
             setSelectedFiles([]);
             setFilteredFiles([]);
             setInvalidFiles([]);

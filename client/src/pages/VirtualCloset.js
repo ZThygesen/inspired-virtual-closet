@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
 import ClosetNavigation from '../components/ClosetNavigation';
 import CategoriesSidebar from '../components/CategoriesSidebar';
 import Loading from '../components/Loading';
-import { useCallback } from 'react';
+import { resizeImages } from '../resizeImages';
 
 const Container = styled.div`
     flex: 1;
@@ -43,12 +43,18 @@ export default function VirtualCloset() {
         }
     }, [sidebarOpen]);
     
-    const getCategories = useCallback(async (updateCat = undefined) => {
+    const getCategories = useCallback(async (updateCat = undefined, animateLoad = false) => {
+        if (animateLoad) {
+            setLoading(true);
+        }
+        
         // get all categories and their data for the current client
         const response = await axios.get(`/files/${client._id}`)
             .catch(err => console.log(err));
 
         let categories = response.data;
+
+        await resizeImages(categories);
 
         // filter out the other category
         const otherCategoryIndex = categories.findIndex(category => category._id === 0);
@@ -112,11 +118,6 @@ export default function VirtualCloset() {
             allCategory.items = otherCategory.items;
             categories = [allCategory, otherCategory];
         }
-        
-        // on initial render
-        if (JSON.stringify(category) === '{}') {
-            setCategory(categories[0]);
-        }
 
         setCategories(categories);
 
@@ -124,10 +125,12 @@ export default function VirtualCloset() {
         if (updateCat) {
             setCategory(categories.filter(category => category._id === updateCat._id)[0]);
         }
-    }, [client, category]);
+
+        setLoading(false);
+    }, [client]);
 
     useEffect(() => {
-        getCategories();
+        getCategories(undefined, true);
     }, [getCategories]);
 
     async function addCategory(newCategory) {
