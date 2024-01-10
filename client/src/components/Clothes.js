@@ -48,7 +48,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
                         category?.items?.map(item => (
                             <ClothingCard
                                 item={item}
-                                allCat={category._id !== -1}
+                                editable={category._id !== -1}
                                 sendToCanvas={sendToCanvas}
                                 swapCategory={swapCategory}
                                 editItem={editItem}

@@ -48,7 +48,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
             </ClientCardContainer>
             <Modal
                 open={editOpen}
-                onClose={handleCloseEdit}
+                closeFn={handleCloseEdit}
                 isForm={true}
                 submitFn={handleSubmitEdit}
             >
@@ -76,7 +76,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
             </Modal>
             <Modal
                 open={confirmDeleteOpen}
-                onClose={() => setConfirmDeleteOpen(false)}
+                closeFn={() => setConfirmDeleteOpen(false)}
             >
                 <>
                     <h2 className="modal-title">DELETE CLIENT</h2>

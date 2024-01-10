@@ -99,7 +99,7 @@ export default function ManageClients() {
             <Loading open={loading} />
             <Modal
                 open={openModal}
-                onClose={handleClose}
+                closeFn={handleClose}
                 isForm={true}
                 submitFn={addClient}
             >

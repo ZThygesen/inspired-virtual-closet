@@ -13,6 +13,7 @@ export default function Loading({ open }) {
         <Modal
             open={open}
             isImage={true}
+            isLoading={true}
         >
             <CircleProgress color="inherit" />
         </Modal>

@@ -253,7 +253,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
 
     async function handleAddOutfitOpen() {
         transformerRef.current.nodes([]);
-        setOutfitImageData(stageRef.current.toDataURL());
+        setOutfitImageData(stageRef.current.toDataURL({ pixelRatio: 2 }));
         setSaveOutfitOpen(true);
     }
 
@@ -413,7 +413,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
             </CanvasContainer>
             <Modal
                 open={saveOutfitOpen}
-                onClose={handleSaveOutfitClose}
+                closeFn={handleSaveOutfitClose}
                 isForm={true}
                 submitFn={handleSaveOutfit}
             >

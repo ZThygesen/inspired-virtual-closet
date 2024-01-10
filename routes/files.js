@@ -6,6 +6,7 @@ import { parse } from 'path';
 import imglyRemoveBackground from '@imgly/background-removal-node';
 import ExpressFormidable from 'express-formidable';
 import { createId } from '@paralleldrive/cuid2';
+import Jimp from 'jimp';
 
 // upload file
 router.post('/', ExpressFormidable(), async (req, res, next) => {
@@ -18,23 +19,36 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
         const output = await imglyRemoveBackground(blob);
         const fileBuffer = await output.arrayBuffer().then(arrayBuffer => Buffer.from(arrayBuffer));
 
-        // upload file to GCS
+        // get small version of image
+        const smallImage = await Jimp.read(fileBuffer)
+            .then(img => img.resize(300, Jimp.AUTO));
+
+        const smallFileBuffer = await smallImage.getBufferAsync(Jimp.MIME_PNG);
+
+        // upload files to GCS
         const gcsId = createId();
-        const gcsDest = `items/${gcsId}.png`;
+        const fullGcsDest = `items/${gcsId}/full.png`;
+        const smallGcsDest = `items/${gcsId}/small.png`
 
-        const gcsFile = bucket.file(gcsDest);
-        await gcsFile.save(fileBuffer);
+        const fullGcsFile = bucket.file(fullGcsDest);
+        await fullGcsFile.save(fileBuffer);
+
+        const smallGcsFile = bucket.file(smallGcsDest);
+        await smallGcsFile.save(smallFileBuffer)
         
-        const url = await gcsFile.publicUrl();
-
+        const fullFileUrl = await fullGcsFile.publicUrl();
+        const smallFileUrl = await smallGcsFile.publicUrl();
+        
         // create file object 
         const fileName = parse(fullFileName).name;
         const file = {
             clientId: clientId,
             fileName: fileName,
-            fullFileUrl: url,
+            fullFileUrl: fullFileUrl,
+            smallFileUrl: smallFileUrl,
+            fullGcsDest: fullGcsDest,
+            smallGcsDest: smallGcsDest,
             gcsId: gcsId,
-            gcsDest: gcsDest
         };
 
         // insert file object into db
@@ -113,9 +127,12 @@ router.delete('/:categoryId/:gcsId', async (req, res, next) => {
         const document = await collection.findOne({ _id: id });
         const file = document.items.find(item => item.gcsId === req.params.gcsId);
 
-        // delete file from GCS
-        const gcsFile = bucket.file(file.gcsDest);
-        await gcsFile.delete();
+        // delete files from GCS
+        const fullGcsFile = bucket.file(file.fullGcsDest);
+        await fullGcsFile.delete();
+
+        const smallGcsFile = bucket.file(file.smallGcsDest);
+        await smallGcsFile.delete();
 
         // then delete from db
         await collection.updateOne(

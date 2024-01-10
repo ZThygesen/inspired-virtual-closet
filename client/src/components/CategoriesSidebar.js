@@ -138,7 +138,7 @@ export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, clos
             </CategoriesSidebarContainer>
             <Modal
                 open={settingsOpen}
-                onClose={handleSettingsClose}
+                closeFn={handleSettingsClose}
             >
                 <>
                     <button className="material-icons close-modal" onClick={handleSettingsClose}>close</button>
@@ -165,7 +165,7 @@ export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, clos
             </Modal>
             <Modal
                 open={addOpen}
-                onClose={handleCloseAdd}
+                closeFn={handleCloseAdd}
                 isForm={true}
                 submitFn={handleAdd}
             >
@@ -188,7 +188,7 @@ export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, clos
             </Modal>
             <Modal
                 open={editOpen}
-                onClose={handleEditClose}
+                closeFn={handleEditClose}
                 isForm={true}
                 submitFn={handleEdit}
             >
@@ -212,7 +212,7 @@ export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, clos
             </Modal>
             <Modal
                 open={confirmDeleteOpen}
-                onClose={handleCloseDelete}
+                closeFn={handleCloseDelete}
             >
                 <>
                     <h2 className="modal-title">DELETE CATEGORY</h2>

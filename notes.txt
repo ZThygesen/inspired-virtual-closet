@@ -8,21 +8,15 @@ if textbox is being edited when outfit save is initiated, the textbox won't show
 
 sort things alphabetically?
 
-outfit title doesn't break to new line if too long
-
 log who creates outfits?
 allow admin to hide/unhide outfits
 how will sharing of outfits work?
 
 add white background to outfit image
 
-favicon/website title
-
 add functionality for switching category
 
 modal for cancelling outfit edit on canvas?
-
-close modals when clicking on backdrop
 
 indicator that item is in canvas from clothes page view?
 
@@ -33,5 +27,3 @@ add error handling
 email/share outfits
 
 password protects url manipulation
-
-change resize of images from front end to actually storing different-sized images?

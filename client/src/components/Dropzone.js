@@ -297,7 +297,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             </Modal>
             <Modal
                 open={confirmModalOpen}
-                onClose={() => setConfirmModalOpen(false)}
+                closeFn={() => setConfirmModalOpen(false)}
             >
                 <div className="modal-content">
                     <p className="large bold">Are you sure you want to add these items to <span className="category-name large bold">{category.name}</span>?</p>
@@ -309,7 +309,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             </Modal>
             <Modal
                 open={resultModalOpen}
-                onClose={() => setResultModalOpen(false)}
+                closeFn={() => setResultModalOpen(false)}
             >
                 <div className="modal-content">
                     <p className="large bold">Items added successfully to <span className="category-name large bold">{category.name}</span>!</p>

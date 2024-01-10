@@ -50,7 +50,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
     return (
         <>
             <OutfitCardContainer>
-                <p>{outfit.outfitName}</p>
+                <p className="outfit-name">{outfit.outfitName}</p>
                 <img
                     src={outfit.outfitUrl}
                     alt={outfit.outfitName}
@@ -93,7 +93,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
             </OutfitCardContainer>
             <Modal
                 open={imageModalOpen}
-                onClose={handleCloseImageModal}
+                closeFn={handleCloseImageModal}
                 isImage={true}
             >
                 <>  
@@ -103,7 +103,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
             </Modal>
             <Modal
                 open={confirmDeleteOpen}
-                onClose={handleConfirmDeleteClose}
+                closeFn={handleConfirmDeleteClose}
             >
                 <>
                     <h2 className="modal-title">DELETE OUTFIT</h2>
@@ -124,7 +124,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
             </Modal>
             <Modal
                 open={editNameOpen}
-                onClose={handleCloseEditName}
+                closeFn={handleCloseEditName}
                 isForm={true}
                 submitFn={handleSubmitEditName}
             >
@@ -152,7 +152,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
             </Modal>
             <Modal
                 open={editOpen}
-                onClose={() => setEditOpen(false)}
+                closeFn={() => setEditOpen(false)}
             >
                 <>
                     <h2 className="modal-title">EDIT OUTFIT ON CANVAS</h2>

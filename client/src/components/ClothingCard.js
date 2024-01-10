@@ -32,7 +32,7 @@ export default function ClothingCard({ item, editable, sendToCanvas, swapCategor
     return (
         <>
             <ClothingCardContainer>
-                <p>{item.fileName}</p>
+                <p className="file-name">{item.fileName}</p>
                 <img
                     src={item.smallFileUrl}
                     alt={item.fileName}
@@ -80,7 +80,7 @@ export default function ClothingCard({ item, editable, sendToCanvas, swapCategor
             </ClothingCardContainer>
             <Modal
                 open={imageModalOpen}
-                onClose={handleCloseImageModal}
+                closeFn={handleCloseImageModal}
                 isImage={true}
             >
                 <>  
@@ -90,7 +90,7 @@ export default function ClothingCard({ item, editable, sendToCanvas, swapCategor
             </Modal>
             <Modal
                 open={confirmDeleteOpen}
-                onClose={handleConfirmDeleteClose}
+                closeFn={handleConfirmDeleteClose}
             >
                 <>
                     <h2 className="modal-title">DELETE ITEM</h2>
@@ -111,7 +111,7 @@ export default function ClothingCard({ item, editable, sendToCanvas, swapCategor
             </Modal>
             <Modal
                 open={editOpen}
-                onClose={handleCloseEdit}
+                closeFn={handleCloseEdit}
                 isForm={true}
                 submitFn={handleSubmitEdit}
             >

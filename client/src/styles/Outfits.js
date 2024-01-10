@@ -42,6 +42,10 @@ export const OutfitCardContainer = styled.div`
         text-align: center;
     }
 
+    .outfit-name {
+        word-break: break-all;
+    }
+
     img {
         width: 250px;
         height: auto;

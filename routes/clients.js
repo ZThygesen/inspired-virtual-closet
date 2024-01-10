@@ -81,8 +81,11 @@ router.delete('/:clientId', async (req, res, next) => {
 
         // delete all files on GCS
         for (const file of files) {
-            const gcsFile = bucket.file(file.gcsDest);
-            await gcsFile.delete();
+            const fullGcsFile = bucket.file(file.fullGcsDest);
+            await fullGcsFile.delete();
+
+            const smallGcsFile = bucket.file(file.smallGcsDest);
+            await smallGcsFile.delete();
         }
         
         // delete all files associated with client in db
