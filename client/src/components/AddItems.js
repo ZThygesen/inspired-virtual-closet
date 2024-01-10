@@ -18,7 +18,7 @@ export default function AddItems({ display, client, category, openSidebar, updat
                         </>
                 }
             </div>
-            <Dropzone client={client} category={category} disabled={category._id === -1 || category._id === 0} updateItems={updateItems} />
+            <Dropzone client={client} category={category} disabled={category._id === -1} updateItems={updateItems} />
         </AddItemsContainer>
     );
 }

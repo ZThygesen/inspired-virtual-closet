@@ -1,12 +1,12 @@
 import express from 'express';
 const router = express.Router();
-import { db } from '../server.js';
+import { db, bucket } from '../server.js';
 import { ObjectId } from 'mongodb';
-import puppeteer from 'puppeteer';
 
 // create client
 router.post('/', async (req, res, next) => {
     try {
+        console.log('here')
         const collection = db.collection('clients');
 
         const client = {
@@ -36,11 +36,11 @@ router.get('/', async (req, res, next) => {
 });
 
 // update client
-router.patch('/', async (req, res, next) => {
+router.patch('/:clientId', async (req, res, next) => {
     try {
         const collection = db.collection('clients');
         await collection.updateOne(
-            { _id: ObjectId(req.body.clientId) },
+            { _id: ObjectId(req.params.clientId) },
             {
                 $set: {
                     firstName: req.body.newFirstName,
@@ -59,7 +59,7 @@ router.patch('/', async (req, res, next) => {
 // delete client
 router.delete('/:clientId', async (req, res, next) => {
     try {
-        // delete all files from imgbb
+        // get all files from db
         let collection = db.collection('categories');
         const categories = await collection.aggregate([
             { $match: { 'items.clientId': req.params.clientId } },
@@ -79,9 +79,16 @@ router.delete('/:clientId', async (req, res, next) => {
             files = [...files, ...category.items];
         });
 
-        await deleteFromWeb(files);
+        // delete all files on GCS
+        for (const file of files) {
+            const fullGcsFile = bucket.file(file.fullGcsDest);
+            await fullGcsFile.delete();
+
+            const smallGcsFile = bucket.file(file.smallGcsDest);
+            await smallGcsFile.delete();
+        }
         
-        // delete all files associated with client
+        // delete all files associated with client in db
         await collection.updateMany(
             { },
             {
@@ -90,6 +97,19 @@ router.delete('/:clientId', async (req, res, next) => {
                 }
             }
         );
+
+        // get all outfits from db
+        collection = db.collection('outfits');
+        const outfits = await collection.find({ clientId: req.params.clientId }).toArray();
+        
+        // delete all clients' outfits on GCS
+        for (const outfit of outfits) {
+            const gcsFile = bucket.file(outfit.gcsDest);
+            await gcsFile.delete();
+        }
+
+        // delete all clients' files in db
+        await collection.deleteMany({ clientId: req.params.clientId });
 
         // delete client
         collection = db.collection('clients');
@@ -100,28 +120,5 @@ router.delete('/:clientId', async (req, res, next) => {
         next(err);
     }
 });
-
-async function deleteFromWeb(files) {
-    for (let i = 0; i < files.length; i++) {
-        try {
-            const browser = await puppeteer.launch();
-            const page = await browser.newPage();
-            await page.goto(files[i].deleteUrl);
-
-            const deleteBtn = '.link.link--delete';
-            await page.waitForSelector(deleteBtn);
-            await page.click(deleteBtn);
-
-            const confirmDeleteBtn = '.btn.btn-input.default';
-            await page.waitForSelector(confirmDeleteBtn);
-            await page.click(confirmDeleteBtn);
-
-            await browser.close();
-        } catch (err) {
-            console.log(err);
-            continue;
-        }
-    }
-}
 
 export default router;

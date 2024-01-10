@@ -36,7 +36,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
     }
 
     async function handleDownloadOutfit() {
-        const image = await fetch(outfit.outfitImage).then(res => res.blob());
+        const image = await fetch(outfit.outfitUrl).then(res => res.blob());
         const imageURL = URL.createObjectURL(image);
 
         const link = document.createElement('a');
@@ -50,9 +50,9 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
     return (
         <>
             <OutfitCardContainer>
-                <p>{outfit.outfitName}</p>
+                <p className="outfit-name">{outfit.outfitName}</p>
                 <img
-                    src={outfit.outfitImage}
+                    src={outfit.outfitUrl}
                     alt={outfit.outfitName}
                     onClick={() => setImageModalOpen(true)}
                 />
@@ -93,17 +93,17 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
             </OutfitCardContainer>
             <Modal
                 open={imageModalOpen}
-                onClose={handleCloseImageModal}
+                closeFn={handleCloseImageModal}
                 isImage={true}
             >
                 <>  
                     <button className="material-icons close-modal" onClick={handleCloseImageModal}>close</button>
-                    <img src={outfit.outfitImage} alt={outfit.outfitName} className="image-modal" />
+                    <img src={outfit.outfitUrl} alt={outfit.outfitName} className="image-modal" />
                 </>
             </Modal>
             <Modal
                 open={confirmDeleteOpen}
-                onClose={handleConfirmDeleteClose}
+                closeFn={handleConfirmDeleteClose}
             >
                 <>
                     <h2 className="modal-title">DELETE OUTFIT</h2>
@@ -111,7 +111,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                         <p className="medium">Are you sure you want to delete this outfit?</p>
                         <p className="large bold underline">{outfit.outfitName}</p>
                         <img
-                            src={outfit.outfitImage}
+                            src={outfit.outfitUrl}
                             alt={outfit.outfitName}
                             className="delete-img"
                         />
@@ -124,7 +124,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
             </Modal>
             <Modal
                 open={editNameOpen}
-                onClose={handleCloseEditName}
+                closeFn={handleCloseEditName}
                 isForm={true}
                 submitFn={handleSubmitEditName}
             >
@@ -139,7 +139,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                             onChange={e => setNewOutfitName(e.target.value)}
                         />
                         <img
-                            src={outfit.outfitImage}
+                            src={outfit.outfitUrl}
                             alt={outfit.outfitName}
                             className="edit-img"
                         />
@@ -152,7 +152,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
             </Modal>
             <Modal
                 open={editOpen}
-                onClose={() => setEditOpen(false)}
+                closeFn={() => setEditOpen(false)}
             >
                 <>
                     <h2 className="modal-title">EDIT OUTFIT ON CANVAS</h2>

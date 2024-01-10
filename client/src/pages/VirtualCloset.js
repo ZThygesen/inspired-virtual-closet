@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
 import ClosetNavigation from '../components/ClosetNavigation';
 import CategoriesSidebar from '../components/CategoriesSidebar';
 import Loading from '../components/Loading';
-import { useCallback } from 'react';
+// import { resizeImages } from '../resizeImages';
 
 const Container = styled.div`
     flex: 1;
@@ -37,23 +37,40 @@ export default function VirtualCloset() {
         }
 
         window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        }
     }, [sidebarOpen]);
     
-    const getCategories = useCallback(async (updateCat = undefined) => {
+    const getCategories = useCallback(async (updateCat = undefined, animateLoad = false) => {
+        if (animateLoad) {
+            setLoading(true);
+        }
+        
         // get all categories and their data for the current client
         const response = await axios.get(`/files/${client._id}`)
             .catch(err => console.log(err));
 
         let categories = response.data;
 
+        // resize images to give small version
+        // await resizeImages(categories);
+
         // filter out the other category
         const otherCategoryIndex = categories.findIndex(category => category._id === 0);
-        const otherCategory = categories.splice(otherCategoryIndex, 1)[0];    
+        const otherCategory = categories.splice(otherCategoryIndex, 1)[0];
+        
+        const allCategory = {
+            _id: -1,
+            name: 'All',
+            items: []
+        }
 
         // filter out categories with and without items
         const catsWithItems = [];
         const catsWithoutItems = [];
-        if (categories.length > 1) {
+        if (categories.length > 0) {
             categories.forEach(category => {
                 if (category.items.length > 0) {
                     catsWithItems.push(category);
@@ -94,19 +111,13 @@ export default function VirtualCloset() {
             });
             const allItems = [...otherCategory.items, ...catItems];
 
-            const allCategory = {
-                _id: -1,
-                name: 'All',
-                items: allItems
-            };
+            allCategory.items = allItems;
 
             // compile all the categories together
             categories = [allCategory, otherCategory, ...catsWithItems, ...catsWithoutItems];
-        }
-        
-        // on initial render
-        if (JSON.stringify(category) === '{}') {
-            setCategory(categories[0]);
+        } else {
+            allCategory.items = otherCategory.items;
+            categories = [allCategory, otherCategory];
         }
 
         setCategories(categories);
@@ -115,10 +126,12 @@ export default function VirtualCloset() {
         if (updateCat) {
             setCategory(categories.filter(category => category._id === updateCat._id)[0]);
         }
-    }, [client, category]);
+
+        setLoading(false);
+    }, [client]);
 
     useEffect(() => {
-        getCategories();
+        getCategories(undefined, true);
     }, [getCategories]);
 
     async function addCategory(newCategory) {
@@ -137,7 +150,7 @@ export default function VirtualCloset() {
             return;
         }
 
-        await axios.patch('/categories', { categoryId: category._id, newName: newName })
+        await axios.patch(`/categories/${category._id}`, { newName: newName })
             .catch(err => console.log(err));
         
         await getCategories(category);

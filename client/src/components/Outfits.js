@@ -39,13 +39,13 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
                 <h2 className="outfits-title">Outfits</h2>
                 <div className="outfits">
                     {
-                        outfits?.map((outfit, index) => (
+                        outfits?.map(outfit => (
                             <OutfitCard
                                 outfit={outfit}
                                 editOutfit={editOutfit}
                                 editOutfitName={editOutfitName}
                                 deleteOutfit={deleteOutfit}
-                                key={index}
+                                key={outfit._id}
                             />
                         ))
                     }

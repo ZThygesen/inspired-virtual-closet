@@ -42,6 +42,10 @@ export const ClothingCardContainer = styled.div`
         text-align: center;
     }
 
+    .file-name {
+        word-break: break-all;
+    }
+
     img {
         width: 250px;
         height: auto;

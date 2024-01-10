@@ -47,7 +47,6 @@ export default function ManageClients() {
     async function addClient(e) {
         e.preventDefault();
         setLoading(true);
-
         await axios.post('/clients', {
             firstName: newClientFName,
             lastName: newClientLName
@@ -66,7 +65,7 @@ export default function ManageClients() {
             return;
         }
 
-        await axios.patch('/clients', { clientId: client._id, newFirstName: newFirstName, newLastName: newLastName })
+        await axios.patch(`/clients/${client._id}`, { newFirstName: newFirstName, newLastName: newLastName })
             .catch(err => console.log(err));
         
         await getClients();
@@ -100,7 +99,7 @@ export default function ManageClients() {
             <Loading open={loading} />
             <Modal
                 open={openModal}
-                onClose={handleClose}
+                closeFn={handleClose}
                 isForm={true}
                 submitFn={addClient}
             >

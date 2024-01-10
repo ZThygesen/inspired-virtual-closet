@@ -7,6 +7,7 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
     const textboxRef = useRef();
     const inputRef = useRef();
     const [text, setText] = useState(textbox.textAttrs?.text || textbox.initialText);
+    const { text: _, ...otherTextAttrs } = textbox.textAttrs || {};
     const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
@@ -148,7 +149,7 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
                     opacity={isEditing ? 0 : 1}
                     
                     // if attrs exist (edit mode)
-                    {...textbox.textAttrs}
+                    {...otherTextAttrs}
                 />
                 {isEditing && 
                     <Html>

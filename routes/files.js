@@ -1,25 +1,68 @@
 import express from 'express';
 const router = express.Router();
-import { db } from '../server.js';
+import { db, bucket } from '../server.js';
 import { ObjectId } from 'mongodb';
-import puppeteer from 'puppeteer';
+import { parse } from 'path';
+import imglyRemoveBackground from '@imgly/background-removal-node';
+import ExpressFormidable from 'express-formidable';
+import { createId } from '@paralleldrive/cuid2';
+import Jimp from 'jimp';
 
-// upload files
-router.post('/', async (req, res, next) => {
+// upload file
+router.post('/', ExpressFormidable(), async (req, res, next) => {
     try {
-        const collection = db.collection('categories');
+        // read in file fields
+        const { fileSrc, fullFileName, clientId, categoryId } = req.fields;
 
+        // convert file into blob and remove background
+        const blob = await fetch(fileSrc).then(res => res.blob());
+        const output = await imglyRemoveBackground(blob);
+        const fileBuffer = await output.arrayBuffer().then(arrayBuffer => Buffer.from(arrayBuffer));
+
+        // get small version of image
+        const smallImage = await Jimp.read(fileBuffer)
+            .then(img => img.resize(300, Jimp.AUTO));
+
+        const smallFileBuffer = await smallImage.getBufferAsync(Jimp.MIME_PNG);
+
+        // upload files to GCS
+        const gcsId = createId();
+        const fullGcsDest = `items/${gcsId}/full.png`;
+        const smallGcsDest = `items/${gcsId}/small.png`
+
+        const fullGcsFile = bucket.file(fullGcsDest);
+        await fullGcsFile.save(fileBuffer);
+
+        const smallGcsFile = bucket.file(smallGcsDest);
+        await smallGcsFile.save(smallFileBuffer)
+        
+        const fullFileUrl = await fullGcsFile.publicUrl();
+        const smallFileUrl = await smallGcsFile.publicUrl();
+        
+        // create file object 
+        const fileName = parse(fullFileName).name;
+        const file = {
+            clientId: clientId,
+            fileName: fileName,
+            fullFileUrl: fullFileUrl,
+            smallFileUrl: smallFileUrl,
+            fullGcsDest: fullGcsDest,
+            smallGcsDest: smallGcsDest,
+            gcsId: gcsId,
+        };
+
+        // insert file object into db
+        const collection = db.collection('categories');
+        const id = categoryId === '0' ? 0 : ObjectId(categoryId);
         await collection.updateOne(
-            { _id: ObjectId(req.body.categoryId) },
+            { _id: id },
             {
                 $push: {
-                    items: {
-                        $each: req.body.files
-                    }
+                    items: file
                 }
             }
         );
-
+        
         res.status(201).json({ message: 'Success!'});
     } catch (err) {
         err.status = 400;
@@ -52,12 +95,12 @@ router.get('/:clientId', async (req, res, next) => {
 });
 
 // update file name
-router.patch('/', async (req, res, next) => {
+router.patch('/:categoryId/:gcsId', async (req, res, next) => {
     try {
         const collection = db.collection('categories');
-        const id = req.body.categoryId === 0 ? 0 : ObjectId(req.body.categoryId);
+        const id = req.params.categoryId === '0' ? 0 : ObjectId(req.params.categoryId);
         await collection.updateOne(
-            { _id: id, 'items.fileId': req.body.item.fileId },
+            { _id: id, 'items.gcsId': req.params.gcsId },
             {
                 $set: {
                     'items.$.fileName': req.body.newName
@@ -72,51 +115,31 @@ router.patch('/', async (req, res, next) => {
     }
 });
 
-// switch file category
+// TODO: switch file category
 
 
 // delete file
-router.delete('/:categoryId/:fileId', async (req, res, next) => {
+router.delete('/:categoryId/:gcsId', async (req, res, next) => {
     try {
-        // first delete from imgbb
-        // get file from database
+        // get file from db
         const collection = db.collection('categories');
-        //const id = req.params.categoryId === '0' ? 0 : req.params.categoryId;
-        const file = await collection.aggregate([
-            {
-                $match: {
-                    items: {
-                        $elemMatch: {
-                            fileId: req.params.fileId
-                        }
-                    }
-                },
-            },
-            {
-                $project: {
-                    items: {
-                        $filter: {
-                            input: '$items',
-                            as: 'item',
-                            cond: {
-                                $eq: ['$$item.fileId', req.params.fileId] 
-                            }
-                        }
-                    }
-                }
-            }
-        ]).toArray();
+        const id = req.params.categoryId === '0' ? 0 : ObjectId(req.params.categoryId);
+        const document = await collection.findOne({ _id: id });
+        const file = document.items.find(item => item.gcsId === req.params.gcsId);
 
-        await deleteFromWeb(file[0].items[0]);
+        // delete files from GCS
+        const fullGcsFile = bucket.file(file.fullGcsDest);
+        await fullGcsFile.delete();
+
+        const smallGcsFile = bucket.file(file.smallGcsDest);
+        await smallGcsFile.delete();
 
         // then delete from db
-        const id = req.params.categoryId === '0' ? 0 : ObjectId(req.params.categoryId);
-            
         await collection.updateOne(
             { _id: id },
             {
                 $pull: {
-                    items: { fileId: req.params.fileId }
+                    items: { gcsId: req.params.gcsId }
                 }
             }
         );
@@ -126,26 +149,6 @@ router.delete('/:categoryId/:fileId', async (req, res, next) => {
         next(err);
     }
 });
-
-async function deleteFromWeb(file) {
-    try {
-        const browser = await puppeteer.launch();
-        const page = await browser.newPage();
-        await page.goto(file.deleteUrl);
-
-        const deleteBtn = '.link.link--delete';
-        await page.waitForSelector(deleteBtn);
-        await page.click(deleteBtn);
-
-        const confirmDeleteBtn = '.btn.btn-input.default';
-        await page.waitForSelector(confirmDeleteBtn);
-        await page.click(confirmDeleteBtn);
-
-        await browser.close();
-    } catch (err) {
-        console.log(err);
-    }
-}
 
 export default router;
 

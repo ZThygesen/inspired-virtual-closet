@@ -1,11 +1,40 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios'
 import cuid from 'cuid';
+import styled from 'styled-components';
 import { DropContainer, FileContainer, FileCard } from '../styles/Dropzone';
 import { ActionButton } from '../styles/ActionButton';
 import Modal from './Modal';
-import Loading from './Loading';
 import invalidImg from '../images/invalid.png';
+import { CircularProgress } from '@mui/material';
+
+const CircleProgress = styled(CircularProgress)`
+    & * {
+        color: #f47853;
+    }
+`;
+
+function CircularProgressWithLabel(props) {
+    return (
+        <div style={{ position: 'relative', display: 'inline-flex' }}>
+            <CircleProgress variant='determinate' size="60px" {...props} />
+            <div
+                style={{
+                    top: 0,
+                    left: 0,
+                    bottom: 0,
+                    right: 0,
+                    position: 'absolute',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}
+            >
+                <p className="x-small">{`${Math.round(props.value)}%`}</p>
+            </div>
+        </div>
+    )
+}
 
 export default function Dropzone({ client, category, disabled, updateItems }) {
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -13,10 +42,11 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     const [invalidFiles, setInvalidFiles] = useState([]);
     const [errorMessage, setErrorMessage] = useState('');
     const [borderColor, setBorderColor] = useState('#231f20');
-    const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [imageModal, setImageModal] = useState({});
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+    const [progressModalOpen, setProgressModalOpen] = useState(false);
+    const [numFilesUploaded, setNumFilesUploaded] = useState(0);
     const [resultModalOpen, setResultModalOpen] = useState(false);
     const fileInputRef = useRef();
 
@@ -66,7 +96,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     }
 
     function validateFile(file) {
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/x-icon'];
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
 
         if (validTypes.indexOf(file.type) === -1) {
             return false;
@@ -152,43 +182,33 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     }
 
     async function handleSubmit() {
-        setUploadModalOpen(current => !current);
-        const files = await uploadFiles();
-        await axios.post('/files', {
-            categoryId: category._id,
-            files: files
-        });
+        setProgressModalOpen(true);
 
-        setUploadModalOpen(false);
-        setResultModalOpen(true);
-        updateItems();
-        setSelectedFiles([]);
-        setFilteredFiles([]);
-        setInvalidFiles([]);
+        for (const file of filteredFiles) {
+            await uploadFile(file);
+            setNumFilesUploaded(current => current + 1)
+        }
+
+        setTimeout(() => {
+            setProgressModalOpen(false);
+            setNumFilesUploaded(0);
+            setResultModalOpen(true);
+            updateItems(true);
+            setSelectedFiles([]);
+            setFilteredFiles([]);
+            setInvalidFiles([]);
+        }, 750);
     }
 
-    // TODO: Remove background from images before storing
-    async function uploadFiles() {
-        const files = [];
-        for (let i = 0; i < filteredFiles.length; i++) {
-            const formData = new FormData();
-            console.log(filteredFiles[i])
-            formData.append('image', filteredFiles[i]);
-            formData.append('key', process.env.REACT_APP_IMGBB_API_KEY);
-            const res = await axios.post('https://api.imgbb.com/1/upload', formData);
-            
-            files.push({
-                clientId: client._id,
-                fileName: res.data.data.title,
-                fullFileUrl: res.data.data.url,
-                mediumFileUrl: res.data.data.medium.url,
-                smallFileUrl: res.data.data.thumb.url,
-                fileId: res.data.data.id,
-                deleteUrl: res.data.data.delete_url
-            });
-        }
-        
-        return files;
+    async function uploadFile(file) {
+        const formData = new FormData();
+        formData.append('fileSrc', file.src);
+        formData.append('fullFileName', file.name);
+        formData.append('clientId', client._id);
+        formData.append('categoryId', category._id);
+        await axios.post('/files', formData, {
+            headers: { 'Content-Type': 'multipart/form-data'}
+        });
     }
 
     function openImageModal(file) {
@@ -265,7 +285,6 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                     </div>
                 </FileContainer>
             }
-            <Loading open={uploadModalOpen} />
             <Modal
                 open={imageModalOpen}
                 closeModal={closeImageModal}
@@ -278,7 +297,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             </Modal>
             <Modal
                 open={confirmModalOpen}
-                onClose={() => setConfirmModalOpen(false)}
+                closeFn={() => setConfirmModalOpen(false)}
             >
                 <div className="modal-content">
                     <p className="large bold">Are you sure you want to add these items to <span className="category-name large bold">{category.name}</span>?</p>
@@ -290,13 +309,22 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             </Modal>
             <Modal
                 open={resultModalOpen}
-                onClose={() => setResultModalOpen(false)}
+                closeFn={() => setResultModalOpen(false)}
             >
                 <div className="modal-content">
                     <p className="large bold">Items added successfully to <span className="category-name large bold">{category.name}</span>!</p>
                 </div>
                 <div className="modal-options">
                         <button onClick={() => setResultModalOpen(false)}>OK</button>
+                </div>
+            </Modal>
+            <Modal
+                open={progressModalOpen}
+            >
+                <h2 className="modal-title">UPLOADING FILES</h2>
+                <div className="modal-content">
+                    <p className="medium">{numFilesUploaded}/{filteredFiles.length} files uploaded...</p>
+                    <CircularProgressWithLabel value={(numFilesUploaded / filteredFiles.length) * 100} />
                 </div>
             </Modal>
         </>

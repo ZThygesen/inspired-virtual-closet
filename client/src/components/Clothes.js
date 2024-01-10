@@ -3,6 +3,7 @@ import axios from 'axios';
 import ClothingCard from './ClothingCard';
 import Loading from './Loading';
 import { ClothesContainer } from '../styles/Clothes';
+import cuid from 'cuid';
 
 export default function Clothes({ display, category, updateItems, addCanvasItem }) {
     const [loading, setLoading] = useState(false);
@@ -22,7 +23,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
             return;
         }
 
-        await axios.patch('/files', { categoryId: category._id, item: item, newName: newName })
+        await axios.patch(`/files/${category._id}/${item.gcsId}`, { newName: newName })
             .catch(err => console.log(err));
         
         await updateItems();
@@ -31,7 +32,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
 
     async function deleteItem(item) {
         setLoading(true);
-        await axios.delete(`/files/${category._id}/${item.fileId}`)
+        await axios.delete(`/files/${category._id}/${item.gcsId}`)
             .catch(err => console.log(err));
         
         await updateItems();
@@ -44,7 +45,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
                 <h2 className="category-title">{category.name}</h2>
                 <div className="items">
                     {
-                        category?.items?.map((item, index) => (
+                        category?.items?.map(item => (
                             <ClothingCard
                                 item={item}
                                 editable={category._id !== -1}
@@ -52,7 +53,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
                                 swapCategory={swapCategory}
                                 editItem={editItem}
                                 deleteItem={deleteItem}
-                                key={index}
+                                key={cuid()}
                             />
                         ))
                     }

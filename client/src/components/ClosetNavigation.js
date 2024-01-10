@@ -39,6 +39,10 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
         }
 
         window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        }
     }, []);
 
     useEffect(() => {
@@ -51,8 +55,8 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
         }
     }, [category, currCategory, closetMode]);
 
-    async function updateItems() {
-        await getCategories(category);
+    async function updateItems(animateLoad = false) {
+        await getCategories(category, animateLoad);
         setClosetMode(0);
     }
 
@@ -63,7 +67,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
             canvasItem = {
                 canvasId: cuid(),
                 type: type,
-                src: item.smallFileUrl
+                src: item.fullFileUrl
             }
         } else {
             canvasItem = {
@@ -160,7 +164,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
                     }
                     <h1 className="client-closet">{`${client.firstName.toUpperCase()} ${client.lastName.toUpperCase()}'S CLOSET`}</h1>
                     <Tooltip title="Clients">
-                        <Link to={'/manage-clients'} className="material-icons clients-icon">people</Link>
+                        <Link to={'/clients'} className="material-icons clients-icon">people</Link>
                     </Tooltip>
                 </div>
                 <div className="closet-options">

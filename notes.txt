@@ -4,49 +4,24 @@ add limit to number of images that can be uploaded?
 add fields for client email and tags on items
 ability to use canvas on mobile (tap events)
 
+if textbox is being edited when outfit save is initiated, the textbox won't show up
+
+sort things alphabetically?
+
 log who creates outfits?
 allow admin to hide/unhide outfits
 how will sharing of outfits work?
 
-delete all clients' outfits when that client is deleted
+add white background to outfit image
+
+add functionality for switching category
 
 modal for cancelling outfit edit on canvas?
 
-include id in patch requests?
-
-allow editing of items in all category
-
-change way to create textboxes (currently dbl click)?
-
-close modals when clicking on backdrop
-
-loading screens working properly everywhere?
-
 indicator that item is in canvas from clothes page view?
 
-press delete to delete selected images
-
 throttle event listeners?
-make sure to clean them up in useEffect
-
-change item.fileId to proper id when image DB is changed
-
-handle files on back end
-
-handle files by an ID (whenever new file system employed for images)
 
 add error handling
-
-store the smaller image size for preview purposes
-
-set things to null upon deletion?
-
-remove background from pictures before posting to imgbb and db
-
-check duplicate files in db when submitting
-
-error handling on api calls
-dropzone submission to imgbb
-dropzone submission to db
 
 email/share outfits
