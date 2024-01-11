@@ -4,6 +4,7 @@ import { config } from 'dotenv';
 import { mongoConnect } from './mongoConnect.js';
 import { bucketConnect } from './bucketConnect.js';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 const app = express();
 app.use(express.json());
@@ -55,7 +56,10 @@ app.post('/password', async (req, res, next) => {
     }
 });
 
-if (process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production') {
+if (true || process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production') {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    
     app.use(express.static(path.resolve(__dirname, './client/build')));
     app.get('*', function (req, res) {
         res.sendFile(path.resolve(__dirname, './client/build', 'index.html'));
