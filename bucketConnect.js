@@ -3,8 +3,6 @@ import { Storage } from '@google-cloud/storage';
 export async function bucketConnect() {
     let bucket;
     try {
-        console.log(process.env.GCC_private_key)
-        console.log(process.env.GCC_private_key.replace(/\\n/g, '\n'))
         const storage = new Storage({
             projectId: process.env.GCC_project_id,
             credentials: {
