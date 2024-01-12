@@ -1,12 +1,11 @@
 import express from 'express';
 const router = express.Router();
-import { db, bucket } from '../server.js';
+import { db, serviceAuth, bucket } from '../server.js';
 import { ObjectId } from 'mongodb';
 import { parse } from 'path';
-import imglyRemoveBackground from '@imgly/background-removal-node';
 import ExpressFormidable from 'express-formidable';
 import { createId } from '@paralleldrive/cuid2';
-import Jimp from 'jimp';
+import axios from 'axios';
 
 // upload file
 router.post('/', ExpressFormidable(), async (req, res, next) => {
@@ -14,31 +13,34 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
         // read in file fields
         const { fileSrc, fullFileName, clientId, categoryId } = req.fields;
 
-        // convert file into blob and remove background
-        const blob = await fetch(fileSrc).then(res => res.blob());
-        const output = await imglyRemoveBackground(blob);
-        const fileBuffer = await output.arrayBuffer().then(arrayBuffer => Buffer.from(arrayBuffer));
-
-        // get small version of image
-        const smallImage = await Jimp.read(fileBuffer)
-            .then(img => img.resize(300, Jimp.AUTO));
-
-        const smallFileBuffer = await smallImage.getBufferAsync(Jimp.MIME_PNG);
-
-        // upload files to GCS
+        // get id token to use google cloud function
+        const client = await serviceAuth.getIdTokenClient(process.env.GCF_URL);
+        const idToken = await client.idTokenProvider.fetchIdToken(process.env.GCF_URL)
+        
+        // create GCS destinations
         const gcsId = createId();
-        const fullGcsDest = `items/${gcsId}/full.png`;
-        const smallGcsDest = `items/${gcsId}/small.png`
+        let fullGcsDest = `items/${gcsId}/full.png`;
+        let smallGcsDest = `items/${gcsId}/small.png`;
 
-        const fullGcsFile = bucket.file(fullGcsDest);
-        await fullGcsFile.save(fileBuffer);
+        if (process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging') {
+            fullGcsDest = 'dev/' + fullGcsDest;
+            smallGcsDest = 'dev/' + smallGcsDest;
+        }
 
-        const smallGcsFile = bucket.file(smallGcsDest);
-        await smallGcsFile.save(smallFileBuffer)
-        
-        const fullFileUrl = await fullGcsFile.publicUrl();
-        const smallFileUrl = await smallGcsFile.publicUrl();
-        
+        // send file to google cloud function to remove background and store
+        const response = await axios.post(
+            'https://us-central1-avid-invention-410701.cloudfunctions.net/upload-item', 
+            { fileSrc, fullGcsDest, smallGcsDest }, 
+            { headers: {
+                    'Authorization': `Bearer ${idToken}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        const fullFileUrl = response.data.fullFileUrl;
+        const smallFileUrl = response.data.smallFileUrl;
+
         // create file object 
         const fileName = parse(fullFileName).name;
         const file = {
@@ -49,6 +51,7 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
             fullGcsDest: fullGcsDest,
             smallGcsDest: smallGcsDest,
             gcsId: gcsId,
+            tags: []
         };
 
         // insert file object into db
@@ -62,7 +65,7 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
                 }
             }
         );
-        
+
         res.status(201).json({ message: 'Success!'});
     } catch (err) {
         err.status = 400;

@@ -16,7 +16,11 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
         const fileBuffer = await blob.arrayBuffer().then(arrayBuffer => Buffer.from(arrayBuffer));
         
         // upload file to GCS
-        const gcsDest = `outfits/${createId()}.png`;
+        let gcsDest = `outfits/${createId()}.png`;
+
+        if (process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging') {
+            gcsDest = 'dev/' + gcsDest;
+        }
 
         const gcsFile = bucket.file(gcsDest);
         await gcsFile.save(fileBuffer);

@@ -5,7 +5,6 @@ import axios from 'axios';
 import ClosetNavigation from '../components/ClosetNavigation';
 import CategoriesSidebar from '../components/CategoriesSidebar';
 import Loading from '../components/Loading';
-// import { resizeImages } from '../resizeImages';
 
 const Container = styled.div`
     flex: 1;
@@ -53,9 +52,6 @@ export default function VirtualCloset() {
             .catch(err => console.log(err));
 
         let categories = response.data;
-
-        // resize images to give small version
-        // await resizeImages(categories);
 
         // filter out the other category
         const otherCategoryIndex = categories.findIndex(category => category._id === 0);

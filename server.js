@@ -2,7 +2,7 @@
 import express from 'express';
 import { config } from 'dotenv';
 import { mongoConnect } from './mongoConnect.js';
-import { bucketConnect } from './bucketConnect.js';
+import { googleConnect } from './googleConnect.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,13 +13,14 @@ const port = process.env.PORT || 5000;
 
 // connect to mongo db
 let db;
+let serviceAuth;
 let bucket;
 async function connect() {
     try {
         const mongoClient = await mongoConnect();
-        db = mongoClient.db('digitalCloset');
+        db = mongoClient.db(process.env.DB_NAME);
 
-        bucket = await bucketConnect();
+        ({ serviceAuth, bucket } = await googleConnect());
     } catch (err) {
         console.error(err);
     }
@@ -56,7 +57,7 @@ app.post('/password', async (req, res, next) => {
     }
 });
 
-if (true || process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production') {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     
@@ -74,4 +75,4 @@ if (true || process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'stagi
 
 app.listen(process.env.port || port, () => console.log(`Server started on port ${process.env.port || port}`));
 
-export { db, bucket };
+export { db, serviceAuth, bucket };

@@ -72,7 +72,7 @@ const FileContainer = styled.div`
     padding: 20px;
     margin-top: 20px;
     width: 100%;
-    background-color: var(--grey);
+    background-color: var(--light-grey);
     border: 2px solid var(--black);
     border-radius: 20px;
 

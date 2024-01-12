@@ -1,8 +1,9 @@
 add logo on canvas
 add vertical space to canvas
 add limit to number of images that can be uploaded?
-add fields for client email and tags on items
 ability to use canvas on mobile (tap events)
+
+add option to not remove bg on upload?
 
 if textbox is being edited when outfit save is initiated, the textbox won't show up
 

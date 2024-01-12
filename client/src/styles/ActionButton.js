@@ -46,11 +46,9 @@ const ActionButton = styled.button`
     &:disabled,
     &:disabled:hover {
         color: var(--black);
-        background-color: var(--grey);
+        background-color: var(--light-grey);
         cursor: default;
     }
-
-    
 
     @media (min-width: 500px) {   
         font-size: 28px;
