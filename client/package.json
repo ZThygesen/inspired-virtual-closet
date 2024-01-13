@@ -23,6 +23,7 @@
     "react-router-dom": "^6.6.2",
     "react-scripts": "5.0.1",
     "resize-base64": "^1.0.12",
+    "socket.io-client": "^4.7.4",
     "styled-components": "^5.3.6",
     "use-image": "^1.1.1",
     "web-vitals": "^2.1.4"

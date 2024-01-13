@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios'
+import io from 'socket.io-client'
 import cuid from 'cuid';
 import styled from 'styled-components';
 import { DropContainer, FileContainer, FileCard } from '../styles/Dropzone';
@@ -8,6 +9,8 @@ import Modal from './Modal';
 import invalidImg from '../images/invalid.png';
 import { CircularProgress } from '@mui/material';
 import { resizeImage } from '../resizeImage';
+
+const socket = io('/');
 
 const CircleProgress = styled(CircularProgress)`
     & * {
@@ -50,6 +53,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     const [numFilesProcessed, setNumFilesProcessed] = useState(0);
     const [numProcessFiles, setNumProcessFiles] = useState(0);
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
+    const [uploadMessage, setUploadMessage] = useState('');
     const [numFilesUploaded, setNumFilesUploaded] = useState(0);
     const [resultModalOpen, setResultModalOpen] = useState(false);
     const fileInputRef = useRef();
@@ -216,9 +220,16 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     async function handleSubmit() {
         setUploadModalOpen(true);
 
+        let firstUpload = true;
         for (const file of filteredFiles) {
+            if (firstUpload) {
+                setUploadMessage('If this is the first file you\'ve uploaded in a while, it could take a minute.')
+                firstUpload = false;
+            }
+
             await uploadFile(file);
-            setNumFilesUploaded(current => current + 1)
+            setNumFilesUploaded(current => current + 1);
+            setUploadMessage('');
         }
 
         setTimeout(() => {
@@ -233,13 +244,27 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     }
 
     async function uploadFile(file) {
+        const reqId = cuid();
+
         const formData = new FormData();
         formData.append('fileSrc', file.src);
         formData.append('fullFileName', file.name);
         formData.append('clientId', client._id);
         formData.append('categoryId', category._id);
+        formData.append('requestId', reqId);
         await axios.post('/files', formData, {
             headers: { 'Content-Type': 'multipart/form-data'}
+        });
+
+        return new Promise((resolve, reject) => {
+            function handleUploadComplete({ requestId }) {
+                if (reqId === requestId) {
+                    resolve();
+                    socket.off('uploadComplete', handleUploadComplete);
+                }
+            }
+
+            socket.on('uploadComplete', handleUploadComplete);
         });
     }
 
@@ -364,6 +389,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             >
                 <h2 className="modal-title">UPLOADING FILES</h2>
                 <div className="modal-content">
+                    <p className="small">{uploadMessage}</p>
                     <p className="medium">{numFilesUploaded}/{filteredFiles.length} files uploaded...</p>
                     <CircularProgressWithLabel value={(numFilesUploaded / filteredFiles.length) * 100} />
                 </div>

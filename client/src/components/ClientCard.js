@@ -83,7 +83,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                     <div className="modal-content">
                         <p className="medium">Are you sure you want to delete this client?</p>
                         <p className="large bold underline">{client.firstName} {client.lastName}</p>
-                        <p className="small bold warning">Deleting this client will permanently delete all image files in their virtual closet!</p>
+                        <p className="small bold warning">Deleting this client will permanently delete all image files and all outfits in their virtual closet!</p>
                     </div>
                     <div className="modal-options">
                         <button onClick={() => setConfirmDeleteOpen(false)}>Cancel</button>
