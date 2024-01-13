@@ -1,4 +1,3 @@
-// set up express app
 import express from 'express';
 import { config } from 'dotenv';
 import { mongoConnect } from './mongoConnect.js';
@@ -57,7 +56,7 @@ app.post('/password', async (req, res, next) => {
     }
 });
 
-if (process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production') {
+if (true || process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production') {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     
