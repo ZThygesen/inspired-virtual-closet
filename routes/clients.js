@@ -6,12 +6,13 @@ import { ObjectId } from 'mongodb';
 // create client
 router.post('/', async (req, res, next) => {
     try {
-        console.log('here')
         const collection = db.collection('clients');
 
         const client = {
             firstName: req.body.firstName,
-            lastName: req.body.lastName
+            lastName: req.body.lastName,
+            email: '',
+            isAdmin: false
         }
 
         await collection.insertOne(client);

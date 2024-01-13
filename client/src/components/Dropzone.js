@@ -7,6 +7,7 @@ import { ActionButton } from '../styles/ActionButton';
 import Modal from './Modal';
 import invalidImg from '../images/invalid.png';
 import { CircularProgress } from '@mui/material';
+import { resizeImage } from '../resizeImage';
 
 const CircleProgress = styled(CircularProgress)`
     & * {
@@ -45,7 +46,10 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [imageModal, setImageModal] = useState({});
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-    const [progressModalOpen, setProgressModalOpen] = useState(false);
+    const [processModalOpen, setProcessModelOpen] = useState(false);
+    const [numFilesProcessed, setNumFilesProcessed] = useState(0);
+    const [numProcessFiles, setNumProcessFiles] = useState(0);
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [numFilesUploaded, setNumFilesUploaded] = useState(0);
     const [resultModalOpen, setResultModalOpen] = useState(false);
     const fileInputRef = useRef();
@@ -79,20 +83,41 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
         }
     }
 
-    function handleFiles(files) {
+    async function handleFiles(files) {
+        setNumProcessFiles(files.length);
+        setProcessModelOpen(true);
+
+        const badFiles = [];
+        const allFiles = [];
         for (let i = 0; i < files.length; i++) {
             files[i]['id'] = cuid();
             files[i]['fileSize'] = getFileSize(files[i].size);
 
             if (validateFile(files[i])) {
-                convertToImage(files[i]);
+                const file = await convertToImage(files[i]);
+                allFiles.push(file);
             } else {
                 files[i]['invalid'] = true;
-                setSelectedFiles(current => [...current, files[i]]);
-                setInvalidFiles(current => [...current, files[i]]);
-                setErrorMessage('File type not permitted');
+                badFiles.push(files[i]);
+                allFiles.push(files[i]);
             }
+
+            setNumFilesProcessed(i + 1);
         }
+
+        if (invalidFiles.length > 0) {
+            setErrorMessage('File type not permitted');
+        }
+
+        setInvalidFiles(current => [...current, ...badFiles]);
+        setSelectedFiles(current => [...current, ...allFiles]);
+
+        setTimeout(() => {
+            setProcessModelOpen(false);
+            setNumProcessFiles(0);
+            setNumFilesProcessed(0);
+        }, 750);
+        
     }
 
     function validateFile(file) {
@@ -106,13 +131,20 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     }
 
     function convertToImage(file) {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
 
-        reader.onload = function (e) {
-            file['src'] = e.target.result;
-            setSelectedFiles(current => [...current, file]);
-        };
+            reader.onload = async function (e) {
+                const fileType = file.type.split('/')[1].toUpperCase()
+                file['src'] = await resizeImage(e.target.result, fileType);
+                resolve(file);
+            };
+
+            reader.onerror = function (err) {
+                reject(err);
+            };
+        });
     }
 
     function getFileSize(size) {
@@ -182,7 +214,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     }
 
     async function handleSubmit() {
-        setProgressModalOpen(true);
+        setUploadModalOpen(true);
 
         for (const file of filteredFiles) {
             await uploadFile(file);
@@ -190,7 +222,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
         }
 
         setTimeout(() => {
-            setProgressModalOpen(false);
+            setUploadModalOpen(false);
             setNumFilesUploaded(0);
             setResultModalOpen(true);
             updateItems(true);
@@ -256,7 +288,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             </ActionButton>
             {filteredFiles.length > 0 &&
                 <FileContainer>
-                    <h2 className="title">Current Files</h2>
+                    <h2 className="title">Current Files ({filteredFiles.length})</h2>
                     {invalidFiles.length ?
                         <p className="file-error-message">
                             Please remove all unsupported files.
@@ -277,7 +309,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                                     />
                                     <div className="file-info">
                                         <p className="file-name">{file.name}</p>
-                                        <p className="file-size">({file.fileSize})</p>
+                                        {/* <p className="file-size">({file.fileSize})</p> */}
                                     </div>
                                 </FileCard>
                             ))
@@ -287,7 +319,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             }
             <Modal
                 open={imageModalOpen}
-                closeModal={closeImageModal}
+                closeFn={closeImageModal}
                 isImage={true}
             >
                 <>
@@ -300,7 +332,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                 closeFn={() => setConfirmModalOpen(false)}
             >
                 <div className="modal-content">
-                    <p className="large bold">Are you sure you want to add these items to <span className="category-name large bold">{category.name}</span>?</p>
+                    <p className="large bold">Are you sure you want to add these {filteredFiles.length} items to <span className="category-name large bold">{category.name}</span>?</p>
                 </div>
                 <div className="modal-options">
                     <button onClick={() => setConfirmModalOpen(false)}>Cancel</button>
@@ -319,7 +351,16 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                 </div>
             </Modal>
             <Modal
-                open={progressModalOpen}
+                open={processModalOpen}
+            >
+                <h2 className="modal-title">PROCESSING FILES</h2>
+                <div className="modal-content">
+                    <p className="medium">{numFilesProcessed}/{numProcessFiles} files processed...</p>
+                    <CircularProgressWithLabel value={(numFilesProcessed / numProcessFiles) * 100} />
+                </div>
+            </Modal>
+            <Modal
+                open={uploadModalOpen}
             >
                 <h2 className="modal-title">UPLOADING FILES</h2>
                 <div className="modal-content">
