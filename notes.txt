@@ -3,15 +3,15 @@ add vertical space to canvas
 add limit to number of images that can be uploaded?
 ability to use canvas on mobile (tap events)
 
+allow duplicate file names on upload
+
 add option to not remove bg on upload?
 
 if textbox is being edited when outfit save is initiated, the textbox won't show up
 
 sort things alphabetically?
 
-log who creates outfits?
 allow admin to hide/unhide outfits
-how will sharing of outfits work?
 
 add white background to outfit image
 

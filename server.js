@@ -4,8 +4,14 @@ import { mongoConnect } from './mongoConnect.js';
 import { googleConnect } from './googleConnect.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Server } from 'socket.io';
+import http from 'http';
 
 const app = express();
+
+const server = http.createServer(app);
+const io = new Server(server)
+
 app.use(express.json());
 config();
 const port = process.env.PORT || 5000;
@@ -72,6 +78,6 @@ if (process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || p
     });
 }
 
-app.listen(process.env.port || port, () => console.log(`Server started on port ${process.env.port || port}`));
+server.listen(port, () => console.log(`Server started on port ${process.env.port || port}`));
 
-export { db, serviceAuth, bucket };
+export { db, serviceAuth, bucket, io };

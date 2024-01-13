@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import { db, serviceAuth, bucket } from '../server.js';
+import { db, serviceAuth, bucket, io } from '../server.js';
 import { ObjectId } from 'mongodb';
 import { parse } from 'path';
 import ExpressFormidable from 'express-formidable';
@@ -11,7 +11,10 @@ import axios from 'axios';
 router.post('/', ExpressFormidable(), async (req, res, next) => {
     try {
         // read in file fields
-        const { fileSrc, fullFileName, clientId, categoryId } = req.fields;
+        const { fileSrc, fullFileName, clientId, categoryId, requestId } = req.fields;
+
+        // acknowledge request
+        res.status(201).json({ message: 'Success!'});
 
         // get id token to use google cloud function
         const client = await serviceAuth.getIdTokenClient(process.env.GCF_URL);
@@ -66,7 +69,8 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
             }
         );
 
-        res.status(201).json({ message: 'Success!'});
+        // upload complete
+        io.emit('uploadComplete', { requestId });
     } catch (err) {
         err.status = 400;
         next(err);

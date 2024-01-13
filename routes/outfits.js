@@ -34,7 +34,9 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
             stageItems: stageItems,
             outfitName: outfitName,
             outfitUrl: url,
-            gcsDest: gcsDest
+            gcsDest: gcsDest,
+            createdBy: '',
+            hidden: false
         };
 
         // insert outfit into db
@@ -75,7 +77,12 @@ router.patch('/:outfitId', ExpressFormidable(), async (req, res, next) => {
         await gcsFile.delete();
 
         // upload new file to GCS
-        const newGcsDest = `outfits/${createId()}.png`;
+        let newGcsDest = `outfits/${createId()}.png`;
+
+        if (process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging') {
+            newGcsDest = 'dev/' + newGcsDest;
+        }
+
         const newGcsFile = bucket.file(newGcsDest)
         await newGcsFile.save(fileBuffer);
 

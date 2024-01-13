@@ -60,60 +60,7 @@ router.patch('/:clientId', async (req, res, next) => {
 // delete client
 router.delete('/:clientId', async (req, res, next) => {
     try {
-        // get all files from db
-        let collection = db.collection('categories');
-        const categories = await collection.aggregate([
-            { $match: { 'items.clientId': req.params.clientId } },
-            {
-                $project: {
-                    items: { $filter: {
-                        input: '$items',
-                        as: 'item',
-                        cond: { $eq: ['$$item.clientId', req.params.clientId] }
-                    }},
-                }
-            }
-        ]).toArray();
-
-        let files = []; 
-        categories.forEach(category => {
-            files = [...files, ...category.items];
-        });
-
-        // delete all files on GCS
-        for (const file of files) {
-            const fullGcsFile = bucket.file(file.fullGcsDest);
-            await fullGcsFile.delete();
-
-            const smallGcsFile = bucket.file(file.smallGcsDest);
-            await smallGcsFile.delete();
-        }
-        
-        // delete all files associated with client in db
-        await collection.updateMany(
-            { },
-            {
-                $pull: {
-                    items: { clientId: req.params.clientId }
-                }
-            }
-        );
-
-        // get all outfits from db
-        collection = db.collection('outfits');
-        const outfits = await collection.find({ clientId: req.params.clientId }).toArray();
-        
-        // delete all clients' outfits on GCS
-        for (const outfit of outfits) {
-            const gcsFile = bucket.file(outfit.gcsDest);
-            await gcsFile.delete();
-        }
-
-        // delete all clients' files in db
-        await collection.deleteMany({ clientId: req.params.clientId });
-
-        // delete client
-        collection = db.collection('clients');
+        const collection = db.collection('clients');
         await collection.deleteOne({ _id: ObjectId(req.params.clientId) });
 
         res.json({ message: 'Success!' });
