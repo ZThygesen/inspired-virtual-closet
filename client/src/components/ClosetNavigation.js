@@ -8,13 +8,19 @@ import Canvas from './Canvas';
 import Outfits from './Outfits';
 import AddItems from './AddItems';
 import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
+import logo from '../images/big_logo_cropped.png';
 
+const logoCanvasItem = {
+    canvasId: 0,
+    type: 'image',
+    src: logo
+}
 
 export default function ClosetNavigation({ sidebarRef, open, openSidebar, client, category, getCategories }) {
     const [closetMode, setClosetMode] = useState(0);
     const [currCategory, setCurrCategory] = useState(category?.name);
     const [showIcons, setShowIcons] = useState(window.innerWidth > 480 ? false : true);
-    const [canvasItems, setCanvasItems] = useState([]);
+    const [canvasItems, setCanvasItems] = useState([logoCanvasItem]);
 
     const [outfits, setOutfits] = useState([]);
     const [outfitEditMode, setOutfitEditMode] = useState(false);
@@ -123,7 +129,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
     function removeCanvasItems(itemsToRemove) {
         let updatedCanvasItems = canvasItems;
         itemsToRemove.forEach(itemToRemove => {
-            updatedCanvasItems = updatedCanvasItems.filter(item => item.canvasId !== itemToRemove.canvasId);
+            updatedCanvasItems = updatedCanvasItems.filter(item => item.canvasId !== itemToRemove.canvasId || itemToRemove.canvasId === 0);
         });
         setCanvasItems(updatedCanvasItems)
     }
@@ -148,7 +154,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
 
     const closetModes = [
         { name: 'CLOTHES', icon: 'checkroom'},
-        { name: `CANVAS (${canvasItems.length})`, icon: 'swipe'},
+        { name: `CANVAS (${canvasItems.length - 1})`, icon: 'swipe'},
         { name: `OUTFITS (${outfits.length})`, icon: 'dry_cleaning'},
         { name: 'ADD ITEMS', icon: 'add_box'}
     ];

@@ -31,7 +31,6 @@ export const ClothingCardContainer = styled.div`
     border-radius: 25px;
     max-width: 250px;
     margin: 12px;
-    word-wrap: break-word;
 
     p {
         font-size: 28px;
@@ -43,7 +42,7 @@ export const ClothingCardContainer = styled.div`
     }
 
     .file-name {
-        word-break: break-all;
+        word-break: break-word;
     }
 
     img {

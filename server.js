@@ -37,7 +37,7 @@ import categories from './routes/categories.js';
 app.use('/categories', categories);
 
 import clients from './routes/clients.js';
-app.use('/clients', clients);
+app.use('/api/clients', clients);
 
 import files from './routes/files.js';
 app.use('/files', files);

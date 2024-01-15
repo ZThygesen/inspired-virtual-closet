@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { Layer, Stage, Rect, Transformer } from 'react-konva';
+import { Layer, Rect, Stage, Transformer } from 'react-konva';
 import Modal from './Modal';
 import Input from './Input';
 import Loading from './Loading';
