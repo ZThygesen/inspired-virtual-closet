@@ -91,8 +91,6 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
         setCategoryOptions(options);
         setLoading(false);
         setSwapCategoryOpen(true)
-        
-        console.log(categories)
     }
     
     async function editItem(item, newName) {

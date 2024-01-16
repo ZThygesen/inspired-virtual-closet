@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useError } from '../components/ErrorContext';
 import axios from 'axios';
 import { HomeContainer } from '../styles/Home';
 import ActionButton from '../components/ActionButton'
@@ -13,6 +14,9 @@ export default function Home() {
     const [password, setPassword] = useState('');
     const [incorrect, setIncorrect] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    const { setError } = useError();
+
     const navigate = useNavigate();
 
     function handleLoginOpen() {
@@ -29,13 +33,18 @@ export default function Home() {
         setLoading(true);
 
         setTimeout(async () => {
-            const response = await axios.post('/password', { password: password });
+            try {
+                const response = await axios.post('/passwords', { password: password });
                 if (response.data) {
                     navigate('clients');
                 } else {
                     setIncorrect(true);
                 }
+            } catch (err) {
+                setError(`There was an error fetching the password:\n${err.message}`);
+            } finally {
                 setLoading(false);
+            }
         }, 350);
     }
 
@@ -43,11 +52,9 @@ export default function Home() {
         <>
             <HomeContainer>
                 <img src={logo} alt="Edie Styles" className="big-logo" />
-                
                 <div className="home-options">
                     <h1>Virtual Closet</h1>
                     <ActionButton variant={'primary'} onClick={handleLoginOpen}>Log In</ActionButton>
-                    {/* <ActionButton variant={'primary'} isLink={true} linkPath={'clients'}>CLIENTS</ActionButton> */}
                 </div>
             </HomeContainer>
             <Modal
