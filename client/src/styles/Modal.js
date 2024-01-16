@@ -74,6 +74,10 @@ export const ModalContentContainer = styled.div`
         text-align: center;
     }
 
+    .modal-content .left {
+        text-align: left;
+    }
+
     .modal-content .large {
         font-size: 28px;
     }

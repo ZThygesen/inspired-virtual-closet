@@ -10,12 +10,12 @@ import Input from '../components/Input';
 import Loading from '../components/Loading';
 
 export default function Home() {
+    const { setError } = useError();
+    
     const [loginOpen, setLoginOpen] = useState(false);
     const [password, setPassword] = useState('');
     const [incorrect, setIncorrect] = useState(false);
     const [loading, setLoading] = useState(false);
-
-    const { setError } = useError();
 
     const navigate = useNavigate();
 
@@ -34,14 +34,17 @@ export default function Home() {
 
         setTimeout(async () => {
             try {
-                const response = await axios.post('/passwords', { password: password });
+                const response = await axios.post('/password', { password: password });
                 if (response.data) {
                     navigate('clients');
                 } else {
                     setIncorrect(true);
                 }
             } catch (err) {
-                setError(`There was an error fetching the password:\n${err.message}`);
+                setError({
+                    message: 'There was an error fetching the password.',
+                    status: err.response.status
+                });
             } finally {
                 setLoading(false);
             }

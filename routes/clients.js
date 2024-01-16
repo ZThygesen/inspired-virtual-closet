@@ -19,7 +19,6 @@ router.post('/', async (req, res, next) => {
 
         res.status(201).json({ message: 'Success!' });
     } catch (err) {
-        err.status = 400;
         next(err);
     }
 });
@@ -30,7 +29,7 @@ router.get('/', async (req, res, next) => {
         const collection = db.collection('clients');
         const clients = await collection.find({ }).toArray();
 
-        res.json(clients);
+        res.status(200).json(clients);
     } catch (err) {
         next(err);
     }
@@ -50,9 +49,8 @@ router.patch('/:clientId', async (req, res, next) => {
             }
         );
 
-        res.json({ message: 'Success!' });
+        res.status(200).json({ message: 'Success!' });
     } catch (err) {
-        err.status = 400;
         next(err);
     }
 });
@@ -63,7 +61,7 @@ router.delete('/:clientId', async (req, res, next) => {
         const collection = db.collection('clients');
         await collection.deleteOne({ _id: ObjectId(req.params.clientId) });
 
-        res.json({ message: 'Success!' });
+        res.status(200).json({ message: 'Success!' });
     } catch (err) {
         next(err);
     }
