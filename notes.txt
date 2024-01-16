@@ -1,9 +1,6 @@
-add logo on canvas
 add vertical space to canvas
 add limit to number of images that can be uploaded?
 ability to use canvas on mobile (tap events)
-
-allow duplicate file names on upload
 
 add option to not remove bg on upload?
 
@@ -14,8 +11,6 @@ sort things alphabetically?
 allow admin to hide/unhide outfits
 
 add white background to outfit image
-
-add functionality for switching category
 
 modal for cancelling outfit edit on canvas?
 

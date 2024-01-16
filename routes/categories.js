@@ -26,6 +26,19 @@ router.post('/', async (req, res, next) => {
     }
 });
 
+// get categories
+router.get('/', async (req, res, next) => {
+    try {
+        const collection = db.collection('categories');
+        const categories = await collection.find({ }, { projection: {items: 0 } }).toArray();
+        
+        res.json(categories)
+    } catch (err) {
+        err.status = 400;
+        next(err);
+    }
+});
+
 // update category
 router.patch('/:categoryId', async (req, res, next) => {
     try {

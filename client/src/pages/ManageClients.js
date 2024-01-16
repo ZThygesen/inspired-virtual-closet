@@ -56,7 +56,7 @@ export default function ManageClients() {
 
     async function getClients() {
         setLoading(true);
-        const response = await axios.get('/clients')
+        const response = await axios.get('/api/clients')
             .catch(err => console.log(err));
         
         setClients(response.data.sort(function (a, b) {
@@ -82,7 +82,7 @@ export default function ManageClients() {
     async function addClient(e) {
         e.preventDefault();
         setLoading(true);
-        await axios.post('/clients', {
+        await axios.post('/api/clients', {
             firstName: newClientFName,
             lastName: newClientLName
         })
@@ -100,7 +100,7 @@ export default function ManageClients() {
             return;
         }
 
-        await axios.patch(`/clients/${client._id}`, { newFirstName: newFirstName, newLastName: newLastName })
+        await axios.patch(`/api/clients/${client._id}`, { newFirstName: newFirstName, newLastName: newLastName })
             .catch(err => console.log(err));
         
         await getClients();
@@ -145,7 +145,7 @@ export default function ManageClients() {
         setDeleteProgressMessage('');
 
 
-        await axios.delete(`/clients/${client._id}`)
+        await axios.delete(`/api/clients/${client._id}`)
             .catch(err => console.log(err));
 
         // update

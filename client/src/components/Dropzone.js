@@ -59,7 +59,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     const fileInputRef = useRef();
 
     useEffect(() => {
-        const filteredArray = [...new Map(selectedFiles.map(file => [file.name, file])).values()];
+        const filteredArray = [...selectedFiles];
         setFilteredFiles([...filteredArray]);
         fileInputRef.current.value = null;
     }, [selectedFiles]);
@@ -168,13 +168,13 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
         document.getElementById(file.id).remove();
 
         // remove file from filtered array
-        let fileIndex = filteredFiles.findIndex(item => item.name === file.name);
+        let fileIndex = filteredFiles.findIndex(item => item.id === file.id);
         let tmpFileArray = filteredFiles;
         tmpFileArray.splice(fileIndex, 1);
         setFilteredFiles([...tmpFileArray]);
 
         // remove file from invalid files array (if applicable)
-        fileIndex = invalidFiles.findIndex(item => item.name === file.name);
+        fileIndex = invalidFiles.findIndex(item => item.id === file.id);
         if (fileIndex !== -1) {
             tmpFileArray = invalidFiles;
             tmpFileArray.splice(fileIndex, 1);
@@ -186,7 +186,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
         // get all indexes of file to remove
         const fileIndexes = [];
         for (let i = 0; i < selectedFiles.length; i++) {
-            if (selectedFiles[i].name === file.name) {
+            if (selectedFiles[i].id === file.id) {
                 fileIndexes.push(i);
             }
         }

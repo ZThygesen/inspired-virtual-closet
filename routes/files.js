@@ -122,7 +122,41 @@ router.patch('/:categoryId/:gcsId', async (req, res, next) => {
     }
 });
 
-// TODO: switch file category
+// switch file category
+router.patch('/category/:categoryId/:gcsId', async (req, res, next) => {
+    try {
+        const collection = db.collection('categories');
+        const currId = req.params.categoryId === '0' ? 0 : ObjectId(req.params.categoryId);
+        const newId = req.body.newCategoryId === 0 ? 0 : ObjectId(req.body.newCategoryId)
+
+        // get file from current category and remove it
+        const category = await collection.findOne({ _id: currId });
+        const file = category.items.find(item => item.gcsId === req.params.gcsId);
+        await collection.updateOne(
+            { _id: currId },
+            {
+                $pull: {
+                    items: { gcsId: req.params.gcsId }
+                }
+            }
+        );
+
+        // now insert to new category
+        await collection.updateOne(
+            { _id: newId },
+            {
+                $push: {
+                    items: file
+                }
+            }
+        );
+
+        res.json({ message: 'Success!' });
+    } catch (err) {
+        err.status = 400;
+        next(err);
+    }
+});
 
 
 // delete file
