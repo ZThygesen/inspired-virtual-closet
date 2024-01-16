@@ -6,9 +6,8 @@ export default function CanvasImage({ imageObj, handleSelectItems, canvasResized
     const [image] = useImage(imageObj.src, 'anonymous');
     const imageRef = useRef();
 
-    
-    const initialWidth = 150;
-    const initialHeight = (image?.height / image?.width) * initialWidth || 150;
+    const initialWidth = imageObj.canvasId === 0 ? 100 : 150;
+    const initialHeight = (image?.height / image?.width) * initialWidth || initialWidth;
 
     useEffect(() => {
         handleDrag();

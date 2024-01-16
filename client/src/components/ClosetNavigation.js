@@ -124,6 +124,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
     async function cancelOutfitEdit() {
         setOutfitEditMode(false);
         setOutfitToEdit(null);
+        setCanvasItems([logoCanvasItem]);
     }
 
     function removeCanvasItems(itemsToRemove) {
