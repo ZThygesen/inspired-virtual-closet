@@ -2,10 +2,6 @@ add vertical space to canvas
 add limit to number of images that can be uploaded?
 ability to use canvas on mobile (tap events)
 
-refresh on clients page behaves weird
-
-socket io has long service times?
-
 add option to not remove bg on upload?
 
 if textbox is being edited when outfit save is initiated, the textbox won't show up
@@ -15,8 +11,6 @@ sort things alphabetically?
 allow admin to hide/unhide outfits
 
 add white background to outfit image
-
-add functionality for switching category
 
 modal for cancelling outfit edit on canvas?
 
