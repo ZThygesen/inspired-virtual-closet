@@ -21,7 +21,7 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
         const idToken = await client.idTokenProvider.fetchIdToken(process.env.GCF_URL)
         
         // create GCS destinations
-        const gcsId = createI();
+        const gcsId = createId();
         let fullGcsDest = `items/${gcsId}/full.png`;
         let smallGcsDest = `items/${gcsId}/small.png`;
 
