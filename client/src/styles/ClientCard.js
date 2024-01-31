@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 
 export const ClientCardContainer = styled.div`
+    height: fit-content;
     display: flex;
     flex-direction: column;
     align-items: center;
