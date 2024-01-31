@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { useError } from './ErrorContext';
 import { Tooltip } from '@mui/material';
 import Modal from './Modal';
 import Input from './Input';
 import { OutfitCardContainer } from '../styles/Outfits';
 
 export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteOutfit }) {
+    const { setError } = useError();
+
     const [editOpen, setEditOpen] = useState(false);
     const [editNameOpen, setEditNameOpen] = useState(false);
     const [newOutfitName, setNewOutfitName] = useState(outfit.outfitName);
@@ -36,15 +39,21 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
     }
 
     async function handleDownloadOutfit() {
-        const image = await fetch(outfit.outfitUrl).then(res => res.blob());
-        const imageURL = URL.createObjectURL(image);
-
-        const link = document.createElement('a');
-        link.href = imageURL;
-        link.download = outfit.outfitName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        try {
+            const image = await fetch(outfit.outfitUrl).then(res => res.blob());
+            const imageURL = URL.createObjectURL(image);
+            const link = document.createElement('a');
+            link.href = imageURL;
+            link.download = outfit.outfitName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            setError({
+                message: 'There was an error downloading the outfit.',
+                status: err.response.status
+            });
+        } 
     }
 
     return (

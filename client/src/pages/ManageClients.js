@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useError } from '../components/ErrorContext';
 import axios from 'axios';
 import cuid from 'cuid';
 import styled from 'styled-components';
@@ -39,6 +40,8 @@ function CircularProgressWithLabel(props) {
 }
 
 export default function ManageClients() {
+    const { setError } = useError();
+
     const [clients, setClients] = useState([]);
     const [openModal, setOpenModal] = useState(false);
     const [newClientFName, setNewClientFName] = useState('');
@@ -50,28 +53,34 @@ export default function ManageClients() {
     const [deleteProgressNumerator, setDeleteProgressNumerator] = useState(0)
     const [deleteProgressDenominator, setDeleteProgressDenominator] = useState(1);
 
+    const getClients = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await axios.get('/api/clients');
+            setClients(response.data.sort(function (a, b) {
+                if (a.firstName < b.firstName) {
+                    return -1;
+                } 
+                else if (a.firstName > b.firstName) {
+                    return 1;
+                }
+                else {
+                    return 0;
+                }
+            }));
+        } catch (err) {
+            setError({
+                message: 'There was an error fetching clients.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
+    }, [setError]);
+
     useEffect(() => {
         getClients();
-    }, []);
-
-    async function getClients() {
-        setLoading(true);
-        const response = await axios.get('/api/clients')
-            .catch(err => console.log(err));
-        
-        setClients(response.data.sort(function (a, b) {
-            if (a.firstName < b.firstName) {
-                return -1;
-            } 
-            else if (a.firstName > b.firstName) {
-                return 1;
-            }
-            else {
-                return 0;
-            }
-        }));
-        setLoading(false);
-    }
+    }, [getClients]);
 
     function handleClose() {
         setOpenModal(false);
@@ -82,15 +91,22 @@ export default function ManageClients() {
     async function addClient(e) {
         e.preventDefault();
         setLoading(true);
-        await axios.post('/api/clients', {
-            firstName: newClientFName,
-            lastName: newClientLName
-        })
-            .catch(err => console.log(err));
 
-        handleClose();
-        await getClients();
-        setLoading(false);
+        try {
+            await axios.post('/api/clients', {
+                firstName: newClientFName,
+                lastName: newClientLName
+            });
+            handleClose();
+            await getClients();
+        } catch(err) {
+            setError({
+                message: 'There was an adding the client.',
+                status: err.response.status
+            });
+        } finally {
+           setLoading(false);
+        }
     }
 
     async function editClient(client, newFirstName, newLastName) {
@@ -99,12 +115,24 @@ export default function ManageClients() {
             setLoading(false);
             return;
         }
+        try {
+            await axios.patch(`/api/clients/${client._id}`, { newFirstName: newFirstName, newLastName: newLastName });  
+            await getClients();
+        } catch (err) {
+            setError({
+                message: 'There was an error editing the client.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
+    }
 
-        await axios.patch(`/api/clients/${client._id}`, { newFirstName: newFirstName, newLastName: newLastName })
-            .catch(err => console.log(err));
-        
-        await getClients();
-        setLoading(false);
+    function handleDeleteProgressClose() {
+        setDeleteProgressOpen(false);
+        setDeleteProgressDenominator(1);
+        setDeleteProgressNumerator(0);
+        setDeleteProgressMessage('');
     }
 
     async function deleteClient(client) {
@@ -114,6 +142,10 @@ export default function ManageClients() {
         const outfits = await getClientOutfits(client);
         setLoading(false);
 
+        if (!items || !outfits) {
+            return;
+        }
+        
         setDeleteProgressOpen(true);
 
         // delete client items
@@ -121,7 +153,11 @@ export default function ManageClients() {
             setDeleteProgressDenominator(items.length);
             setDeleteProgressMessage('Deleting client items...');
 
-            await deleteClientItems(items);
+            const finished = await deleteClientItems(items);
+            if (!finished) {
+                handleDeleteProgressClose();
+                return;
+            }
             await pause(750);
         }
         
@@ -132,81 +168,111 @@ export default function ManageClients() {
             setDeleteProgressNumerator(0);
             setDeleteProgressMessage('Deleting client outfits...');
 
-            await deleteClientOutfits(outfits);
+            const finished = await deleteClientOutfits(outfits);
+            if (!finished) {
+                handleDeleteProgressClose();
+                return;
+            }
             await pause(750);
         }
         
         // delete client
-        setDeleteProgressOpen(false);
         setLoading(true);
+        handleDeleteProgressClose();
 
-        setDeleteProgressDenominator(0);
-        setDeleteProgressNumerator(0);
-        setDeleteProgressMessage('');
-
-
-        await axios.delete(`/api/clients/${client._id}`)
-            .catch(err => console.log(err));
-
-        // update
-        await getClients();
-        setLoading(false);
+        try {
+            await axios.delete(`/api/clients/${client._id}`);
+            
+            // update
+            await getClients();
+        } catch (err) {
+            setError({
+                message: 'There was an error deleting the client.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }   
     }
 
     async function getClientItems(client) {
-        const response = await axios.get(`/files/${client._id}`)
-            .catch(err => console.log(err));
-
-        const categories = response.data;
-
         const items = []
-        for (const category of categories) {
-            for (const item of category.items) {
-                item.categoryId = category._id;
-                items.push(item);
+        try {
+           const response = await axios.get(`/files/${client._id}`);
+           const categories = response.data;
+            for (const category of categories) {
+                for (const item of category.items) {
+                    item.categoryId = category._id;
+                    items.push(item);
+                }
             }
+        } catch (err) {
+            setError({
+                message: 'There was an error fetching client items.',
+                status: err.response.status
+            });
+            return;
         }
 
-        return items
+        return items;
     }
 
     async function getClientOutfits(client) {
-        const response = await axios.get(`/outfits/${client._id}`)
-            .catch(err => console.log(err));
-
-        const outfits = response.data;
-
+        let outfits = [];
+        try {
+            const response = await axios.get(`/outfits/${client._id}`);
+            outfits = response.data;
+        } catch (err) {
+            setError({
+                message: 'There was an error fetching client outfits.',
+                status: err.response.status
+            });
+            return;
+        }
+        
         return outfits;
     }       
 
     async function deleteClientItems(items) {
-        for (const item of items) {
-            await axios.delete(`/files/${item.categoryId}/${item.gcsId}`)
-                .catch(err => console.log(err));
-
-            setDeleteProgressNumerator(current => current + 1);
+        try {
+            for (const item of items) {
+                await axios.delete(`/files/${item.categoryId}/${item.gcsId}`);
+                setDeleteProgressNumerator(current => current + 1);
+            }
+        } catch (err) {
+            setError({
+                message: 'There was an error deleting client items.',
+                status: err.response.status
+            });
+            return;
         }
-
-        setTimeout(() => {
-
-        }, 750);
+        
+        return true;
     }
 
     async function deleteClientOutfits(outfits) {
-        for (const outfit of outfits) {
-            await axios.delete(`/outfits/${outfit._id}`)
-                .catch(err => console.log(err));
-            
-            setDeleteProgressNumerator(current => current + 1);
+        try {
+            for (const outfit of outfits) {
+                await axios.delete(`/outfits/${outfit._id}`);
+                setDeleteProgressNumerator(current => current + 1);
+            }
+        } catch (err) {
+            setError({
+                message: 'There was an error deleting client outfits.',
+                status: err.response.status
+            });
+            return;
         }
+        
+        return true;
     }
 
     function pause(time) {
         return new Promise((resolve, reject) => {
             setTimeout(() => {
                 resolve(time);
-            }, time)
-        })
+            }, time);
+        });
     }
 
     return (

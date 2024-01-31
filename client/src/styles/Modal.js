@@ -54,6 +54,10 @@ export const ModalContentContainer = styled.div`
         font-family: 'Fashion', sans-serif;
         letter-spacing: 4px;
         text-align: center;
+
+        &.warning {
+            color: red;
+        }
     }
 
     .modal-content {
@@ -68,6 +72,10 @@ export const ModalContentContainer = styled.div`
 
     .modal-content p {
         text-align: center;
+    }
+
+    .modal-content .left {
+        text-align: left;
     }
 
     .modal-content .large {

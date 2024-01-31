@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useError } from './ErrorContext';
 import axios from 'axios'
 import io from 'socket.io-client'
 import cuid from 'cuid';
@@ -41,6 +42,8 @@ function CircularProgressWithLabel(props) {
 }
 
 export default function Dropzone({ client, category, disabled, updateItems }) {
+    const { setError } = useError();
+
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [filteredFiles, setFilteredFiles] = useState([]);
     const [invalidFiles, setInvalidFiles] = useState([]);
@@ -98,8 +101,15 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             files[i]['fileSize'] = getFileSize(files[i].size);
 
             if (validateFile(files[i])) {
-                const file = await convertToImage(files[i]);
-                allFiles.push(file);
+                try {
+                   const file = await convertToImage(files[i]);
+                   allFiles.push(file); 
+                } catch (err) {
+                    setError({
+                        message: 'There was an error processing the files.',
+                        status: 400
+                    });
+                }
             } else {
                 files[i]['invalid'] = true;
                 badFiles.push(files[i]);
@@ -140,8 +150,14 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             reader.readAsDataURL(file);
 
             reader.onload = async function (e) {
-                const fileType = file.type.split('/')[1].toUpperCase()
-                file['src'] = await resizeImage(e.target.result, fileType);
+                const fileType = file.type.split('/')[1].toUpperCase();
+                try {
+                    file['src'] = await resizeImage(e.target.result, fileType); 
+                } catch (err) {
+                    console.log('HERE');
+                    reject(err);
+                }
+                
                 resolve(file);
             };
 
@@ -223,11 +239,22 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
         let firstUpload = true;
         for (const file of filteredFiles) {
             if (firstUpload) {
-                setUploadMessage('If this is the first file you\'ve uploaded in a while, it could take a minute.')
+                setUploadMessage('If this is the first file you\'ve uploaded in a while, it could take a minute.');
                 firstUpload = false;
             }
 
-            await uploadFile(file);
+            try {
+                await uploadFile(file);
+            } catch (err) {
+                setError({
+                    message: 'There was an error uploading the files.',
+                    status: err.response.status
+                });
+                setUploadModalOpen(false);
+                setNumFilesUploaded(0);
+                return;
+            }
+            
             setNumFilesUploaded(current => current + 1);
             setUploadMessage('');
         }
@@ -252,19 +279,34 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
         formData.append('clientId', client._id);
         formData.append('categoryId', category._id);
         formData.append('requestId', reqId);
-        await axios.post('/files', formData, {
-            headers: { 'Content-Type': 'multipart/form-data'}
-        });
 
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
+            try {
+               await axios.post('/files', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data'}
+                }); 
+            } catch (err) {
+                reject(err);
+            }
+
             function handleUploadComplete({ requestId }) {
                 if (reqId === requestId) {
                     resolve();
                     socket.off('uploadComplete', handleUploadComplete);
+                    socket.off('error', handleUploadError);
+                }
+            }
+
+            function handleUploadError({ status, requestId }) {
+                if (reqId === requestId) {
+                    reject({response: { status: status }});
+                    socket.off('uploadComplete', handleUploadComplete);
+                    socket.off('error', handleUploadError);
                 }
             }
 
             socket.on('uploadComplete', handleUploadComplete);
+            socket.on('error', handleUploadError);
         });
     }
 

@@ -2,6 +2,10 @@ add vertical space to canvas
 add limit to number of images that can be uploaded?
 ability to use canvas on mobile (tap events)
 
+crop image in cloud function to remove white space?
+
+reduce to only 1 modal?
+
 add option to not remove bg on upload?
 
 if textbox is being edited when outfit save is initiated, the textbox won't show up

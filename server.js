@@ -1,4 +1,5 @@
 import express from 'express';
+import process from 'process';
 import { config } from 'dotenv';
 import { mongoConnect } from './mongoConnect.js';
 import { googleConnect } from './googleConnect.js';
@@ -57,7 +58,6 @@ app.post('/password', async (req, res, next) => {
         }
 
     } catch (err) {
-        err.status = 400;
         next(err);
     }
 });
@@ -70,13 +70,14 @@ if (process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || p
     app.get('*', function (req, res) {
         res.sendFile(path.resolve(__dirname, './client/build', 'index.html'));
     });
-} else {
-    app.use((err, req, res, next) => {
-        console.log(`error: ${err.message}, status: ${err.status}`);
-        const status = err.status || 500;
-        res.status(status).json({ message: err.message });
-    });
 }
+
+app.use((err, req, res, next) => {
+    const status = err.status || 500;
+    console.error(`\nError: ${err.message}\nStatus: ${status}\nStack:\n${err.stack}\n`);
+    
+    res.status(status).json({ message: err.message });
+});
 
 server.listen(port, () => console.log(`Server started on port ${process.env.port || port}`));
 

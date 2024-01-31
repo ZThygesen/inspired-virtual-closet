@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useError } from '../components/ErrorContext';
 import styled from 'styled-components';
 import axios from 'axios';
 import ClosetNavigation from '../components/ClosetNavigation';
@@ -13,6 +14,8 @@ const Container = styled.div`
 `;
 
 export default function VirtualCloset() {
+    const { setError } = useError();
+
     const { client } = useLocation().state;
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 800 ? true : false);
     const [closeSidebarOnSelect, setCloseSidebarOnSelect] = useState(window.innerWidth > 800 ? false : true);
@@ -47,11 +50,19 @@ export default function VirtualCloset() {
             setLoading(true);
         }
         
+        let categories;
         // get all categories and their data for the current client
-        const response = await axios.get(`/files/${client._id}`)
-            .catch(err => console.log(err));
-
-        let categories = response.data;
+        try {
+            const response = await axios.get(`/files/${client._id}`);
+            categories = response.data;
+        } catch (err) {
+            setError({
+                message: 'There was an error fetching client items.',
+                status: err.response.status
+            });
+            setLoading(false);
+            return;
+        }
 
         // filter out the other category
         const otherCategoryIndex = categories.findIndex(category => category._id === 0);
@@ -124,7 +135,7 @@ export default function VirtualCloset() {
         }
 
         setLoading(false);
-    }, [client]);
+    }, [client, setError]);
 
     useEffect(() => {
         getCategories(undefined, true);
@@ -132,11 +143,18 @@ export default function VirtualCloset() {
 
     async function addCategory(newCategory) {
         setLoading(true);
-        await axios.post('/categories', { category: newCategory })
-            .catch(err => console.log(err));
-        
-        await getCategories();
-        setLoading(false);
+
+        try {
+            await axios.post('/categories', { category: newCategory });
+            await getCategories();
+        } catch (err) {
+            setError({
+                message: 'There was an error adding the category.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
     }
 
     async function editCategory(category, newName) {
@@ -146,21 +164,34 @@ export default function VirtualCloset() {
             return;
         }
 
-        await axios.patch(`/categories/${category._id}`, { newName: newName })
-            .catch(err => console.log(err));
-        
-        await getCategories(category);
-        setLoading(false);
+        try {
+            await axios.patch(`/categories/${category._id}`, { newName: newName });
+            await getCategories(category);
+        } catch (err) {
+            setError({
+                message: 'There was an error editing the category.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
     }
     
     async function deleteCategory(category) {
         setLoading(true);
         
-        await axios.delete(`/categories/${category._id}`)
-            .catch(err => console.log(err));
+        try {
+            await axios.delete(`/categories/${category._id}`);
+            await getCategories();
+        } catch (err) {
+            setError({
+                message: 'There was an error adding the category.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
         
-        await getCategories();
-        setLoading(false);
     }
 
     function openSidebar() {

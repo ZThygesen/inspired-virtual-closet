@@ -21,7 +21,7 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
         const idToken = await client.idTokenProvider.fetchIdToken(process.env.GCF_URL)
         
         // create GCS destinations
-        const gcsId = createId();
+        const gcsId = createI();
         let fullGcsDest = `items/${gcsId}/full.png`;
         let smallGcsDest = `items/${gcsId}/small.png`;
 
@@ -72,8 +72,10 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
         // upload complete
         io.emit('uploadComplete', { requestId });
     } catch (err) {
-        err.status = 400;
-        next(err);
+        const { _, __, ___, ____, requestId } = req.fields;
+        const status = err.status || 500;
+        io.emit('error', { status, requestId });
+        console.error(`\nError: ${err.message}\nStatus: 500\nStack:\n${err.stack}\n`);
     }
 });
 
@@ -95,7 +97,7 @@ router.get('/:clientId', async (req, res, next) => {
             }
         ]).toArray();
         
-        res.json(files);
+        res.status(200).json(files);
     } catch (err) {
         next(err);
     }
@@ -115,9 +117,8 @@ router.patch('/:categoryId/:gcsId', async (req, res, next) => {
             }
         );
 
-        res.json({ message: 'Success!' });
+        res.status(200).json({ message: 'Success!' });
     } catch (err) {
-        err.status = 400;
         next(err);
     }
 });
@@ -151,9 +152,8 @@ router.patch('/category/:categoryId/:gcsId', async (req, res, next) => {
             }
         );
 
-        res.json({ message: 'Success!' });
+        res.status(200).json({ message: 'Success!' });
     } catch (err) {
-        err.status = 400;
         next(err);
     }
 });
@@ -185,7 +185,7 @@ router.delete('/:categoryId/:gcsId', async (req, res, next) => {
             }
         );
 
-        res.json({ message: 'Success!' });
+        res.status(200).json({ message: 'Success!' });
     } catch (err) {
         next(err);
     }

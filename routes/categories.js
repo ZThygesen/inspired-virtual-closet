@@ -21,7 +21,6 @@ router.post('/', async (req, res, next) => {
 
         res.status(201).json({ message: 'Success!' });
     } catch (err) {
-        err.status = 400;
         next(err);
     }
 });
@@ -32,9 +31,8 @@ router.get('/', async (req, res, next) => {
         const collection = db.collection('categories');
         const categories = await collection.find({ }, { projection: {items: 0 } }).toArray();
         
-        res.json(categories)
+        res.status(200).json(categories)
     } catch (err) {
-        err.status = 400;
         next(err);
     }
 });
@@ -52,10 +50,9 @@ router.patch('/:categoryId', async (req, res, next) => {
             }
         );
 
-        res.json({ message: 'Success!' });
+        res.status(200).json({ message: 'Success!' });
 
     } catch (err) {
-        err.status = 400;
         next(err);
     }
 });
@@ -85,7 +82,7 @@ router.delete('/:categoryId', async (req, res, next) => {
         // delete category
         await collection.deleteOne({ _id: ObjectId(req.params.categoryId )});
 
-        res.json({ message: 'Success!' });
+        res.status(200).json({ message: 'Success!' });
     } catch (err) {
         next(err);
     }

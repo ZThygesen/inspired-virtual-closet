@@ -23,8 +23,8 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
         }
 
         const gcsFile = bucket.file(gcsDest);
-        await gcsFile.save(fileBuffer);
-
+        await gcsFile.save(blob)
+        
         const url = await gcsFile.publicUrl();
 
         // create outfit object
@@ -46,17 +46,20 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
         res.status(201).json({ message: 'Success!' });
 
     } catch (err) {
-        err.status = 400;
         next(err);
     }
 });
+
+async function saveFile(gcsFile, fileBuffer) {
+    await gcsFile.save(fileBuffer)
+}
 
 // get outfits for given client
 router.get('/:clientId', async (req, res, next) => {
     try {
         const collection = db.collection('outfits');
         const outfits = await collection.find({ clientId: req.params.clientId }).toArray();
-        res.json(outfits);
+        res.status(200).json(outfits);
     } catch (err) {
         next(err);
     }
@@ -104,7 +107,7 @@ router.patch('/:outfitId', ExpressFormidable(), async (req, res, next) => {
             }
         );
 
-        res.json({ message: 'Success!' });
+        res.status(200).json({ message: 'Success!' });
     } catch (err) {
         next(err);
     }
@@ -123,7 +126,7 @@ router.patch('/name/:outfitId', async (req, res, next) => {
             }
         );
 
-        res.json({ message: 'Success!' });
+        res.status(200).json({ message: 'Success!' });
     } catch (err) {
         next(err);
     }
@@ -144,13 +147,10 @@ router.delete('/:outfitId', async (req, res, next) => {
         // delete from db
         await collection.deleteOne({ _id: ObjectId(req.params.outfitId )});
 
-        res.json({ message: 'Success!' });
+        res.status(200).json({ message: 'Success!' });
     } catch (err) {
         next(err);
     }
 });
-
-
-
 
 export default router;

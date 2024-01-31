@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useError } from './ErrorContext';
 import axios from 'axios';
 import ClothingCard from './ClothingCard';
 import Loading from './Loading';
@@ -7,6 +8,8 @@ import cuid from 'cuid';
 import Modal from './Modal';
 
 export default function Clothes({ display, category, updateItems, addCanvasItem }) {
+    const { setError } = useError();
+
     const [itemToSwapCategory, setItemToSwapCategory] = useState({});
     const [currCategorySelected, setCurrCategorySelected] = useState({});
     const [categoryOptions, setCategoryOptions] = useState([]);
@@ -28,15 +31,20 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
 
         setLoading(true);
 
-        await axios.patch(`/files/category/${category._id}/${itemToSwapCategory.gcsId}`, {
-            newCategoryId: currCategorySelected.value
-        })
-            .catch(err => console.log(err));
-
-        await updateItems();
-
-        setLoading(false);
-        handleSwapCategoryClose();
+        try {
+            await axios.patch(`/files/category/${category._id}/${itemToSwapCategory.gcsId}`, {
+                newCategoryId: currCategorySelected.value
+            });
+            await updateItems();
+        } catch (err) {
+            setError({
+                message: 'There was an error changing the item\'s category.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+            handleSwapCategoryClose();
+        }
     }
 
     function handleSelectCategory(selection) {
@@ -50,9 +58,21 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
     async function swapCategory(item) {
         setLoading(true);
         setItemToSwapCategory(item);
-        const response = await axios.get('/categories')
-            .catch(err => console.log(err));
-        const categories = response.data;
+
+        let categories;
+
+        try {
+            const response = await axios.get('/categories');
+            categories = response.data; 
+        } catch (err) {
+            setError({
+                message: 'There was an error fetching categories.',
+                status: err.response.status
+            });
+            setLoading(false);
+            setItemToSwapCategory({});
+            return;
+        }
 
         // filter out the other category
         const otherCategoryIndex = categories.findIndex(category => category._id === 0);
@@ -91,8 +111,6 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
         setCategoryOptions(options);
         setLoading(false);
         setSwapCategoryOpen(true)
-        
-        console.log(categories)
     }
     
     async function editItem(item, newName) {
@@ -102,20 +120,33 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
             return;
         }
 
-        await axios.patch(`/files/${category._id}/${item.gcsId}`, { newName: newName })
-            .catch(err => console.log(err));
-        
-        await updateItems();
-        setLoading(false);
+        try {
+            await axios.patch(`/files/${category._id}/${item.gcsId}`, { newName: newName });
+            await updateItems();
+        } catch (err) {
+            setError({
+                message: 'There was an error editing the item.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
     }
 
     async function deleteItem(item) {
         setLoading(true);
-        await axios.delete(`/files/${category._id}/${item.gcsId}`)
-            .catch(err => console.log(err));
-        
-        await updateItems();
-        setLoading(false);
+
+        try {
+            await axios.delete(`/files/${category._id}/${item.gcsId}`);
+            await updateItems();
+        } catch (err) {
+            setError({
+                message: 'There was an error deleting the item.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
