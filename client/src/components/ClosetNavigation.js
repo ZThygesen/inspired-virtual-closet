@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import axios from "axios";
+import { useError } from './ErrorContext';
+import axios from 'axios';
 import { Link } from 'react-router-dom';
 import cuid from 'cuid';
 import { Tooltip } from '@mui/material';
@@ -17,6 +18,8 @@ const logoCanvasItem = {
 }
 
 export default function ClosetNavigation({ sidebarRef, open, openSidebar, client, category, getCategories }) {
+    const { setError } = useError();
+    
     const [closetMode, setClosetMode] = useState(0);
     const [currCategory, setCurrCategory] = useState(category?.name);
     const [showIcons, setShowIcons] = useState(window.innerWidth > 480 ? false : true);
@@ -136,18 +139,22 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
     }
 
     const getOutfits = useCallback(async (changeMode = false) => {
-        const response = await axios.get(`/outfits/${client._id}`)
-            .catch(err => console.log(err));
+        try {
+            const response = await axios.get(`/outfits/${client._id}`);
+            
+            // reverse outfits to show recently created first
+            setOutfits(response.data.reverse());
 
-        // reverse outfits to show recently created first
-        setOutfits(response.data.reverse());
-
-        if (changeMode) {
-           setClosetMode(2); 
+            if (changeMode) {
+                setClosetMode(2); 
+            }
+        } catch (err) {
+            setError({
+                message: 'There was an error fetching client outfits.',
+                status: err.response.status
+            });
         }
-        
-    }, [client]);
-
+    }, [client, setError]);
 
     useEffect(() => {
         getOutfits();

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useError } from './ErrorContext';
 import axios from 'axios';
 import { Layer, Rect, Stage, Transformer } from 'react-konva';
 import Modal from './Modal';
@@ -10,6 +11,8 @@ import { CanvasContainer } from '../styles/Canvas';
 import { Tooltip } from '@mui/material';
 
 export default function Canvas({ display, sidebarRef, client, images, textboxes, addCanvasItem, removeCanvasItems, updateOutfits, editMode, outfitToEdit, cancelEdit }) {
+    const { setError } = useError();
+    
     const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
     const [selectedItems, setSelectedItems] = useState([]);
     const [selecting, setSelecting] = useState(false);
@@ -277,24 +280,37 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
         formData.append('stageItemsStr', JSON.stringify(stageItems));
         formData.append('outfitName', outfitName);
 
-        if (editMode) {
-            formData.append('gcsDest', outfitToEdit.gcsDest);
-            await axios.patch(`/outfits/${outfitToEdit._id}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data'}
-            })
-                .catch(err => console.log(err));
-        } else {
-            formData.append('clientId', client._id);
-            await axios.post('/outfits', formData, {
-                headers: { 'Content-Type': 'multipart/form-data'}
-            })
-                .catch(err => console.log(err)); 
+        try {
+            if (editMode) {
+                formData.append('gcsDest', outfitToEdit.gcsDest);
+                await axios.patch(`/outfits/${outfitToEdit._id}`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data'}
+                });
+            } else {
+                formData.append('clientId', client._id);
+                await axios.post('/outfits', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data'}
+                });
+            }
+    
+            await updateOutfits(true);
+        } catch (err) {
+            if (editMode) {
+                setError({
+                    message: 'There was an error editing the outfit.',
+                    status: err.response.status
+                });
+            } else {
+                setError({
+                    message: 'There was an error adding the outfit.',
+                    status: err.response.status
+                });
+            }
+        } finally {
+            clearCanvas();
+            handleSaveOutfitClose();
+            setLoading(false);
         }
-
-        await updateOutfits(true);
-        clearCanvas();
-        handleSaveOutfitClose();
-        setLoading(false);
     }
 
     function clearCanvas() {

@@ -1,4 +1,5 @@
 import express from 'express';
+import process from 'process';
 import { config } from 'dotenv';
 import { mongoConnect } from './mongoConnect.js';
 import { googleConnect } from './googleConnect.js';

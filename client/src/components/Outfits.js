@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { useError } from './ErrorContext';
 import axios from 'axios';
 import OutfitCard from './OutfitCard';
 import { OutfitsContainer } from '../styles/Outfits';
 import Loading from './Loading';
 
 export default function Outfits({ display, outfits, updateOutfits, sendOutfitToCanvas }) {
+    const { setError } = useError();
+
     const [loading, setLoading] = useState(false);
 
     function editOutfit(outfit) {
@@ -18,19 +21,33 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
             return;
         }
 
-        await axios.patch(`/outfits/name/${outfit._id}`, { newName: newName })
-            .catch(err => console.log(err));
-        await updateOutfits();
-        setLoading(false);
+        try {
+            await axios.patch(`/outfits/name/${outfit._id}`, { newName: newName });
+            await updateOutfits();
+        } catch (err) {
+            setError({
+                message: 'There was an error editing the outfit name.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }        
     }
 
     async function deleteOutfit(outfit) {
         setLoading(true);
-        await axios.delete(`/outfits/${outfit._id}`)
-            .catch(err => console.log(err));
-        
-        await updateOutfits();
-        setLoading(false);
+
+        try {
+            await axios.delete(`/outfits/${outfit._id}`);
+            await updateOutfits();
+        } catch (err) {
+            setError({
+                message: 'There was an error deleting the outfit.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (

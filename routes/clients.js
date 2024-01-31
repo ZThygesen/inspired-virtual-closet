@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import { db, bucket } from '../server.js';
+import { db } from '../server.js';
 import { ObjectId } from 'mongodb';
 
 // create client
