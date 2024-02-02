@@ -23,7 +23,7 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
         }
 
         const gcsFile = bucket.file(gcsDest);
-        await gcsFile.save(blob)
+        await gcsFile.save(fileBuffer);
         
         const url = await gcsFile.publicUrl();
 
