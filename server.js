@@ -24,8 +24,14 @@ let bucket;
 async function connect() {
     try {
         const mongoClient = await mongoConnect();
-        db = mongoClient.db(process.env.DB_NAME);
-
+        if (process.env.NODE_ENV === 'test') {
+            db = mongoClient.db(process.env.DB_NAME_TEST);
+            console.log('Connected to database: test');
+        } else {
+            db = mongoClient.db(process.env.DB_NAME);
+            console.log('Connected to database: dev');
+        }
+        
         ({ serviceAuth, bucket } = await googleConnect());
     } catch (err) {
         console.error(err);
@@ -81,4 +87,4 @@ app.use((err, req, res, next) => {
 
 server.listen(port, () => console.log(`Server started on port ${process.env.port || port}`));
 
-export { db, serviceAuth, bucket, io };
+export { app, db, serviceAuth, bucket, io };
