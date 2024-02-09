@@ -26,7 +26,7 @@ async function connect() {
         const mongoClient = await mongoConnect();
         if (process.env.NODE_ENV === 'test') {
             db = mongoClient.db(process.env.DB_NAME_TEST);
-            console.log('Connected to database: test');
+            // console.log('Connected to database: test');
         } else {
             db = mongoClient.db(process.env.DB_NAME);
             console.log('Connected to database: dev');
@@ -85,6 +85,8 @@ app.use((err, req, res, next) => {
     res.status(status).json({ message: err.message });
 });
 
-server.listen(port, () => console.log(`Server started on port ${process.env.port || port}`));
+if (process.env.NODE_ENV !== 'test') {
+    server.listen(port, () => console.log(`Server started on port ${process.env.port || port}`));
+}
 
 export { app, db, serviceAuth, bucket, io };

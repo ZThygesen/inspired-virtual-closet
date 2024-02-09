@@ -3,7 +3,7 @@ import { agent } from 'supertest';
 import { MongoClient } from 'mongodb';
 import { ObjectId } from 'mongodb';
 
-describe('clients', () => {
+describe('categories', () => {
     let mongoClient;
     let db;
     let collection;
@@ -12,11 +12,11 @@ describe('clients', () => {
         mongoClient = new MongoClient(process.env.DB_URI);
         await mongoClient.connect();
         db = mongoClient.db(process.env.DB_NAME_TEST);
-        collection = db.collection('clients');
+        collection = db.collection('categories');
     });
 
     afterEach(async () => {
-        await collection.deleteMany({});
+        await collection.deleteMany({ _id: { $ne: 0 } });
     });
 
     afterAll(async () => {
@@ -24,91 +24,78 @@ describe('clients', () => {
     });
 
     describe('create', () => {
-        it('should create new client', async () => {
+        it('should create new category', async () => {
             // perform action to test
             const data = {
-                firstName: 'John',
-                lastName: 'Doe'
+                category: 'T-Shirts'
             };
 
             const response = await agent(app)
-                .post('/api/clients')
+                .post('/categories')
                 .send(data);
             
             // perform checks
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
 
-            const client = await collection.findOne({ firstName: data.firstName });
-            expect(client).toBeTruthy();
-            expect(client.firstName).toBe('John');
-            expect(client.lastName).toBe('Doe');
-            expect(client.email).toBe('');
-            expect(client.isAdmin).toBe(false);
+            const category = await collection.findOne({ name: data.category });
+            expect(category).toBeTruthy();
+            expect(category.name).toBe('T-Shirts');
+            expect(category.items).toEqual([]);
         }); 
     });
     
     describe('read', () => {
-        it('should get clients', async () => {
+        it('should get categories', async () => {
             // insert mock data
             const data = {
                 _id: new ObjectId(),
-                firstName: 'John',
-                lastName: 'Doe',
-                email: '',
-                isAdmin: false
+                name: 'T-Shirts',
+                items: []
             };
             await collection.insertOne(data);
 
             // perform action to test
             const response = await agent(app)
-                .get('/api/clients');
+                .get('/categories');
             
             // perform checks
             expect(response.status).toBe(200);
-            expect(response.body).toHaveLength(1);
+            expect(response.body).toHaveLength(2);
 
-            const client = response.body[0];
-            expect(client._id).toBe(data._id.toString());
-            expect(client.firstName).toBe('John');
-            expect(client.lastName).toBe('Doe');
-            expect(client.email).toBe('');
-            expect(client.isAdmin).toBe(false);
+            const category = response.body[1];
+            expect(category._id).toBe(data._id.toString());
+            expect(category).not.toHaveProperty('items');
         });
     });
     
     describe('update', () => {
-        it('should update client', async () => {
+        it('should update category', async () => {
             // insert mock data
             const data = {
-                _id: ObjectId(),
-                firstName: 'John',
-                lastName: 'Doe',
-                email: '',
-                isAdmin: false
+                _id: new ObjectId(),
+                name: 'T-Shirts',
+                items: []
             };
             await collection.insertOne(data);
 
             // perform action to test
             const patchData = {
-                newFirstName: 'Jane',
-                newLastName: 'Deer'
+                newName: 'Jeans'
             };
 
             const response = await agent(app)
-                .patch(`/api/clients/${data._id.toString()}`)
+                .patch(`/categories/${data._id.toString()}`)
                 .send(patchData);
 
             // perform checks
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toBeTruthy();
-            expect(client.firstName).toBe('Jane');
-            expect(client.lastName).toBe('Deer');
-            expect(client.email).toBe('');
-            expect(client.isAdmin).toBe(false);
+            const category = await collection.findOne({ _id: data._id });
+            expect(category).toBeTruthy();
+            expect(category.name).toBe('Jeans');
+            expect(category.items).toEqual([]);
         });  
     });
 
@@ -116,19 +103,16 @@ describe('clients', () => {
         it('should delete client', async () => {
             // insert mock data
             const data = {
-                _id: ObjectId(),
-                firstName: 'John',
-                lastName: 'Doe',
-                email: '',
-                isAdmin: false
+                _id: new ObjectId(),
+                name: 'T-Shirts',
+                items: []
             };
             await collection.insertOne(data);
 
             // perform action to test
             const response = await agent(app)
-                .delete(`/api/clients/${data._id.toString()}`)
+                .delete(`/categories/${data._id.toString()}`)
             
-            // perform checks
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
