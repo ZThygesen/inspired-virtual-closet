@@ -1,12 +1,92 @@
-import { bucket } from './server';
+import { serviceAuth, bucket } from './server';
+import { MongoClient } from 'mongodb';
+import { GoogleAuth } from 'google-auth-library';
+import { Storage } from '@google-cloud/storage';
+import axios from 'axios';
 
 export const helpers = {
+    // connect to MongoDB
+    async mongoConnect() {
+        let mongoClient;
+        try {
+            mongoClient = new MongoClient(process.env.DB_URI);
+            await mongoClient.connect(); 
+
+            return mongoClient;
+        } catch (err) {
+            console.error(err);
+        }
+    },
+
+    // connect to Google Cloud
+    async googleConnect() {
+        let serviceAuth;
+        let bucket;
+
+        try {
+            const credentials = {
+                type: process.env.GCS_type,
+                project_id: process.env.GCS_project_id,
+                private_key_id: process.env.GCS_private_key_id,
+                private_key: process.env.GCS_private_key.replace(/\\n/g, '\n'),
+                client_email: process.env.GCS_client_email,
+                client_id: process.env.GCS_client_id,
+                auth_uri: process.env.GCS_auth_uri,
+                token_uri: process.env.GCS_token_uri,
+                auth_provider_x509_cert_url: process.env.GCS_auth_provider_x509_cert_url,
+                client_x509_cert_url: process.env.GCS_client_x509_cert_url,
+                universe_domain: process.env.GCS_universe_domain
+            }
+
+            serviceAuth = new GoogleAuth({
+                projectId: process.env.GCS_project_id,
+                credentials: credentials
+            });
+
+            const storage = new Storage({
+                projectId: process.env.GCS_project_id,
+                credentials: credentials
+            });
+            
+            bucket = storage.bucket('edie-styles-virtual-closet');
+
+            return { serviceAuth, bucket };
+        } catch (err) {
+            console.error(err)
+        }
+    },
+
     // convert b64 to blob then to buffer
     async b64ToBuffer(b64str) {
         const blob = await fetch(b64str).then(res => res.blob());
         const buffer = await blob.arrayBuffer().then(arrayBuffer => Buffer.from(arrayBuffer));
 
         return buffer;
+    },
+
+    // upload image file to GCF for processing/uploading
+    async uploadToGCF(fileSrc, fullGcsDest, smallGcsDest) {
+        console.log('HERE!!!!!!')
+        return
+        // get id token to use google cloud function
+        const client = await serviceAuth.getIdTokenClient(process.env.GCF_URL);
+        const idToken = await client.idTokenProvider.fetchIdToken(process.env.GCF_URL);
+
+        // send file to google cloud function to remove background and store
+        const response = await axios.post(
+            'https://us-central1-avid-invention-410701.cloudfunctions.net/upload-item', 
+            { fileSrc, fullGcsDest, smallGcsDest }, 
+            { headers: {
+                    'Authorization': `Bearer ${idToken}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        const fullFileUrl = response.data.fullFileUrl;
+        const smallFileUrl = response.data.smallFileUrl;
+
+        return { fullFileUrl, smallFileUrl };
     },
 
     // upload file to GCS given destination
@@ -24,3 +104,4 @@ export const helpers = {
         await gcsFile.delete();
     }
 };
+              

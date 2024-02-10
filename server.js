@@ -1,12 +1,11 @@
 import express from 'express';
 import process from 'process';
 import { config } from 'dotenv';
-import { mongoConnect } from './mongoConnect.js';
-import { googleConnect } from './googleConnect.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Server } from 'socket.io';
 import http from 'http';
+import { helpers } from './helpers.js';
 
 const app = express();
 
@@ -23,7 +22,7 @@ let serviceAuth;
 let bucket;
 async function connect() {
     try {
-        const mongoClient = await mongoConnect();
+        const mongoClient = await helpers.mongoConnect();
         if (process.env.NODE_ENV === 'test') {
             db = mongoClient.db(process.env.DB_NAME_TEST);
             // console.log('Connected to database: test');
@@ -32,7 +31,7 @@ async function connect() {
             console.log('Connected to database: dev');
         }
         
-        ({ serviceAuth, bucket } = await googleConnect());
+        ({ serviceAuth, bucket } = await helpers.googleConnect());
     } catch (err) {
         console.error(err);
     }
@@ -85,8 +84,10 @@ app.use((err, req, res, next) => {
     res.status(status).json({ message: err.message });
 });
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV === 'test') {
+    server.listen(0);
+} else {
     server.listen(port, () => console.log(`Server started on port ${process.env.port || port}`));
 }
 
-export { app, db, serviceAuth, bucket, io };
+export { app, server, db, serviceAuth, bucket, io };

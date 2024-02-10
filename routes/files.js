@@ -1,11 +1,11 @@
 import express from 'express';
 const router = express.Router();
-import { db, serviceAuth, bucket, io } from '../server.js';
+import { db, io } from '../server.js';
 import { ObjectId } from 'mongodb';
 import { parse } from 'path';
 import ExpressFormidable from 'express-formidable';
 import { createId } from '@paralleldrive/cuid2';
-import axios from 'axios';
+import { helpers } from '../helpers';
 
 // upload file
 router.post('/', ExpressFormidable(), async (req, res, next) => {
@@ -15,35 +15,19 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
 
         // acknowledge request
         res.status(201).json({ message: 'Success!'});
-
-        // get id token to use google cloud function
-        const client = await serviceAuth.getIdTokenClient(process.env.GCF_URL);
-        const idToken = await client.idTokenProvider.fetchIdToken(process.env.GCF_URL)
         
         // create GCS destinations
         const gcsId = createId();
         let fullGcsDest = `items/${gcsId}/full.png`;
         let smallGcsDest = `items/${gcsId}/small.png`;
 
-        if (process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging') {
+        if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging') {
             fullGcsDest = 'dev/' + fullGcsDest;
             smallGcsDest = 'dev/' + smallGcsDest;
         }
 
-        // send file to google cloud function to remove background and store
-        const response = await axios.post(
-            'https://us-central1-avid-invention-410701.cloudfunctions.net/upload-item', 
-            { fileSrc, fullGcsDest, smallGcsDest }, 
-            { headers: {
-                    'Authorization': `Bearer ${idToken}`,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
-
-        const fullFileUrl = response.data.fullFileUrl;
-        const smallFileUrl = response.data.smallFileUrl;
-
+        const { fullFileUrl, smallFileUrl } = await helpers.uploadToGCF(fileSrc, fullGcsDest, smallGcsDest);
+        
         // create file object 
         const fileName = parse(fullFileName).name;
         const file = {
@@ -53,8 +37,7 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
             smallFileUrl: smallFileUrl,
             fullGcsDest: fullGcsDest,
             smallGcsDest: smallGcsDest,
-            gcsId: gcsId,
-            tags: []
+            gcsId: gcsId
         };
 
         // insert file object into db
@@ -169,11 +152,8 @@ router.delete('/:categoryId/:gcsId', async (req, res, next) => {
         const file = document.items.find(item => item.gcsId === req.params.gcsId);
 
         // delete files from GCS
-        const fullGcsFile = bucket.file(file.fullGcsDest);
-        await fullGcsFile.delete();
-
-        const smallGcsFile = bucket.file(file.smallGcsDest);
-        await smallGcsFile.delete();
+        await helpers.deleteFromGCS(file.fullGcsDest);
+        await helpers.deleteFromGCS(file.smallGcsDest);
 
         // then delete from db
         await collection.updateOne(
