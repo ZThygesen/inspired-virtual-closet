@@ -4,6 +4,7 @@ import { db, bucket } from '../server.js';
 import { ObjectId } from 'mongodb';
 import ExpressFormidable from 'express-formidable';
 import { createId } from '@paralleldrive/cuid2';
+import { helpers } from '../helpers';
 
 // create outfit
 router.post('/', ExpressFormidable(), async (req, res, next) => {
@@ -12,20 +13,16 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
         const { fileSrc, stageItemsStr, outfitName, clientId } = req.fields;
 
         // convert outfit file to buffer
-        const blob = await fetch(fileSrc).then(res => res.blob());
-        const fileBuffer = await blob.arrayBuffer().then(arrayBuffer => Buffer.from(arrayBuffer));
-        
-        // upload file to GCS
-        let gcsDest = `outfits/${createId()}.png`;
+        const fileBuffer = await helpers.b64ToBuffer(fileSrc);
 
-        if (process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging') {
+        // create file destination
+        let gcsDest = `outfits/${createId()}.png`;
+        if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging') {
             gcsDest = 'dev/' + gcsDest;
         }
 
-        const gcsFile = bucket.file(gcsDest);
-        await gcsFile.save(fileBuffer);
-        
-        const url = await gcsFile.publicUrl();
+        // upload to GCS
+        const url = await helpers.uploadToGCS(gcsDest, fileBuffer);
 
         // create outfit object
         const stageItems = JSON.parse(stageItemsStr);
@@ -34,9 +31,7 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
             stageItems: stageItems,
             outfitName: outfitName,
             outfitUrl: url,
-            gcsDest: gcsDest,
-            createdBy: '',
-            hidden: false
+            gcsDest: gcsDest
         };
 
         // insert outfit into db
@@ -49,10 +44,6 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
         next(err);
     }
 });
-
-async function saveFile(gcsFile, fileBuffer) {
-    await gcsFile.save(fileBuffer)
-}
 
 // get outfits for given client
 router.get('/:clientId', async (req, res, next) => {
@@ -71,29 +62,23 @@ router.patch('/:outfitId', ExpressFormidable(), async (req, res, next) => {
         // read in outfit fields
         const { fileSrc, stageItemsStr, outfitName, gcsDest } = req.fields;
 
-        // convert outfit file to buffer
-        const blob = await fetch(fileSrc).then(res => res.blob());
-        const fileBuffer = await blob.arrayBuffer().then(arrayBuffer => Buffer.from(arrayBuffer));
-
         // delete original file
-        const gcsFile = bucket.file(gcsDest)
-        await gcsFile.delete();
+        await helpers.deleteFromGCS(gcsDest);
 
-        // upload new file to GCS
+        // convert new outfit file to buffer
+        const fileBuffer = await helpers.b64ToBuffer(fileSrc);
+
+        // create new file destination
         let newGcsDest = `outfits/${createId()}.png`;
-
-        if (process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging') {
+        if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging') {
             newGcsDest = 'dev/' + newGcsDest;
         }
 
-        const newGcsFile = bucket.file(newGcsDest)
-        await newGcsFile.save(fileBuffer);
-
-        const url = await newGcsFile.publicUrl();
+        // upload to GCS
+        const url = await helpers.uploadToGCS(newGcsDest, fileBuffer);
 
         // update outfit in db
         const stageItems = JSON.parse(stageItemsStr);
-
         const collection = db.collection('outfits');
         await collection.updateOne(
             { _id: ObjectId(req.params.outfitId) },
@@ -141,8 +126,7 @@ router.delete('/:outfitId', async (req, res, next) => {
         const outfit = await collection.findOne({ _id: ObjectId(req.params.outfitId) });
 
         // delete file from GCS
-        const gcsFile = bucket.file(outfit.gcsDest);
-        await gcsFile.delete();
+        await helpers.deleteFromGCS(outfit.gcsDest);
 
         // delete from db
         await collection.deleteOne({ _id: ObjectId(req.params.outfitId )});

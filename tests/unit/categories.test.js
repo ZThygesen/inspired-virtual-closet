@@ -40,6 +40,7 @@ describe('categories', () => {
 
             const category = await collection.findOne({ name: data.category });
             expect(category).toBeTruthy();
+            expect(category).toHaveProperty('_id');
             expect(category.name).toBe('T-Shirts');
             expect(category.items).toEqual([]);
         }); 
@@ -94,6 +95,7 @@ describe('categories', () => {
 
             const category = await collection.findOne({ _id: data._id });
             expect(category).toBeTruthy();
+            expect(category._id).toEqual(data._id);
             expect(category.name).toBe('Jeans');
             expect(category.items).toEqual([]);
         });  
@@ -111,8 +113,9 @@ describe('categories', () => {
 
             // perform action to test
             const response = await agent(app)
-                .delete(`/categories/${data._id.toString()}`)
+                .delete(`/categories/${data._id.toString()}`);
             
+            // perform checks
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 

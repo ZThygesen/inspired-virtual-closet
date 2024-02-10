@@ -39,8 +39,9 @@ describe('clients', () => {
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
 
-            const client = await collection.findOne({ firstName: data.firstName });
+            const client = await collection.findOne({ firstName: 'John', lastName: 'Doe' });
             expect(client).toBeTruthy();
+            expect(client).toHaveProperty('_id');
             expect(client.firstName).toBe('John');
             expect(client.lastName).toBe('Doe');
             expect(client.email).toBe('');
@@ -105,6 +106,7 @@ describe('clients', () => {
 
             const client = await collection.findOne({ _id: data._id });
             expect(client).toBeTruthy();
+            expect(client._id).toEqual(data._id);
             expect(client.firstName).toBe('Jane');
             expect(client.lastName).toBe('Deer');
             expect(client.email).toBe('');
@@ -126,7 +128,7 @@ describe('clients', () => {
 
             // perform action to test
             const response = await agent(app)
-                .delete(`/api/clients/${data._id.toString()}`)
+                .delete(`/api/clients/${data._id.toString()}`);
             
             // perform checks
             expect(response.status).toBe(200);
