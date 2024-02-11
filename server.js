@@ -22,15 +22,7 @@ let serviceAuth;
 let bucket;
 async function connect() {
     try {
-        const mongoClient = await helpers.mongoConnect();
-        if (process.env.NODE_ENV === 'test') {
-            db = mongoClient.db(process.env.DB_NAME_TEST);
-            // console.log('Connected to database: test');
-        } else {
-            db = mongoClient.db(process.env.DB_NAME);
-            console.log('Connected to database: dev');
-        }
-        
+        db = await helpers.mongoConnect();
         ({ serviceAuth, bucket } = await helpers.googleConnect());
     } catch (err) {
         console.error(err);

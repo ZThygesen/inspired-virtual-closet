@@ -2,6 +2,7 @@ import express from 'express';
 const router = express.Router();
 import { db } from '../server.js';
 import { ObjectId } from 'mongodb';
+import { helpers } from '../helpers.js';
 
 // create category
 router.post('/', async (req, res, next) => {
@@ -60,26 +61,11 @@ router.patch('/:categoryId', async (req, res, next) => {
 // delete category
 router.delete('/:categoryId', async (req, res, next) => {
     try {
-        // get all files associated with category
-        const collection = db.collection('categories');
-        const files = await collection.find(
-            { _id: ObjectId(req.params.categoryId) },
-            { _id: 0, name: 0, items: 1 }
-        ).toArray();
-        
-        // move all files to "Other" category
-        await collection.updateOne(
-            { _id: 0 },
-            {
-                $push: {
-                    items: {
-                        $each: files[0].items
-                    }
-                }
-            }
-        );
+        // move files to Other
+        await helpers.moveFilesToOther(req.params.categoryId);
 
         // delete category
+        const collection = db.collection('categories');
         await collection.deleteOne({ _id: ObjectId(req.params.categoryId )});
 
         res.status(200).json({ message: 'Success!' });

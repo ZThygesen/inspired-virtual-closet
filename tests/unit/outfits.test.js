@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { jest } from '@jest/globals';
 import { app } from '../../server';
 import { agent } from 'supertest';
 import { MongoClient } from 'mongodb';
@@ -46,7 +46,7 @@ describe('outfits', () => {
             // perform checks
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
-            expect(bufferMock).toHaveBeenCalled();
+            expect(bufferMock).toHaveBeenCalledWith('data:image/png;base64,fileSrc=');
             expect(uploadMock).toHaveBeenCalled();
     
             const outfit = await collection.findOne({ clientId: clientId, outfitName: 'Epic Party Outfit' });
@@ -129,8 +129,8 @@ describe('outfits', () => {
             // perform checks
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
-            expect(deleteMock).toHaveBeenCalled();
-            expect(bufferMock).toHaveBeenCalled();
+            expect(deleteMock).toHaveBeenCalledWith('dev/outfits/gcsdest.png');
+            expect(bufferMock).toHaveBeenCalledWith('data:image/png;base64,newFileSrc=');
             expect(uploadMock).toHaveBeenCalled();
 
             const outfit = await collection.findOne({ _id: data._id });
@@ -209,7 +209,7 @@ describe('outfits', () => {
             // perform checks
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
-            expect(deleteMock).toHaveBeenCalled();
+            expect(deleteMock).toHaveBeenCalledWith('dev/outfits/gcsdest.png');
 
             const outfit = await collection.findOne({ _id: data._id });
             expect(outfit).toBeFalsy();

@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { jest } from '@jest/globals';
 import { app, server } from '../../server';
 import { agent } from 'supertest';
 import { MongoClient } from 'mongodb';
@@ -21,7 +21,10 @@ describe('files', () => {
 
     afterEach(async () => {
         await collection.deleteMany({ _id: { $ne: 0 } });
-
+        await collection.updateOne(
+            { _id: 0 },
+            { $set: { items: [] } }
+        );
     });
 
     afterAll(async () => {
@@ -281,7 +284,8 @@ describe('files', () => {
             // perform checks
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
-            expect(deleteMock).toHaveBeenCalled();
+            expect(deleteMock).toHaveBeenCalledWith('dev/items/full.png');
+            expect(deleteMock).toHaveBeenCalledWith('dev/items/small.png');
 
             const category = await collection.findOne({ _id: categoryData._id });
             expect(category.items).toHaveLength(0);

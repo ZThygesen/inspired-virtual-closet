@@ -1,4 +1,4 @@
-import { serviceAuth, bucket } from './server';
+import { serviceAuth, bucket, db } from './server';
 import { MongoClient } from 'mongodb';
 import { GoogleAuth } from 'google-auth-library';
 import { Storage } from '@google-cloud/storage';
@@ -8,13 +8,27 @@ export const helpers = {
     // connect to MongoDB
     async mongoConnect() {
         let mongoClient;
+        let db;
         try {
             mongoClient = new MongoClient(process.env.DB_URI);
-            await mongoClient.connect(); 
 
-            return mongoClient;
+            await mongoClient.connect();
+            if (process.env.NODE_ENV === 'test') {
+                db = mongoClient.db(process.env.DB_NAME_TEST);
+            } 
+            else if (process.env.NODE_ENV === 'production') {
+                db = mongoClient.db(process.env.DB_NAME_PROD);
+                console.log('Connected to database: production');
+            } 
+            else {
+                db = mongoClient.db(process.env.DB_NAME_DEV);
+                console.log('Connected to database: dev');
+            }
+
+            return db;
         } catch (err) {
             console.error(err);
+            throw err;
         }
     },
 
@@ -66,8 +80,6 @@ export const helpers = {
 
     // upload image file to GCF for processing/uploading
     async uploadToGCF(fileSrc, fullGcsDest, smallGcsDest) {
-        console.log('HERE!!!!!!')
-        return
         // get id token to use google cloud function
         const client = await serviceAuth.getIdTokenClient(process.env.GCF_URL);
         const idToken = await client.idTokenProvider.fetchIdToken(process.env.GCF_URL);
@@ -102,6 +114,28 @@ export const helpers = {
     async deleteFromGCS(gcsDest) {
         const gcsFile = bucket.file(gcsDest)
         await gcsFile.delete();
+    },
+
+    // move all files from one category to the Other category
+    async moveFilesToOther(categoryId) {
+        // get all files associated with category
+        const collection = db.collection('categories');
+        const files = await collection.find(
+            { _id: ObjectId(categoryId) },
+            { _id: 0, name: 0, items: 1 }
+        ).toArray();
+        
+        // move all files to "Other" category
+        await collection.updateOne(
+            { _id: 0 },
+            {
+                $push: {
+                    items: {
+                        $each: files[0].items
+                    }
+                }
+            }
+        );
     }
 };
               

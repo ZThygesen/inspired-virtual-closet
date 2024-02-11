@@ -1,7 +1,9 @@
+import { jest } from '@jest/globals';
 import { app } from '../../server';
 import { agent } from 'supertest';
 import { MongoClient } from 'mongodb';
 import { ObjectId } from 'mongodb';
+import { helpers } from '../../helpers';
 
 describe('categories', () => {
     let mongoClient;
@@ -102,7 +104,11 @@ describe('categories', () => {
     });
 
     describe('delete', () => {
-        it('should delete client', async () => {
+        it('should delete categories', async () => {
+            // create mock function implementations
+            const moveToOtherMock = jest.spyOn(helpers, 'moveFilesToOther');
+            moveToOtherMock.mockImplementation();
+
             // insert mock data
             const data = {
                 _id: new ObjectId(),
@@ -118,9 +124,13 @@ describe('categories', () => {
             // perform checks
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
+            expect(moveToOtherMock).toHaveBeenCalledWith(data._id.toString());
 
             const client = await collection.findOne({ _id: data._id });
             expect(client).toBeFalsy();
+
+            // restore mocks
+            moveToOtherMock.mockRestore();
         });
     });
 });
