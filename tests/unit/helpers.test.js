@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { app } from '../../server';
+import { app, bucket } from '../../server';
 import { MongoClient } from 'mongodb';
 import { ObjectId } from 'mongodb';
 import { helpers } from '../../helpers';
@@ -28,7 +28,7 @@ describe('mongoConnect', () => {
 
     afterAll(() => {
         jest.restoreAllMocks();
-    })
+    });
 
     it('should connect to mongodb test database', async () => {
 
@@ -80,6 +80,38 @@ describe('mongoConnect', () => {
         // perform action to test
         await expect(helpers.mongoConnect()).rejects.toThrow(); 
     });
+
+    it('should fail to connect if connect fails', async () => {
+        // create mock function implementations 
+        const connectMock = jest.spyOn(MongoClient.prototype, 'connect');
+        connectMock.mockRejectedValueOnce();
+
+        const dbMock = jest.spyOn(MongoClient.prototype, 'db');
+        dbMock.mockImplementation(() => {
+            return { db: 'worked' }
+        });
+        
+        // prepare mock environment
+        process.env.DB_URI = 'improper-db-uri';
+
+        // perform action to test
+        await expect(helpers.mongoConnect()).rejects.toThrow(); 
+    });
+
+    it('should fail to connect if db fails', async () => {
+        // create mock function implementations 
+        const connectMock = jest.spyOn(MongoClient.prototype, 'connect');
+        connectMock.mockResolvedValueOnce();
+
+        const dbMock = jest.spyOn(MongoClient.prototype, 'db');
+        dbMock.mockRejectedValueOnce();
+        
+        // prepare mock environment
+        process.env.DB_URI = 'improper-db-uri';
+
+        // perform action to test
+        await expect(helpers.mongoConnect()).rejects.toThrow(); 
+    });
 });
 
 describe('b64ToBuffer', () => {
@@ -119,5 +151,74 @@ describe('b64ToBuffer', () => {
         const b64str = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
 
         await expect(helpers.b64ToBuffer(b64str)).rejects.toThrow('Base64 string not successfully converted to buffer');
+    });
+});
+
+describe('uploadToGCS', () => {
+    function setupMocks() {
+        const mockFile = jest.spyOn(bucket, 'file');
+        mockFile.mockReturnValueOnce({
+            save: jest.fn().mockResolvedValueOnce(),
+            publicUrl: jest.fn().mockResolvedValueOnce('file.url')
+        });
+
+        return mockFile;
+    }
+
+    afterAll(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('should upload file to GCS', async () => {
+        const mockFile = setupMocks();
+
+        const gcsDest = 'file-destination';
+        const fileBuffer = Buffer.from('file-buffer-content');
+
+        const url = await helpers.uploadToGCS(gcsDest, fileBuffer);
+        
+        expect(url).toBe('file.url');
+        expect(mockFile.mock.results[0].value.save).toHaveBeenCalledWith(fileBuffer);
+        expect(mockFile.mock.results[0].value.publicUrl).toHaveBeenCalled();
+    });
+
+    it('should fail given empty destination string', async () => {
+        const gcsDest = '';
+        const fileBuffer = Buffer.from('file-buffer-content');
+
+        await expect(helpers.uploadToGCS(gcsDest, fileBuffer)).rejects.toThrow('Invalid GCS destination');
+    });
+
+    it('should fail given improper file buffer', async () => {
+        const gcsDest = 'file-destination';
+        const fileBuffer = 'file-buffer-content';
+
+        await expect(helpers.uploadToGCS(gcsDest, fileBuffer)).rejects.toThrow('Must be a file buffer');
+    });
+
+    it('should fail if save fails', async () => {
+        const mockFile = jest.spyOn(bucket, 'file');
+        mockFile.mockReturnValueOnce({
+            save: jest.fn().mockRejectedValueOnce(),
+            publicUrl: jest.fn().mockResolvedValueOnce('file.url')
+        });
+        
+        const gcsDest = 'file-destination';
+        const fileBuffer = 'file-buffer-content';
+
+        await expect(helpers.uploadToGCS(gcsDest, fileBuffer)).rejects.toThrow();
+    });
+
+    it('should fail if publicUrl fails', async () => {
+        const mockFile = jest.spyOn(bucket, 'file');
+        mockFile.mockReturnValueOnce({
+            save: jest.fn().mockResolvedValueOnce(),
+            publicUrl: jest.fn().mockRejectedValueOnce()
+        });
+        
+        const gcsDest = 'file-destination';
+        const fileBuffer = 'file-buffer-content';
+
+        await expect(helpers.uploadToGCS(gcsDest, fileBuffer)).rejects.toThrow();
     });
 });

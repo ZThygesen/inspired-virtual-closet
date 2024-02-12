@@ -77,7 +77,7 @@ export const helpers = {
             'data:image/jpg;base64',
             'data:image/jpeg;base64'
         ];
-        
+
         if (!(typeof b64str === 'string' && validTypes.includes(b64str.split(',')[0]))) {
             throw new Error('Not a valid base64 image string');
         }
@@ -121,10 +121,23 @@ export const helpers = {
 
     // upload file to GCS given destination
     async uploadToGCS(gcsDest, fileBuffer) {
-        const gcsFile = bucket.file(gcsDest);
-        await gcsFile.save(fileBuffer);
-        const url = await gcsFile.publicUrl();
-    
+        if (gcsDest === '') {
+            throw new Error('Invalid GCS destination');
+        }
+
+        if (!Buffer.isBuffer(fileBuffer)) {
+            throw new Error('Must be a file buffer');
+        }
+
+        let url;
+        try {
+            const gcsFile = bucket.file(gcsDest);
+            await gcsFile.save(fileBuffer);
+            url = await gcsFile.publicUrl();  
+        } catch (err) {
+            throw err;
+        }
+        
         return url;
     },
 
