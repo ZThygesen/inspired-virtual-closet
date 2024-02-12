@@ -143,8 +143,16 @@ export const helpers = {
 
     // delete file from GCS given destination
     async deleteFromGCS(gcsDest) {
-        const gcsFile = bucket.file(gcsDest)
-        await gcsFile.delete();
+        if (gcsDest === '') {
+            throw new Error('Invalid GCS destination');
+        }
+
+        try {
+            const gcsFile = bucket.file(gcsDest)
+            await gcsFile.delete(); 
+        } catch (err) {
+            throw err;
+        }
     },
 
     // move all files from one category to the Other category

@@ -26,7 +26,7 @@ describe('mongoConnect', () => {
         process.env.DB_URI = originalDbUri;
     });
 
-    afterAll(() => {
+    afterEach(() => {
         jest.restoreAllMocks();
     });
 
@@ -84,18 +84,15 @@ describe('mongoConnect', () => {
     it('should fail to connect if connect fails', async () => {
         // create mock function implementations 
         const connectMock = jest.spyOn(MongoClient.prototype, 'connect');
-        connectMock.mockRejectedValueOnce();
+        connectMock.mockRejectedValueOnce(new Error('Connect failed'));
 
         const dbMock = jest.spyOn(MongoClient.prototype, 'db');
         dbMock.mockImplementation(() => {
             return { db: 'worked' }
         });
-        
-        // prepare mock environment
-        process.env.DB_URI = 'improper-db-uri';
 
         // perform action to test
-        await expect(helpers.mongoConnect()).rejects.toThrow(); 
+        await expect(helpers.mongoConnect()).rejects.toThrow('Connect failed'); 
     });
 
     it('should fail to connect if db fails', async () => {
@@ -104,13 +101,10 @@ describe('mongoConnect', () => {
         connectMock.mockResolvedValueOnce();
 
         const dbMock = jest.spyOn(MongoClient.prototype, 'db');
-        dbMock.mockRejectedValueOnce();
-        
-        // prepare mock environment
-        process.env.DB_URI = 'improper-db-uri';
+        dbMock.mockRejectedValueOnce(new Error('Db failed'));
 
         // perform action to test
-        await expect(helpers.mongoConnect()).rejects.toThrow(); 
+        await expect(helpers.mongoConnect()).rejects.toThrow('Db failed'); 
     });
 });
 
@@ -165,7 +159,7 @@ describe('uploadToGCS', () => {
         return mockFile;
     }
 
-    afterAll(() => {
+    afterEach(() => {
         jest.restoreAllMocks();
     });
 
@@ -199,26 +193,67 @@ describe('uploadToGCS', () => {
     it('should fail if save fails', async () => {
         const mockFile = jest.spyOn(bucket, 'file');
         mockFile.mockReturnValueOnce({
-            save: jest.fn().mockRejectedValueOnce(),
+            save: jest.fn().mockRejectedValueOnce(new Error('Save file failed')),
             publicUrl: jest.fn().mockResolvedValueOnce('file.url')
         });
         
         const gcsDest = 'file-destination';
-        const fileBuffer = 'file-buffer-content';
+        const fileBuffer = Buffer.from('file-buffer-content');
 
-        await expect(helpers.uploadToGCS(gcsDest, fileBuffer)).rejects.toThrow();
+        await expect(helpers.uploadToGCS(gcsDest, fileBuffer)).rejects.toThrow('Save file failed');
     });
 
     it('should fail if publicUrl fails', async () => {
         const mockFile = jest.spyOn(bucket, 'file');
         mockFile.mockReturnValueOnce({
             save: jest.fn().mockResolvedValueOnce(),
-            publicUrl: jest.fn().mockRejectedValueOnce()
+            publicUrl: jest.fn().mockRejectedValueOnce(new Error('PublicUrl failed'))
         });
         
         const gcsDest = 'file-destination';
-        const fileBuffer = 'file-buffer-content';
+        const fileBuffer = Buffer.from('file-buffer-content');
 
-        await expect(helpers.uploadToGCS(gcsDest, fileBuffer)).rejects.toThrow();
+        await expect(helpers.uploadToGCS(gcsDest, fileBuffer)).rejects.toThrow('PublicUrl failed');
+    });
+});
+
+describe('deleteFromGCS', () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('should delete file from GCS', async () => {
+        const mockFile = jest.spyOn(bucket, 'file');
+        mockFile.mockReturnValueOnce({
+            delete: jest.fn().mockResolvedValueOnce()
+        });
+
+        const gcsDest = 'file-destination';
+
+        await helpers.deleteFromGCS(gcsDest);
+        
+        expect(mockFile.mock.results[0].value.delete).toHaveBeenCalled();
+    });
+
+    it('should fail given empty destination string', async () => {
+        const mockFile = jest.spyOn(bucket, 'file');
+        mockFile.mockReturnValueOnce({
+            delete: jest.fn().mockResolvedValueOnce()
+        });
+
+        const gcsDest = '';
+
+        await expect(helpers.deleteFromGCS(gcsDest)).rejects.toThrow('Invalid GCS destination');
+    });
+
+    it('should fail if delete fails', async () => {
+        const mockFile = jest.spyOn(bucket, 'file');
+        mockFile.mockReturnValueOnce({
+            delete: jest.fn().mockRejectedValueOnce(new Error('Delete failed'))
+        });
+
+        const gcsDest = 'file-destination';
+
+        await expect(helpers.deleteFromGCS(gcsDest)).rejects.toThrow('Delete failed');
     });
 });
