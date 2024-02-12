@@ -1,7 +1,6 @@
 import { jest } from '@jest/globals';
 import { app, bucket } from '../../server';
-import { MongoClient } from 'mongodb';
-import { ObjectId } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import { helpers } from '../../helpers';
 
 describe('mongoConnect', () => {
@@ -255,5 +254,70 @@ describe('deleteFromGCS', () => {
         const gcsDest = 'file-destination';
 
         await expect(helpers.deleteFromGCS(gcsDest)).rejects.toThrow('Delete failed');
+    });
+});
+
+describe('moveFilesToOther', () => {
+    let mongoClient;
+    let db;
+    let collection;
+
+    beforeAll(async () => {
+        mongoClient = new MongoClient(process.env.DB_URI);
+        await mongoClient.connect();
+        db = mongoClient.db(process.env.DB_NAME_TEST);
+        collection = db.collection('categories');
+    });
+
+    afterEach(async () => {
+        await collection.deleteMany({ _id: { $ne: 0 } });
+        await collection.updateOne(
+            { _id: 0 },
+            { $set: { items: [] } }
+        );
+    });
+
+    afterAll(async () => {
+        await mongoClient.close();
+    });
+
+    it('should move all files to other', async () => {
+        const categoryData = {
+            _id: new ObjectId(),
+            name: 'Blazers',
+            items: [1, 2, 3, 4, 5]
+        };
+        await collection.insertOne(categoryData);
+
+        await helpers.moveFilesToOther(categoryData._id.toString());
+    
+        const otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toBeTruthy();
+
+        const items = otherCategory.items;
+        expect(items).toEqual([1, 2, 3, 4, 5]);
+    });
+
+    it('should fail if category does not exist', async () => {
+        const categoryData = {
+            _id: new ObjectId(),
+            name: 'Blazers',
+            items: [1, 2, 3, 4, 5]
+        };
+        await collection.insertOne(categoryData);
+
+        await expect(helpers.moveFilesToOther(new ObjectId().toString())).rejects.toThrow('Category does not exist');
+
+    });
+
+    it('should fail if given Other category', async () => {
+        const categoryData = {
+            _id: new ObjectId(),
+            name: 'Blazers',
+            items: [1, 2, 3, 4, 5]
+        };
+        await collection.insertOne(categoryData);
+
+        await expect(helpers.moveFilesToOther(0)).rejects.toThrow('Cannot move files from Other to Other');
     });
 });

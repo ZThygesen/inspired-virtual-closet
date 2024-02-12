@@ -1,5 +1,5 @@
 import { serviceAuth, bucket, db } from './server.js';
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import { GoogleAuth } from 'google-auth-library';
 import { Storage } from '@google-cloud/storage';
 import axios from 'axios';
@@ -27,7 +27,6 @@ export const helpers = {
 
             return db;
         } catch (err) {
-            console.error(err);
             throw err;
         }
     },
@@ -157,12 +156,19 @@ export const helpers = {
 
     // move all files from one category to the Other category
     async moveFilesToOther(categoryId) {
+        if (categoryId === 0) {
+            throw new Error('Cannot move files from Other to Other');
+        }
+
         // get all files associated with category
         const collection = db.collection('categories');
-        const files = await collection.find(
-            { _id: ObjectId(categoryId) },
-            { _id: 0, name: 0, items: 1 }
-        ).toArray();
+        const category = await collection.findOne({ _id: ObjectId(categoryId) });
+        
+        if (!category) {
+            throw new Error('Category does not exist');
+        }
+
+        const files = category.items;
         
         // move all files to "Other" category
         await collection.updateOne(
@@ -170,7 +176,7 @@ export const helpers = {
             {
                 $push: {
                     items: {
-                        $each: files[0].items
+                        $each: files
                     }
                 }
             }
