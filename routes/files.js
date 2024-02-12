@@ -5,7 +5,7 @@ import { ObjectId } from 'mongodb';
 import { parse } from 'path';
 import ExpressFormidable from 'express-formidable';
 import { createId } from '@paralleldrive/cuid2';
-import { helpers } from '../helpers';
+import { helpers } from '../helpers.js';
 
 // upload file
 router.post('/', ExpressFormidable(), async (req, res, next) => {

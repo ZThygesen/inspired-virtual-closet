@@ -1,4 +1,4 @@
-import { serviceAuth, bucket, db } from './server';
+import { serviceAuth, bucket, db } from './server.js';
 import { MongoClient } from 'mongodb';
 import { GoogleAuth } from 'google-auth-library';
 import { Storage } from '@google-cloud/storage';
@@ -66,15 +66,33 @@ export const helpers = {
 
             return { serviceAuth, bucket };
         } catch (err) {
-            console.error(err)
+            throw err;
         }
     },
 
     // convert b64 to blob then to buffer
     async b64ToBuffer(b64str) {
-        const blob = await fetch(b64str).then(res => res.blob());
-        const buffer = await blob.arrayBuffer().then(arrayBuffer => Buffer.from(arrayBuffer));
+        const validTypes = [
+            'data:image/png;base64',
+            'data:image/jpg;base64',
+            'data:image/jpeg;base64'
+        ];
+        
+        if (!(typeof b64str === 'string' && validTypes.includes(b64str.split(',')[0]))) {
+            throw new Error('Not a valid base64 image string');
+        }
 
+        let buffer;
+        try {
+            const blob = await fetch(b64str).then(res => res.blob());
+            buffer = await blob.arrayBuffer().then(arrayBuffer => Buffer.from(arrayBuffer)); 
+            if (!Buffer.isBuffer(buffer)) {
+                throw new Error('Base64 string not successfully converted to buffer');
+            }
+        } catch (err) {
+            throw err;
+        }
+        
         return buffer;
     },
 

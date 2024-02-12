@@ -4,7 +4,7 @@ import { db, bucket } from '../server.js';
 import { ObjectId } from 'mongodb';
 import ExpressFormidable from 'express-formidable';
 import { createId } from '@paralleldrive/cuid2';
-import { helpers } from '../helpers';
+import { helpers } from '../helpers.js';
 
 // create outfit
 router.post('/', ExpressFormidable(), async (req, res, next) => {
