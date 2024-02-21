@@ -277,8 +277,6 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
 
         const formData = new FormData();
         formData.append('fileSrc', outfitImageData);
-        console.log(outfitImageData);
-        return;
         formData.append('stageItemsStr', JSON.stringify(stageItems));
         formData.append('outfitName', outfitName);
 

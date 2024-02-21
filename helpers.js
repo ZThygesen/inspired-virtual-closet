@@ -97,9 +97,28 @@ export const helpers = {
 
     // upload image file to GCF for processing/uploading
     async uploadToGCF(fileSrc, fullGcsDest, smallGcsDest) {
+        const validTypes = [
+            'data:image/png;base64',
+            'data:image/jpg;base64',
+            'data:image/jpeg;base64'
+        ];
+
+        if (!(typeof fileSrc === 'string' && validTypes.includes(fileSrc.split(',')[0]))) {
+            throw new Error('Not a valid fileSrc');
+        }
+
+        if (fullGcsDest === '' || smallGcsDest === '') {
+            throw new Error('GCS destination cannot be empty');
+        }
+        
         // get id token to use google cloud function
-        const client = await serviceAuth.getIdTokenClient(process.env.GCF_URL);
-        const idToken = await client.idTokenProvider.fetchIdToken(process.env.GCF_URL);
+        let idToken;
+        try {
+            const client = await serviceAuth.getIdTokenClient(process.env.GCF_URL);
+            idToken = await client.idTokenProvider.fetchIdToken(process.env.GCF_URL);
+        } catch (err) {
+            throw err;
+        }
 
         // send file to google cloud function to remove background and store
         const response = await axios.post(
