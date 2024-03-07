@@ -14,7 +14,7 @@ router.post('/', async (req, res, next) => {
             email: '',
             isAdmin: false
         }
-
+        
         await collection.insertOne(client);
 
         res.status(201).json({ message: 'Success!' });

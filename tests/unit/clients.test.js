@@ -24,9 +24,10 @@ describe('clients', () => {
     });
 
     describe('create', () => {
+        let data;
         it('should create new client', async () => {
             // perform action to test
-            const data = {
+            data = {
                 firstName: 'John',
                 lastName: 'Doe'
             };
@@ -50,9 +51,10 @@ describe('clients', () => {
     });
     
     describe('read', () => {
-        it('should get clients', async () => {
+        let data;
+        beforeEach(async () => {
             // insert mock data
-            const data = {
+            data = {
                 _id: new ObjectId(),
                 firstName: 'John',
                 lastName: 'Doe',
@@ -60,7 +62,9 @@ describe('clients', () => {
                 isAdmin: false
             };
             await collection.insertOne(data);
+        });
 
+        it('should get clients', async () => {
             // perform action to test
             const response = await agent(app)
                 .get('/api/clients');
@@ -79,17 +83,20 @@ describe('clients', () => {
     });
     
     describe('update', () => {
-        it('should update client', async () => {
+        let data;
+        beforeEach(async () => {
             // insert mock data
-            const data = {
-                _id: ObjectId(),
+            data = {
+                _id: new ObjectId(),
                 firstName: 'John',
                 lastName: 'Doe',
                 email: '',
                 isAdmin: false
             };
             await collection.insertOne(data);
+        });
 
+        it('should update client', async () => {
             // perform action to test
             const patchData = {
                 newFirstName: 'Jane',
@@ -115,17 +122,20 @@ describe('clients', () => {
     });
 
     describe('delete', () => {
-        it('should delete client', async () => {
+        let data;
+        beforeEach(async () => {
             // insert mock data
-            const data = {
-                _id: ObjectId(),
+            data = {
+                _id: new ObjectId(),
                 firstName: 'John',
                 lastName: 'Doe',
                 email: '',
                 isAdmin: false
             };
             await collection.insertOne(data);
+        });
 
+        it('should delete client', async () => {
             // perform action to test
             const response = await agent(app)
                 .delete(`/api/clients/${data._id.toString()}`);
