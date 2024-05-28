@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
-import { serviceAuth, bucket } from '../../server';
+import { bucket } from '../../server';
 import { MongoClient, ObjectId } from 'mongodb';
-import axios from 'axios';
 import { helpers } from '../../helpers';
+import sharp from 'sharp';
 
 describe('mongoConnect', () => {
     function setupMocks() {
@@ -147,6 +147,7 @@ describe('b64ToBuffer', () => {
     });
 });
 
+/*
 describe('uploadToGCF', () => {
     function setupMocks() {
         const axiosMock = jest.spyOn(axios, 'post');
@@ -224,6 +225,160 @@ describe('uploadToGCF', () => {
         expect(axiosMock).not.toHaveBeenCalled();
 
         process.env.GCF_URL = originalGCFUrl;
+    });
+});
+*/
+
+describe('removeBackground', () => {
+    function setupMocks() {
+        const b64str = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
+
+        const fetchMock = jest.spyOn(global, 'fetch')
+            .mockImplementation(jest.fn(() => Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve({ result_b64: b64str })
+            })));
+
+        const b64ToBufferMock = jest.spyOn(helpers, 'b64ToBuffer')
+            .mockImplementation((b64str) => {
+                const buffer = Buffer.from(b64str);
+                return Promise.resolve(buffer);
+            });
+        //b64ToBufferMock.mockResolvedValueOnce(Buffer.from(b64str));
+
+        return { fetchMock, b64ToBufferMock };
+    }
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('should remove b64 image string background', async () => {
+        const { fetchMock, b64ToBufferMock } = setupMocks();
+
+        const b64str = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
+        const jpg = 'data:image/jpg;base64,' + b64str;
+        const jpeg = 'data:image/jpeg;base64,' + b64str;
+        const png = 'data:image/png;base64,' + b64str;
+
+        const buffer1 = await helpers.removeBackground(jpg);
+        const buffer2 = await helpers.removeBackground(jpeg);
+        const buffer3 = await helpers.removeBackground(png);
+
+        expect(fetchMock).toHaveBeenCalledTimes(3);
+        expect(b64ToBufferMock).toHaveBeenCalledTimes(3);
+
+        expect(Buffer.isBuffer(buffer1)).toBe(true);
+        expect(Buffer.isBuffer(buffer2)).toBe(true);
+        expect(Buffer.isBuffer(buffer3)).toBe(true);
+    });
+
+    it('should fail with empty b64 string', async () => {
+        const b64str = '';
+
+        await expect(helpers.removeBackground(b64str)).rejects.toThrow('Not a valid fileSrc');
+    });
+
+    it('should fail with invalid MIME type', async () => {
+        const b64str = 'data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
+
+        await expect(helpers.b64ToBuffer(b64str)).rejects.toThrow('Not a valid base64 image string');
+    });
+
+    it('should fail with Photoroom error', async () => {
+        const { fetchMock, _ } = setupMocks();
+        fetchMock.mockImplementation(jest.fn(() => Promise.resolve({
+            ok: false
+        })));
+        
+        const b64str = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
+
+        await expect(helpers.removeBackground(b64str)).rejects.toThrow('Error with Photoroom remove background');
+    });
+
+    it('should fail with b64ToBuffer error', async () => {
+        const { fetchMock, b64ToBufferMock } = setupMocks();
+        
+        b64ToBufferMock.mockImplementation(() => {
+            return Promise.reject(new Error('b64toBuffer failed'));
+        });
+        
+        const b64str = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
+
+        await expect(helpers.removeBackground(b64str)).rejects.toThrow('b64toBuffer failed');
+        expect(fetchMock).toHaveBeenCalled();
+    });
+});
+
+// jest.mock('sharp');
+describe('createImageThumbnail', () => {
+    const mockBuffer = Buffer.from('mock image data');
+    const mockThumbnailBuffer = Buffer.from('mock thumbnail data');
+
+    function setupMocks() {
+        const resizeMock = jest.spyOn(sharp.prototype, 'resize').mockReturnThis();
+        const pngMock = jest.spyOn(sharp.prototype, 'png').mockReturnThis();
+        const toBufferMock = jest.spyOn(sharp.prototype, 'toBuffer').mockResolvedValue(mockThumbnailBuffer);
+        
+        return { resizeMock, pngMock, toBufferMock };
+    }
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('should create a thumbnail from the image buffer', async () => {
+        const { resizeMock, pngMock, toBufferMock } = setupMocks();
+
+        const thumbnailBuffer = await helpers.createImageThumbnail(mockBuffer, 100, 100);
+
+        expect(resizeMock).toHaveBeenCalled();
+        expect(pngMock).toHaveBeenCalled();
+        expect(toBufferMock).toHaveBeenCalled();
+
+        expect(thumbnailBuffer).toBe(mockThumbnailBuffer);
+    });
+
+    it('should fail if empty buffer', async () => {
+        const buffer = Buffer.from('');
+
+        await expect(helpers.createImageThumbnail(buffer)).rejects.toThrow('invalid buffer input');
+    });
+
+    it('should fail if input not buffer', async () => {
+        const notBuffer = 'not a buffer';
+
+        await expect(helpers.createImageThumbnail(notBuffer)).rejects.toThrow('invalid buffer input');
+    });
+
+    it('should fail if resize fails', async () => {
+        const { resizeMock, _, __ } = setupMocks();
+        resizeMock.mockImplementation(() => {
+            throw new Error('resize failed');
+        });
+
+        await expect(helpers.createImageThumbnail(mockBuffer)).rejects.toThrow('resize failed');
+    });
+
+    it('should fail if png fails', async () => {
+        const { resizeMock, pngMock, _ } = setupMocks();
+        pngMock.mockImplementation(() => {
+            throw new Error('png failed');
+        });
+
+        await expect(helpers.createImageThumbnail(mockBuffer)).rejects.toThrow('png failed');
+        expect(resizeMock).toHaveBeenCalled();
+    });
+
+    it('should fail if toBuffer fails', async () => {
+        const { resizeMock, pngMock, toBufferMock } = setupMocks();
+        toBufferMock.mockImplementation(() => {
+            throw new Error('toBuffer failed');
+        });
+
+        await expect(helpers.createImageThumbnail(mockBuffer)).rejects.toThrow('toBuffer failed');
+        expect(resizeMock).toHaveBeenCalled();
+        expect(pngMock).toHaveBeenCalled();
     });
 });
 

@@ -26,7 +26,11 @@ router.post('/', ExpressFormidable(), async (req, res, next) => {
             smallGcsDest = 'dev/' + smallGcsDest;
         }
 
-        const { fullFileUrl, smallFileUrl } = await helpers.uploadToGCF(fileSrc, fullGcsDest, smallGcsDest);
+        const fullImgBuffer = await helpers.removeBackground(fileSrc);
+        const smallImgBuffer = await helpers.createImageThumbnail(fullImgBuffer, 300, 300);
+
+        const fullFileUrl = await helpers.uploadToGCS(fullGcsDest, fullImgBuffer);
+        const smallFileUrl = await helpers.uploadToGCS(smallGcsDest, smallImgBuffer);
         
         // create file object 
         const fileName = parse(fullFileName).name;

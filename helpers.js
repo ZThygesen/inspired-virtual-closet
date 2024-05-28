@@ -3,6 +3,7 @@ import { MongoClient, ObjectId } from 'mongodb';
 import { GoogleAuth } from 'google-auth-library';
 import { Storage } from '@google-cloud/storage';
 import axios from 'axios';
+import sharp from 'sharp';
 
 export const helpers = {
     // connect to MongoDB
@@ -95,6 +96,7 @@ export const helpers = {
         return buffer;
     },
 
+    /*
     // upload image file to GCF for processing/uploading
     async uploadToGCF(fileSrc, fullGcsDest, smallGcsDest) {
         const validTypes = [
@@ -135,6 +137,67 @@ export const helpers = {
         const smallFileUrl = response.data.smallFileUrl;
 
         return { fullFileUrl, smallFileUrl };
+    },
+    */
+
+    async removeBackground(base64Image) {
+        const validTypes = [
+            'data:image/png;base64',
+            'data:image/jpg;base64',
+            'data:image/jpeg;base64'
+        ];
+
+        if (!(typeof base64Image === 'string' && validTypes.includes(base64Image.split(',')[0]))) {
+            throw new Error('Not a valid fileSrc');
+        }
+
+        // call Photoroom API to remove background from image
+        const response = await fetch('https://sdk.photoroom.com/v1/segment', {
+            method: 'POST',
+            headers: {
+                'x-api-key': process.env.PHOTOROOM_API_KEY,
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            },
+            body: JSON.stringify({
+                image_file_b64: base64Image.split(',')[1],
+                crop: true
+            })
+        });
+      
+        if (!response.ok) {
+            throw new Error('Error with Photoroom remove background');
+        }
+
+        // convert resulting image to buffer
+        const image = await response.json();
+        const image64 = image.result_b64;
+
+        const buffer = await this.b64ToBuffer(`data:image/png;base64,${image64}`);
+
+        return buffer;
+    },
+
+    async createImageThumbnail(imgBuffer, width = 300, height = 300) {
+        if (!Buffer.isBuffer(imgBuffer) || imgBuffer.length === 0) {
+            throw new Error('invalid buffer input');
+        }
+        
+        let thumbBuffer;
+        try {
+            thumbBuffer = await sharp(imgBuffer)
+            .resize({
+                width: width,
+                height: height,
+                fit: 'inside'
+            })
+            .png()
+            .toBuffer();
+        } catch (err) {
+            throw err;
+        }
+
+        return thumbBuffer
     },
 
     // upload file to GCS given destination

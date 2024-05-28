@@ -6,6 +6,7 @@ import { ObjectId } from 'mongodb';
 import { helpers } from '../../helpers';
 import { createId } from '@paralleldrive/cuid2';
 import { io } from 'socket.io-client';
+import sharp from 'sharp';
 
 describe('files', () => {
     let mongoClient;
@@ -44,14 +45,21 @@ describe('files', () => {
 
         it('should add new file', async () => {
             // create mock function implementations    
-            const uploadMock = jest.spyOn(helpers, 'uploadToGCF');
-            uploadMock.mockImplementation(() => { 
-                return {
-                    fullFileUrl: 'full.file.url', 
-                    smallFileUrl: 'small.file.url' 
-                }
+            const removeBgMock = jest.spyOn(helpers, 'removeBackground');
+            removeBgMock.mockImplementation(() => { 
+                return Buffer.from('data:image/png;base64,fileSrc=');
             });
             
+            const thumbMock = jest.spyOn(helpers, 'createImageThumbnail');
+            thumbMock.mockImplementation(() => {
+                return Buffer.from('data:image/png;base64,fileSrc=');
+            });
+
+            const uploadMock = jest.spyOn(helpers, 'uploadToGCS');
+            uploadMock.mockImplementation(() => {
+                return 'file.url';
+            });
+
             // insert mock data
             const categoryData = {
                 _id: new ObjectId(),
@@ -83,6 +91,8 @@ describe('files', () => {
             // perform checks
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
+            expect(removeBgMock).toHaveBeenCalled();
+            expect(thumbMock).toHaveBeenCalled();
             expect(uploadMock).toHaveBeenCalled();
     
             const category = await collection.findOne({ _id: categoryData._id });
@@ -92,13 +102,15 @@ describe('files', () => {
             expect(file).toBeTruthy();
             expect(file.clientId).toBe(clientId);
             expect(file.fileName).toBe('Blazin Blazer');
-            expect(file.fullFileUrl).toBe('full.file.url');
-            expect(file.smallFileUrl).toBe('small.file.url');
+            expect(file.fullFileUrl).toBe('file.url');
+            expect(file.smallFileUrl).toBe('file.url');
             expect(file.fullGcsDest).toEqual(expect.stringMatching(/dev\/items.*full\.png/));
             expect(file.smallGcsDest).toEqual(expect.stringMatching(/dev\/items.*small\.png/));
             expect(file).toHaveProperty('gcsId');
         
             // restore mocks
+            removeBgMock.mockRestore();
+            thumbMock.mockRestore();
             uploadMock.mockRestore();
         });
     });
