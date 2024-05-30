@@ -1,8 +1,7 @@
-import { serviceAuth, bucket, db } from './server.js';
+import { bucket, db } from './server.js';
 import { MongoClient, ObjectId } from 'mongodb';
 import { GoogleAuth } from 'google-auth-library';
 import { Storage } from '@google-cloud/storage';
-import axios from 'axios';
 import sharp from 'sharp';
 
 export const helpers = {

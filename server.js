@@ -31,15 +31,22 @@ async function connect() {
 
 await connect();
 
+// categories
 import categories from './routes/categories.js';
 app.use('/categories', categories);
 
+// clients
 import clients from './routes/clients.js';
-app.use('/api/clients', clients);
+app.use('/api/clients', (req, res, next) => {
+    req.locals = { db };
+    next();
+}, clients);
 
+// files
 import files from './routes/files.js';
 app.use('/files', files);
 
+// outfits
 import outfits from './routes/outfits.js';
 app.use('/outfits', outfits);
 
@@ -71,7 +78,10 @@ if (process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || p
 
 app.use((err, req, res, next) => {
     const status = err.status || 500;
-    console.error(`\nError: ${err.message}\nStatus: ${status}\nStack:\n${err.stack}\n`);
+
+    if (process.env.NODE_ENV !== 'test') {
+        console.error(`\nError: ${err.message}\nStatus: ${status}\nStack:\n${err.stack}\n`); 
+    }
     
     res.status(status).json({ message: err.message });
 });
