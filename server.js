@@ -31,16 +31,18 @@ async function connect() {
 
 await connect();
 
-// categories
-import categories from './routes/categories.js';
-app.use('/categories', categories);
-
-// clients
-import clients from './routes/clients.js';
-app.use('/api/clients', (req, res, next) => {
+function injectDb(req, res, next) {
     req.locals = { db };
     next();
-}, clients);
+}
+
+// categories
+import { categoriesRouter } from './routes/categories.js';
+app.use('/categories', injectDb, categoriesRouter);
+
+// clients
+import { clientsRouter } from './routes/clients.js';
+app.use('/api/clients', injectDb, clientsRouter);
 
 // files
 import files from './routes/files.js';

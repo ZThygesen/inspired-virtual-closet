@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { bucket } from '../../server';
+import { db, bucket } from '../../server';
 import { MongoClient, ObjectId } from 'mongodb';
 import sharp from 'sharp';
 import { helpers } from '../../helpers';
@@ -404,7 +404,7 @@ describe('uploadToGCS', () => {
         const gcsDest = 'file-destination';
         const fileBuffer = Buffer.from('file-buffer-content');
 
-        const url = await helpers.uploadToGCS(gcsDest, fileBuffer);
+        const url = await helpers.uploadToGCS(bucket, gcsDest, fileBuffer);
         
         expect(url).toBe('file.url');
         expect(mockFile.mock.results[0].value.save).toHaveBeenCalledWith(fileBuffer);
@@ -415,14 +415,14 @@ describe('uploadToGCS', () => {
         const gcsDest = '';
         const fileBuffer = Buffer.from('file-buffer-content');
 
-        await expect(helpers.uploadToGCS(gcsDest, fileBuffer)).rejects.toThrow('Invalid GCS destination');
+        await expect(helpers.uploadToGCS(bucket, gcsDest, fileBuffer)).rejects.toThrow('Invalid GCS destination');
     });
 
     it('should fail given improper file buffer', async () => {
         const gcsDest = 'file-destination';
         const fileBuffer = 'file-buffer-content';
 
-        await expect(helpers.uploadToGCS(gcsDest, fileBuffer)).rejects.toThrow('Must be a file buffer');
+        await expect(helpers.uploadToGCS(bucket, gcsDest, fileBuffer)).rejects.toThrow('Must be a file buffer');
     });
 
     it('should fail if save fails', async () => {
@@ -435,7 +435,7 @@ describe('uploadToGCS', () => {
         const gcsDest = 'file-destination';
         const fileBuffer = Buffer.from('file-buffer-content');
 
-        await expect(helpers.uploadToGCS(gcsDest, fileBuffer)).rejects.toThrow('Save file failed');
+        await expect(helpers.uploadToGCS(bucket, gcsDest, fileBuffer)).rejects.toThrow('Save file failed');
     });
 
     it('should fail if publicUrl fails', async () => {
@@ -448,7 +448,7 @@ describe('uploadToGCS', () => {
         const gcsDest = 'file-destination';
         const fileBuffer = Buffer.from('file-buffer-content');
 
-        await expect(helpers.uploadToGCS(gcsDest, fileBuffer)).rejects.toThrow('PublicUrl failed');
+        await expect(helpers.uploadToGCS(bucket, gcsDest, fileBuffer)).rejects.toThrow('PublicUrl failed');
     });
 });
 
@@ -465,7 +465,7 @@ describe('deleteFromGCS', () => {
 
         const gcsDest = 'file-destination';
 
-        await helpers.deleteFromGCS(gcsDest);
+        await helpers.deleteFromGCS(bucket, gcsDest);
         
         expect(mockFile.mock.results[0].value.delete).toHaveBeenCalled();
     });
@@ -478,7 +478,7 @@ describe('deleteFromGCS', () => {
 
         const gcsDest = '';
 
-        await expect(helpers.deleteFromGCS(gcsDest)).rejects.toThrow('Invalid GCS destination');
+        await expect(helpers.deleteFromGCS(bucket, gcsDest)).rejects.toThrow('Invalid GCS destination');
     });
 
     it('should fail if delete fails', async () => {
@@ -489,7 +489,7 @@ describe('deleteFromGCS', () => {
 
         const gcsDest = 'file-destination';
 
-        await expect(helpers.deleteFromGCS(gcsDest)).rejects.toThrow('Delete failed');
+        await expect(helpers.deleteFromGCS(bucket, gcsDest)).rejects.toThrow('Delete failed');
     });
 });
 
@@ -525,7 +525,7 @@ describe('moveFilesToOther', () => {
         };
         await collection.insertOne(categoryData);
 
-        await helpers.moveFilesToOther(categoryData._id.toString());
+        await helpers.moveFilesToOther(db, categoryData._id.toString());
     
         const otherCategory = await collection.findOne({ _id: 0 });
         expect(otherCategory.items).toBeTruthy();
@@ -542,7 +542,7 @@ describe('moveFilesToOther', () => {
         };
         await collection.insertOne(categoryData);
 
-        await expect(helpers.moveFilesToOther(new ObjectId().toString())).rejects.toThrow('Category does not exist');
+        await expect(helpers.moveFilesToOther(db, new ObjectId().toString())).rejects.toThrow('Category does not exist');
 
     });
 
@@ -554,6 +554,6 @@ describe('moveFilesToOther', () => {
         };
         await collection.insertOne(categoryData);
 
-        await expect(helpers.moveFilesToOther(0)).rejects.toThrow('Cannot move files from Other to Other');
+        await expect(helpers.moveFilesToOther(db, 0)).rejects.toThrow('Cannot move files from Other to Other');
     });
 });

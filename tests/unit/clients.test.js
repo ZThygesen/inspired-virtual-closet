@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
-import { clients } from '../../routes/clients';
+import { clients } from '../../routes/clients.js';
+import { helpers } from '../../helpers.js';
 import { ObjectId } from 'mongodb';
 
 describe('clients', () => {
@@ -9,6 +10,8 @@ describe('clients', () => {
 
     let mockCollection;
     let mockDb;
+
+    let mockCreateError;
     beforeEach(() => {
         mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -32,7 +35,14 @@ describe('clients', () => {
         
         mockDb = {
             collection: jest.fn(() => mockCollection)
-        }
+        };
+
+        mockCreateError = jest.spyOn(helpers, 'createError');
+        mockCreateError.mockImplementation((message, status) => {
+            const error = new Error(message);
+            error.status = status;
+            return error;
+        });
     });
 
     afterEach(() => {

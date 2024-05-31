@@ -1,28 +1,23 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
+import { helpers } from '../helpers';
 
-export const clients = {
+const clients = {
     async post(req, res, next) {
         try {
             const { db } = req.locals;
             const collection = db.collection('clients');
 
             if (!req.body.firstName || !req.body.lastName) {
-                const err = new Error('both first name and last name fields are required for client creation');
-                err.status = 400;
-                throw err;
+                throw helpers.createError('both first name and last name fields are required for client creation', 400);
             }
 
             if (!req.body.email) {
-                const err = new Error('an email is required for client creation');
-                err.status = 400;
-                throw err;
+                throw helpers.createError('an email is required for client creation', 400);
             }
 
             if (req.body.isAdmin === null || req.body.isAdmin === undefined) {
-                const err = new Error('a role status is required for client creation');
-                err.status = 400;
-                throw err;
+                throw helpers.createError('a role status is required for client creation', 400);
             }
 
             const client = {
@@ -35,9 +30,7 @@ export const clients = {
             const result = await collection.insertOne(client);
 
             if (!result.insertedId) {
-                const err = new Error('client was not inserted into database');
-                err.status = 500;
-                throw err;
+                throw helpers.createError('client was not inserted into database', 500);
             }
 
             res.status(201).json({ message: 'Success!' });
@@ -64,27 +57,19 @@ export const clients = {
             const collection = db.collection('clients');
 
             if (!req.params || !req.params.clientId) {
-                const err = new Error('client id is required to update client');
-                err.status = 400;
-                throw err;
+                throw helpers.createError('client id is required to update client', 400);
             }
 
             if (!req.body.newFirstName || !req.body.newLastName) {
-                const err = new Error('both first name and last name fields are required for client update');
-                err.status = 400;
-                throw err;
+                throw helpers.createError('both first name and last name fields are required for client update', 400);
             }
 
             if (!req.body.newEmail) {
-                const err = new Error('an email is required for client update');
-                err.status = 400;
-                throw err;
+                throw helpers.createError('an email is required for client update', 400);
             }
 
             if (req.body.newIsAdmin === null || req.body.newIsAdmin === undefined) {
-                const err = new Error('a role status is required for client update');
-                err.status = 400;
-                throw err;
+                throw helpers.createError('a role status is required for client update', 400);
             }
             
             const result = await collection.updateOne(
@@ -100,9 +85,7 @@ export const clients = {
             );
 
             if (result.modifiedCount === 0) {
-                const err = new Error('update failed: client not found with given client id');
-                err.status = 404;
-                throw err;
+                throw helpers.createError('update failed: client not found with given client id', 404);
             }
     
             res.status(200).json({ message: 'Success!' });
@@ -117,17 +100,13 @@ export const clients = {
             const collection = db.collection('clients');
 
             if (!req.params || !req.params.clientId) {
-                const err = new Error('client id is required to delete client');
-                err.status = 400;
-                throw err;
+                throw helpers.createError('client id is required to delete client', 400);
             }
 
             const result = await collection.deleteOne({ _id: ObjectId(req.params.clientId) });
             
             if (result.deletedCount === 0) {
-                const err = new Error('deletion failed: client not found with given client id');
-                err.status = 404;
-                throw err;
+                throw helpers.createError('deletion failed: client not found with given client id', 404);
             }
 
             res.status(200).json({ message: 'Success!' });
@@ -144,4 +123,4 @@ router.get('/', clients.get);
 router.patch('/:clientId', clients.patch);
 router.delete('/:clientId', clients.delete);
 
-export default router;
+export { clients, router as clientsRouter };

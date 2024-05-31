@@ -1,4 +1,3 @@
-import { bucket, db } from './server.js';
 import { MongoClient, ObjectId } from 'mongodb';
 import { GoogleAuth } from 'google-auth-library';
 import { Storage } from '@google-cloud/storage';
@@ -200,7 +199,7 @@ export const helpers = {
     },
 
     // upload file to GCS given destination
-    async uploadToGCS(gcsDest, fileBuffer) {
+    async uploadToGCS(bucket, gcsDest, fileBuffer) {
         if (gcsDest === '') {
             throw new Error('Invalid GCS destination');
         }
@@ -222,7 +221,7 @@ export const helpers = {
     },
 
     // delete file from GCS given destination
-    async deleteFromGCS(gcsDest) {
+    async deleteFromGCS(bucket, gcsDest) {
         if (gcsDest === '') {
             throw new Error('Invalid GCS destination');
         }
@@ -236,7 +235,7 @@ export const helpers = {
     },
 
     // move all files from one category to the Other category
-    async moveFilesToOther(categoryId) {
+    async moveFilesToOther(db, categoryId) {
         if (categoryId === 0) {
             throw new Error('Cannot move files from Other to Other');
         }
@@ -262,6 +261,14 @@ export const helpers = {
                 }
             }
         );
+    },
+
+    createError(message, status) {
+        console.log('here')
+        const err = new Error(message);
+        err.status = status;
+        
+        return err;
     }
 };
               
