@@ -8,15 +8,15 @@ const clients = {
             const { db } = req.locals;
             const collection = db.collection('clients');
 
-            if (!req.body.firstName || !req.body.lastName) {
+            if (!req?.body?.firstName || !req?.body?.lastName) {
                 throw helpers.createError('both first name and last name fields are required for client creation', 400);
             }
 
-            if (!req.body.email) {
+            if (!req?.body?.email) {
                 throw helpers.createError('an email is required for client creation', 400);
             }
 
-            if (req.body.isAdmin === null || req.body.isAdmin === undefined) {
+            if (req?.body?.isAdmin === null || req?.body?.isAdmin === undefined) {
                 throw helpers.createError('a role status is required for client creation', 400);
             }
 
@@ -56,19 +56,19 @@ const clients = {
             const { db } = req.locals;
             const collection = db.collection('clients');
 
-            if (!req.params || !req.params.clientId) {
+            if (!req?.params?.clientId) {
                 throw helpers.createError('client id is required to update client', 400);
             }
 
-            if (!req.body.newFirstName || !req.body.newLastName) {
+            if (!req?.body?.newFirstName || !req?.body?.newLastName) {
                 throw helpers.createError('both first name and last name fields are required for client update', 400);
             }
 
-            if (!req.body.newEmail) {
+            if (!req?.body?.newEmail) {
                 throw helpers.createError('an email is required for client update', 400);
             }
 
-            if (req.body.newIsAdmin === null || req.body.newIsAdmin === undefined) {
+            if (req?.body?.newIsAdmin === null || req?.body?.newIsAdmin === undefined) {
                 throw helpers.createError('a role status is required for client update', 400);
             }
             
@@ -99,7 +99,7 @@ const clients = {
             const { db } = req.locals;
             const collection = db.collection('clients');
 
-            if (!req.params || !req.params.clientId) {
+            if (!req?.params?.clientId) {
                 throw helpers.createError('client id is required to delete client', 400);
             }
 

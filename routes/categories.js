@@ -8,7 +8,7 @@ const categories = {
             const { db } = req.locals;
             const collection = db.collection('categories');
 
-            if (!req.body.category) {
+            if (!req?.body?.category) {
                 throw helpers.createError('a category name is required for category creation', 400);
             }
     
@@ -70,14 +70,14 @@ const categories = {
                 throw helpers.createError('invalid category id: cannot edit Other category', 400);
             }
 
-            if (!req.params || !req.params.categoryId) {
+            if (!req?.params?.categoryId) {
                 throw helpers.createError('category id is required to update category', 400);
             }
 
-            if (!req.body.newName || !req.body.newName) {
+            if (!req?.body?.newName) {
                 throw helpers.createError('category name is required for category update', 400);
             }
-            console.log
+
             if ((await collection.find({ name: req.body.newName }).toArray()).length > 0) {
                 throw helpers.createError(`a category with the name "${req.body.newName}" already exists`, 400);
             }
@@ -108,7 +108,7 @@ const categories = {
                 throw helpers.createError('invalid category id: cannot delete Other category', 400);
             }
 
-            if (!req.params || !req.params.categoryId) {
+            if (!req?.params?.categoryId) {
                 throw helpers.createError('category id is required to delete category', 400);
             }
 
