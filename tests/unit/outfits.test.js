@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { outfits } from '../../routes/outfits.js';
-import cuid2, { createId } from '@paralleldrive/cuid2';
+import cuid2 from '@paralleldrive/cuid2';
 import { ObjectId } from 'mongodb';
 import { helpers } from '../../helpers.js';
 

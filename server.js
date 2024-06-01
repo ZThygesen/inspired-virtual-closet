@@ -3,14 +3,9 @@ import process from 'process';
 import { config } from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { Server } from 'socket.io';
-import http from 'http';
 import { helpers } from './helpers.js';
 
 const app = express();
-
-const server = http.createServer(app);
-const io = new Server(server)
 
 app.use(express.json());
 config();
@@ -36,19 +31,16 @@ function injectDb(req, res, next) {
     next();
 }
 
-// categories
+// routes
 import { categoriesRouter } from './routes/categories.js';
 app.use('/categories', injectDb, categoriesRouter);
 
-// clients
 import { clientsRouter } from './routes/clients.js';
 app.use('/api/clients', injectDb, clientsRouter);
 
-// files
-import files from './routes/files.js';
-app.use('/files', files);
+import { filesRouter } from './routes/files.js';
+app.use('/files', injectDb, filesRouter);
 
-// outfits
 import { outfitsRouter } from './routes/outfits.js';
 app.use('/outfits', injectDb, outfitsRouter);
 
@@ -78,6 +70,7 @@ if (process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || p
     });
 }
 
+// error handling
 app.use((err, req, res, next) => {
     const status = err.status || 500;
 
@@ -89,9 +82,9 @@ app.use((err, req, res, next) => {
 });
 
 if (process.env.NODE_ENV === 'test') {
-    server.listen(0);
+    app.listen(0);
 } else {
-    server.listen(port, () => console.log(`Server started on port ${process.env.port || port}`));
+    app.listen(port, () => console.log(`Server started on port ${process.env.port || port}`));
 }
 
-export { app, server, db, serviceAuth, bucket, io };
+export { app, db, serviceAuth, bucket };
