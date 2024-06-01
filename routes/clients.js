@@ -114,7 +114,7 @@ const clients = {
             next(err);
         }
     }
-}
+};
 
 const router = express.Router();
 

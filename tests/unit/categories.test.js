@@ -99,7 +99,7 @@ describe('categories', () => {
 
         it('should handle toArray failure', async () => {
             // perform action to test
-            const toArrayError = new Error('retrieval of categories failed');
+            const toArrayError = new Error('array transformation of categories failed');
             toArrayError.status = 500;
             mockCollection.toArray.mockRejectedValue(toArrayError);
 
@@ -117,7 +117,7 @@ describe('categories', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(500);
-            expect(err.message).toBe('retrieval of categories failed');
+            expect(err.message).toBe('array transformation of categories failed');
         });
 
         it('should handle insertion failure', async () => {

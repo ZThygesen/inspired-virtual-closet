@@ -32,7 +32,7 @@ async function connect() {
 await connect();
 
 function injectDb(req, res, next) {
-    req.locals = { db };
+    req.locals = { db, bucket };
     next();
 }
 
@@ -49,8 +49,8 @@ import files from './routes/files.js';
 app.use('/files', files);
 
 // outfits
-import outfits from './routes/outfits.js';
-app.use('/outfits', outfits);
+import { outfitsRouter } from './routes/outfits.js';
+app.use('/outfits', injectDb, outfitsRouter);
 
 app.post('/password', async (req, res, next) => {
     try {

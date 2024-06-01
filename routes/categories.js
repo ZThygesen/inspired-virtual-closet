@@ -129,7 +129,7 @@ const categories = {
             next(err);
         }
     }
-}
+};
 
 const router = express.Router();
 
