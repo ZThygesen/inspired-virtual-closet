@@ -481,7 +481,25 @@ describe('categories', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe('category id is required to update category');
+            expect(err.message).toBe('failed to update category: invalid or missing category id');
+        });
+
+        it('should fail with invalid category id', async () => {
+            // perform action to test
+            categoryId = 'not-valid-id';      
+            const req = { body: data, params: { categoryId: categoryId }, locals: { db: mockDb } };
+
+            await categories.patch(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('categories');
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('failed to update category: invalid or missing category id');
         });
         
         it('should fail with missing category name', async () => {
@@ -621,7 +639,25 @@ describe('categories', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe('category id is required to delete category');
+            expect(err.message).toBe('failed to delete category: invalid or missing category id');
+        });
+
+        it('should fail with invalid category id', async () => {
+            // perform action to test
+            categoryId = 'not-valid-id'
+            const req = { params: { categoryId: categoryId }, locals: { db: mockDb } };
+
+            await categories.delete(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.deleteOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('failed to delete category: invalid or missing category id');
         });
     });
 });

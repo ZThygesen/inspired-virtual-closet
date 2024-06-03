@@ -344,7 +344,7 @@ describe('clients', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe('client id is required to update client');
+            expect(err.message).toBe('failed to update client: invalid or missing client id');
         });
 
         it('should fail with invalid client id', async () => {
@@ -362,7 +362,7 @@ describe('clients', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe('invalid client id');
+            expect(err.message).toBe('failed to update client: invalid or missing client id');
         });
         
         it('should fail with missing first name', async () => {
@@ -512,7 +512,7 @@ describe('clients', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe('client id is required to delete client');
+            expect(err.message).toBe('failed to delete client: invalid or missing client id');
         });
 
         it('should fail with invalid client id', async () => {
@@ -530,7 +530,7 @@ describe('clients', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe('invalid client id');
+            expect(err.message).toBe('failed to delete client: invalid or missing client id');
         });
     });
 });

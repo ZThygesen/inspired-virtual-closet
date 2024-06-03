@@ -21,6 +21,11 @@ export const helpers = {
         return false;
     },
 
+    // checks if given category id is the Other category id
+    isOtherCategory(id) {
+        return id === 0 || id === '0';
+    },
+
     // creates an error and gives it a status
     createError(message, status = 500) {
         if (!message || !(typeof message === 'string')) {
@@ -273,12 +278,12 @@ export const helpers = {
             throw this.createError('database instance required to move files to other category', 500);
         }
 
-        if (categoryId === 0 || categoryId === '0') {
+        if (this.isOtherCategory(categoryId)) {
             throw this.createError('cannot move files from Other to Other', 500);
         }
 
-        if (!categoryId) {
-            throw this.createError('category id required to move files to other category', 500);
+        if (!this.isValidId(categoryId)) {
+            throw this.createError('failed to move files to other: invalid or missing category id', 400);
         }
 
         // get all files associated with category

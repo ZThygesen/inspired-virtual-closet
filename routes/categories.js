@@ -8,20 +8,21 @@ const categories = {
             const { db } = req.locals;
             const collection = db.collection('categories');
 
-            if (!req?.body?.category) {
+            const category = req?.body?.category;
+            if (!category) {
                 throw helpers.createError('a category name is required for category creation', 400);
             }
     
-            if ((await collection.find({ name: req.body.category }).toArray()).length > 0) {
-                throw helpers.createError(`a category with the name "${req.body.category}" already exists`, 400);
+            if ((await collection.find({ name: category }).toArray()).length > 0) {
+                throw helpers.createError(`a category with the name "${category}" already exists`, 400);
             }
     
-            const category = {
-                name: req.body.category,
+            const categoryEntry = {
+                name: category,
                 items: []
             }
     
-            const result = await collection.insertOne(category);
+            const result = await collection.insertOne(categoryEntry);
 
             if (!result.insertedId) {
                 throw helpers.createError('category was not inserted into database', 500);
@@ -66,27 +67,29 @@ const categories = {
             const { db } = req.locals;
             const collection = db.collection('categories');
 
-            if (req?.params?.categoryId === 0) {
+            const categoryId = req?.params?.categoryId;
+            if (helpers.isOtherCategory(categoryId)) {
                 throw helpers.createError('invalid category id: cannot edit Other category', 400);
             }
 
-            if (!req?.params?.categoryId) {
-                throw helpers.createError('category id is required to update category', 400);
+            if (!helpers.isValidId(categoryId)) {
+                throw helpers.createError('failed to update category: invalid or missing category id', 400);
             }
 
-            if (!req?.body?.newName) {
+            const name = req?.body?.newName;
+            if (!name) {
                 throw helpers.createError('category name is required for category update', 400);
             }
 
-            if ((await collection.find({ name: req.body.newName }).toArray()).length > 0) {
-                throw helpers.createError(`a category with the name "${req.body.newName}" already exists`, 400);
+            if ((await collection.find({ name: name }).toArray()).length > 0) {
+                throw helpers.createError(`a category with the name "${name}" already exists`, 400);
             }
 
             const result = await collection.updateOne(
-                { _id: ObjectId(req.params.categoryId) },
+                { _id: ObjectId(categoryId) },
                 {
                     $set: {
-                        name: req.body.newName
+                        name: name
                     }
                 }
             );
@@ -104,21 +107,22 @@ const categories = {
 
     async delete(req, res, next) {
         try {
-            if (req?.params?.categoryId === 0) {
+            const categoryId = req?.params?.categoryId;
+            if (helpers.isOtherCategory(categoryId)) {
                 throw helpers.createError('invalid category id: cannot delete Other category', 400);
             }
 
-            if (!req?.params?.categoryId) {
-                throw helpers.createError('category id is required to delete category', 400);
+            if (!helpers.isValidId(categoryId)) {
+                throw helpers.createError('failed to delete category: invalid or missing category id', 400);
             }
 
             // move files to Other
-            await helpers.moveFilesToOther(req.params.categoryId);
+            const { db } = req.locals;
+            await helpers.moveFilesToOther(db, categoryId);
             
             // delete category
-            const { db } = req.locals;
             const collection = db.collection('categories');
-            const result = await collection.deleteOne({ _id: ObjectId(req.params.categoryId )});
+            const result = await collection.deleteOne({ _id: ObjectId(categoryId )});
 
             if (result.deletedCount === 0) {
                 throw helpers.createError('deletion failed: category not found with given category id', 404);

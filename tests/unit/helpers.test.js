@@ -3,6 +3,90 @@ import { MongoClient, ObjectId } from 'mongodb';
 import sharp from 'sharp';
 import { helpers } from '../../helpers';
 
+describe('isValidId', () => {
+    it('should return true given valid ObjectId', () => {
+        const isValid = helpers.isValidId((new ObjectId).toString());
+        expect(isValid).toBe(true);
+    });
+
+    it('should return false given ObjectId', () => {
+        const isValid = helpers.isValidId(new ObjectId);
+        expect(isValid).toBe(false);
+    });
+
+    it('should return false given random string', () => {
+        const isValid = helpers.isValidId('nope');
+        expect(isValid).toBe(false);
+    });
+
+    it('should return false given 12 character string', () => {
+        const isValid = helpers.isValidId('112233445566');
+        expect(isValid).toBe(false);
+    });
+
+    it('should return false given empty string', () => {
+        const isValid = helpers.isValidId('');
+        expect(isValid).toBe(false);
+    });
+
+    it('should return false given null', () => {
+        const isValid = helpers.isValidId(null);
+        expect(isValid).toBe(false);
+    });
+
+    it('should return false given undefined', () => {
+        const isValid = helpers.isValidId(undefined);
+        expect(isValid).toBe(false);
+    });
+
+    it('should return false given non-string value', () => {
+        const isValid = helpers.isValidId(12);
+        expect(isValid).toBe(false);
+    });
+
+    it('should return false given no id', () => {
+        const isValid = helpers.isValidId();
+        expect(isValid).toBe(false);
+    });
+});
+
+describe('isOtherCategory', () => {
+    it('should return true with \'0\'', () => {
+        const isOther = helpers.isOtherCategory('0');
+        expect(isOther).toBe(true);
+    });
+
+    it('should return true with 0', () => {
+        const isOther = helpers.isOtherCategory(0);
+        expect(isOther).toBe(true);
+    });
+
+    it('should return false given null', () => {
+        const isOther = helpers.isOtherCategory(null);
+        expect(isOther).toBe(false);
+    });
+
+    it('should return false given undefined', () => {
+        const isOther = helpers.isOtherCategory(undefined);
+        expect(isOther).toBe(false);
+    });
+
+    it('should return false given empty string', () => {
+        const isOther = helpers.isOtherCategory('');
+        expect(isOther).toBe(false);
+    });
+
+    it('should return false given ObjectId with 0', () => {
+        const isOther = helpers.isOtherCategory(new ObjectId(0));
+        expect(isOther).toBe(false);
+    });
+
+    it('should return false with no id given', () => {
+        const isOther = helpers.isOtherCategory();
+        expect(isOther).toBe(false);
+    });
+});
+
 describe('createError', () => {
     let mockMessage;
     let mockStatus;
@@ -950,7 +1034,7 @@ describe('moveFilesToOther', () => {
 
     it ('should fail if no category id given (empty string)', async () => {
         categoryId = '';
-        await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('category id required to move files to other category');
+        await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('failed to move files to other: invalid or missing category id');
         
         expect(mockDb.collection).not.toHaveBeenCalled();
         expect(mockCollection.findOne).not.toHaveBeenCalled();
@@ -959,14 +1043,14 @@ describe('moveFilesToOther', () => {
 
     it ('should fail if no category id given (null)', async () => {
         categoryId = null;
-        await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('category id required to move files to other category');
+        await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('failed to move files to other: invalid or missing category id');
         
         expect(mockDb.collection).not.toHaveBeenCalled();
         expect(mockCollection.findOne).not.toHaveBeenCalled();
         expect(mockCollection.updateOne).not.toHaveBeenCalled();
     });
 
-    it ('should fail if no category id given (int)', async () => {
+    it ('should fail if Other category given (int)', async () => {
         categoryId = 0;
         await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('cannot move files from Other to Other');
         
@@ -978,6 +1062,15 @@ describe('moveFilesToOther', () => {
     it ('should fail if Other category given (string)', async () => {
         categoryId = '0';
         await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('cannot move files from Other to Other');
+        
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.findOne).not.toHaveBeenCalled();
+        expect(mockCollection.updateOne).not.toHaveBeenCalled();
+    });
+
+    it ('should fail if invalid category given', async () => {
+        categoryId = 'not-valid-id';
+        await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('failed to move files to other: invalid or missing category id');
         
         expect(mockDb.collection).not.toHaveBeenCalled();
         expect(mockCollection.findOne).not.toHaveBeenCalled();

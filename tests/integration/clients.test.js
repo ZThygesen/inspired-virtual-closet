@@ -50,6 +50,7 @@ describe('clients', () => {
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
 
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
             const client = await collection.findOne({ firstName: 'John', lastName: 'Doe' });
             expect(client).toBeTruthy();
             expect(client).toHaveProperty('_id');
@@ -213,7 +214,7 @@ describe('clients', () => {
 
             // perform checks
             expect(response.status).toBe(400);
-            expect(response.body.message).toBe('invalid client id');
+            expect(response.body.message).toBe('failed to update client: invalid or missing client id');
 
             await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
             const client = await collection.findOne({ _id: data._id });
@@ -348,7 +349,7 @@ describe('clients', () => {
             
             // perform checks
             expect(response.status).toBe(400);
-            expect(response.body.message).toBe('invalid client id');
+            expect(response.body.message).toBe('failed to delete client: invalid or missing client id');
 
             await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
             const client = await collection.findOne({ _id: data._id });

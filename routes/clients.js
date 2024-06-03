@@ -8,23 +8,27 @@ const clients = {
             const { db } = req.locals;
             const collection = db.collection('clients');
 
-            if (!req?.body?.firstName || !req?.body?.lastName) {
+            const firstName = req?.body?.firstName;
+            const lastName = req?.body?.lastName;
+            if (!firstName || !lastName) {
                 throw helpers.createError('both first name and last name fields are required for client creation', 400);
             }
 
-            if (!req?.body?.email) {
+            const email = req?.body?.email;
+            if (!email) {
                 throw helpers.createError('an email is required for client creation', 400);
             }
 
-            if (req?.body?.isAdmin === null || req?.body?.isAdmin === undefined) {
+            const isAdmin = req?.body?.isAdmin;
+            if (isAdmin === null || isAdmin === undefined) {
                 throw helpers.createError('a role status is required for client creation', 400);
             }
 
             const client = {
-                firstName: req.body.firstName,
-                lastName: req.body.lastName,
-                email: req.body.email,
-                isAdmin: req.body.isAdmin
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                isAdmin: isAdmin
             }
             
             const result = await collection.insertOne(client);
@@ -57,23 +61,23 @@ const clients = {
             const collection = db.collection('clients');
 
             const clientId = req?.params?.clientId;
-            if (!clientId) {
-                throw helpers.createError('client id is required to update client', 400);
-            }
-
             if (!helpers.isValidId(clientId)) {
-                throw helpers.createError('invalid client id', 400);
+                throw helpers.createError('failed to update client: invalid or missing client id', 400);
             }
 
-            if (!req?.body?.newFirstName || !req?.body?.newLastName) {
+            const firstName = req?.body?.newFirstName;
+            const lastName = req?.body?.newLastName;
+            if (!firstName || !lastName) {
                 throw helpers.createError('both first name and last name fields are required for client update', 400);
             }
 
-            if (!req?.body?.newEmail) {
+            const email = req?.body?.newEmail;
+            if (!email) {
                 throw helpers.createError('an email is required for client update', 400);
             }
 
-            if (req?.body?.newIsAdmin === null || req?.body?.newIsAdmin === undefined) {
+            const isAdmin = req?.body?.newIsAdmin;
+            if (isAdmin === null || isAdmin === undefined) {
                 throw helpers.createError('a role status is required for client update', 400);
             }
             
@@ -81,10 +85,10 @@ const clients = {
                 { _id: ObjectId(clientId) },
                 {
                     $set: {
-                        firstName: req.body.newFirstName,
-                        lastName: req.body.newLastName,
-                        email: req.body.newEmail,
-                        isAdmin: req.body.newIsAdmin
+                        firstName: firstName,
+                        lastName: lastName,
+                        email: email,
+                        isAdmin: isAdmin
                     }
                 }
             );
@@ -105,12 +109,8 @@ const clients = {
             const collection = db.collection('clients');
 
             const clientId = req?.params?.clientId;
-            if (!clientId) {
-                throw helpers.createError('client id is required to delete client', 400);
-            }
-
             if (!helpers.isValidId(clientId)) {
-                throw helpers.createError('invalid client id', 400);
+                throw helpers.createError('failed to delete client: invalid or missing client id', 400);
             }
 
             const result = await collection.deleteOne({ _id: ObjectId(clientId) });
