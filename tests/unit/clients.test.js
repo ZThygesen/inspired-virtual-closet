@@ -482,8 +482,7 @@ describe('clients', () => {
 
         it('should fail with missing client id', async () => {
             // perform action to test
-            clientId = ''
-            const req = { /*params: { clientId: clientId },*/ locals: { db: mockDb } };
+            const req = { locals: { db: mockDb } };
 
             await clients.delete(req, mockRes, mockNext);
 

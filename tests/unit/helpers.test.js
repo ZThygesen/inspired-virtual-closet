@@ -1,120 +1,97 @@
 import { jest } from '@jest/globals';
-import { db, bucket } from '../../server';
 import { MongoClient, ObjectId } from 'mongodb';
 import sharp from 'sharp';
 import { helpers } from '../../helpers';
 
+describe('createError', () => {
+    let mockMessage;
+    let mockStatus;
 
-describe('mongoConnect', () => {
-    function setupMocks() {
-        // create mock function implementations 
-        const connectMock = jest.spyOn(MongoClient.prototype, 'connect');
-        connectMock.mockResolvedValueOnce();
-
-        const dbMock = jest.spyOn(MongoClient.prototype, 'db');
-        dbMock.mockImplementation(() => {
-            return { db: 'worked' }
-        });
-
-        return { connectMock, dbMock };
-    }
-
-    const originalNodeEnv = process.env.NODE_ENV;
-    const originalDbUri = process.env.DB_URI;
-
-    afterEach(() => {
-        process.env.NODE_ENV = originalNodeEnv;
-        process.env.DB_URI = originalDbUri;
+    beforeEach(() => {
+        mockMessage = 'this is an error message';
+        mockStatus = 12;
     });
 
-    afterEach(() => {
-        jest.restoreAllMocks();
+    it('should create error given all parameters', () => {
+        const error = helpers.createError(mockMessage, mockStatus);
+
+        expect(error.message).toBe(mockMessage);
+        expect(error.status).toBe(mockStatus);
     });
 
-    it('should connect to mongodb test database', async () => {
-        // create mock environment
-        const { connectMock, dbMock } = setupMocks();
-        process.env.NODE_ENV = 'test';
+    it('should create error without given message (empty string)', () => {
+        mockMessage = '';
+        const error = helpers.createError(mockMessage, mockStatus);
 
-        // perform action to test
-        const db = await helpers.mongoConnect();
-
-        // perform checks
-        expect(db).toEqual({ db: 'worked' });
-        expect(connectMock).toHaveBeenCalled();
-        expect(dbMock).toHaveBeenCalledWith('test-virtual-closet');
+        expect(error.message).toBe('there was an error');
+        expect(error.status).toBe(mockStatus);
     });
 
-    it('should connect to mongodb dev database', async () => {
-        // prepare mock environment
-        const { connectMock, dbMock } = setupMocks();
-        process.env.NODE_ENV = 'dev';
+    it('should create error without given message (undefined)', () => {
+        mockMessage = undefined;
+        const error = helpers.createError('', mockStatus);
 
-        // perform action to test
-        const db = await helpers.mongoConnect();
-
-        // perform checks
-        expect(db).toEqual({ db: 'worked' });
-        expect(connectMock).toHaveBeenCalled();
-        expect(dbMock).toHaveBeenCalledWith('dev-virtual-closet');
+        expect(error.message).toBe('there was an error');
+        expect(error.status).toBe(mockStatus);
     });
 
-    it('should connect to mongodb prod database', async () => {
-        // prepare mock environment
-        const { connectMock, dbMock } = setupMocks();
-        process.env.NODE_ENV = 'production';
+    it('should create error without given message', () => {
+        const error = helpers.createError(mockStatus);
 
-        // perform action to test
-        const db = await helpers.mongoConnect();
-
-        // perform checks
-        expect(db).toEqual({ db: 'worked' });
-        expect(connectMock).toHaveBeenCalled();
-        expect(dbMock).toHaveBeenCalledWith('virtual-closet');
+        expect(error.message).toBe('there was an error');
+        expect(error.status).toBe(500);
     });
 
-    it('should fail to connect with improper db uri', async () => {
-        // prepare mock environment
-        process.env.DB_URI = 'improper-db-uri';
+    it('should create error without given status', () => {
+        const error = helpers.createError(mockMessage);
 
-        // perform action to test
-        await expect(helpers.mongoConnect()).rejects.toThrow(); 
+        expect(error.message).toBe(mockMessage);
+        expect(error.status).toBe(500);
     });
 
-    it('should fail to connect if connect fails', async () => {
-        // create mock function implementations 
-        const connectMock = jest.spyOn(MongoClient.prototype, 'connect');
-        connectMock.mockRejectedValueOnce(new Error('Connect failed'));
+    it('should create error without given parameters', () => {
+        const error = helpers.createError();
 
-        const dbMock = jest.spyOn(MongoClient.prototype, 'db');
-        dbMock.mockImplementation(() => {
-            return { db: 'worked' }
-        });
-
-        // perform action to test
-        await expect(helpers.mongoConnect()).rejects.toThrow('Connect failed'); 
-    });
-
-    it('should fail to connect if db fails', async () => {
-        // create mock function implementations 
-        const connectMock = jest.spyOn(MongoClient.prototype, 'connect');
-        connectMock.mockResolvedValueOnce();
-
-        const dbMock = jest.spyOn(MongoClient.prototype, 'db');
-        dbMock.mockRejectedValueOnce(new Error('Db failed'));
-
-        // perform action to test
-        await expect(helpers.mongoConnect()).rejects.toThrow('Db failed'); 
+        expect(error.message).toBe('there was an error');
+        expect(error.status).toBe(500);
     });
 });
 
 describe('b64ToBuffer', () => {
+    let b64str;
+
+    let mockBlob = new Blob(['image data'], { type: 'image/png' });
+    let mockFetch;
+    let arrayBufferResponse = new ArrayBuffer(8);
+    let mockArrayBuffer;
+    let mockFrom;
+    beforeEach(() => {
+        b64str = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
+
+        mockArrayBuffer = jest.fn().mockResolvedValue(arrayBufferResponse);
+
+        mockFetch = jest.spyOn(global, 'fetch');
+        mockFetch.mockImplementation(jest.fn(() => Promise.resolve({
+            ok: true,
+            blob: () => {
+                const blob = mockBlob;
+                blob.arrayBuffer = mockArrayBuffer;
+
+                return Promise.resolve(blob);
+            }
+        })));
+
+        const buffer = Buffer.from(arrayBufferResponse);
+        mockFrom = jest.spyOn(Buffer, 'from');
+        mockFrom.mockReturnValue(buffer);
+    });
+
     afterEach(() => {
+        jest.resetAllMocks();
         jest.restoreAllMocks();
     });
 
     it('should convert b64 string to buffer', async () => {
-        const b64str = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
         const jpg = 'data:image/jpg;base64,' + b64str;
         const jpeg = 'data:image/jpeg;base64,' + b64str;
         const png = 'data:image/png;base64,' + b64str;
@@ -126,25 +103,167 @@ describe('b64ToBuffer', () => {
         expect(Buffer.isBuffer(buffer1)).toBe(true);
         expect(Buffer.isBuffer(buffer2)).toBe(true);
         expect(Buffer.isBuffer(buffer3)).toBe(true);
+
+        expect(mockFetch).toHaveBeenCalledWith(jpg);
+        expect(mockFetch).toHaveBeenCalledWith(jpeg);
+        expect(mockFetch).toHaveBeenCalledWith(png);
+        expect(mockArrayBuffer).toHaveBeenCalled();
+        expect(mockFrom).toHaveBeenCalled();
     });
 
     it('should fail with empty b64 string', async () => {
-        const b64str = '';
+        b64str = '';
 
-        await expect(helpers.b64ToBuffer(b64str)).rejects.toThrow('Not a valid base64 image string');
+        await expect(helpers.b64ToBuffer(b64str)).rejects.toThrow('not a valid base64 image string');
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(mockArrayBuffer).not.toHaveBeenCalled();
+        expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it('should fail if b64 not a string', async () => {
+        b64str = 0;
+
+        await expect(helpers.b64ToBuffer(b64str)).rejects.toThrow('not a valid base64 image string');
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(mockArrayBuffer).not.toHaveBeenCalled();
+        expect(mockFrom).not.toHaveBeenCalled();
     });
 
     it('should fail with invalid MIME type', async () => {
-        const b64str = 'data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
+        b64str = 'data:image/gif;base64,' + b64str;
 
-        await expect(helpers.b64ToBuffer(b64str)).rejects.toThrow('Not a valid base64 image string');
+        await expect(helpers.b64ToBuffer(b64str)).rejects.toThrow('not a valid base64 image string');
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(mockArrayBuffer).not.toHaveBeenCalled();
+        expect(mockFrom).not.toHaveBeenCalled();
     });
 
-    it('should fail with invalid conversion to buffer', async () => {
-        jest.spyOn(Buffer, 'from').mockReturnValue('not a buffer');
-        const b64str = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
+    it('should fail if fetch fails', async () => {
+        const png = 'data:image/png;base64,' + b64str;
+        mockFetch.mockImplementation(jest.fn(() => Promise.resolve({
+            ok: false,
+        })));
 
-        await expect(helpers.b64ToBuffer(b64str)).rejects.toThrow('Base64 string not successfully converted to buffer');
+        await expect(helpers.b64ToBuffer(png)).rejects.toThrow('error with conversion of b64 to blob');
+        expect(mockFetch).toHaveBeenCalledWith(png);
+        expect(mockArrayBuffer).not.toHaveBeenCalled();
+        expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it('should fail if blob fails fails', async () => {
+        const png = 'data:image/png;base64,' + b64str;
+        mockFetch.mockImplementation(jest.fn(() => Promise.resolve({
+            ok: true,
+            blob: () => Promise.reject(new Error('blob failed'))
+        })));
+
+        await expect(helpers.b64ToBuffer(png)).rejects.toThrow('blob failed');
+        expect(mockFetch).toHaveBeenCalledWith(png);
+        expect(mockArrayBuffer).not.toHaveBeenCalled();
+        expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it('should fail if no blob returned', async () => {
+        const png = 'data:image/png;base64,' + b64str;
+        mockFetch.mockImplementation(jest.fn(() => Promise.resolve({
+            ok: true,
+            blob: () => Promise.resolve()
+        })));
+
+        await expect(helpers.b64ToBuffer(png)).rejects.toThrow('blob does not exist');
+        expect(mockFetch).toHaveBeenCalledWith(png);
+        expect(mockArrayBuffer).not.toHaveBeenCalled();
+        expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it('should fail if arrayBuffer fails', async () => {
+        const png = 'data:image/png;base64,' + b64str;
+
+        mockArrayBuffer = jest.fn().mockRejectedValue(new Error('arrayBuffer failed'));
+        mockFetch.mockImplementation(jest.fn(() => Promise.resolve({
+            ok: true,
+            blob: () => {
+                const mockBlob = new Blob(['image data'], { type: 'image/png' });
+                mockBlob.arrayBuffer = mockArrayBuffer;
+
+                return Promise.resolve(mockBlob)
+            }
+        })));
+
+        await expect(helpers.b64ToBuffer(png)).rejects.toThrow('arrayBuffer failed');
+        expect(mockFetch).toHaveBeenCalledWith(png);
+        expect(mockArrayBuffer).toHaveBeenCalled();
+        expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it('should fail if arrayBuffer returns nothing', async () => {
+        const png = 'data:image/png;base64,' + b64str;
+
+        mockArrayBuffer = jest.fn().mockResolvedValue();
+        mockFetch.mockImplementation(jest.fn(() => Promise.resolve({
+            ok: true,
+            blob: () => {
+                const mockBlob = new Blob(['image data'], { type: 'image/png' });
+                mockBlob.arrayBuffer = mockArrayBuffer;
+
+                return Promise.resolve(mockBlob)
+            }
+        })));
+
+        await expect(helpers.b64ToBuffer(png)).rejects.toThrow('blob not successfully converted to array buffer');
+        expect(mockFetch).toHaveBeenCalledWith(png);
+        expect(mockArrayBuffer).toHaveBeenCalled();
+        expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it('should fail if arrayBuffer doesn\'t return an array buffer', async () => {
+        const png = 'data:image/png;base64,' + b64str;
+        
+        mockArrayBuffer = jest.fn().mockResolvedValue('not an array buffer');
+        mockFetch.mockImplementation(jest.fn(() => Promise.resolve({
+            ok: true,
+            blob: () => {
+                const mockBlob = new Blob(['image data'], { type: 'image/png' });
+                mockBlob.arrayBuffer = mockArrayBuffer;
+
+                return Promise.resolve(mockBlob)
+            }
+        })));
+
+        await expect(helpers.b64ToBuffer(png)).rejects.toThrow('blob not successfully converted to array buffer');
+        expect(mockFetch).toHaveBeenCalledWith(png);
+        expect(mockArrayBuffer).toHaveBeenCalled();
+        expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it('should fail if Buffer.from fails', async () => {
+        const png = 'data:image/png;base64,' + b64str;
+        mockFrom.mockImplementation(() => { throw new Error('Buffer.from failed') });
+
+        await expect(helpers.b64ToBuffer(png)).rejects.toThrow('Buffer.from failed');
+        expect(mockFetch).toHaveBeenCalledWith(png);
+        expect(mockArrayBuffer).toHaveBeenCalled();
+        expect(mockFrom).toHaveBeenCalled();
+    });
+
+    it('should fail if Buffer.from returns nothing', async () => {
+        const png = 'data:image/png;base64,' + b64str;
+        mockFrom.mockReturnValue();
+
+        await expect(helpers.b64ToBuffer(png)).rejects.toThrow('arrayBuffer not successfully converted to buffer');
+        expect(mockFetch).toHaveBeenCalledWith(png);
+        expect(mockArrayBuffer).toHaveBeenCalled();
+        expect(mockFrom).toHaveBeenCalled();
+    });
+
+    it('should fail if Buffer.from doesn\'t return a buffer', async () => {
+        const png = 'data:image/png;base64,' + b64str;
+        mockFrom.mockReturnValue('not a buffer');
+
+        await expect(helpers.b64ToBuffer(png)).rejects.toThrow('arrayBuffer not successfully converted to buffer');
+        expect(mockFetch).toHaveBeenCalledWith(png);
+        expect(mockArrayBuffer).toHaveBeenCalled();
+        expect(mockFrom).toHaveBeenCalled();
     });
 });
 
@@ -231,33 +350,33 @@ describe('uploadToGCF', () => {
 */
 
 describe('removeBackground', () => {
-    function setupMocks() {
-        const b64str = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
+    let b64str;
 
-        const fetchMock = jest.spyOn(global, 'fetch')
-            .mockImplementation(jest.fn(() => Promise.resolve({
-                ok: true,
-                json: () => Promise.resolve({ result_b64: b64str })
-            })));
+    let mockFetch;
+    let mockb64ToBuffer;
 
-        const b64ToBufferMock = jest.spyOn(helpers, 'b64ToBuffer')
-            .mockImplementation((b64str) => {
-                const buffer = Buffer.from(b64str);
-                return Promise.resolve(buffer);
-            });
-        //b64ToBufferMock.mockResolvedValueOnce(Buffer.from(b64str));
+    beforeEach(() => {
+        b64str = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
 
-        return { fetchMock, b64ToBufferMock };
-    }
+        mockFetch = jest.spyOn(global, 'fetch');
+        mockFetch.mockImplementation(jest.fn(() => Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ result_b64: b64str })
+        })));
+
+        mockb64ToBuffer = jest.spyOn(helpers, 'b64ToBuffer');
+        mockb64ToBuffer.mockImplementation((b64str) => {
+            const buffer = Buffer.from(b64str);
+            return Promise.resolve(buffer);
+        });
+    });
 
     afterEach(() => {
+        jest.resetAllMocks();
         jest.restoreAllMocks();
     });
 
     it('should remove b64 image string background', async () => {
-        const { fetchMock, b64ToBufferMock } = setupMocks();
-
-        const b64str = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
         const jpg = 'data:image/jpg;base64,' + b64str;
         const jpeg = 'data:image/jpeg;base64,' + b64str;
         const png = 'data:image/png;base64,' + b64str;
@@ -266,8 +385,8 @@ describe('removeBackground', () => {
         const buffer2 = await helpers.removeBackground(jpeg);
         const buffer3 = await helpers.removeBackground(png);
 
-        expect(fetchMock).toHaveBeenCalledTimes(3);
-        expect(b64ToBufferMock).toHaveBeenCalledTimes(3);
+        expect(mockFetch).toHaveBeenCalledTimes(3);
+        expect(mockb64ToBuffer).toHaveBeenCalledTimes(3);
 
         expect(Buffer.isBuffer(buffer1)).toBe(true);
         expect(Buffer.isBuffer(buffer2)).toBe(true);
@@ -275,285 +394,625 @@ describe('removeBackground', () => {
     });
 
     it('should fail with empty b64 string', async () => {
-        const b64str = '';
+        b64str = '';
 
-        await expect(helpers.removeBackground(b64str)).rejects.toThrow('Not a valid fileSrc');
+        await expect(helpers.removeBackground(b64str)).rejects.toThrow('not a valid base64 image string');
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(mockb64ToBuffer).not.toHaveBeenCalled();
+    });
+
+    it('should fail if b64 not a string', async () => {
+        b64str = 0;
+
+        await expect(helpers.removeBackground(b64str)).rejects.toThrow('not a valid base64 image string');
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(mockb64ToBuffer).not.toHaveBeenCalled();
     });
 
     it('should fail with invalid MIME type', async () => {
-        const b64str = 'data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
+        b64str = 'data:image/gif;base64,' + b64str;
 
-        await expect(helpers.b64ToBuffer(b64str)).rejects.toThrow('Not a valid base64 image string');
+        await expect(helpers.removeBackground(b64str)).rejects.toThrow('not a valid base64 image string');
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(mockb64ToBuffer).not.toHaveBeenCalled();
     });
 
     it('should fail with Photoroom error', async () => {
-        const { fetchMock, _ } = setupMocks();
-        fetchMock.mockImplementation(jest.fn(() => Promise.resolve({
+        mockFetch.mockImplementation(jest.fn(() => Promise.resolve({
             ok: false
         })));
         
-        const b64str = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
+        b64str = 'data:image/png;base64,' + b64str;
 
-        await expect(helpers.removeBackground(b64str)).rejects.toThrow('Error with Photoroom remove background');
+        await expect(helpers.removeBackground(b64str)).rejects.toThrow('error with Photoroom remove background');
+        expect(mockFetch).toHaveBeenCalled();
+        expect(mockb64ToBuffer).not.toHaveBeenCalled();
     });
 
-    it('should fail with b64ToBuffer error', async () => {
-        const { fetchMock, b64ToBufferMock } = setupMocks();
+    it('should fail if Photoroom returns no b64 string', async () => {        
+        mockFetch.mockImplementation(jest.fn(() => Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ result_b64: '' })
+        })));
         
-        b64ToBufferMock.mockImplementation(() => {
-            return Promise.reject(new Error('b64toBuffer failed'));
-        });
+        b64str = 'data:image/png;base64,' + b64str;
+
+        await expect(helpers.removeBackground(b64str)).rejects.toThrow('Photoroom json did not return valid b64 string');
+        expect(mockFetch).toHaveBeenCalled();
+        expect(mockb64ToBuffer).not.toHaveBeenCalled();
+    });
+
+    it('should fail with b64ToBuffer error', async () => {        
+        mockb64ToBuffer.mockRejectedValue(new Error('b64toBuffer failed'));
         
-        const b64str = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAEElEQVR4nGI6c3cpIAAA//8EzwJRGd6X7gAAAABJRU5ErkJggg==';
+        b64str = 'data:image/png;base64,' + b64str;
 
         await expect(helpers.removeBackground(b64str)).rejects.toThrow('b64toBuffer failed');
-        expect(fetchMock).toHaveBeenCalled();
+        expect(mockFetch).toHaveBeenCalled();
+        expect(mockb64ToBuffer).toHaveBeenCalled();
+    });
+
+    it('should fail if b64ToBuffer returns nothing', async () => {        
+        mockb64ToBuffer.mockResolvedValue();
+        
+        b64str = 'data:image/png;base64,' + b64str;
+
+        await expect(helpers.removeBackground(b64str)).rejects.toThrow('failed to remove background: conversion from b64 to buffer failed');
+        expect(mockFetch).toHaveBeenCalled();
+        expect(mockb64ToBuffer).toHaveBeenCalled();
+    });
+
+    it('should fail if b64ToBuffer doesn\'t return buffer', async () => {        
+        mockb64ToBuffer.mockResolvedValue('not a buffer');
+        
+        b64str = 'data:image/png;base64,' + b64str;
+
+        await expect(helpers.removeBackground(b64str)).rejects.toThrow('failed to remove background: conversion from b64 to buffer failed');
+        expect(mockFetch).toHaveBeenCalled();
+        expect(mockb64ToBuffer).toHaveBeenCalled();
     });
 });
 
-// jest.mock('sharp');
 describe('createImageThumbnail', () => {
-    const mockBuffer = Buffer.from('mock image data');
-    const mockThumbnailBuffer = Buffer.from('mock thumbnail data');
+    let mockBuffer;
+    let mockThumbnailBuffer = Buffer.from('mock thumbnail data');
 
-    function setupMocks() {
-        const resizeMock = jest.spyOn(sharp.prototype, 'resize').mockReturnThis();
-        const pngMock = jest.spyOn(sharp.prototype, 'png').mockReturnThis();
-        const toBufferMock = jest.spyOn(sharp.prototype, 'toBuffer').mockResolvedValue(mockThumbnailBuffer);
+    let mockResize;
+    let mockPng;
+    let mockToBuffer;
+    beforeEach(() => {
+        mockBuffer = Buffer.from('mock image data');
+
+        mockResize = jest.spyOn(sharp.prototype, 'resize').mockReturnThis();
+        mockPng = jest.spyOn(sharp.prototype, 'png').mockReturnThis();
+        mockToBuffer = jest.spyOn(sharp.prototype, 'toBuffer').mockResolvedValue(mockThumbnailBuffer);
+    });
         
-        return { resizeMock, pngMock, toBufferMock };
-    }
-
     afterEach(() => {
+        jest.resetAllMocks();
         jest.restoreAllMocks();
     });
 
     it('should create a thumbnail from the image buffer', async () => {
-        const { resizeMock, pngMock, toBufferMock } = setupMocks();
-
         const thumbnailBuffer = await helpers.createImageThumbnail(mockBuffer, 100, 100);
 
-        expect(resizeMock).toHaveBeenCalled();
-        expect(pngMock).toHaveBeenCalled();
-        expect(toBufferMock).toHaveBeenCalled();
+        expect(mockResize).toHaveBeenCalledWith({ width: 100, height: 100, fit: 'inside' });
+        expect(mockPng).toHaveBeenCalled();
+        expect(mockToBuffer).toHaveBeenCalled();
 
         expect(thumbnailBuffer).toBe(mockThumbnailBuffer);
     });
 
     it('should fail if empty buffer', async () => {
-        const buffer = Buffer.from('');
+        mockBuffer = Buffer.from('');
 
-        await expect(helpers.createImageThumbnail(buffer)).rejects.toThrow('invalid buffer input');
+        await expect(helpers.createImageThumbnail(mockBuffer)).rejects.toThrow('invalid buffer input');
+        expect(mockResize).not.toHaveBeenCalled();
+        expect(mockPng).not.toHaveBeenCalled();
+        expect(mockToBuffer).not.toHaveBeenCalled();
     });
 
     it('should fail if input not buffer', async () => {
-        const notBuffer = 'not a buffer';
+        mockBuffer = 'not a buffer';
 
-        await expect(helpers.createImageThumbnail(notBuffer)).rejects.toThrow('invalid buffer input');
+        await expect(helpers.createImageThumbnail(mockBuffer)).rejects.toThrow('invalid buffer input');
+        expect(mockResize).not.toHaveBeenCalled();
+        expect(mockPng).not.toHaveBeenCalled();
+        expect(mockToBuffer).not.toHaveBeenCalled();
     });
 
     it('should fail if resize fails', async () => {
-        const { resizeMock, _, __ } = setupMocks();
-        resizeMock.mockImplementation(() => {
-            throw new Error('resize failed');
-        });
+        mockResize.mockImplementation(() => { throw new Error('resize failed') });
 
         await expect(helpers.createImageThumbnail(mockBuffer)).rejects.toThrow('resize failed');
+        expect(mockResize).toHaveBeenCalledWith({ width: 300, height: 300, fit: 'inside' });
+        expect(mockPng).not.toHaveBeenCalled();
+        expect(mockToBuffer).not.toHaveBeenCalled();
     });
 
     it('should fail if png fails', async () => {
-        const { resizeMock, pngMock, _ } = setupMocks();
-        pngMock.mockImplementation(() => {
-            throw new Error('png failed');
-        });
+        mockPng.mockImplementation(() => { throw new Error('png failed') });
 
         await expect(helpers.createImageThumbnail(mockBuffer)).rejects.toThrow('png failed');
-        expect(resizeMock).toHaveBeenCalled();
+        expect(mockResize).toHaveBeenCalledWith({ width: 300, height: 300, fit: 'inside' });
+        expect(mockPng).toHaveBeenCalled();
+        expect(mockToBuffer).not.toHaveBeenCalled();
     });
 
     it('should fail if toBuffer fails', async () => {
-        const { resizeMock, pngMock, toBufferMock } = setupMocks();
-        toBufferMock.mockImplementation(() => {
-            throw new Error('toBuffer failed');
-        });
+        mockToBuffer.mockImplementation(() => { throw new Error('toBuffer failed') });
 
         await expect(helpers.createImageThumbnail(mockBuffer)).rejects.toThrow('toBuffer failed');
-        expect(resizeMock).toHaveBeenCalled();
-        expect(pngMock).toHaveBeenCalled();
+        expect(mockResize).toHaveBeenCalledWith({ width: 300, height: 300, fit: 'inside' });
+        expect(mockPng).toHaveBeenCalled();
+        expect(mockToBuffer).toHaveBeenCalled();
+    });
+
+    it('should fail if toBuffer returns nothing', async () => {
+        mockToBuffer.mockReturnValue();
+
+        await expect(helpers.createImageThumbnail(mockBuffer)).rejects.toThrow('error creating image thumbnail');
+        expect(mockResize).toHaveBeenCalledWith({ width: 300, height: 300, fit: 'inside' });
+        expect(mockPng).toHaveBeenCalled();
+        expect(mockToBuffer).toHaveBeenCalled();
+    });
+
+    it('should fail if toBuffer doesn\'t return a buffer', async () => {
+        mockToBuffer.mockReturnValue('not a buffer');
+
+        await expect(helpers.createImageThumbnail(mockBuffer)).rejects.toThrow('error creating image thumbnail');
+        expect(mockResize).toHaveBeenCalledWith({ width: 300, height: 300, fit: 'inside' });
+        expect(mockPng).toHaveBeenCalled();
+        expect(mockToBuffer).toHaveBeenCalled();
+    });
+});
+
+describe('mongoConnect', () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    const originalDbUri = process.env.DB_URI;
+
+    let mockConnect;
+    let mockDb;
+    beforeEach(() => {
+        mockConnect = jest.spyOn(MongoClient.prototype, 'connect');
+        mockConnect.mockResolvedValue();
+
+        mockDb = jest.spyOn(MongoClient.prototype, 'db');
+        mockDb.mockImplementation(() => {
+            return { db: 'worked' }
+        });
+    });
+
+    afterEach(() => {
+        process.env.NODE_ENV = originalNodeEnv;
+        process.env.DB_URI = originalDbUri;
+
+        jest.resetAllMocks();
+        jest.restoreAllMocks();
+    });
+
+    it('should connect to mongodb test database', async () => {
+        // create mock environment
+        process.env.NODE_ENV = 'test';
+
+        // perform action to test
+        const db = await helpers.mongoConnect();
+
+        // perform checks
+        expect(db).toEqual({ db: 'worked' });
+        expect(mockConnect).toHaveBeenCalled();
+        expect(mockDb).toHaveBeenCalledWith('test-virtual-closet');
+    });
+
+    it('should connect to mongodb dev database', async () => {
+        // prepare mock environment
+        process.env.NODE_ENV = 'dev';
+
+        // perform action to test
+        const db = await helpers.mongoConnect();
+
+        // perform checks
+        expect(db).toEqual({ db: 'worked' });
+        expect(mockConnect).toHaveBeenCalled();
+        expect(mockDb).toHaveBeenCalledWith('dev-virtual-closet');
+    });
+
+    it('should connect to mongodb prod database', async () => {
+        // prepare mock environment
+        process.env.NODE_ENV = 'production';
+
+        // perform action to test
+        const db = await helpers.mongoConnect();
+
+        // perform checks
+        expect(db).toEqual({ db: 'worked' });
+        expect(mockConnect).toHaveBeenCalled();
+        expect(mockDb).toHaveBeenCalledWith('virtual-closet');
+    });
+
+    it('should fail to connect with improper db uri', async () => {
+        // prepare mock environment
+        process.env.DB_URI = 'improper-db-uri';
+
+        // perform action to test
+        await expect(helpers.mongoConnect()).rejects.toThrow('Invalid scheme, expected connection string to start with "mongodb://" or "mongodb+srv://"'); 
+        expect(mockConnect).not.toHaveBeenCalled();
+        expect(mockDb).not.toHaveBeenCalled();
+    });
+
+    it('should fail to connect if connect fails', async () => {
+        // create mock function implementations 
+        mockConnect.mockRejectedValue(new Error('connect failed'));
+
+        // perform action to test
+        await expect(helpers.mongoConnect()).rejects.toThrow('connect failed');
+        expect(mockConnect).toHaveBeenCalled();
+        expect(mockDb).not.toHaveBeenCalled();
+    });
+
+    it('should fail to connect if db fails', async () => {
+        // create mock function implementations 
+        mockDb.mockRejectedValue(new Error('db failed'));
+
+        // perform action to test
+        await expect(helpers.mongoConnect()).rejects.toThrow('db failed');
+        expect(mockConnect).toHaveBeenCalled();
+        expect(mockDb).toHaveBeenCalledWith('test-virtual-closet');
     });
 });
 
 describe('uploadToGCS', () => {
-    function setupMocks() {
-        const mockFile = jest.spyOn(bucket, 'file');
-        mockFile.mockReturnValueOnce({
-            save: jest.fn().mockResolvedValueOnce(),
-            publicUrl: jest.fn().mockResolvedValueOnce('file.url')
-        });
+    let mockBucket;
+    let mockSave;
+    let mockUrl;
 
-        return mockFile;
-    }
+    let gcsDest;
+    let fileBuffer;
+    beforeEach(() => {
+        mockSave = jest.fn().mockResolvedValue();
+        mockUrl = jest.fn().mockResolvedValue('file.url');
+        mockBucket = { 
+            file: jest.fn().mockImplementation((gcsDest) => {
+                const mockFile = { dest: gcsDest };
+                mockFile.save = mockSave;
+                mockFile.publicUrl = mockUrl;
+
+                return mockFile;
+            }
+        )};
+
+        gcsDest = 'file-destination';
+        fileBuffer = Buffer.from('file-buffer-content');
+    });
 
     afterEach(() => {
+        jest.resetAllMocks();
         jest.restoreAllMocks();
     });
 
     it('should upload file to GCS', async () => {
-        const mockFile = setupMocks();
-
-        const gcsDest = 'file-destination';
-        const fileBuffer = Buffer.from('file-buffer-content');
-
-        const url = await helpers.uploadToGCS(bucket, gcsDest, fileBuffer);
+        const url = await helpers.uploadToGCS(mockBucket, gcsDest, fileBuffer);
         
         expect(url).toBe('file.url');
-        expect(mockFile.mock.results[0].value.save).toHaveBeenCalledWith(fileBuffer);
-        expect(mockFile.mock.results[0].value.publicUrl).toHaveBeenCalled();
+        expect(mockBucket.file).toHaveBeenCalledWith(gcsDest);
+        expect(mockSave).toHaveBeenCalledWith(fileBuffer);
+        expect(mockUrl).toHaveBeenCalled();
+    });
+
+    it('should fail given empty bucket', async () => {
+        mockBucket = null;
+
+        await expect(helpers.uploadToGCS(mockBucket, gcsDest, fileBuffer)).rejects.toThrow('bucket must be provided to upload to GCS');
+        
+        expect(mockBucket?.file).toBe(undefined);
+        expect(mockSave).not.toHaveBeenCalled();
+        expect(mockUrl).not.toHaveBeenCalled();
     });
 
     it('should fail given empty destination string', async () => {
-        const gcsDest = '';
-        const fileBuffer = Buffer.from('file-buffer-content');
+        gcsDest = '';
 
-        await expect(helpers.uploadToGCS(bucket, gcsDest, fileBuffer)).rejects.toThrow('Invalid GCS destination');
+        await expect(helpers.uploadToGCS(mockBucket, gcsDest, fileBuffer)).rejects.toThrow('destination must be provided to upload to GCS');
+        
+        expect(mockBucket.file).not.toHaveBeenCalled();
+        expect(mockSave).not.toHaveBeenCalled();
+        expect(mockUrl).not.toHaveBeenCalled();
     });
 
     it('should fail given improper file buffer', async () => {
-        const gcsDest = 'file-destination';
-        const fileBuffer = 'file-buffer-content';
+        fileBuffer = 'not a buffer';
 
-        await expect(helpers.uploadToGCS(bucket, gcsDest, fileBuffer)).rejects.toThrow('Must be a file buffer');
+        await expect(helpers.uploadToGCS(mockBucket, gcsDest, fileBuffer)).rejects.toThrow('file buffer must be provided to upload to GCS');
+        
+        expect(mockBucket.file).not.toHaveBeenCalled();
+        expect(mockSave).not.toHaveBeenCalled();
+        expect(mockUrl).not.toHaveBeenCalled();
     });
 
-    it('should fail if save fails', async () => {
-        const mockFile = jest.spyOn(bucket, 'file');
-        mockFile.mockReturnValueOnce({
-            save: jest.fn().mockRejectedValueOnce(new Error('Save file failed')),
-            publicUrl: jest.fn().mockResolvedValueOnce('file.url')
-        });
-        
-        const gcsDest = 'file-destination';
-        const fileBuffer = Buffer.from('file-buffer-content');
+    it('should handle file error', async () => {
+        mockBucket = { 
+            file: jest.fn().mockImplementation(() => { throw new Error('bucket.file failed') })
+        };
 
-        await expect(helpers.uploadToGCS(bucket, gcsDest, fileBuffer)).rejects.toThrow('Save file failed');
+        await expect(helpers.uploadToGCS(mockBucket, gcsDest, fileBuffer)).rejects.toThrow('bucket.file failed');
+        
+        expect(mockBucket.file).toHaveBeenCalledWith(gcsDest);
+        expect(mockSave).not.toHaveBeenCalled();
+        expect(mockUrl).not.toHaveBeenCalled();
     });
 
-    it('should fail if publicUrl fails', async () => {
-        const mockFile = jest.spyOn(bucket, 'file');
-        mockFile.mockReturnValueOnce({
-            save: jest.fn().mockResolvedValueOnce(),
-            publicUrl: jest.fn().mockRejectedValueOnce(new Error('PublicUrl failed'))
-        });
-        
-        const gcsDest = 'file-destination';
-        const fileBuffer = Buffer.from('file-buffer-content');
+    it('should fail if file returns empty', async () => {
+        mockBucket = { 
+            file: jest.fn().mockReturnValue()
+        };
 
-        await expect(helpers.uploadToGCS(bucket, gcsDest, fileBuffer)).rejects.toThrow('PublicUrl failed');
+        await expect(helpers.uploadToGCS(mockBucket, gcsDest, fileBuffer)).rejects.toThrow('conversion of destination to file failed');
+        
+        expect(mockBucket.file).toHaveBeenCalledWith(gcsDest);
+        expect(mockSave).not.toHaveBeenCalled();
+        expect(mockUrl).not.toHaveBeenCalled();
+    });
+
+    it('should handle save fail', async () => {
+        mockSave.mockRejectedValue(new Error('save failed'));
+        mockBucket = { 
+            file: jest.fn().mockImplementation((gcsDest) => {
+                const mockFile = { dest: gcsDest };
+                mockFile.save = mockSave;
+
+                return mockFile;
+            }
+        )};
+
+        await expect(helpers.uploadToGCS(mockBucket, gcsDest, fileBuffer)).rejects.toThrow('save failed');
+        
+        expect(mockBucket.file).toHaveBeenCalledWith(gcsDest);
+        expect(mockSave).toHaveBeenCalled();
+        expect(mockUrl).not.toHaveBeenCalled();
+    });
+
+    it('should handle publicUrl fail', async () => {
+        mockUrl.mockRejectedValue(new Error('publicUrl failed'));
+        mockBucket = { 
+            file: jest.fn().mockImplementation((gcsDest) => {
+                const mockFile = { dest: gcsDest };
+                mockFile.save = mockSave;
+                mockFile.publicUrl = mockUrl;
+
+                return mockFile;
+            }
+        )};
+
+        await expect(helpers.uploadToGCS(mockBucket, gcsDest, fileBuffer)).rejects.toThrow('publicUrl failed');
+        
+        expect(mockBucket.file).toHaveBeenCalledWith(gcsDest);
+        expect(mockSave).toHaveBeenCalled();
+        expect(mockUrl).toHaveBeenCalled();
+    });
+
+    it('should fail if publicUrl returns empty', async () => {
+        mockUrl.mockResolvedValue('');
+        mockBucket = { 
+            file: jest.fn().mockImplementation((gcsDest) => {
+                const mockFile = { dest: gcsDest };
+                mockFile.save = mockSave;
+                mockFile.publicUrl = mockUrl;
+
+                return mockFile;
+            }
+        )};
+
+        await expect(helpers.uploadToGCS(mockBucket, gcsDest, fileBuffer)).rejects.toThrow('fetching of file url failed');
+        
+        expect(mockBucket.file).toHaveBeenCalledWith(gcsDest);
+        expect(mockSave).toHaveBeenCalled();
+        expect(mockUrl).toHaveBeenCalled();
     });
 });
 
 describe('deleteFromGCS', () => {
+    let mockBucket;
+    let mockDelete;
+
+    let gcsDest;
+    beforeEach(() => {
+        mockDelete = jest.fn().mockResolvedValue();
+        mockBucket = { 
+            file: jest.fn().mockImplementation((gcsDest) => {
+                const mockFile = { dest: gcsDest };
+                mockFile.delete = mockDelete;
+
+                return mockFile;
+            }
+        )};
+
+        gcsDest = 'file-destination';
+    });
+
     afterEach(() => {
+        jest.resetAllMocks();
         jest.restoreAllMocks();
     });
 
     it('should delete file from GCS', async () => {
-        const mockFile = jest.spyOn(bucket, 'file');
-        mockFile.mockReturnValueOnce({
-            delete: jest.fn().mockResolvedValueOnce()
-        });
-
-        const gcsDest = 'file-destination';
-
-        await helpers.deleteFromGCS(bucket, gcsDest);
+        await expect(helpers.deleteFromGCS(mockBucket, gcsDest)).resolves;
         
-        expect(mockFile.mock.results[0].value.delete).toHaveBeenCalled();
+        expect(mockBucket.file).toHaveBeenCalledWith(gcsDest);
+        expect(mockDelete).toHaveBeenCalled();
+    });
+
+    it('should fail given empty bucket', async () => {
+        mockBucket = null;
+
+        await expect(helpers.deleteFromGCS(mockBucket, gcsDest)).rejects.toThrow('bucket must be provided to delete from GCS');
+        
+        expect(mockBucket?.file).toBe(undefined);
+        expect(mockDelete).not.toHaveBeenCalled();
     });
 
     it('should fail given empty destination string', async () => {
-        const mockFile = jest.spyOn(bucket, 'file');
-        mockFile.mockReturnValueOnce({
-            delete: jest.fn().mockResolvedValueOnce()
-        });
+        gcsDest = '';
 
-        const gcsDest = '';
-
-        await expect(helpers.deleteFromGCS(bucket, gcsDest)).rejects.toThrow('Invalid GCS destination');
+        await expect(helpers.deleteFromGCS(mockBucket, gcsDest)).rejects.toThrow('destination must be provided to delete from GCS');
+        
+        expect(mockBucket.file).not.toHaveBeenCalled();
+        expect(mockDelete).not.toHaveBeenCalled();
     });
 
-    it('should fail if delete fails', async () => {
-        const mockFile = jest.spyOn(bucket, 'file');
-        mockFile.mockReturnValueOnce({
-            delete: jest.fn().mockRejectedValueOnce(new Error('Delete failed'))
-        });
+    it('should handle file error', async () => {
+        mockBucket = { 
+            file: jest.fn().mockImplementation(() => { throw new Error('bucket.file failed') })
+        };
 
-        const gcsDest = 'file-destination';
+        await expect(helpers.deleteFromGCS(mockBucket, gcsDest)).rejects.toThrow('bucket.file failed');
+        
+        expect(mockBucket.file).toHaveBeenCalledWith(gcsDest);
+        expect(mockDelete).not.toHaveBeenCalled();
+    });
 
-        await expect(helpers.deleteFromGCS(bucket, gcsDest)).rejects.toThrow('Delete failed');
+    it('should fail if file returns empty', async () => {
+        mockBucket = { 
+            file: jest.fn().mockReturnValue()
+        };
+
+        await expect(helpers.deleteFromGCS(mockBucket, gcsDest)).rejects.toThrow('conversion of destination to file failed');
+        
+        expect(mockBucket.file).toHaveBeenCalledWith(gcsDest);
+        expect(mockDelete).not.toHaveBeenCalled();
+    });
+
+    it('should handle delete fail', async () => {
+        mockDelete.mockRejectedValue(new Error('deletion failed'));
+        mockBucket = { 
+            file: jest.fn().mockImplementation((gcsDest) => {
+                const mockFile = { dest: gcsDest };
+                mockFile.delete = mockDelete;
+
+                return mockFile;
+            }
+        )};
+
+        await expect(helpers.deleteFromGCS(mockBucket, gcsDest)).rejects.toThrow('deletion failed');
+        
+        expect(mockBucket.file).toHaveBeenCalledWith(gcsDest);
+        expect(mockDelete).toHaveBeenCalled();
     });
 });
 
 describe('moveFilesToOther', () => {
-    let mongoClient;
-    let db;
-    let collection;
+    let categoryId;
 
-    beforeAll(async () => {
-        mongoClient = new MongoClient(process.env.DB_URI);
-        await mongoClient.connect();
-        db = mongoClient.db(process.env.DB_NAME_TEST);
-        collection = db.collection('categories');
-    });
+    let mockCollection;
+    let mockDb;
 
-    afterEach(async () => {
-        await collection.deleteMany({ _id: { $ne: 0 } });
-        await collection.updateOne(
-            { _id: 0 },
-            { $set: { items: [] } }
-        );
-    });
+    let mockCreateError;
+    beforeEach(() => {
+        categoryId = (new ObjectId()).toString()
 
-    afterAll(async () => {
-        await mongoClient.close();
-    });
-
-    it('should move all files to other', async () => {
-        const categoryData = {
-            _id: new ObjectId(),
-            name: 'Blazers',
-            items: [1, 2, 3, 4, 5]
+        mockCollection = {
+            findOne: jest.fn().mockResolvedValue({ _id: ObjectId(categoryId), name: 'Blazers', items: [] }),
+            updateOne: jest.fn().mockResolvedValue()
         };
-        await collection.insertOne(categoryData);
+        
+        mockDb = {
+            collection: jest.fn(() => mockCollection)
+        };
 
-        await helpers.moveFilesToOther(db, categoryData._id.toString());
-    
-        const otherCategory = await collection.findOne({ _id: 0 });
-        expect(otherCategory.items).toBeTruthy();
-
-        const items = otherCategory.items;
-        expect(items).toEqual([1, 2, 3, 4, 5]);
+        mockCreateError = jest.spyOn(helpers, 'createError');
+        mockCreateError.mockImplementation((message, status) => {
+            const error = new Error(message);
+            error.status = status;
+            return error;
+        });
     });
 
-    it('should fail if category does not exist', async () => {
-        const categoryData = {
-            _id: new ObjectId(),
-            name: 'Blazers',
-            items: [1, 2, 3, 4, 5]
-        };
-        await collection.insertOne(categoryData);
-
-        await expect(helpers.moveFilesToOther(db, new ObjectId().toString())).rejects.toThrow('Category does not exist');
-
+    afterEach(() => {
+        jest.resetAllMocks();
+        jest.restoreAllMocks();
     });
 
-    it('should fail if given Other category', async () => {
-        const categoryData = {
-            _id: new ObjectId(),
-            name: 'Blazers',
-            items: [1, 2, 3, 4, 5]
-        };
-        await collection.insertOne(categoryData);
+    it ('should move files to Other category', async () => {
+        await expect(helpers.moveFilesToOther(mockDb, categoryId)).resolves;
 
-        await expect(helpers.moveFilesToOther(db, 0)).rejects.toThrow('Cannot move files from Other to Other');
+        expect(mockDb.collection).toHaveBeenCalledWith('categories');
+        expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
+        expect(mockCollection.updateOne).toHaveBeenCalled();
+    });
+
+    it ('should fail if no db instance given', async () => {
+        mockDb = null;
+        await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('database instance required to move files to other category');
+        
+        expect(mockDb?.collection).toBe(undefined);
+        expect(mockCollection.findOne).not.toHaveBeenCalled();
+        expect(mockCollection.updateOne).not.toHaveBeenCalled();
+    });
+
+    it ('should fail if no category id given (empty string)', async () => {
+        categoryId = '';
+        await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('category id required to move files to other category');
+        
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.findOne).not.toHaveBeenCalled();
+        expect(mockCollection.updateOne).not.toHaveBeenCalled();
+    });
+
+    it ('should fail if no category id given (null)', async () => {
+        categoryId = null;
+        await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('category id required to move files to other category');
+        
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.findOne).not.toHaveBeenCalled();
+        expect(mockCollection.updateOne).not.toHaveBeenCalled();
+    });
+
+    it ('should fail if no category id given (int)', async () => {
+        categoryId = 0;
+        await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('cannot move files from Other to Other');
+        
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.findOne).not.toHaveBeenCalled();
+        expect(mockCollection.updateOne).not.toHaveBeenCalled();
+    });
+
+    it ('should fail if Other category given (string)', async () => {
+        categoryId = '0';
+        await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('cannot move files from Other to Other');
+        
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.findOne).not.toHaveBeenCalled();
+        expect(mockCollection.updateOne).not.toHaveBeenCalled();
+    });
+
+    it ('should handle findOne failure', async () => {
+        const findError = new Error('findOne failed');
+        mockCollection.findOne.mockRejectedValue(findError);
+
+        await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('findOne failed');
+        
+        expect(mockDb.collection).toHaveBeenCalledWith('categories');
+        expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
+        expect(mockCollection.updateOne).not.toHaveBeenCalled();
+    });
+
+    it ('should fail if findOne returns nothing', async () => {
+        mockCollection.findOne.mockResolvedValue();
+
+        await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('category does not exist');
+        
+        expect(mockDb.collection).toHaveBeenCalledWith('categories');
+        expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
+        expect(mockCollection.updateOne).not.toHaveBeenCalled();
+    });
+
+    it ('should handle updateOne failure', async () => {
+        const updateError = new Error('updateOne failed');
+        mockCollection.updateOne.mockRejectedValue(updateError);
+
+        await expect(helpers.moveFilesToOther(mockDb, categoryId)).rejects.toThrow('updateOne failed');
+        
+        expect(mockDb.collection).toHaveBeenCalledWith('categories');
+        expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
+        expect(mockCollection.updateOne).toHaveBeenCalled();
     });
 });
