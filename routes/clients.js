@@ -56,8 +56,13 @@ const clients = {
             const { db } = req.locals;
             const collection = db.collection('clients');
 
-            if (!req?.params?.clientId) {
+            const clientId = req?.params?.clientId;
+            if (!clientId) {
                 throw helpers.createError('client id is required to update client', 400);
+            }
+
+            if (!helpers.isValidId(clientId)) {
+                throw helpers.createError('invalid client id', 400);
             }
 
             if (!req?.body?.newFirstName || !req?.body?.newLastName) {
@@ -73,7 +78,7 @@ const clients = {
             }
             
             const result = await collection.updateOne(
-                { _id: ObjectId(req.params.clientId) },
+                { _id: ObjectId(clientId) },
                 {
                     $set: {
                         firstName: req.body.newFirstName,
@@ -85,7 +90,7 @@ const clients = {
             );
 
             if (result.modifiedCount === 0) {
-                throw helpers.createError('update failed: client not found with given client id', 404);
+                throw helpers.createError('update failed: client not found with given client id or nothing was updated', 404);
             }
     
             res.status(200).json({ message: 'Success!' });
@@ -99,11 +104,16 @@ const clients = {
             const { db } = req.locals;
             const collection = db.collection('clients');
 
-            if (!req?.params?.clientId) {
+            const clientId = req?.params?.clientId;
+            if (!clientId) {
                 throw helpers.createError('client id is required to delete client', 400);
             }
 
-            const result = await collection.deleteOne({ _id: ObjectId(req.params.clientId) });
+            if (!helpers.isValidId(clientId)) {
+                throw helpers.createError('invalid client id', 400);
+            }
+
+            const result = await collection.deleteOne({ _id: ObjectId(clientId) });
             
             if (result.deletedCount === 0) {
                 throw helpers.createError('deletion failed: client not found with given client id', 404);

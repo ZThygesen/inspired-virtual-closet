@@ -4,6 +4,23 @@ import { Storage } from '@google-cloud/storage';
 import sharp from 'sharp';
 
 export const helpers = {
+    // checks if given string is a valid MongoDB id
+    isValidId(id) {
+        if (typeof id !== 'string') {
+            return false;
+        }
+
+        if (ObjectId.isValid(id)) {
+            if (String(new ObjectId(id)) === id) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        return false;
+    },
+
     // creates an error and gives it a status
     createError(message, status = 500) {
         if (!message || !(typeof message === 'string')) {

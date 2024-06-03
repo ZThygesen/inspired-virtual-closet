@@ -87,4 +87,4 @@ if (process.env.NODE_ENV === 'test') {
     app.listen(port, () => console.log(`Server started on port ${process.env.port || port}`));
 }
 
-export { app, db, serviceAuth, bucket };
+export { app, serviceAuth };

@@ -327,7 +327,7 @@ describe('clients', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(404);
-            expect(err.message).toBe('update failed: client not found with given client id');
+            expect(err.message).toBe('update failed: client not found with given client id or nothing was updated');
         });
 
         it('should fail with missing client id', async () => {
@@ -345,6 +345,24 @@ describe('clients', () => {
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
             expect(err.message).toBe('client id is required to update client');
+        });
+
+        it('should fail with invalid client id', async () => {
+            // perform action to test
+            clientId = 'not-valid-id';
+            const req = { body: data, params: { clientId: clientId }, locals: { db: mockDb } };
+
+            await clients.patch(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('invalid client id');
         });
         
         it('should fail with missing first name', async () => {
@@ -495,6 +513,24 @@ describe('clients', () => {
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
             expect(err.message).toBe('client id is required to delete client');
+        });
+
+        it('should fail with invalid client id', async () => {
+            // perform action to test
+            clientId = new ObjectId();
+            const req = { params: { clientId: clientId }, locals: { db: mockDb } };
+
+            await clients.delete(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.deleteOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('invalid client id');
         });
     });
 });
