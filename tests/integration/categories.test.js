@@ -29,6 +29,10 @@ describe('categories', () => {
         await mongoClient.close();
     });
 
+    beforeEach(() => {
+        expect(process.env.NODE_ENV).toBe('test');
+    });
+
     afterEach(async () => {
         await clearCollection(collection);
         await insertOther(collection);

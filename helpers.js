@@ -182,7 +182,15 @@ export const helpers = {
                 credentials: credentials
             });
             
-            bucket = storage.bucket('edie-styles-virtual-closet');
+            if (process.env.NODE_ENV === 'production') {
+                bucket = storage.bucket('edie-styles-virtual-closet');
+            } 
+            else if (process.env.NODE_ENV === 'test') {
+                bucket = storage.bucket('edie-styles-virtual-closet-test');
+            } else {
+                bucket = storage.bucket('edie-styles-virtual-closet-dev');
+            }
+            
 
             return { serviceAuth, bucket };
         } catch (err) {
@@ -222,8 +230,8 @@ export const helpers = {
             throw this.createError('bucket must be provided to upload to GCS', 500);
         }
 
-        if (!gcsDest) {
-            throw this.createError('destination must be provided to upload to GCS', 500);
+        if (!gcsDest || gcsDest?.split('.')[1] !== 'png') {
+            throw this.createError('invalid or missing gcs dest provided', 500);
         }
 
         if (!fileBuffer || !Buffer.isBuffer(fileBuffer)) {
@@ -266,10 +274,12 @@ export const helpers = {
                 throw this.createError('conversion of destination to file failed', 500);
             }
 
-            await gcsFile.delete(); 
+            await gcsFile.delete();
         } catch (err) {
             throw err;
         }
+
+        return Promise.resolve();
     },
 
     // move all files from one category to the Other category

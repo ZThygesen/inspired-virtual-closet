@@ -27,6 +27,8 @@ describe('outfits', () => {
     let parseResponse = { name: 'blaze-tastic', extension: 'png' };
     let mockDeleteFromGCS;
     beforeEach(() => {
+        expect(process.env.NODE_ENV).toBe('test');
+
         mockRes = {
             status: jest.fn().mockReturnThis(),
             json: jest.fn()

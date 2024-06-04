@@ -1,31 +1,56 @@
-// import { jest } from '@jest/globals';
-// import { app } from '../../server';
-// import { agent } from 'supertest';
-// import { MongoClient } from 'mongodb';
-// import { ObjectId } from 'mongodb';
-// import { helpers } from '../../helpers';
+import { jest } from '@jest/globals';
+import { app, bucket } from '../../server';
+import { agent } from 'supertest';
+import { MongoClient } from 'mongodb';
+import { ObjectId } from 'mongodb';
+import { helpers } from '../../helpers';
 
-// describe('outfits', () => {
-//     let mongoClient;
-//     let db;
-//     let collection;
+describe('outfits', () => {
+    let mongoClient;
+    let db;
+    let collection;
 
-//     beforeAll(async () => {
-//         mongoClient = new MongoClient(process.env.DB_URI);
-//         await mongoClient.connect();
-//         db = mongoClient.db(process.env.DB_NAME_TEST);
-//         collection = db.collection('outfits');
-//     });
+    beforeAll(async () => {
+        mongoClient = new MongoClient(process.env.DB_URI);
+        await mongoClient.connect();
+        db = mongoClient.db(process.env.DB_NAME_TEST);
+        collection = db.collection('outfits');
+    });
 
-//     afterEach(async () => {
-//         await collection.deleteMany({ });
-//     });
+    afterAll(async () => {
+        await mongoClient.close();
+    });
 
-//     afterAll(async () => {
-//         await mongoClient.close();
-//     });
+    beforeEach(() => {
+        expect(process.env.NODE_ENV).toBe('test');
+    });
 
-//     describe('create', () => {
+    afterEach(async () => {
+        await collection.deleteMany({ });
+    });
+
+    describe('create', () => {
+        it('should', async () => {
+            // const [files] = await bucket.getFiles({ prefix: '' });
+            // console.log(files[0])
+            // files.map(file => {
+            //     console.log(file.metadata.name)
+            // })
+            // console.log(files.length);
+        });
+        
+//         let clientId;
+//         let data;
+//         beforeEach(() => {
+//             clientId = (new ObjectId()).toString()
+//             data = {
+//                 fileSrc: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==',
+//                 stageItemsStr: '{"stageItems":11.13}',
+//                 outfitName: 'Epic Party Outfit',
+//                 clientId: clientId
+//             }
+//         });
+
 //         it('should create new outfit', async () => {
 //             // create mock function implementations
 //             const bufferMock = jest.spyOn(helpers, 'b64ToBuffer');
@@ -38,10 +63,10 @@
 //             const clientId = new ObjectId().toString();
 //             const response = await agent(app)
 //                 .post('/outfits')
-//                 .field('fileSrc', 'data:image/png;base64,fileSrc=')
-//                 .field('stageItemsStr', '{"stageItems":11.13}')
-//                 .field('outfitName', 'Epic Party Outfit')
-//                 .field('clientId', clientId);
+//                 .field('fileSrc', data.fileSrc)
+//                 .field('stageItemsStr', data.stageItemsStr)
+//                 .field('outfitName', data.outfitName)
+//                 .field('clientId', data.clientId);
     
 //             // perform checks
 //             expect(response.status).toBe(201);
@@ -62,7 +87,7 @@
 //             bufferMock.mockRestore();
 //             uploadMock.mockRestore();
 //         });
-//     });
+    });
     
 //     describe('read', () => {
 //         it('should get outfits', async () => {
@@ -218,4 +243,4 @@
 //             deleteMock.mockRestore();
 //         });
 //     });
-// });
+});

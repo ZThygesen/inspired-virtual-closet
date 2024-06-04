@@ -23,6 +23,8 @@ describe('outfits', () => {
     let mockJSONParse;
     let JSONResponse = { stage: 'items', as: 'json' };
     beforeEach(() => {
+        expect(process.env.NODE_ENV).toBe('test');
+
         mockRes = {
             status: jest.fn().mockReturnThis(),
             json: jest.fn()
@@ -97,8 +99,35 @@ describe('outfits', () => {
             process.env.NODE_ENV = 'test';
         });
 
+        it('should create new outfit - test environment', async () => {
+            // perform action to test
+            mockCollection.insertOne.mockResolvedValue({ insertedId: 'success_id' });
+            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+
+            await outfits.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockCreateId).toHaveBeenCalled();
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
+            expect(mockDb.collection).toHaveBeenCalledWith('outfits');
+            expect(mockCollection.insertOne).toHaveBeenCalledWith({
+                clientId: data.clientId,
+                stageItems: JSONResponse,
+                outfitName: data.outfitName,
+                outfitUrl: uploadToGCSResponse,
+                gcsDest: `test/outfits/${createIdResponse}.png`
+            });
+            expect(mockRes.status).toHaveBeenCalledWith(201);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
         it('should create new outfit - non-production environment', async () => {
             // perform action to test
+            process.env.NODE_ENV = 'dev';
             mockCollection.insertOne.mockResolvedValue({ insertedId: 'success_id' });
             const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
@@ -268,7 +297,7 @@ describe('outfits', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
             expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
@@ -294,7 +323,7 @@ describe('outfits', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
@@ -320,7 +349,7 @@ describe('outfits', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
@@ -328,7 +357,7 @@ describe('outfits', () => {
                 stageItems: JSONResponse,
                 outfitName: data.outfitName,
                 outfitUrl: uploadToGCSResponse,
-                gcsDest: `dev/outfits/${createIdResponse}.png`
+                gcsDest: `test/outfits/${createIdResponse}.png`
             });
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
@@ -349,7 +378,7 @@ describe('outfits', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
@@ -357,7 +386,7 @@ describe('outfits', () => {
                 stageItems: JSONResponse,
                 outfitName: data.outfitName,
                 outfitUrl: uploadToGCSResponse,
-                gcsDest: `dev/outfits/${createIdResponse}.png`
+                gcsDest: `test/outfits/${createIdResponse}.png`
             });
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();

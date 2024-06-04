@@ -12,6 +12,8 @@ describe('categories', () => {
     let mockDb;
     let mockCreateError;
     beforeEach(() => {
+        expect(process.env.NODE_ENV).toBe('test');
+
         mockRes = {
             status: jest.fn().mockReturnThis(),
             json: jest.fn()

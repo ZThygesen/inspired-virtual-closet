@@ -20,6 +20,10 @@
 //         collection = db.collection('categories');
 //     });
 
+// beforeEach(() => {
+//     expect(process.env.NODE_ENV).toBe('test');
+// });
+
 //     afterEach(async () => {
 //         await collection.deleteMany({ _id: { $ne: 0 } });
 //         await collection.updateOne(

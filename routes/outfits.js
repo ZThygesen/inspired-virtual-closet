@@ -37,7 +37,10 @@ const outfits = {
     
             // create file destination
             let gcsDest = `outfits/${cuid2.createId()}.png`;
-            if (process.env.NODE_ENV !== 'production') {
+            if (process.env.NODE_ENV === 'test') {
+                gcsDest = 'test/' + gcsDest;
+            }
+            else if (process.env.NODE_ENV !== 'production') {
                 gcsDest = 'dev/' + gcsDest;
             }
     

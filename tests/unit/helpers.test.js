@@ -651,6 +651,43 @@ describe('createImageThumbnail', () => {
     });
 });
 
+describe('googleConnect', () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+
+    afterEach(() => {
+        process.env.NODE_ENV = originalNodeEnv;
+    });
+
+    it ('should connect to bucket - test environment', async () => {
+        const { bucket } = await helpers.googleConnect();
+        expect(bucket.id).toBe('edie-styles-virtual-closet-test');
+    });
+
+    it ('should connect to bucket - production environment', async () => {
+        process.env.NODE_ENV = 'production';
+        const { bucket } = await helpers.googleConnect();
+        expect(bucket.id).toBe('edie-styles-virtual-closet');
+    });
+
+    it ('should connect to bucket - dev environment', async () => {
+        process.env.NODE_ENV = 'dev';
+        const { bucket } = await helpers.googleConnect();
+        expect(bucket.id).toBe('edie-styles-virtual-closet-dev');
+    });
+
+    it ('should connect to bucket - review environment', async () => {
+        process.env.NODE_ENV = 'review';
+        const { bucket } = await helpers.googleConnect();
+        expect(bucket.id).toBe('edie-styles-virtual-closet-dev');
+    });
+
+    it ('should connect to bucket - staging environment', async () => {
+        process.env.NODE_ENV = 'staging';
+        const { bucket } = await helpers.googleConnect();
+        expect(bucket.id).toBe('edie-styles-virtual-closet-dev');
+    });
+});
+
 describe('mongoConnect', () => {
     const originalNodeEnv = process.env.NODE_ENV;
     const originalDbUri = process.env.DB_URI;
@@ -765,7 +802,7 @@ describe('uploadToGCS', () => {
             }
         )};
 
-        gcsDest = 'file-destination';
+        gcsDest = 'file-destination.png';
         fileBuffer = Buffer.from('file-buffer-content');
     });
 
@@ -796,7 +833,27 @@ describe('uploadToGCS', () => {
     it('should fail given empty destination string', async () => {
         gcsDest = '';
 
-        await expect(helpers.uploadToGCS(mockBucket, gcsDest, fileBuffer)).rejects.toThrow('destination must be provided to upload to GCS');
+        await expect(helpers.uploadToGCS(mockBucket, gcsDest, fileBuffer)).rejects.toThrow('invalid or missing gcs dest provided');
+        
+        expect(mockBucket.file).not.toHaveBeenCalled();
+        expect(mockSave).not.toHaveBeenCalled();
+        expect(mockUrl).not.toHaveBeenCalled();
+    });
+
+    it('should fail given improper destination string', async () => {
+        gcsDest = 'file-destination';
+
+        await expect(helpers.uploadToGCS(mockBucket, gcsDest, fileBuffer)).rejects.toThrow('invalid or missing gcs dest provided');
+        
+        expect(mockBucket.file).not.toHaveBeenCalled();
+        expect(mockSave).not.toHaveBeenCalled();
+        expect(mockUrl).not.toHaveBeenCalled();
+    });
+
+    it('should fail given improper destination extension', async () => {
+        gcsDest = 'file-destination.jpg';
+
+        await expect(helpers.uploadToGCS(mockBucket, gcsDest, fileBuffer)).rejects.toThrow('invalid or missing gcs dest provided');
         
         expect(mockBucket.file).not.toHaveBeenCalled();
         expect(mockSave).not.toHaveBeenCalled();
