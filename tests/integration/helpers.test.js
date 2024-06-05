@@ -40,6 +40,7 @@ describe('uploadToGCS', () => {
         await expect(files).toHaveLength(1);
         expect(files[0].metadata.name).toBe(gcsDest);
         expect(files[0].metadata.contentType).toBe('image/png');
+        expect(parseInt(files[0].metadata.size)).toBe(fileBuffer.byteLength);
     });
 
     it('should fail to upload to GCS with missing bucket', async () => {

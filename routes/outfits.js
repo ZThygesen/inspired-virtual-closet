@@ -14,21 +14,23 @@ const outfits = {
                 throw helpers.createError('file source is required to create outfit', 400);
             }
 
-            if (!stageItemsStr) {
-                throw helpers.createError('stage items string is required to create outfit', 400);
+            if (!stageItemsStr || (typeof stageItemsStr !== 'string')) {
+                throw helpers.createError('stage items string is missing or invalid', 400);
             }
 
             if (!outfitName) {
                 throw helpers.createError('outfit name is required to create outfit', 400);
             }
 
-            if (!clientId) {
-                throw helpers.createError('client id is required to create outfit', 400);
+            if (!helpers.isValidId(clientId)) {
+                throw helpers.createError('failed to update outfit: invalid or missing client id', 400);
             }
+
+            const stageItems = JSON.parse(stageItemsStr);
 
             const { db, bucket } = req.locals;
             const clientCollection = db.collection('clients');
-            if ((await clientCollection.find({ _id: clientId }).toArray()).length !== 1) {
+            if ((await clientCollection.find({ _id: ObjectId(clientId) }).toArray()).length !== 1) {
                 throw helpers.createError(`cannot create outfit: no client or multiple clients with the id "${clientId}" exist`, 400);
             }
     
@@ -48,7 +50,6 @@ const outfits = {
             const url = await helpers.uploadToGCS(bucket, gcsDest, fileBuffer);
     
             // create outfit object
-            const stageItems = JSON.parse(stageItemsStr);
             const outfit = {
                 clientId: clientId,
                 stageItems: stageItems,
@@ -74,19 +75,20 @@ const outfits = {
 
     async get(req, res, next) {
         try {
-            if (!req?.params?.clientId) {
-                throw helpers.createError('client id is required to get client outfits', 400);
+            const clientId = req?.params?.clientId;
+            if (!helpers.isValidId(clientId)) {
+                throw helpers.createError('failed to get outfits: invalid or missing client id', 400);
             }
 
             const { db } = req.locals;
             const clientCollection = db.collection('clients');
             
-            if ((await clientCollection.find({ _id: req.params.clientId }).toArray()).length !== 1) {
-                throw helpers.createError(`cannot get outfits: no client or multiple clients with the id "${req.params.clientId}" exist`, 400);
+            if ((await clientCollection.find({ _id: ObjectId(clientId) }).toArray()).length !== 1) {
+                throw helpers.createError(`cannot get outfits: no client or multiple clients with the id "${clientId}" exist`, 400);
             }
 
             const collection = db.collection('outfits');
-            const outfits = await collection.find({ clientId: req.params.clientId }).toArray();
+            const outfits = await collection.find({ clientId: clientId }).toArray();
             res.status(200).json(outfits);
         } catch (err) {
             next(err);
@@ -114,33 +116,40 @@ const outfits = {
                 throw helpers.createError('gcsDest is required to update outfit', 400);
             }
 
-            if (!req?.params?.outfitId) {
-                throw helpers.createError('outfit id is required to update outfit', 400);
+            const outfitId = req?.params?.outfitId;
+            if (!helpers.isValidId(outfitId)) {
+                throw helpers.createError('failed to update outfit content: invalid or missing outfit id', 400);
             }
 
-            const { db, bucket } = req.locals;
-    
-            // delete original file
-            await helpers.deleteFromGCS(bucket, gcsDest);
+            const stageItems = JSON.parse(stageItemsStr);
     
             // convert new outfit file to buffer
             const fileBuffer = await helpers.b64ToBuffer(fileSrc);
     
             // create new file destination
             let newGcsDest = `outfits/${cuid2.createId()}.png`;
-            if (process.env.NODE_ENV !== 'production') {
+            if (process.env.NODE_ENV === 'test') {
+                newGcsDest = 'test/' + newGcsDest;
+            }
+            else if (process.env.NODE_ENV !== 'production') {
                 newGcsDest = 'dev/' + newGcsDest;
             }
-    
+            
+            const { db, bucket } = req.locals;
+            const collection = db.collection('outfits');
+            if ((await collection.find({ _id: ObjectId(outfitId) }).toArray()).length !== 1) {
+                throw helpers.createError(`cannot create outfit: no outfit or multiple outfits with the id "${outfitId}" exist`, 400);
+            }
+
+            // delete original file
+            await helpers.deleteFromGCS(bucket, gcsDest);
+
             // upload to GCS
             const url = await helpers.uploadToGCS(bucket, newGcsDest, fileBuffer);
     
-            // update outfit in db
-            const stageItems = JSON.parse(stageItemsStr);
-            const collection = db.collection('outfits');
-            
+            // update outfit in db            
             const result = await collection.updateOne(
-                { _id: ObjectId(req.params.outfitId) },
+                { _id: ObjectId(outfitId) },
                 {
                     $set: {
                         stageItems: stageItems,
@@ -163,21 +172,23 @@ const outfits = {
 
     async patchPartial(req, res, next) {
         try {
-            if (!req?.body?.newName) {
+            const name = req?.body?.newName;
+            if (!name) {
                 throw helpers.createError('outfit name is required to update outfit', 400);
             }
 
-            if (!req?.params?.outfitId) {
-                throw helpers.createError('outfit id is required to update outfit', 400);
+            const outfitId = req?.params?.outfitId;
+            if (!helpers.isValidId(outfitId)) {
+                throw helpers.createError('failed to update outfit name: invalid or missing outfit id', 400);
             }
 
             const { db } = req.locals;
             const collection = db.collection('outfits');
             const result = await collection.updateOne(
-                { _id: ObjectId(req.params.outfitId) },
+                { _id: ObjectId(outfitId) },
                 { 
                     $set: {
-                        outfitName: req.body.newName
+                        outfitName: name
                     }
                 }
             );
@@ -194,15 +205,16 @@ const outfits = {
 
     async delete(req, res, next) {
         try {
-            if (!req?.params?.outfitId) {
-                throw helpers.createError('outfit id is required to delete outfit', 400);
+            const outfitId = req?.params?.outfitId;
+            if (!helpers.isValidId(outfitId)) {
+                throw helpers.createError('failed to delete outfit: invalid or missing outfit id', 400);
             }
 
             const { db, bucket } = req.locals;
             const collection = db.collection('outfits');
     
             // get outfit from db
-            const outfit = await collection.findOne({ _id: ObjectId(req.params.outfitId) });
+            const outfit = await collection.findOne({ _id: ObjectId(outfitId) });
 
             if (!outfit?.gcsDest) {
                 throw helpers.createError('outfit not found with given outfit id or is missing gcs destination', 404);
@@ -212,7 +224,7 @@ const outfits = {
             await helpers.deleteFromGCS(bucket, outfit.gcsDest);
     
             // delete from db
-            const result = await collection.deleteOne({ _id: ObjectId(req.params.outfitId )});
+            const result = await collection.deleteOne({ _id: ObjectId(outfitId )});
 
             if (result.deletedCount === 0) {
                 throw helpers.createError('deletion failed: outfit not found with given outfit id', 404);

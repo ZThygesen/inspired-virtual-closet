@@ -652,10 +652,8 @@ describe('createImageThumbnail', () => {
 });
 
 describe('googleConnect', () => {
-    const originalNodeEnv = process.env.NODE_ENV;
-
     afterEach(() => {
-        process.env.NODE_ENV = originalNodeEnv;
+        process.env.NODE_ENV = 'test';
     });
 
     it ('should connect to bucket - test environment', async () => {
@@ -689,7 +687,6 @@ describe('googleConnect', () => {
 });
 
 describe('mongoConnect', () => {
-    const originalNodeEnv = process.env.NODE_ENV;
     const originalDbUri = process.env.DB_URI;
 
     let mockConnect;
@@ -705,7 +702,7 @@ describe('mongoConnect', () => {
     });
 
     afterEach(() => {
-        process.env.NODE_ENV = originalNodeEnv;
+        process.env.NODE_ENV = 'test';
         process.env.DB_URI = originalDbUri;
 
         jest.resetAllMocks();

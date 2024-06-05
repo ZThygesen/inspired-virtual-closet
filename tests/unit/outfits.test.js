@@ -107,11 +107,13 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
-            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
                 clientId: data.clientId,
@@ -134,11 +136,13 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
-            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
                 clientId: data.clientId,
@@ -161,11 +165,13 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
-            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
                 clientId: data.clientId,
@@ -179,6 +185,33 @@ describe('outfits', () => {
             expect(mockNext).not.toHaveBeenCalled();
         });
 
+        it('should handle JSON parse failure', async () => {
+            // perform action to test
+            const parseError = new Error('JSON parsing failed');
+            parseError.status = 500;
+            mockJSONParse.mockImplementation(() => { throw parseError });
+
+            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+
+            await outfits.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
+            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockCreateId).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
+            expect(mockCollection.insertOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(500);
+            expect(err.message).toBe('JSON parsing failed');
+        });
+
         it('should handle find failure', async () => {
             // perform action to test
             const findError = new Error('retrieval of clients failed');
@@ -190,11 +223,13 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -216,11 +251,13 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -242,11 +279,13 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -268,11 +307,13 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -294,11 +335,13 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -307,32 +350,6 @@ describe('outfits', () => {
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(500);
             expect(err.message).toBe('uploadToGCS failed');
-        });
-
-        it('should handle JSON parse failure', async () => {
-            // perform action to test
-            const parseError = new Error('JSON parsing failed');
-            parseError.status = 500;
-            mockJSONParse.mockImplementation(() => { throw parseError });
-
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
-
-            await outfits.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
-            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
-            expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
-            expect(mockCollection.insertOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('JSON parsing failed');
         });
 
         it('should handle insertion failure', async () => {
@@ -346,11 +363,14 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
-            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
+            
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
                 clientId: data.clientId,
@@ -375,11 +395,14 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
-            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
+            
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
                 clientId: data.clientId,
@@ -405,11 +428,13 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -429,11 +454,13 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -452,10 +479,12 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -474,10 +503,12 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -485,7 +516,31 @@ describe('outfits', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe('stage items string is required to create outfit');
+            expect(err.message).toBe('stage items string is missing or invalid');
+        });
+
+        it('should fail with invalid stage items', async () => {
+            // perform action to test
+            data.stageItemsStr = { stage: 'items' };
+            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+
+            await outfits.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockJSONParse).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockCreateId).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
+            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.insertOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('stage items string is missing or invalid');
         });
 
         it('should fail with missing outfit name', async () => {
@@ -496,10 +551,12 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -518,10 +575,12 @@ describe('outfits', () => {
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
+            expect(mockJSONParse).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -529,7 +588,31 @@ describe('outfits', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe('client id is required to create outfit');
+            expect(err.message).toBe('failed to update outfit: invalid or missing client id');
+        });
+
+        it('should fail with invalid client id', async () => {
+            // perform action to test
+            data.clientId = 'not-valid-id';
+            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+
+            await outfits.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockJSONParse).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockCreateId).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
+            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.insertOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('failed to update outfit: invalid or missing client id');
         });
     });
 
@@ -560,7 +643,7 @@ describe('outfits', () => {
 
             // perform checks
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: clientId });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.find).toHaveBeenCalledWith({ clientId: clientId });
             expect(mockCollection.toArray).toHaveBeenCalledTimes(2);
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
@@ -581,7 +664,7 @@ describe('outfits', () => {
 
             // perform checks
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: clientId });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -604,7 +687,7 @@ describe('outfits', () => {
 
             // perform checks
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: clientId });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalledTimes(1);
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -630,7 +713,7 @@ describe('outfits', () => {
 
             // perform checks
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: clientId });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.find).toHaveBeenCalledWith({ clientId: clientId });
             expect(mockCollection.toArray).toHaveBeenCalledTimes(1);
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
@@ -656,7 +739,7 @@ describe('outfits', () => {
 
             // perform checks
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: clientId });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.find).toHaveBeenCalledWith({ clientId: clientId });
             expect(mockCollection.toArray).toHaveBeenCalledTimes(2);
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
@@ -678,7 +761,7 @@ describe('outfits', () => {
 
             // perform checks
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: clientId });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalledTimes(1);
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -699,7 +782,7 @@ describe('outfits', () => {
 
             // perform checks
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: clientId });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalledTimes(1);
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -727,7 +810,27 @@ describe('outfits', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe('client id is required to get client outfits');
+            expect(err.message).toBe('failed to get outfits: invalid or missing client id');
+        });
+
+        it('should fail if client id invalid', async () => {
+            // perform action to test
+            mockCollection.toArray.mockResolvedValueOnce([{ client: 'exists' }]);
+            clientId = 'not-valid-id';
+            const req = { params: { clientId: clientId }, locals: { db: mockDb } };
+
+            await outfits.get(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('failed to get outfits: invalid or missing client id');
         });
     });
     
@@ -744,10 +847,14 @@ describe('outfits', () => {
 
             outfitId = (new ObjectId()).toString();
 
+            mockCollection.toArray.mockResolvedValue([{ outfit: 'exists' }]);
+        });
+
+        afterEach(() => {
             process.env.NODE_ENV = 'test';
         });
 
-        it('should update client: non-production environment', async () => {
+        it('should update client: test environment', async () => {
             // perform action to test
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
             const req = { fields: data, params: { outfitId: outfitId }, locals: { db: mockDb, bucket: mockBucket } };
@@ -755,12 +862,37 @@ describe('outfits', () => {
             await outfits.patchFull(req, mockRes, mockNext);
 
             // perform checks
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
-            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it('should update client: non-production environment', async () => {
+            // perform action to test
+            process.env.NODE_ENV = 'dev';
+            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
+            const req = { fields: data, params: { outfitId: outfitId }, locals: { db: mockDb, bucket: mockBucket } };
+
+            await outfits.patchFull(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
+            expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockCreateId).toHaveBeenCalled();
+            expect(mockDb.collection).toHaveBeenCalledWith('outfits');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
@@ -776,42 +908,46 @@ describe('outfits', () => {
             await outfits.patchFull(req, mockRes, mockNext);
 
             // perform checks
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
-            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
             expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should handle deleteFromGCS failure', async () => {
+        it('should handle JSON parse failure', async () => {
             // perform action to test
-            const deleteError = new Error('deletion of outfit failed');
-            deleteError.status = 500;
-            mockDeleteFromGCS.mockRejectedValue(deleteError);
+            const parseError = new Error('JSON parsing failed');
+            parseError.status = 500;
+            mockJSONParse.mockImplementation(() => { throw parseError });
 
             const req = { fields: data, params: { outfitId: outfitId }, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.patchFull(req, mockRes, mockNext);
 
             // perform checks
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockCollection.updateOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(500);
-            expect(err.message).toBe('deletion of outfit failed');
+            expect(err.message).toBe('JSON parsing failed');
         });
 
         it('should handle b64ToBuffer failure', async () => {
@@ -825,12 +961,14 @@ describe('outfits', () => {
             await outfits.patchFull(req, mockRes, mockNext);
 
             // perform checks
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockCollection.updateOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
@@ -851,12 +989,14 @@ describe('outfits', () => {
             await outfits.patchFull(req, mockRes, mockNext);
 
             // perform checks
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockCollection.updateOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
@@ -864,6 +1004,116 @@ describe('outfits', () => {
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(500);
             expect(err.message).toBe('createId failed');
+        });
+
+        it('should handle find failure', async () => {
+            // perform action to test
+            const findError = new Error('find failed');
+            findError.status = 500;
+            mockCollection.find.mockImplementation(() => { throw findError });
+
+            const req = { fields: data, params: { outfitId: outfitId }, locals: { db: mockDb, bucket: mockBucket } };
+
+            await outfits.patchFull(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
+            expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockCreateId).toHaveBeenCalled();
+            expect(mockDb.collection).toHaveBeenCalledWith('outfits');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(500);
+            expect(err.message).toBe('find failed');
+        });
+
+        it('should handle toArray failure', async () => {
+            // perform action to test
+            const toArrayError = new Error('toArray failed');
+            toArrayError.status = 500;
+            mockCollection.toArray.mockRejectedValue(toArrayError);
+
+            const req = { fields: data, params: { outfitId: outfitId }, locals: { db: mockDb, bucket: mockBucket } };
+
+            await outfits.patchFull(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
+            expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockCreateId).toHaveBeenCalled();
+            expect(mockDb.collection).toHaveBeenCalledWith('outfits');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(500);
+            expect(err.message).toBe('toArray failed');
+        });
+
+        it('should handle fail if toArray returns nothing', async () => {
+            // perform action to test
+            mockCollection.toArray.mockResolvedValue([]);
+
+            const req = { fields: data, params: { outfitId: outfitId }, locals: { db: mockDb, bucket: mockBucket } };
+
+            await outfits.patchFull(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
+            expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockCreateId).toHaveBeenCalled();
+            expect(mockDb.collection).toHaveBeenCalledWith('outfits');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe(`cannot create outfit: no outfit or multiple outfits with the id "${outfitId}" exist`);
+        });
+
+        it('should handle deleteFromGCS failure', async () => {
+            // perform action to test
+            const deleteError = new Error('deletion of outfit failed');
+            deleteError.status = 500;
+            mockDeleteFromGCS.mockRejectedValue(deleteError);
+
+            const req = { fields: data, params: { outfitId: outfitId }, locals: { db: mockDb, bucket: mockBucket } };
+
+            await outfits.patchFull(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
+            expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockCreateId).toHaveBeenCalled();
+            expect(mockDb.collection).toHaveBeenCalledWith('outfits');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(500);
+            expect(err.message).toBe('deletion of outfit failed');
         });
 
         it('should handle uploadToGCS failure', async () => {
@@ -877,12 +1127,14 @@ describe('outfits', () => {
             await outfits.patchFull(req, mockRes, mockNext);
 
             // perform checks
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
-            expect(mockJSONParse).not.toHaveBeenCalled();
-            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockDb.collection).toHaveBeenCalledWith('outfits');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
             expect(mockCollection.updateOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
@@ -890,32 +1142,6 @@ describe('outfits', () => {
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(500);
             expect(err.message).toBe('uploadToGCS failed');
-        });
-
-        it('should handle JSON parse failure', async () => {
-            // perform action to test
-            const parseError = new Error('JSON parsing failed');
-            parseError.status = 500;
-            mockJSONParse.mockImplementation(() => { throw parseError });
-
-            const req = { fields: data, params: { outfitId: outfitId }, locals: { db: mockDb, bucket: mockBucket } };
-
-            await outfits.patchFull(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
-            expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
-            expect(mockJSONParse).toHaveBeenCalled();
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('JSON parsing failed');
         });
 
         it('should handle update failure', async () => {
@@ -929,12 +1155,14 @@ describe('outfits', () => {
             await outfits.patchFull(req, mockRes, mockNext);
 
             // perform checks
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
-            expect(mockJSONParse).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
@@ -953,12 +1181,14 @@ describe('outfits', () => {
             await outfits.patchFull(req, mockRes, mockNext);
 
             // perform checks
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
-            expect(mockJSONParse).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
@@ -976,12 +1206,14 @@ describe('outfits', () => {
             await outfits.patchFull(req, mockRes, mockNext);
 
             // perform checks
-            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockCollection.updateOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
@@ -999,12 +1231,14 @@ describe('outfits', () => {
             await outfits.patchFull(req, mockRes, mockNext);
 
             // perform checks
-            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockCollection.updateOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
@@ -1022,12 +1256,14 @@ describe('outfits', () => {
             await outfits.patchFull(req, mockRes, mockNext);
 
             // perform checks
-            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockCollection.updateOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
@@ -1045,12 +1281,14 @@ describe('outfits', () => {
             await outfits.patchFull(req, mockRes, mockNext);
 
             // perform checks
-            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockCollection.updateOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
@@ -1067,19 +1305,46 @@ describe('outfits', () => {
             await outfits.patchFull(req, mockRes, mockNext);
 
             // perform checks
-            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockCollection.updateOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe('outfit id is required to update outfit');
+            expect(err.message).toBe('failed to update outfit content: invalid or missing outfit id');
+        });
+
+        it('should fail with invalid outfit id', async () => {
+            // perform action to test
+            outfitId = 'not-valid-id'
+            const req = { fields: data, params: { outfitId: outfitId }, locals: { db: mockDb, bucket: mockBucket } };
+
+            await outfits.patchFull(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockJSONParse).not.toHaveBeenCalled();
+            expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockCreateId).not.toHaveBeenCalled();
+            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('failed to update outfit content: invalid or missing outfit id');
         });
     });
 
@@ -1180,7 +1445,25 @@ describe('outfits', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe('outfit id is required to update outfit');
+            expect(err.message).toBe('failed to update outfit name: invalid or missing outfit id');
+        });
+
+        it('should fail with invalid outfit id', async () => {
+            // perform action to test
+            outfitId = 'not-valid-id';
+            const req = { body: data, params: { outfitId: outfitId }, locals: { db: mockDb } };
+
+            await outfits.patchPartial(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('failed to update outfit name: invalid or missing outfit id');
         });
     });
 
@@ -1347,7 +1630,28 @@ describe('outfits', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe('outfit id is required to delete outfit');
+            expect(err.message).toBe('failed to delete outfit: invalid or missing outfit id');
+        });
+
+        it('should fail with invalid outfit id', async () => {
+            // perform action to test
+            outfitId = 'not-valid-id';
+
+            const req = { params: { outfitId: outfitId }, locals: { db: mockDb, bucket: mockBucket } };
+
+            await outfits.delete(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.findOne).not.toHaveBeenCalled();
+            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockCollection.deleteOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('failed to delete outfit: invalid or missing outfit id');
         });
     });
 });
