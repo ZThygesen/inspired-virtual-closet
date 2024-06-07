@@ -52,7 +52,7 @@ export const helpers = {
 
         let buffer;
         try {
-            const response = await fetch(b64str);//.then(res => res?.blob());
+            const response = await fetch(b64str);
             
             if (!response.ok) {
                 throw this.createError('error with conversion of b64 to blob', 500);
@@ -69,8 +69,7 @@ export const helpers = {
             }
 
             buffer = Buffer.from(arrayBuffer);
-            // buffer = await blob?.arrayBuffer()?.then(arrayBuffer => Buffer.from(arrayBuffer)); 
-            if (!buffer || !Buffer.isBuffer(buffer)) {
+            if (!buffer || !Buffer.isBuffer(buffer) || buffer.length === 0) {
                 throw this.createError('arrayBuffer not successfully converted to buffer', 500);
             }
         } catch (err) {
@@ -104,7 +103,7 @@ export const helpers = {
                 crop: true
             })
         });
-      
+        
         if (!response.ok) {
             throw this.createError('error with Photoroom remove background', 500);
         }

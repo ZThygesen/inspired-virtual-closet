@@ -3,7 +3,6 @@ import { app } from '../../server';
 import { agent } from 'supertest';
 import { MongoClient } from 'mongodb';
 import { ObjectId } from 'mongodb';
-import { helpers } from '../../helpers';
 
 describe('categories', () => {
     async function clearCollection(collection) {

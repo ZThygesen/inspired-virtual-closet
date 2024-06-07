@@ -126,7 +126,7 @@ describe('outfits', () => {
             expect(files).toHaveLength(1);
         });
 
-        it('should fail with invalid file source', async () => {    
+        it('should fail with invalid MIME file source', async () => {    
             // perform action to test
             const response = await agent(app)
                 .post('/outfits')
@@ -138,6 +138,23 @@ describe('outfits', () => {
             // perform checks
             expect(response.status).toBe(500);
             expect(response.body.message).toBe('not a valid base64 image string');
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+        });
+
+        it('should fail with invalid file source', async () => {    
+            // perform action to test
+            const response = await agent(app)
+                .post('/outfits')
+                .field('fileSrc', 'data:image/png;base64,')
+                .field('stageItemsStr', data.stageItemsStr)
+                .field('outfitName', data.outfitName)
+                .field('clientId', data.clientId);
+    
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('arrayBuffer not successfully converted to buffer');
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);

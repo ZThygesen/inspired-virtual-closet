@@ -1,5 +1,7 @@
+import { jest } from '@jest/globals';
 import { bucket } from "../../server";
 import { helpers } from "../../helpers";
+import { MongoClient, ObjectId } from "mongodb";
 import cuid2 from "@paralleldrive/cuid2";
 
 describe('uploadToGCS', () => {
@@ -133,71 +135,178 @@ describe('deleteFromGCS', () => {
     });
 });
 
-// describe('moveFilesToOther', () => {
-//     let mongoClient;
-//     let db;
-//     let collection;
+describe('moveFilesToOther', () => {
+    async function clearCollection(collection) {
+        await collection.deleteMany({ });
+    }
 
-//     beforeAll(async () => {
-//         mongoClient = new MongoClient(process.env.DB_URI);
-//         await mongoClient.connect();
-//         db = mongoClient.db(process.env.DB_NAME_TEST);
-//         collection = db.collection('categories');
-//     });
+    async function insertOther(collection) {
+        await collection.insertOne({ _id: 0, name: 'Other', items: [] });
+    }
 
-// beforeEach(() => {
-//     expect(process.env.NODE_ENV).toBe('test');
-// });
+    let mongoClient;
+    let db;
+    let collection;
 
-//     afterEach(async () => {
-//         await collection.deleteMany({ _id: { $ne: 0 } });
-//         await collection.updateOne(
-//             { _id: 0 },
-//             { $set: { items: [] } }
-//         );
-//     });
+    beforeAll(async () => {
+        mongoClient = new MongoClient(process.env.DB_URI);
+        await mongoClient.connect();
+        db = mongoClient.db(process.env.DB_NAME_TEST);
+        collection = db.collection('categories');
+    });
 
-//     afterAll(async () => {
-//         await mongoClient.close();
-//     });
+    afterAll(async () => {
+        await mongoClient.close();
+    });
 
-//     it('should move all files to other', async () => {
-//         const categoryData = {
-//             _id: new ObjectId(),
-//             name: 'Blazers',
-//             items: [1, 2, 3, 4, 5]
-//         };
-//         await collection.insertOne(categoryData);
+    let categoryId;
+    let data;
+    beforeEach(async () => {
+        expect(process.env.NODE_ENV).toBe('test');
 
-//         await helpers.moveFilesToOther(db, categoryData._id.toString());
-    
-//         const otherCategory = await collection.findOne({ _id: 0 });
-//         expect(otherCategory.items).toBeTruthy();
+        categoryId = new ObjectId();
+        data = {
+            _id: categoryId,
+            name: 'Blazers',
+            items: [1, 2, 3, 4, 5]
+        };
+        await collection.insertOne(data);
+    });
 
-//         const items = otherCategory.items;
-//         expect(items).toEqual([1, 2, 3, 4, 5]);
-//     });
+    afterEach(async () => {
+        await clearCollection(collection);
+        await insertOther(collection);
+        jest.resetAllMocks();
+        jest.restoreAllMocks();
+    });
 
-//     it('should fail if category does not exist', async () => {
-//         const categoryData = {
-//             _id: new ObjectId(),
-//             name: 'Blazers',
-//             items: [1, 2, 3, 4, 5]
-//         };
-//         await collection.insertOne(categoryData);
+    it('should move all files to other', async () => {
+        let oldCategory = await collection.findOne({ _id: data._id });
+        expect(oldCategory.items).toHaveLength(5);
 
-//         await expect(helpers.moveFilesToOther(db, new ObjectId().toString())).rejects.toThrow('Category does not exist');
+        let otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(0);
 
-//     });
+        await expect(helpers.moveFilesToOther(db, data._id.toString())).resolves;
 
-//     it('should fail if given Other category', async () => {
-//         const categoryData = {
-//             _id: new ObjectId(),
-//             name: 'Blazers',
-//             items: [1, 2, 3, 4, 5]
-//         };
-//         await collection.insertOne(categoryData);
+        otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(5);
+        const items = otherCategory.items;
+        expect(items).toEqual(data.items);
+    });
 
-//         await expect(helpers.moveFilesToOther(db, 0)).rejects.toThrow('Cannot move files from Other to Other');
-//     });
-// });
+    it('should handle no files', async () => {
+        await clearCollection(collection);
+        await insertOther(collection);
+        await collection.insertOne({ _id: data._id, name: data.name, items: [] });
+
+        let oldCategory = await collection.findOne({ _id: data._id });
+        expect(oldCategory.items).toHaveLength(0);
+
+        let otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(0);
+
+        await helpers.moveFilesToOther(db, data._id.toString());
+
+        otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(0);
+    });
+
+    it('should handle with files already in other', async () => {
+        const newFiles = [-3, -2, -1, 0];
+        await collection.updateOne({ _id: 0 }, { $push: { items: { $each: newFiles }}})
+
+        let oldCategory = await collection.findOne({ _id: data._id });
+        expect(oldCategory.items).toHaveLength(5);
+
+        let otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(4);
+
+        await helpers.moveFilesToOther(db, data._id.toString());
+
+        otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(9);
+        const items = otherCategory.items;
+        expect(items).toEqual(newFiles.concat(data.items));
+    });
+
+    it('should fail with missing db', async () => {
+        let oldCategory = await collection.findOne({ _id: data._id });
+        expect(oldCategory.items).toHaveLength(5);
+
+        let otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(0);
+
+        await expect(helpers.moveFilesToOther(null, data._id.toString())).rejects.toThrow('database instance required to move files to other category');
+        
+        oldCategory = await collection.findOne({ _id: data._id });
+        expect(oldCategory.items).toHaveLength(5);
+
+        otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(0);
+    });
+
+    it('should fail with missing category id', async () => {
+        let oldCategory = await collection.findOne({ _id: data._id });
+        expect(oldCategory.items).toHaveLength(5);
+
+        let otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(0);
+
+        await expect(helpers.moveFilesToOther(db, undefined)).rejects.toThrow('failed to move files to other: invalid or missing category id');
+        
+        oldCategory = await collection.findOne({ _id: data._id });
+        expect(oldCategory.items).toHaveLength(5);
+
+        otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(0);
+    });
+
+    it('should fail with invalid category id', async () => {
+        let oldCategory = await collection.findOne({ _id: data._id });
+        expect(oldCategory.items).toHaveLength(5);
+
+        let otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(0);
+
+        await expect(helpers.moveFilesToOther(db, 'not-valid-id')).rejects.toThrow('failed to move files to other: invalid or missing category id');
+        
+        oldCategory = await collection.findOne({ _id: data._id });
+        expect(oldCategory.items).toHaveLength(5);
+
+        otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(0);
+    });
+
+    it('should fail with nonexistent category', async () => {
+        let oldCategory = await collection.findOne({ _id: data._id });
+        expect(oldCategory.items).toHaveLength(5);
+
+        let otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(0);
+
+        await expect(helpers.moveFilesToOther(db, (new ObjectId()).toString())).rejects.toThrow('category does not exist');
+        
+        oldCategory = await collection.findOne({ _id: data._id });
+        expect(oldCategory.items).toHaveLength(5);
+
+        otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(0);
+    });
+
+    it('should fail if given Other category', async () => {
+        let oldCategory = await collection.findOne({ _id: data._id });
+        expect(oldCategory.items).toHaveLength(5);
+
+        let otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(0);
+
+        await expect(helpers.moveFilesToOther(db, 0)).rejects.toThrow('cannot move files from Other to Other');
+        
+        oldCategory = await collection.findOne({ _id: data._id });
+        expect(oldCategory.items).toHaveLength(5);
+
+        otherCategory = await collection.findOne({ _id: 0 });
+        expect(otherCategory.items).toHaveLength(0);
+    });
+});
