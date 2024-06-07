@@ -19,6 +19,10 @@ export const ClientCardContainer = styled.div`
         letter-spacing: 2px;
         word-break: break-word;
         text-align: center;
+
+        &.secondary {
+            font-size: 20px;
+        }
     }
 
     .client-options {

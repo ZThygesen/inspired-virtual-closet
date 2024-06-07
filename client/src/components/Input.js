@@ -1,7 +1,9 @@
-import { TextInput } from "../styles/Input";
+import { TextInput, Checkbox } from "../styles/Input";
+import { FormControlLabel } from "@mui/material";
 
 export default function Input({ type, id, label, value, onChange }) {
     return (
+        type === 'text' ?
         <TextInput
             id={id}
             label={label}
@@ -11,6 +13,18 @@ export default function Input({ type, id, label, value, onChange }) {
             variant="outlined"
             fullWidth
             required
+        />
+        :
+        <FormControlLabel 
+            label={label}
+            control={
+                <Checkbox
+                    id={id}
+                    checked={value}
+                    onChange={onChange}
+                    variant="outlined"
+                />
+            }
         />
     );
 }

@@ -46,6 +46,8 @@ export default function ManageClients() {
     const [openModal, setOpenModal] = useState(false);
     const [newClientFName, setNewClientFName] = useState('');
     const [newClientLName, setNewClientLName] = useState('');
+    const [newClientEmail, setNewClientEmail] = useState('');
+    const [newClientRole, setNewClientRole] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const [deleteProgressOpen, setDeleteProgressOpen] = useState(false);
@@ -86,6 +88,8 @@ export default function ManageClients() {
         setOpenModal(false);
         setNewClientFName('');
         setNewClientLName('');
+        setNewClientEmail('');
+        setNewClientRole(false);
     }
 
     async function addClient(e) {
@@ -95,13 +99,15 @@ export default function ManageClients() {
         try {
             await axios.post('/api/clients', {
                 firstName: newClientFName,
-                lastName: newClientLName
+                lastName: newClientLName,
+                email: newClientEmail,
+                isAdmin: newClientRole
             });
             handleClose();
             await getClients();
         } catch(err) {
             setError({
-                message: 'There was an adding the client.',
+                message: 'There was an error adding the client.',
                 status: err.response.status
             });
         } finally {
@@ -109,14 +115,23 @@ export default function ManageClients() {
         }
     }
 
-    async function editClient(client, newFirstName, newLastName) {
+    async function editClient(client, newFirstName, newLastName, newEmail, newIsAdmin) {
         setLoading(true);
-        if (client.firstName === newFirstName && client.lastName === newLastName) {
+        if (client.firstName === newFirstName && 
+            client.lastName === newLastName &&
+            client.email === newEmail &&
+            client.isAdmin === newIsAdmin
+        ) {
             setLoading(false);
             return;
         }
         try {
-            await axios.patch(`/api/clients/${client._id}`, { newFirstName: newFirstName, newLastName: newLastName });  
+            await axios.patch(`/api/clients/${client._id}`, { 
+                newFirstName: newFirstName, 
+                newLastName: newLastName,
+                newEmail: newEmail,
+                newIsAdmin: newIsAdmin
+            });  
             await getClients();
         } catch (err) {
             setError({
@@ -313,6 +328,20 @@ export default function ManageClients() {
                             label="Last Name"
                             value={newClientLName}
                             onChange={e => setNewClientLName(e.target.value)}
+                        />
+                        <Input 
+                            type="text"
+                            id="email"
+                            label="Email"
+                            value={newClientEmail}
+                            onChange={e => setNewClientEmail(e.target.value)}
+                        />
+                        <Input 
+                            type="checkbox"
+                            id="role"
+                            label="Admin"
+                            value={newClientRole}
+                            onChange={e => setNewClientRole(e.target.checked)}
                         />
                     </div>
                     <div className="modal-options">

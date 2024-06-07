@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useError } from './ErrorContext';
-import axios from 'axios'
-import io from 'socket.io-client'
+import axios from 'axios';
 import cuid from 'cuid';
 import styled from 'styled-components';
 import { DropContainer, FileContainer, FileCard } from '../styles/Dropzone';
@@ -10,8 +9,6 @@ import Modal from './Modal';
 import invalidImg from '../images/invalid.png';
 import { CircularProgress } from '@mui/material';
 import { resizeImage } from '../resizeImage';
-
-const socket = io('/');
 
 const CircleProgress = styled(CircularProgress)`
     & * {
@@ -44,6 +41,7 @@ function CircularProgressWithLabel(props) {
 export default function Dropzone({ client, category, disabled, updateItems }) {
     const { setError } = useError();
 
+    const [rmbg, setRmbg] = useState(true);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [filteredFiles, setFilteredFiles] = useState([]);
     const [invalidFiles, setInvalidFiles] = useState([]);
@@ -56,7 +54,6 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     const [numFilesProcessed, setNumFilesProcessed] = useState(0);
     const [numProcessFiles, setNumProcessFiles] = useState(0);
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
-    const [uploadMessage, setUploadMessage] = useState('');
     const [numFilesUploaded, setNumFilesUploaded] = useState(0);
     const [resultModalOpen, setResultModalOpen] = useState(false);
     const fileInputRef = useRef();
@@ -66,6 +63,10 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
         setFilteredFiles([...filteredArray]);
         fileInputRef.current.value = null;
     }, [selectedFiles]);
+
+    function toggleRmbg() {
+        setRmbg(current => !current);
+    }
 
     function dragOver(e) {
         e.preventDefault();
@@ -236,16 +237,11 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     async function handleSubmit() {
         setUploadModalOpen(true);
 
-        let firstUpload = true;
         for (const file of filteredFiles) {
-            if (firstUpload) {
-                setUploadMessage('If this is the first file you\'ve uploaded in a while, it could take a minute.');
-                firstUpload = false;
-            }
-
             try {
                 await uploadFile(file);
             } catch (err) {
+                console.log(err);
                 setError({
                     message: 'There was an error uploading the files.',
                     status: err.response.status
@@ -256,7 +252,6 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             }
             
             setNumFilesUploaded(current => current + 1);
-            setUploadMessage('');
         }
 
         setTimeout(() => {
@@ -271,42 +266,23 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     }
 
     async function uploadFile(file) {
-        const reqId = cuid();
-
         const formData = new FormData();
         formData.append('fileSrc', file.src);
         formData.append('fullFileName', file.name);
         formData.append('clientId', client._id);
         formData.append('categoryId', category._id);
-        formData.append('requestId', reqId);
+        formData.append('rmbg', rmbg);
 
         return new Promise(async (resolve, reject) => {
             try {
-               await axios.post('/files', formData, {
+                await axios.post('/files', formData, {
                     headers: { 'Content-Type': 'multipart/form-data'}
                 }); 
             } catch (err) {
                 reject(err);
             }
 
-            function handleUploadComplete({ requestId }) {
-                if (reqId === requestId) {
-                    resolve();
-                    socket.off('uploadComplete', handleUploadComplete);
-                    socket.off('error', handleUploadError);
-                }
-            }
-
-            function handleUploadError({ status, requestId }) {
-                if (reqId === requestId) {
-                    reject({response: { status: status }});
-                    socket.off('uploadComplete', handleUploadComplete);
-                    socket.off('error', handleUploadError);
-                }
-            }
-
-            socket.on('uploadComplete', handleUploadComplete);
-            socket.on('error', handleUploadError);
+            resolve();
         });
     }
 
@@ -353,6 +329,17 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                 >
                     Submit File(s)
             </ActionButton>
+            <div className="remove-background-option">
+                <label htmlFor="remove-background">
+                    Remove Background
+                    <input 
+                        type="checkbox" 
+                        id="remove-background" 
+                        onChange={toggleRmbg}
+                        // defaultChecked 
+                    />
+                </label>
+            </div>
             {filteredFiles.length > 0 &&
                 <FileContainer>
                     <h2 className="title">Current Files ({filteredFiles.length})</h2>
@@ -431,7 +418,6 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             >
                 <h2 className="modal-title">UPLOADING FILES</h2>
                 <div className="modal-content">
-                    <p className="small">{uploadMessage}</p>
                     <p className="medium">{numFilesUploaded}/{filteredFiles.length} files uploaded...</p>
                     <CircularProgressWithLabel value={(numFilesUploaded / filteredFiles.length) * 100} />
                 </div>

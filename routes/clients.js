@@ -1,6 +1,6 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
-import { helpers } from '../helpers';
+import { helpers } from '../helpers.js';
 
 const clients = {
     async post(req, res, next) {
