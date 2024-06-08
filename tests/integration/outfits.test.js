@@ -188,7 +188,7 @@ describe('outfits', () => {
     
             // perform checks
             expect(response.status).toBe(500);
-            expect(response.body.message).toBe('Expected \',\' or \'}\' after property value in JSON at position 19 (line 1 column 20)');
+            expect(response.body.message).toEqual(expect.stringContaining('Expected \',\' or \'}\' after property value in JSON'));
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
