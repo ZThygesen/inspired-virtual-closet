@@ -1,17 +1,11 @@
 import express from 'express';
 import process from 'process';
 import { config } from 'dotenv';
-import { mongoConnect } from './mongoConnect.js';
-import { googleConnect } from './googleConnect.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { Server } from 'socket.io';
-import http from 'http';
+import { helpers } from './helpers.js';
 
 const app = express();
-
-const server = http.createServer(app);
-const io = new Server(server)
 
 app.use(express.json());
 config();
@@ -23,10 +17,8 @@ let serviceAuth;
 let bucket;
 async function connect() {
     try {
-        const mongoClient = await mongoConnect();
-        db = mongoClient.db(process.env.DB_NAME);
-
-        ({ serviceAuth, bucket } = await googleConnect());
+        db = await helpers.mongoConnect();
+        ({ serviceAuth, bucket } = await helpers.googleConnect());
     } catch (err) {
         console.error(err);
     }
@@ -34,17 +26,23 @@ async function connect() {
 
 await connect();
 
-import categories from './routes/categories.js';
-app.use('/categories', categories);
+function injectDb(req, res, next) {
+    req.locals = { db, bucket };
+    next();
+}
 
-import clients from './routes/clients.js';
-app.use('/api/clients', clients);
+// routes
+import { categoriesRouter } from './routes/categories.js';
+app.use('/categories', injectDb, categoriesRouter);
 
-import files from './routes/files.js';
-app.use('/files', files);
+import { clientsRouter } from './routes/clients.js';
+app.use('/api/clients', injectDb, clientsRouter);
 
-import outfits from './routes/outfits.js';
-app.use('/outfits', outfits);
+import { filesRouter } from './routes/files.js';
+app.use('/files', injectDb, filesRouter);
+
+import { outfitsRouter } from './routes/outfits.js';
+app.use('/outfits', injectDb, outfitsRouter);
 
 app.post('/password', async (req, res, next) => {
     try {
@@ -72,13 +70,21 @@ if (process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || p
     });
 }
 
+// error handling
 app.use((err, req, res, next) => {
     const status = err.status || 500;
-    console.error(`\nError: ${err.message}\nStatus: ${status}\nStack:\n${err.stack}\n`);
+
+    if (process.env.NODE_ENV !== 'test') {
+        console.error(`\nError: ${err.message}\nStatus: ${status}\nStack:\n${err.stack}\n`); 
+    }
     
     res.status(status).json({ message: err.message });
 });
 
-server.listen(port, () => console.log(`Server started on port ${process.env.port || port}`));
+if (process.env.NODE_ENV === 'test') {
+    app.listen(0);
+} else {
+    app.listen(port, () => console.log(`Server started on port ${process.env.port || port}`));
+}
 
-export { db, serviceAuth, bucket, io };
+export { app, bucket, serviceAuth };

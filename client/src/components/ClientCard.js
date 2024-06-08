@@ -9,26 +9,31 @@ export default function ClientCard({ client, editClient, deleteClient }) {
     const [editOpen, setEditOpen] = useState(false);
     const [newFirstName, setNewFirstName] = useState(client.firstName);
     const [newLastName, setNewLastName] = useState(client.lastName);
+    const [newEmail, setNewEmail] = useState(client.email);
+    const [newRole, setNewRole] = useState(client.isAdmin);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-
+    
     const navigate = useNavigate();
 
     function handleSubmitEdit(e) {
         e.preventDefault();
         setEditOpen(false);
-        editClient(client, newFirstName, newLastName);
+        editClient(client, newFirstName, newLastName, newEmail, newRole);
     }
 
     function handleCloseEdit() {
         setEditOpen(false);
         setNewFirstName(client.firstName);
         setNewLastName(client.lastName);
+        setNewEmail(client.email);
+        setNewRole(client.isAdmin);
     }
 
     return (
         <>
             <ClientCardContainer>
                 <p className="client-name">{`${client.firstName} ${client.lastName}`}</p>
+                <p className="client-name secondary">{`${client.email} - ${client.isAdmin}`}</p>
                 <div className="client-options">
                     <Tooltip title="Edit">
                         <button className="material-icons edit-icon" onClick={() => setEditOpen(true)}>edit</button>
@@ -67,6 +72,20 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                         label="Last Name"
                         value={newLastName}
                         onChange={e => setNewLastName(e.target.value)}
+                    />
+                    <Input
+                        type="text"
+                        id="email"
+                        label="Email"
+                        value={newEmail}
+                        onChange={e => setNewEmail(e.target.value)}
+                    />
+                    <Input
+                        type="checkbox"
+                        id="role"
+                        label="Admin"
+                        value={newRole}
+                        onChange={e => setNewRole(e.target.checked)}
                     />
                     <div className="modal-options">
                         <button type="button" onClick={handleCloseEdit}>Cancel</button>

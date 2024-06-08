@@ -1,0 +1,42 @@
+name: Back End Testing
+
+on: push
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_ENV: ${{ secrets.NODE_ENV }}
+      DB_NAME_PROD: ${{ secrets.DB_NAME_PROD }}
+      DB_NAME_DEV: ${{ secrets.DB_NAME_DEV }}
+      DB_NAME_TEST: ${{ secrets.DB_NAME_TEST }}
+      DB_URI: ${{ secrets.DB_URI }}
+      GCS_type: ${{ secrets.GCS_TYPE }}
+      GCS_project_id: ${{ secrets.GCS_PROJECT_ID }}
+      GCS_private_key_id: ${{ secrets.GCS_PRIVATE_KEY_ID }}
+      GCS_private_key: ${{ secrets.GCS_PRIVATE_KEY }}
+      GCS_client_email: ${{ secrets.GCS_CLIENT_EMAIL }}
+      GCS_client_id: ${{ secrets.GCS_CLIENT_ID }}
+      GCS_auth_uri: ${{ secrets.GCS_AUTH_URI }}
+      GCS_token_uri: ${{ secrets.GCS_TOKEN_URI }}
+      GCS_auth_provider_x509_cert_url: ${{ secrets.GCS_AUTH_PROVIDER_X509_CERT_URL }}
+      GCS_client_x509_cert_url: ${{ secrets.GCS_CLIENT_X509_CERT_URL }}
+      GCS_universe_domain: ${{ secrets.GCS_UNIVERSE_DOMAIN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+            node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+        
+            
