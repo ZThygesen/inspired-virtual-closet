@@ -61,6 +61,9 @@ export const CategoriesSidebarContainer = styled.div`
         flex-direction: column;
         align-items: center;
         text-align: center;
+    }
+
+    &.admin .categories-container {
         margin-bottom: var(--subheader-height);
     }
 
@@ -109,7 +112,6 @@ export const CategoriesSidebarContainer = styled.div`
         box-shadow: var(--top-shadow);
         cursor: pointer; 
         overflow: hidden;
-        /* clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 1px, 100% 1px); */
     }
 
     .footer-container {

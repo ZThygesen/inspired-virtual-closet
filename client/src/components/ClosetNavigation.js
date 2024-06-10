@@ -10,6 +10,7 @@ import Outfits from './Outfits';
 import AddItems from './AddItems';
 import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
 import logo from '../images/big_logo_cropped.png';
+import { useUser } from './UserContext';
 
 const logoCanvasItem = {
     canvasId: 0,
@@ -28,6 +29,8 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
     const [outfits, setOutfits] = useState([]);
     const [outfitEditMode, setOutfitEditMode] = useState(false);
     const [outfitToEdit, setOutfitToEdit] = useState(null);
+
+    const { user } = useUser();
 
     const ref = useRef();
 
@@ -177,14 +180,17 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
                         </Tooltip>
                     }
                     <h1 className="client-closet">{`${client.firstName.toUpperCase()} ${client.lastName.toUpperCase()}'S CLOSET`}</h1>
-                    <Tooltip title="Clients">
-                        <Link to={'/clients'} className="material-icons clients-icon">people</Link>
-                    </Tooltip>
+                    { user?.isAdmin &&
+                        <Tooltip title="Clients">
+                            <Link to={'/clients'} className="material-icons clients-icon">people</Link>
+                        </Tooltip>
+                    }
                 </div>
                 <div className="closet-options">
                     <ul>
                         {
                             closetModes.map((mode, index) => (
+                                (index !== 1 || (index === 1 && user?.isAdmin)) &&    
                                 <li key={cuid()} className={ index === closetMode ? 'active' : '' }>
                                     <button
                                         className={ index === closetMode ? 'closet-button active' : 'closet-button' }
@@ -199,6 +205,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
                                         }
                                     </button>
                                 </li>
+                                
                             ))
                        }
                     </ul>
@@ -210,19 +217,21 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
                         updateItems={updateItems} 
                         addCanvasItem={addCanvasItem} 
                     />
-                    <Canvas 
-                        display={closetMode === 1} 
-                        sidebarRef={sidebarRef} 
-                        client={client} 
-                        images={canvasItems.filter(item => item.type === 'image')}
-                        textboxes={canvasItems.filter(item => item.type === 'textbox')}
-                        addCanvasItem={addCanvasItem}
-                        removeCanvasItems={removeCanvasItems} 
-                        updateOutfits={getOutfits}
-                        editMode={outfitEditMode}
-                        outfitToEdit={outfitToEdit}
-                        cancelEdit={cancelOutfitEdit}
-                    />
+                    { user?.isAdmin &&
+                        <Canvas 
+                            display={closetMode === 1} 
+                            sidebarRef={sidebarRef} 
+                            client={client} 
+                            images={canvasItems.filter(item => item.type === 'image')}
+                            textboxes={canvasItems.filter(item => item.type === 'textbox')}
+                            addCanvasItem={addCanvasItem}
+                            removeCanvasItems={removeCanvasItems} 
+                            updateOutfits={getOutfits}
+                            editMode={outfitEditMode}
+                            outfitToEdit={outfitToEdit}
+                            cancelEdit={cancelOutfitEdit}
+                        />
+                    }
                     <Outfits 
                         display={closetMode === 2} 
                         outfits={outfits} 

@@ -50,7 +50,7 @@ export default function Home() {
                 setUser(null);
             }
         } catch (err) {
-            setError({ message: err.message, status: err.status });
+            setError({ message: err.message, status: err.status }); 
         }
     }
 

@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from './UserContext';
 import { googleLogout } from '@react-oauth/google';
+import Loading from './Loading';
 
 const AppHeader = styled.header`
     width: 100%;
@@ -52,25 +54,34 @@ const AppHeader = styled.header`
 `;
 
 export default function Header() {
+    const [loading, setLoading] = useState(false);
+
     const navigate = useNavigate();
     const { user, setUser } = useUser();
 
 
     async function handleLogout() {
-        googleLogout();
-        setUser(null);
-        localStorage.removeItem('jwtToken');
-        navigate('/');
+        setLoading(true);
+        setTimeout(() => {
+            googleLogout();
+            setUser(null);
+            localStorage.removeItem('jwtToken');
+            navigate('/');
+            setLoading(false);
+        }, 500)
     }
 
     return (
-        <AppHeader>
-            <Link to="/" className="logo">Edie styles</Link>
-            { user && 
-                <button className="logout" onClick={handleLogout}>
-                    Log Out
-                </button>
-            }
-        </AppHeader>
+        <>
+            <AppHeader>
+                <Link to="/" className="logo">Edie styles</Link>
+                { user && 
+                    <button className="logout" onClick={handleLogout}>
+                        Log Out
+                    </button>
+                }
+            </AppHeader>
+            <Loading open={loading} />
+        </>
     );
 }

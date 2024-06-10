@@ -5,6 +5,7 @@ import { Tooltip } from '@mui/material';
 import Modal from './Modal';
 import Input from './Input';
 import { CategorySettings } from '../styles/CategoriesSidebar';
+import { useUser } from './UserContext';
 
 export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, closeSidebarOnSelect, categories, activeCategory, setCategory, addCategory, editCategory, deleteCategory }) {
     const [addOpen, setAddOpen] = useState(false);
@@ -15,6 +16,8 @@ export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, clos
     const [categoryToDelete, setCategoryToDelete] = useState({});
     const [settingsOpen, setSettingsOpen] = useState(false);
     const ref = useRef();
+
+    const { user } = useUser();
 
     // set category to 'All' on first render
     useEffect(() => {
@@ -95,11 +98,13 @@ export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, clos
 
     return (
         <>
-            <CategoriesSidebarContainer id="sidebar" className={open ? 'open' : ''} ref={sidebarRef}>
+            <CategoriesSidebarContainer id="sidebar" className={`${open ? 'open' : ''} ${user?.isAdmin ? 'admin' : ''}`} ref={sidebarRef}>
                 <div className="categories-header">
-                    <Tooltip title="Manage Categories">
-                        <button className="material-icons settings-icon" onClick={() => setSettingsOpen(true)}>settings</button>
-                    </Tooltip>
+                    { user?.isAdmin &&
+                        <Tooltip title="Manage Categories">
+                            <button className="material-icons settings-icon" onClick={() => setSettingsOpen(true)}>settings</button>
+                        </Tooltip>
+                    }
                     <h2 className="header-title">CATEGORIES</h2>
                     <Tooltip title="Close Sidebar">
                         <button className="material-icons close-sidebar-icon" onClick={closeSidebar}>chevron_left</button>
@@ -124,17 +129,19 @@ export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, clos
                         ))
                     }
                 </div>
-                <div
-                    className="categories-footer"
-                    onClick={() => setAddOpen(true)}
-                >
-                    <div className="footer-container">
-                        <span className="material-icons add-category-icon">add</span>
-                        <p className="footer-text">
-                            ADD CATEGORY
-                        </p>
+                { user?.isAdmin && 
+                    <div
+                        className="categories-footer"
+                        onClick={() => setAddOpen(true)}
+                    >
+                        <div className="footer-container">
+                            <span className="material-icons add-category-icon">add</span>
+                            <p className="footer-text">
+                                ADD CATEGORY
+                            </p>
+                        </div>
                     </div>
-                </div>
+                }
             </CategoriesSidebarContainer>
             <Modal
                 open={settingsOpen}

@@ -30,7 +30,7 @@ export default function App() {
                             <Route element={<ProtectedRoute adminOnly />}>
                                 <Route path="clients/*" element={<Router />} />
                             </Route>
-                            <Route component={<ProtectedRoute />}>
+                            <Route element={<ProtectedRoute />}>
                                 <Route path=":client" element={<VirtualCloset />} />
                             </Route>
                         </Routes>

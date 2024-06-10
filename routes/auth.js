@@ -26,7 +26,7 @@ const auth = {
                 throw helpers.createError('user not authenticated', 401);
             }
 
-            const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
+            const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
     
             res.status(200).json({ token, user });
         } catch (err) {
