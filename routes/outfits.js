@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb';
 import ExpressFormidable from 'express-formidable';
 import cuid2 from '@paralleldrive/cuid2';
 import { helpers } from '../helpers.js';
+import { auth } from './auth.js';
 
 const outfits = {
     async post(req, res, next) {
@@ -239,10 +240,10 @@ const outfits = {
 
 const router = express.Router();
 
-router.post('/', ExpressFormidable(), outfits.post);
+router.post('/', auth.requireAdmin, ExpressFormidable(), outfits.post);
 router.get('/:clientId', outfits.get);
-router.patch('/:outfitId', ExpressFormidable(), outfits.patchFull);
-router.patch('/name/:outfitId', outfits.patchPartial);
-router.delete('/:outfitId', outfits.delete);
+router.patch('/:outfitId', auth.requireAdmin, ExpressFormidable(), outfits.patchFull);
+router.patch('/name/:outfitId', auth.requireAdmin, outfits.patchPartial);
+router.delete('/:outfitId', auth.requireAdmin, outfits.delete);
 
 export { outfits, router as outfitsRouter };

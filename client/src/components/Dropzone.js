@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useError } from './ErrorContext';
-import axios from 'axios';
+import api from '../api';
 import cuid from 'cuid';
 import styled from 'styled-components';
 import { DropContainer, FileContainer, FileCard } from '../styles/Dropzone';
@@ -155,7 +155,6 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                 try {
                     file['src'] = await resizeImage(e.target.result, fileType); 
                 } catch (err) {
-                    console.log('HERE');
                     reject(err);
                 }
                 
@@ -241,7 +240,6 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             try {
                 await uploadFile(file);
             } catch (err) {
-                console.log(err);
                 setError({
                     message: 'There was an error uploading the files.',
                     status: err.response.status
@@ -275,7 +273,7 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
 
         return new Promise(async (resolve, reject) => {
             try {
-                await axios.post('/files', formData, {
+                await api.post('/files', formData, {
                     headers: { 'Content-Type': 'multipart/form-data'}
                 }); 
             } catch (err) {

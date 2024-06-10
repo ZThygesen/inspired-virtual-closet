@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useError } from './ErrorContext';
-import axios from 'axios';
+import api from '../api';
 import { Link } from 'react-router-dom';
 import cuid from 'cuid';
 import { Tooltip } from '@mui/material';
@@ -140,7 +140,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
 
     const getOutfits = useCallback(async (changeMode = false) => {
         try {
-            const response = await axios.get(`/outfits/${client._id}`);
+            const response = await api.get(`/outfits/${client._id}`);
             
             // reverse outfits to show recently created first
             setOutfits(response.data.reverse());

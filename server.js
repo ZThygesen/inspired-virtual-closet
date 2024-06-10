@@ -4,6 +4,13 @@ import { config } from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { helpers } from './helpers.js';
+import { auth } from './routes/auth.js'
+
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+
+import { OAuth2Client } from 'google-auth-library';
+import jwt from 'jsonwebtoken';
 
 const app = express();
 
@@ -32,33 +39,20 @@ function injectDb(req, res, next) {
 }
 
 // routes
+import { authRouter } from './routes/auth.js';
+app.use('/google-auth', injectDb, authRouter);
+
 import { categoriesRouter } from './routes/categories.js';
-app.use('/categories', injectDb, categoriesRouter);
+app.use('/categories', auth.authenticateJWT, injectDb, categoriesRouter);
 
 import { clientsRouter } from './routes/clients.js';
-app.use('/api/clients', injectDb, clientsRouter);
+app.use('/api/clients', auth.authenticateJWT, injectDb, clientsRouter);
 
 import { filesRouter } from './routes/files.js';
-app.use('/files', injectDb, filesRouter);
+app.use('/files', auth.authenticateJWT, injectDb, filesRouter);
 
 import { outfitsRouter } from './routes/outfits.js';
-app.use('/outfits', injectDb, outfitsRouter);
-
-app.post('/password', async (req, res, next) => {
-    try {
-        const collection = db.collection('password');
-        const result = await collection.find({ password: req.body.password }).toArray();
-
-        if (result.length === 0) {
-            res.json(false);
-        } else {
-            res.json(true);
-        }
-
-    } catch (err) {
-        next(err);
-    }
-});
+app.use('/outfits', auth.authenticateJWT, injectDb, outfitsRouter);
 
 if (process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production') {
     const __filename = fileURLToPath(import.meta.url);

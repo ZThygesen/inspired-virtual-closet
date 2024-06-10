@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useError } from '../components/ErrorContext';
-import axios from 'axios';
+import api from '../api'
 import cuid from 'cuid';
 import styled from 'styled-components';
 import ClientCard from '../components/ClientCard';
@@ -58,7 +58,7 @@ export default function ManageClients() {
     const getClients = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await axios.get('/api/clients');
+            const response = await api.get('/api/clients');
             setClients(response.data.sort(function (a, b) {
                 if (a.firstName < b.firstName) {
                     return -1;
@@ -97,7 +97,7 @@ export default function ManageClients() {
         setLoading(true);
 
         try {
-            await axios.post('/api/clients', {
+            await api.post('/api/clients', {
                 firstName: newClientFName,
                 lastName: newClientLName,
                 email: newClientEmail,
@@ -126,7 +126,7 @@ export default function ManageClients() {
             return;
         }
         try {
-            await axios.patch(`/api/clients/${client._id}`, { 
+            await api.patch(`/api/clients/${client._id}`, { 
                 newFirstName: newFirstName, 
                 newLastName: newLastName,
                 newEmail: newEmail,
@@ -175,7 +175,6 @@ export default function ManageClients() {
             }
             await pause(750);
         }
-        
 
         // delete client outfits
         if (outfits.length > 0) {
@@ -196,7 +195,7 @@ export default function ManageClients() {
         handleDeleteProgressClose();
 
         try {
-            await axios.delete(`/api/clients/${client._id}`);
+            await api.delete(`/api/clients/${client._id}`);
             
             // update
             await getClients();
@@ -211,9 +210,9 @@ export default function ManageClients() {
     }
 
     async function getClientItems(client) {
-        const items = []
+        const items = [];
         try {
-           const response = await axios.get(`/files/${client._id}`);
+           const response = await api.get(`/files/${client._id}`);
            const categories = response.data;
             for (const category of categories) {
                 for (const item of category.items) {
@@ -235,7 +234,7 @@ export default function ManageClients() {
     async function getClientOutfits(client) {
         let outfits = [];
         try {
-            const response = await axios.get(`/outfits/${client._id}`);
+            const response = await api.get(`/outfits/${client._id}`);
             outfits = response.data;
         } catch (err) {
             setError({
@@ -251,7 +250,7 @@ export default function ManageClients() {
     async function deleteClientItems(items) {
         try {
             for (const item of items) {
-                await axios.delete(`/files/${item.categoryId}/${item.gcsId}`);
+                await api.delete(`/files/${item.categoryId}/${item.gcsId}`);
                 setDeleteProgressNumerator(current => current + 1);
             }
         } catch (err) {
@@ -268,7 +267,7 @@ export default function ManageClients() {
     async function deleteClientOutfits(outfits) {
         try {
             for (const outfit of outfits) {
-                await axios.delete(`/outfits/${outfit._id}`);
+                await api.delete(`/outfits/${outfit._id}`);
                 setDeleteProgressNumerator(current => current + 1);
             }
         } catch (err) {

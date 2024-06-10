@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useError } from './ErrorContext';
-import axios from 'axios';
+import api from '../api';
 import OutfitCard from './OutfitCard';
 import { OutfitsContainer } from '../styles/Outfits';
 import Loading from './Loading';
@@ -22,7 +22,7 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
         }
 
         try {
-            await axios.patch(`/outfits/name/${outfit._id}`, { newName: newName });
+            await api.patch(`/outfits/name/${outfit._id}`, { newName: newName });
             await updateOutfits();
         } catch (err) {
             setError({
@@ -38,7 +38,7 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
         setLoading(true);
 
         try {
-            await axios.delete(`/outfits/${outfit._id}`);
+            await api.delete(`/outfits/${outfit._id}`);
             await updateOutfits();
         } catch (err) {
             setError({
