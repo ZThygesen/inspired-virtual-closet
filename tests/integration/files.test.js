@@ -11,6 +11,8 @@ describe('files', () => {
     let user;
     let token;
     let cookie;
+    let invalidToken;
+    let invalidCookie;
     async function createUser(db) {
         user = {
             _id: new ObjectId(),
@@ -25,6 +27,9 @@ describe('files', () => {
 
         token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
         cookie = `token=${token}`;
+
+        invalidToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, 'not-correct-secret');
+        invalidCookie = `token=${invalidToken}`;
     }
 
     async function setNonAdmin(db) {
@@ -298,6 +303,52 @@ describe('files', () => {
             expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
             expect(file.fullGcsDest).toBe(`test/items/${gcsId}/full.png`);
             expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(10);
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+            // perform action to test
+            const response = await agent(app)
+                .post('/files')
+                .field('fileSrc', '')
+                .field('fullFileName', data.fullFileName)
+                .field('clientId', data.clientId)
+                .field('categoryId', data.categoryId)
+                .field('rmbg', data.rmbg);
+
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+    
+            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
+            expect(category.items).toHaveLength(0);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(10);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+            // perform action to test
+            const response = await agent(app)
+                .post('/files')
+                .field('fileSrc', '')
+                .field('fullFileName', data.fullFileName)
+                .field('clientId', data.clientId)
+                .field('categoryId', data.categoryId)
+                .field('rmbg', data.rmbg);
+
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+    
+            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
+            expect(category.items).toHaveLength(0);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(10);
@@ -667,6 +718,30 @@ describe('files', () => {
             files.forEach(file => expect(file.clientId).toBe(clientId3));
         });
 
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            let response = await agent(app)
+                .get(`/files/not-valid-id`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT')
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            let response = await agent(app)
+                .get(`/files/not-valid-id`);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature')
+        });
+
         it('should fail with invalid client id', async () => {
             // perform action to test
             let response = await agent(app)
@@ -792,6 +867,44 @@ describe('files', () => {
             expect(file.fullGcsDest).toBe(fileData.fullGcsDest);
             expect(file.smallGcsDest).toBe(fileData.smallGcsDest);
             expect(file.gcsId).toBe(fileData.gcsId);
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            delete patchData.newName;
+            let response = await agent(app)
+                .patch(`/files/${categoryId.toString()}/${fileData.gcsId}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            const category = await collection.findOne({ _id: data._id });
+            expect(category.name).toBe(data.name);
+            const file = category.items.find(item => item.gcsId === fileData.gcsId);
+            expect(file.fileName).not.toBe(patchData.newName);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            delete patchData.newName;
+            let response = await agent(app)
+                .patch(`/files/${categoryId.toString()}/${fileData.gcsId}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+
+            const category = await collection.findOne({ _id: data._id });
+            expect(category.name).toBe(data.name);
+            const file = category.items.find(item => item.gcsId === fileData.gcsId);
+            expect(file.fileName).not.toBe(patchData.newName);
         });
 
         it('should fail with missing file name', async () => {
@@ -1088,6 +1201,54 @@ describe('files', () => {
             expect(file.gcsId).toBe(fileData.gcsId);
         });
 
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            delete patchData.newCategoryId;
+            let response = await agent(app)
+                .patch(`/files/category/${data._id.toString()}/${fileData.gcsId}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            const currCategory = await collection.findOne({ _id: data._id });
+            const currItems = currCategory.items;
+            expect(currItems).toHaveLength(4);
+            const file = currItems.find(item => item.gcsId === fileData.gcsId);
+            expect(file).toBeTruthy();
+
+            const newCategory = await collection.findOne({ _id: newCategoryData._id });
+            const newItems = newCategory.items;
+            expect(newItems).toHaveLength(1);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            delete patchData.newCategoryId;
+            let response = await agent(app)
+                .patch(`/files/category/${data._id.toString()}/${fileData.gcsId}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+
+            const currCategory = await collection.findOne({ _id: data._id });
+            const currItems = currCategory.items;
+            expect(currItems).toHaveLength(4);
+            const file = currItems.find(item => item.gcsId === fileData.gcsId);
+            expect(file).toBeTruthy();
+
+            const newCategory = await collection.findOne({ _id: newCategoryData._id });
+            const newItems = newCategory.items;
+            expect(newItems).toHaveLength(1);
+        });
+
         it('should fail with missing new category id', async () => {
             // perform action to test
             delete patchData.newCategoryId;
@@ -1354,6 +1515,56 @@ describe('files', () => {
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(0);
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            let category = await collection.findOne({ _id: data._id });
+            expect(category.items).toHaveLength(4);
+            let file = category.items.find(item => item.gcsId === fileData.gcsId);
+            expect(file).toBeTruthy();
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/files/${data._id.toString()}/${fileData.gcsId}`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            category = await collection.findOne({ _id: data._id });
+            expect(category.items).toHaveLength(4);
+            file = category.items.find(item => item.gcsId === fileData.gcsId);
+            expect(file).toBeTruthy();
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(2);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            let category = await collection.findOne({ _id: data._id });
+            expect(category.items).toHaveLength(4);
+            let file = category.items.find(item => item.gcsId === fileData.gcsId);
+            expect(file).toBeTruthy();
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/files/${data._id.toString()}/${fileData.gcsId}`);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+
+            category = await collection.findOne({ _id: data._id });
+            expect(category.items).toHaveLength(4);
+            file = category.items.find(item => item.gcsId === fileData.gcsId);
+            expect(file).toBeTruthy();
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(2);
         });
 
         it('should fail with invalid category id', async () => {

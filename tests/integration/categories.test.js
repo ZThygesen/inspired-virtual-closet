@@ -9,6 +9,8 @@ describe('categories', () => {
     let user;
     let token;
     let cookie;
+    let invalidToken;
+    let invalidCookie;
     async function createUser(db) {
         user = {
             _id: new ObjectId(),
@@ -23,6 +25,8 @@ describe('categories', () => {
 
         token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
         cookie = `token=${token}`;
+        invalidToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, 'not-correct-secret');
+        invalidCookie = `token=${invalidToken}`;
     }
 
     async function setNonAdmin(db) {
@@ -115,6 +119,40 @@ describe('categories', () => {
             // perform checks
             expect(response.status).toBe(401);
             expect(response.body.message).toBe('only admins are authorized for this action');
+
+            const categories = await collection.find({ }).toArray();
+            expect(categories).toHaveLength(1);
+            expect(categories[0]._id).toBe(0);
+            expect(categories[0].name).toBe('Other');
+        }); 
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            const response = await agent(app)
+                .post('/categories')
+                .send(data);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            const categories = await collection.find({ }).toArray();
+            expect(categories).toHaveLength(1);
+            expect(categories[0]._id).toBe(0);
+            expect(categories[0].name).toBe('Other');
+        }); 
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            const response = await agent(app)
+                .post('/categories')
+                .send(data);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
 
             const categories = await collection.find({ }).toArray();
             expect(categories).toHaveLength(1);
@@ -241,6 +279,26 @@ describe('categories', () => {
             expect(response.body[0].name).toBe('Other');
         });
 
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            const response = await agent(app)
+                .get('/categories');
+            
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            const response = await agent(app)
+                .get('/categories');
+            
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+        });
+
         it('should fail if no categories return', async () => {
             await clearCollection(collection);
 
@@ -307,6 +365,44 @@ describe('categories', () => {
             // perform checks
             expect(response.status).toBe(401);
             expect(response.body.message).toBe('only admins are authorized for this action');
+
+            const categories = await collection.find({ }).toArray();
+            expect(categories).toHaveLength(2);
+            expect(categories[0]._id).toBe(0);
+            expect(categories[0].name).toBe('Other');
+            expect(categories[1]).toStrictEqual(data);
+        }); 
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            const response = await agent(app)
+                .patch(`/categories/${data._id.toString()}`)
+                .send(patchData);
+
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            const categories = await collection.find({ }).toArray();
+            expect(categories).toHaveLength(2);
+            expect(categories[0]._id).toBe(0);
+            expect(categories[0].name).toBe('Other');
+            expect(categories[1]).toStrictEqual(data);
+        }); 
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            const response = await agent(app)
+                .patch(`/categories/${data._id.toString()}`)
+                .send(patchData);
+
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
 
             const categories = await collection.find({ }).toArray();
             expect(categories).toHaveLength(2);
@@ -509,6 +605,42 @@ describe('categories', () => {
             // perform checks
             expect(response.status).toBe(401);
             expect(response.body.message).toBe('only admins are authorized for this action');
+
+            const categories = await collection.find({ }).toArray();
+            expect(categories).toHaveLength(2);
+            expect(categories[0]._id).toBe(0);
+            expect(categories[0].name).toBe('Other');
+            expect(categories[1]).toStrictEqual(data);
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/categories/${data._id.toString()}`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            const categories = await collection.find({ }).toArray();
+            expect(categories).toHaveLength(2);
+            expect(categories[0]._id).toBe(0);
+            expect(categories[0].name).toBe('Other');
+            expect(categories[1]).toStrictEqual(data);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/categories/${data._id.toString()}`);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
 
             const categories = await collection.find({ }).toArray();
             expect(categories).toHaveLength(2);

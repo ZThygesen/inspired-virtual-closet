@@ -11,6 +11,8 @@ describe('outfits', () => {
     let user;
     let token;
     let cookie;
+    let invalidToken;
+    let invalidCookie;
     async function createUser(db) {
         user = {
             _id: new ObjectId(),
@@ -25,6 +27,8 @@ describe('outfits', () => {
 
         token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
         cookie = `token=${token}`;
+        invalidToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, 'not-correct-secret');
+        invalidCookie = `token=${invalidToken}`;
     }
 
     async function setNonAdmin(db) {
@@ -164,6 +168,44 @@ describe('outfits', () => {
             // perform checks
             expect(response.status).toBe(401);
             expect(response.body.message).toBe('only admins are authorized for this action');
+    
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+            
+            // perform action to test
+            const response = await agent(app)
+                .post('/outfits')
+                .field('fileSrc', data.fileSrc)
+                .field('stageItemsStr', data.stageItemsStr)
+                .field('outfitName', data.outfitName)
+                .field('clientId', data.clientId);
+    
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+    
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+            
+            // perform action to test
+            const response = await agent(app)
+                .post('/outfits')
+                .field('fileSrc', data.fileSrc)
+                .field('stageItemsStr', data.stageItemsStr)
+                .field('outfitName', data.outfitName)
+                .field('clientId', data.clientId);
+    
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
     
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
@@ -434,6 +476,30 @@ describe('outfits', () => {
             expect(outfit.clientId).toBe(otherOutfit.clientId);
         });
 
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            const response = await agent(app)
+                .get(`/outfits/${data.clientId}`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            const response = await agent(app)
+                .get(`/outfits/${data.clientId}`);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+        });
+
         it('should fail with invalid client id', async () => {
             // perform action to test
             const response = await agent(app)
@@ -565,6 +631,52 @@ describe('outfits', () => {
             expect(files).toHaveLength(1);
             expect(files[0].name).toBe(newGcsDest);
         });  
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            const response = await agent(app)
+                .patch(`/outfits/${data._id.toString()}`)
+                .field('fileSrc', patchData.fileSrc)
+                .field('stageItemsStr', patchData.stageItemsStr)
+                .field('outfitName', patchData.outfitName)
+                .field('gcsDest', patchData.gcsDest);
+
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit).toBeTruthy();
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+            expect(files[0].name).toBe(newGcsDest);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            const response = await agent(app)
+                .patch(`/outfits/${data._id.toString()}`)
+                .field('fileSrc', patchData.fileSrc)
+                .field('stageItemsStr', patchData.stageItemsStr)
+                .field('outfitName', patchData.outfitName)
+                .field('gcsDest', patchData.gcsDest);
+
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit).toBeTruthy();
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+            expect(files[0].name).toBe(newGcsDest);
+        });
 
         it('should fail with missing file source', async () => {
             // perform action to test
@@ -813,6 +925,40 @@ describe('outfits', () => {
             expect(outfit.outfitName).toBe(data.outfitName);
         });
 
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            patchData.newName = '';
+            const response = await agent(app)
+                .patch(`/outfits/name/${data._id.toString()}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit.outfitName).toBe(data.outfitName);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            patchData.newName = '';
+            const response = await agent(app)
+                .patch(`/outfits/name/${data._id.toString()}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit.outfitName).toBe(data.outfitName);
+        });
+
         it('should fail with missing outfit name', async () => {
             // perform action to test
             patchData.newName = '';
@@ -928,6 +1074,36 @@ describe('outfits', () => {
             // perform checks
             expect(response.status).toBe(401);
             expect(response.body.message).toBe('only admins are authorized for this action');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit).toBeTruthy();
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/outfits/not-valid-id`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit).toBeTruthy();
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/outfits/not-valid-id`);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
 
             const outfit = await collection.findOne({ _id: data._id });
             expect(outfit).toBeTruthy();

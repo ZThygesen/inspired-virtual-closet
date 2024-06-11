@@ -8,6 +8,8 @@ describe('clients', () => {
     let user;
     let token;
     let cookie;
+    let invalidToken;
+    let invalidCookie;
     async function createUser(db) {
         user = {
             _id: new ObjectId(),
@@ -22,6 +24,8 @@ describe('clients', () => {
 
         token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
         cookie = `token=${token}`;
+        invalidToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, 'not-correct-secret');
+        invalidCookie = `token=${invalidToken}`;
     }
 
     async function setNonAdmin(db) {
@@ -106,6 +110,30 @@ describe('clients', () => {
 
             expect(response.status).toBe(401);
             expect(response.body.message).toBe('only admins are authorized for this action');
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            const response = await agent(app)
+                .post('/api/clients')
+                .send(data);
+
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            const response = await agent(app)
+                .post('/api/clients')
+                .send(data);
+
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
             await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
         });
 
@@ -217,6 +245,26 @@ describe('clients', () => {
             expect(response.status).toBe(401);
             expect(response.body.message).toBe('only admins are authorized for this action');
         });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            const response = await agent(app)
+                .get('/api/clients');
+
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            const response = await agent(app)
+                .get('/api/clients');
+
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+        });
     });
     
     describe('update', () => {
@@ -281,6 +329,38 @@ describe('clients', () => {
             const client = await collection.findOne({ _id: data._id });
             expect(client).toStrictEqual(data);
         });  
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            const response = await agent(app)
+                .patch(`/api/clients/${data._id.toString()}`)
+                .send(patchData);
+
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
+            const client = await collection.findOne({ _id: data._id });
+            expect(client).toStrictEqual(data);
+        }); 
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            const response = await agent(app)
+                .patch(`/api/clients/${data._id.toString()}`)
+                .send(patchData);
+
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
+            const client = await collection.findOne({ _id: data._id });
+            expect(client).toStrictEqual(data);
+        }); 
 
         it('should fail with invalid client id in request', async () => {
             const response = await agent(app)
@@ -427,6 +507,38 @@ describe('clients', () => {
             // perform checks
             expect(response.status).toBe(401);
             expect(response.body.message).toBe('only admins are authorized for this action');
+
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
+            const client = await collection.findOne({ _id: data._id });
+            expect(client).toStrictEqual(data);
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/api/clients/${data._id.toString()}`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
+            const client = await collection.findOne({ _id: data._id });
+            expect(client).toStrictEqual(data);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/api/clients/${data._id.toString()}`);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
 
             await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
             const client = await collection.findOne({ _id: data._id });
