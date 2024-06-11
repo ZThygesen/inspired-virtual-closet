@@ -5,16 +5,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { helpers } from './helpers.js';
 import { auth } from './routes/auth.js'
-
-import passport from 'passport';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-
-import { OAuth2Client } from 'google-auth-library';
-import jwt from 'jsonwebtoken';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 config();
 const port = process.env.PORT || 5000;
 

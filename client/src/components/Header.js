@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from './UserContext';
 import { googleLogout } from '@react-oauth/google';
 import Loading from './Loading';
+import api from '../api';
 
 const AppHeader = styled.header`
     width: 100%;
@@ -62,13 +63,18 @@ export default function Header() {
 
     async function handleLogout() {
         setLoading(true);
-        setTimeout(() => {
+        try {
+            await api.post('/google-auth/logout');
             googleLogout();
             setUser(null);
-            localStorage.removeItem('jwtToken');
             navigate('/');
-            setLoading(false);
-        }, 500)
+        } catch (err) {
+            console.log(err)
+        } finally {
+            setTimeout(() => {
+                setLoading(false);
+            }, 500);
+        }
     }
 
     return (

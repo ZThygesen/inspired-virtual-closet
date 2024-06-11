@@ -1,10 +1,43 @@
 import { jest } from '@jest/globals';
 import { app } from '../../server';
-import { agent } from 'supertest';
+import { agent as supertest } from 'supertest';
 import { MongoClient } from 'mongodb';
 import { ObjectId } from 'mongodb';
+import jwt from 'jsonwebtoken';
 
 describe('categories', () => {
+    let user;
+    let token;
+    let cookie;
+    async function createUser(db) {
+        user = {
+            _id: new ObjectId(),
+            firstName: 'Jane',
+            lastName: 'Deer',
+            email: 'janedeer11@gmail.com',
+            isAdmin: true
+        }
+
+        const collection = db.collection('clients');
+        await collection.insertOne(user);
+
+        token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
+        cookie = `token=${token}`;
+    }
+
+    async function setNonAdmin(db) {
+        const collection = db.collection('clients');
+        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: false } });
+        token = jwt.sign({ id: user._id, isAdmin: false }, process.env.JWT_SECRET);
+        cookie = `token=${token}`;
+    }
+
+    async function removeUser(db) {
+        const collection = db.collection('clients');
+
+        await collection.deleteOne({ _id: user._id });
+    }
+
     async function clearCollection(collection) {
         await collection.deleteMany({ });
     }
@@ -28,16 +61,23 @@ describe('categories', () => {
         await mongoClient.close();
     });
 
-    beforeEach(() => {
+    beforeEach(async () => {
         expect(process.env.NODE_ENV).toBe('test');
+
+        await createUser(db);
     });
 
     afterEach(async () => {
         await clearCollection(collection);
         await insertOther(collection);
+        await removeUser(db);
         jest.resetAllMocks();
         jest.restoreAllMocks();
     });
+
+    function agent(app) {
+        return supertest(app).set('Cookie', cookie);
+    }
 
     describe('create', () => {
         let data;
@@ -63,6 +103,23 @@ describe('categories', () => {
             expect(category).toHaveProperty('_id');
             expect(category.name).toBe('T-Shirts');
             expect(category.items).toEqual([]);
+        }); 
+
+        it('should fail if non-admin', async () => {
+            await setNonAdmin(db);
+
+            const response = await agent(app)
+                .post('/categories')
+                .send(data);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only admins are authorized for this action');
+
+            const categories = await collection.find({ }).toArray();
+            expect(categories).toHaveLength(1);
+            expect(categories[0]._id).toBe(0);
+            expect(categories[0].name).toBe('Other');
         }); 
 
         it('should fail with missing category name', async () => {
@@ -122,6 +179,26 @@ describe('categories', () => {
         });
 
         it('should get categories', async () => {
+            // perform action to test
+            const response = await agent(app)
+                .get('/categories');
+            
+            // perform checks
+            expect(response.status).toBe(200);
+            expect(response.body).toHaveLength(2);
+
+            let category = response.body[0];
+            expect(category._id).toBe(0);
+            expect(category).not.toHaveProperty('items');
+
+            category = response.body[1];
+            expect(category._id).toBe(data._id.toString());
+            expect(category).not.toHaveProperty('items');
+        });
+
+        it('should get categories - non-admin', async () => {
+            await setNonAdmin(db);
+
             // perform action to test
             const response = await agent(app)
                 .get('/categories');
@@ -218,6 +295,25 @@ describe('categories', () => {
             expect(category.name).toBe(patchData.newName);
             expect(category.items).toEqual([]);
         });  
+
+        it('should fail if non-admin', async () => {
+            await setNonAdmin(db);
+
+            // perform action to test
+            const response = await agent(app)
+                .patch(`/categories/${data._id.toString()}`)
+                .send(patchData);
+
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only admins are authorized for this action');
+
+            const categories = await collection.find({ }).toArray();
+            expect(categories).toHaveLength(2);
+            expect(categories[0]._id).toBe(0);
+            expect(categories[0].name).toBe('Other');
+            expect(categories[1]).toStrictEqual(data);
+        }); 
 
         it('should fail with invalid id in request', async () => {
             // perform action to test
@@ -401,6 +497,24 @@ describe('categories', () => {
 
             otherCategory = await collection.findOne({ _id: 0, name: 'Other' });
             expect(otherCategory.items).toHaveLength(0);
+        });
+
+        it('should fail if non-admin', async () => {
+            await setNonAdmin(db);
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/categories/${data._id.toString()}`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only admins are authorized for this action');
+
+            const categories = await collection.find({ }).toArray();
+            expect(categories).toHaveLength(2);
+            expect(categories[0]._id).toBe(0);
+            expect(categories[0].name).toBe('Other');
+            expect(categories[1]).toStrictEqual(data);
         });
 
         it('should fail with invalid category id in request', async () => {

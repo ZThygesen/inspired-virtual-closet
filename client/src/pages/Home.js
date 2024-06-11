@@ -33,15 +33,15 @@ export default function Home() {
 
     async function handleGoogleLogin(credentialResponse) {
         try {
-            const response = await axios.post('/google-auth', {
-                credential: credentialResponse.credential,
-                clientId: credentialResponse.clientId
-            });
-
-            const token =  response?.data?.token;
-            if (token) {
-                localStorage.setItem('jwtToken', token);
-            }
+            const response = await axios.post('/google-auth', 
+                {
+                    credential: credentialResponse.credential,
+                    clientId: credentialResponse.clientId
+                },
+                {
+                    withCredentials: true
+                }
+            );
 
             const user = response?.data?.user;
             if (user) {

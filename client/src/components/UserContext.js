@@ -8,22 +8,13 @@ export const UserProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem('jwtToken');
-        
         async function verifyToken() {
-            if (token) {
-                try {
-                    const response = await axios.post(`/google-auth/verify-token`, { token });
-                    setUser(response?.data?.user);
-                } catch (err) {
-                    setUser(null);
-                } finally {
-                    setTimeout(() => {
-                        setLoading(false);
-                    }, 500);
-                    
-                }
-            } else {
+            try {
+                const response = await axios.post(`/google-auth/verify-token`, { withCredentials: true });
+                setUser(response?.data?.user);
+            } catch (err) {
+                setUser(null);
+            } finally {
                 setTimeout(() => {
                     setLoading(false);
                 }, 500);

@@ -2,17 +2,24 @@ import express from 'express';
 import { ObjectId } from 'mongodb';
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
-const client = new OAuth2Client();
 import { helpers } from '../helpers.js';
 
+const client = new OAuth2Client();
+
 const auth = {
-    client: new OAuth2Client(),
-
-    async postAuthenticate(req, res, next) {
-        const { credential, clientId } = req.body;
-        const { db } = req.locals;
-
+    async authenticate(req, res, next) {
         try {
+            const { credential, clientId } = req?.body;
+
+            if (!credential) {
+                throw helpers.createError('credential needed to authenticate user', 400);
+            }
+
+            if (!clientId) {
+                throw helpers.createError('client id needed to authenticate user', 400);
+            }
+
+            const { db } = req.locals;
             const ticket = await client.verifyIdToken({
                 idToken: credential,
                 audience: clientId
@@ -23,20 +30,21 @@ const auth = {
             const user = await collection.findOne({ email: payload.email });
             
             if (!user) {
-                throw helpers.createError('user not authenticated', 401);
+                throw helpers.createError('user not authorized', 401);
             }
 
-            const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
-    
-            res.status(200).json({ token, user });
+            const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
+            
+            res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'strict' });
+            res.status(200).json({ user });
         } catch (err) {
             next(err);
         }
     },
 
-    async postVerify(req, res, next) {
+    async verify(req, res, next) {
         try {
-            const token = req?.body?.token;
+            const token = req?.cookies?.token;
             if (!token) {
                 return res.sendStatus(401);
             }
@@ -66,16 +74,14 @@ const auth = {
     },
 
     authenticateJWT(req, res, next) {
-        const authHeader = req.headers.authorization;
-  
-        if (authHeader) {
-            const token = authHeader.split(' ')[1];
-
+        const token = req?.cookies?.token;
+        if (token) {
             jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
                 if (err) {
                     return res.sendStatus(403);
                 }
                 req.user = user;
+
                 next();
             });
         } else {
@@ -89,12 +95,22 @@ const auth = {
         }
 
         next();
+    },
+
+    async logout(req, res, next) {
+        try {
+            res.cookie('token', '', { httpOnly: true, secure: true, sameSite: 'strict', expires: new Date(1) });
+            res.status(200).json({ message: 'Success!' });
+        } catch (err) {
+            next(err);
+        }
     }
 };
 
 const router = express.Router();
 
-router.post('/', auth.postAuthenticate);
-router.post('/verify-token', auth.postVerify);
+router.post('/', auth.authenticate);
+router.post('/verify-token', auth.verify);
+router.post('/logout', auth.logout);
 
 export { auth, router as authRouter };

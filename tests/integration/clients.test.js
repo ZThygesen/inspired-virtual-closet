@@ -1,9 +1,36 @@
 import { jest } from '@jest/globals';
 import { app } from '../../server';
-import { agent } from 'supertest';
+import { agent as supertest } from 'supertest';
 import { MongoClient, ObjectId } from 'mongodb';
+import jwt from 'jsonwebtoken';
 
 describe('clients', () => {
+    let user;
+    let token;
+    let cookie;
+    async function createUser(db) {
+        user = {
+            _id: new ObjectId(),
+            firstName: 'Jane',
+            lastName: 'Deer',
+            email: 'janedeer11@gmail.com',
+            isAdmin: true
+        }
+
+        const collection = db.collection('clients');
+        await collection.insertOne(user);
+
+        token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
+        cookie = `token=${token}`;
+    }
+
+    async function setNonAdmin(db) {
+        const collection = db.collection('clients');
+        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: false } });
+        token = jwt.sign({ id: user._id, isAdmin: false }, process.env.JWT_SECRET);
+        cookie = `token=${token}`;
+    }
+
     async function clearCollection(collection) {
         await collection.deleteMany({});
     }
@@ -23,8 +50,10 @@ describe('clients', () => {
         await mongoClient.close();
     });
 
-    beforeEach(() => {
+    beforeEach(async () => {
         expect(process.env.NODE_ENV).toBe('test');
+
+        await createUser(db);
     });
 
     afterEach(async () => {
@@ -32,6 +61,10 @@ describe('clients', () => {
         jest.resetAllMocks();
         jest.restoreAllMocks();
     });
+
+    function agent(app) {
+        return supertest(app).set('Cookie', cookie);
+    }
 
     describe('create', () => {
         let data;
@@ -54,7 +87,7 @@ describe('clients', () => {
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
 
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
             const client = await collection.findOne({ firstName: 'John', lastName: 'Doe' });
             expect(client).toBeTruthy();
             expect(client).toHaveProperty('_id');
@@ -62,6 +95,18 @@ describe('clients', () => {
             expect(client.lastName).toBe(data.lastName);
             expect(client.email).toBe(data.email);
             expect(client.isAdmin).toBe(data.isAdmin);
+        });
+
+        it('should fail if user not admin', async () => {
+            await setNonAdmin(db);
+
+            const response = await agent(app)
+                .post('/api/clients')
+                .send(data);
+
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only admins are authorized for this action');
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
         });
 
         it('should fail with missing first name', async () => {
@@ -73,7 +118,7 @@ describe('clients', () => {
 
             expect(response.status).toBe(400);
             expect(response.body.message).toBe('both first name and last name fields are required for client creation');
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(0);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
         });
 
         it('should fail with missing last name', async () => {
@@ -85,7 +130,7 @@ describe('clients', () => {
 
             expect(response.status).toBe(400);
             expect(response.body.message).toBe('both first name and last name fields are required for client creation');
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(0);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
         });
 
         it('should fail with missing email', async () => {
@@ -96,7 +141,7 @@ describe('clients', () => {
 
             expect(response.status).toBe(400);
             expect(response.body.message).toBe('an email is required for client creation');
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(0);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
         });
 
         it('should fail with missing admin status', async () => {
@@ -107,7 +152,7 @@ describe('clients', () => {
 
             expect(response.status).toBe(400);
             expect(response.body.message).toBe('a role status is required for client creation');
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(0);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
         });
     });
     
@@ -131,9 +176,9 @@ describe('clients', () => {
             
             // perform checks
             expect(response.status).toBe(200);
-            expect(response.body).toHaveLength(1);
+            expect(response.body).toHaveLength(2);
 
-            const client = response.body[0];
+            const client = response.body[1];
             expect(client._id).toBe(data._id.toString());
             expect(client.firstName).toBe(data.firstName);
             expect(client.lastName).toBe(data.lastName);
@@ -151,7 +196,7 @@ describe('clients', () => {
                 .get('/api/clients');
             
             expect(response.status).toBe(200);
-            expect(response.body).toHaveLength(3);
+            expect(response.body).toHaveLength(4);
         });
 
         it('should handle no clients', async () => {
@@ -161,6 +206,16 @@ describe('clients', () => {
 
             expect(response.status).toBe(200);
             expect(response.body).toHaveLength(0);
+        });
+
+        it('should fail if non-admin', async () => {
+            await setNonAdmin(db);
+
+            const response = await agent(app)
+                .get('/api/clients');
+
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only admins are authorized for this action');
         });
     });
     
@@ -211,6 +266,22 @@ describe('clients', () => {
             expect(client.isAdmin).toBe(patchData.newIsAdmin);
         }); 
 
+        it('should fail if non-admin', async () => {
+            await setNonAdmin(db);
+
+            const response = await agent(app)
+                .patch(`/api/clients/${data._id.toString()}`)
+                .send(patchData);
+
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only admins are authorized for this action');
+
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
+            const client = await collection.findOne({ _id: data._id });
+            expect(client).toStrictEqual(data);
+        });  
+
         it('should fail with invalid client id in request', async () => {
             const response = await agent(app)
                 .patch(`/api/clients/not-valid-id`)
@@ -220,7 +291,7 @@ describe('clients', () => {
             expect(response.status).toBe(400);
             expect(response.body.message).toBe('failed to update client: invalid or missing client id');
 
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
             const client = await collection.findOne({ _id: data._id });
             expect(client).toStrictEqual(data);
         });  
@@ -234,7 +305,7 @@ describe('clients', () => {
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('update failed: client not found with given client id or nothing was updated');
 
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
             const client = await collection.findOne({ _id: data._id });
             expect(client).toStrictEqual(data);
         });
@@ -253,7 +324,7 @@ describe('clients', () => {
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('update failed: client not found with given client id or nothing was updated');
 
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
             const client = await collection.findOne({ _id: data._id });
             expect(client).toStrictEqual(data);
         }); 
@@ -268,7 +339,7 @@ describe('clients', () => {
             expect(response.status).toBe(400);
             expect(response.body.message).toBe('both first name and last name fields are required for client update');
 
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
             const client = await collection.findOne({ _id: data._id });
             expect(client).toStrictEqual(data);
         });  
@@ -283,7 +354,7 @@ describe('clients', () => {
             expect(response.status).toBe(400);
             expect(response.body.message).toBe('both first name and last name fields are required for client update');
 
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
             const client = await collection.findOne({ _id: data._id });
             expect(client).toStrictEqual(data);
         });  
@@ -298,7 +369,7 @@ describe('clients', () => {
             expect(response.status).toBe(400);
             expect(response.body.message).toBe('an email is required for client update');
 
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
             const client = await collection.findOne({ _id: data._id });
             expect(client).toStrictEqual(data);
         });
@@ -313,7 +384,7 @@ describe('clients', () => {
             expect(response.status).toBe(400);
             expect(response.body.message).toBe('a role status is required for client update');
 
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
             const client = await collection.findOne({ _id: data._id });
             expect(client).toStrictEqual(data);
         });
@@ -341,9 +412,25 @@ describe('clients', () => {
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(0);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
             const client = await collection.findOne({ _id: data._id });
             expect(client).toBeFalsy();
+        });
+
+        it('should fail if non-admin', async () => {
+            await setNonAdmin(db);
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/api/clients/${data._id.toString()}`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only admins are authorized for this action');
+
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
+            const client = await collection.findOne({ _id: data._id });
+            expect(client).toStrictEqual(data);
         });
 
         it('should fail with invalid client id in request', async () => {
@@ -355,7 +442,7 @@ describe('clients', () => {
             expect(response.status).toBe(400);
             expect(response.body.message).toBe('failed to delete client: invalid or missing client id');
 
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
             const client = await collection.findOne({ _id: data._id });
             expect(client).toStrictEqual(data);
         });
@@ -369,7 +456,7 @@ describe('clients', () => {
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('deletion failed: client not found with given client id');
 
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
             const client = await collection.findOne({ _id: data._id });
             expect(client).toStrictEqual(data);
         });
