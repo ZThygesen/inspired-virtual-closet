@@ -41,7 +41,7 @@ function CircularProgressWithLabel(props) {
 export default function Dropzone({ client, category, disabled, updateItems }) {
     const { setError } = useError();
 
-    const [rmbg, setRmbg] = useState(true);
+    const [rmbg, setRmbg] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [filteredFiles, setFilteredFiles] = useState([]);
     const [invalidFiles, setInvalidFiles] = useState([]);

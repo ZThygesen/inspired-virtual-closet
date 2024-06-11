@@ -62,7 +62,7 @@ export default function Home() {
                     <h1>Virtual Closet</h1>
                     { isAuthenticated ? 
                         ( isAdmin ?
-                            <ActionButton variant={'primary'} onClick={() => navigate('clients')}>Clients</ActionButton>
+                            <ActionButton variant={'primary'} onClick={() => navigate('clients')}>Manage Clients</ActionButton>
                             :
                             <ActionButton 
                                 variant={'primary'}

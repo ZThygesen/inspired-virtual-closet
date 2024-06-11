@@ -46,52 +46,52 @@ const auth = {
         try {
             const token = req?.cookies?.token;
             if (!token) {
-                return res.sendStatus(401);
+                throw helpers.createError('token required to verify authentication', 401);
             }
 
-            jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
-                if (err) {
-                    return res.sendStatus(403);
-                }
-                const userId = user?.id;
-                if (!helpers.isValidId(userId)) {
-                    throw helpers.createError('failed to check user authorization: invalid or missing user id', 400);
-                }
+            const user = jwt.verify(token, process.env.JWT_SECRET);
 
-                const { db } = req.locals;
-                const collection = db.collection('clients');
-                const client = await collection.findOne({ _id: ObjectId(userId) });
+            const userId = user?.id;
+            if (!helpers.isValidId(userId)) {
+                throw helpers.createError('failed to check user authorization: invalid or missing user id', 400);
+            }
 
-                if (!client) {
-                    return res.sendStatus(404);
-                }
+            const { db } = req.locals;
+            const collection = db.collection('clients');
+            const client = await collection.findOne({ _id: ObjectId(userId) });
 
-                res.status(200).json({ user: client });
-            });
+            if (!client) {
+                throw helpers.createError('no client found with given user id', 401);
+            }
+
+            res.status(200).json({ user: client });
         } catch (err) {
             next(err);
         }
     },
 
     authenticateJWT(req, res, next) {
-        const token = req?.cookies?.token;
-        if (token) {
-            jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-                if (err) {
-                    return res.sendStatus(403);
-                }
-                req.user = user;
+        try {
+            const token = req?.cookies?.token;
+            if (!token) {
+                throw helpers.createError('token required to authenticate JWT', 401);
+            }
+            
+            const user = jwt.verify(token, process.env.JWT_SECRET);
+            if (!user) {
+                throw helpers.createError('no user found from token', 401);
+            }
 
-                next();
-            });
-        } else {
-            res.sendStatus(401);
+            req.user = user;
+            next();
+        } catch (err) {
+            next(err);
         }
     },
 
     requireAdmin(req, res, next) {
         if (!req?.user?.isAdmin) {
-            throw helpers.createError('only admins are authorized for this action', 401);
+            return next(helpers.createError('only admins are authorized for this action', 401));
         }
 
         next();
