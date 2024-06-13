@@ -1,6 +1,7 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
 import { helpers } from '../helpers.js';
+import { auth } from './auth.js';
 
 const clients = {
     async post(req, res, next) {
@@ -128,9 +129,9 @@ const clients = {
 
 const router = express.Router();
 
-router.post('/', clients.post);
-router.get('/', clients.get);
-router.patch('/:clientId', clients.patch);
-router.delete('/:clientId', clients.delete);
+router.post('/', auth.requireSuperAdmin, auth.requireAdmin, clients.post);
+router.get('/', auth.requireAdmin, clients.get);
+router.patch('/:clientId', auth.requireSuperAdmin, auth.requireAdmin, clients.patch);
+router.delete('/:clientId', auth.requireSuperAdmin, auth.requireAdmin, clients.delete);
 
 export { clients, router as clientsRouter };

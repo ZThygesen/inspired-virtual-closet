@@ -3,12 +3,15 @@ import { Tooltip } from '@mui/material';
 import Modal from './Modal';
 import Input from './Input';
 import { ClothingCardContainer } from '../styles/Clothes';
+import { useUser } from './UserContext';
 
 export default function ClothingCard({ item, editable, sendToCanvas, swapCategory, editItem, deleteItem }) {
     const [editOpen, setEditOpen] = useState(false);
     const [newItemName, setNewItemName] = useState(item.fileName);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const [imageModalOpen, setImageModalOpen] = useState(false);
+
+    const { user } = useUser();
 
     function handleCloseImageModal() {
         setImageModalOpen(false);
@@ -39,14 +42,16 @@ export default function ClothingCard({ item, editable, sendToCanvas, swapCategor
                     onClick={() => setImageModalOpen(true)}
                 />
                 <div className="item-options">
-                    <Tooltip title="Send to Canvas">
-                        <button 
-                            className='material-icons item-option important'
-                            onClick={() => sendToCanvas(item)}
-                        >
-                            shortcut
-                        </button>
-                    </Tooltip>
+                    { user?.isAdmin &&
+                        <Tooltip title="Send to Canvas">
+                            <button 
+                                className='material-icons item-option important'
+                                onClick={() => sendToCanvas(item)}
+                            >
+                                shortcut
+                            </button>
+                        </Tooltip>
+                    }
                     {
                         editable &&
                         <>

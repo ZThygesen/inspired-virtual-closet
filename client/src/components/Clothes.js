@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useError } from './ErrorContext';
-import axios from 'axios';
+import api from '../api';
 import ClothingCard from './ClothingCard';
 import Loading from './Loading';
 import { ClothesContainer, DropdownContainer, SwapCategoryDropdown } from '../styles/Clothes';
@@ -32,7 +32,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
         setLoading(true);
 
         try {
-            await axios.patch(`/files/category/${category._id}/${itemToSwapCategory.gcsId}`, {
+            await api.patch(`/files/category/${category._id}/${itemToSwapCategory.gcsId}`, {
                 newCategoryId: currCategorySelected.value
             });
             await updateItems();
@@ -62,7 +62,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
         let categories;
 
         try {
-            const response = await axios.get('/categories');
+            const response = await api.get('/categories');
             categories = response.data; 
         } catch (err) {
             setError({
@@ -121,7 +121,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
         }
 
         try {
-            await axios.patch(`/files/${category._id}/${item.gcsId}`, { newName: newName });
+            await api.patch(`/files/${category._id}/${item.gcsId}`, { newName: newName });
             await updateItems();
         } catch (err) {
             setError({
@@ -137,7 +137,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
         setLoading(true);
 
         try {
-            await axios.delete(`/files/${category._id}/${item.gcsId}`);
+            await api.delete(`/files/${category._id}/${item.gcsId}`);
             await updateItems();
         } catch (err) {
             setError({

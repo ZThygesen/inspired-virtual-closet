@@ -351,88 +351,6 @@ describe('b64ToBuffer', () => {
     });
 });
 
-/*
-describe('uploadToGCF', () => {
-    function setupMocks() {
-        const axiosMock = jest.spyOn(axios, 'post');
-        axiosMock.mockResolvedValueOnce({
-            data: {
-                fullFileUrl: 'full.file.url',
-                smallFileUrl: 'small.file.url'
-            }
-        });
-
-        return axiosMock;
-    }
-
-    afterEach(() => {
-        jest.restoreAllMocks();
-    })
-
-    it('should upload file to GCF', async () => {
-        const axiosMock = setupMocks();
-
-        const fileSrc = 'data:image/png;base64,fileSrc=';
-        const fullGcsDest = 'full/gcs/dest';
-        const smallGcsDest = 'small/gcs/dest';
-
-        const { fullFileUrl, smallFileUrl } = await helpers.uploadToGCF(fileSrc, fullGcsDest, smallGcsDest);
-
-        expect(axiosMock).toHaveBeenCalled();
-        expect(fullFileUrl).toBe('full.file.url');
-        expect(smallFileUrl).toBe('small.file.url');
-    });
-
-    it('should fail given improper file src', async () => {
-        const axiosMock = setupMocks();
-
-        const fileSrc = 'data:image/gif;base64,fileSrc=';
-        const fullGcsDest = 'full/gcs/dest';
-        const smallGcsDest = 'small/gcs/dest';
-
-        await expect(helpers.uploadToGCF(fileSrc, fullGcsDest, smallGcsDest)).rejects.toThrow('Not a valid fileSrc');
-        expect(axiosMock).not.toHaveBeenCalled();
-    });
-
-    it('should fail given empty full destination string', async () => {
-        const axiosMock = setupMocks();
-
-        const fileSrc = 'data:image/png;base64,fileSrc=';
-        const fullGcsDest = '';
-        const smallGcsDest = 'small/gcs/dest';
-
-        await expect(helpers.uploadToGCF(fileSrc, fullGcsDest, smallGcsDest)).rejects.toThrow('GCS destination cannot be empty');
-        expect(axiosMock).not.toHaveBeenCalled();
-    });
-
-    it('should fail given empty small destination string', async () => {
-        const axiosMock = setupMocks();
-
-        const fileSrc = 'data:image/png;base64,fileSrc=';
-        const fullGcsDest = 'full/gcs/dest';
-        const smallGcsDest = '';
-
-        await expect(helpers.uploadToGCF(fileSrc, fullGcsDest, smallGcsDest)).rejects.toThrow('GCS destination cannot be empty');
-        expect(axiosMock).not.toHaveBeenCalled();
-    });
-
-    it('should fail with improper credentials', async () => {
-        const originalGCFUrl = process.env.GCF_URL;
-        process.env.GCF_URL = '';
-
-        const axiosMock = setupMocks();
-        const fileSrc = 'data:image/png;base64,fileSrc=';
-        const fullGcsDest = 'full/gcs/dest';
-        const smallGcsDest = 'small/gcs/dest';
-
-        await expect(helpers.uploadToGCF(fileSrc, fullGcsDest, smallGcsDest)).rejects.toThrow();
-        expect(axiosMock).not.toHaveBeenCalled();
-
-        process.env.GCF_URL = originalGCFUrl;
-    });
-});
-*/
-
 describe('removeBackground', () => {
     let b64str;
 
@@ -1163,3 +1081,85 @@ describe('moveFilesToOther', () => {
         expect(mockCollection.updateOne).toHaveBeenCalled();
     });
 });
+
+/*
+describe('uploadToGCF', () => {
+    function setupMocks() {
+        const axiosMock = jest.spyOn(axios, 'post');
+        axiosMock.mockResolvedValueOnce({
+            data: {
+                fullFileUrl: 'full.file.url',
+                smallFileUrl: 'small.file.url'
+            }
+        });
+
+        return axiosMock;
+    }
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    })
+
+    it('should upload file to GCF', async () => {
+        const axiosMock = setupMocks();
+
+        const fileSrc = 'data:image/png;base64,fileSrc=';
+        const fullGcsDest = 'full/gcs/dest';
+        const smallGcsDest = 'small/gcs/dest';
+
+        const { fullFileUrl, smallFileUrl } = await helpers.uploadToGCF(fileSrc, fullGcsDest, smallGcsDest);
+
+        expect(axiosMock).toHaveBeenCalled();
+        expect(fullFileUrl).toBe('full.file.url');
+        expect(smallFileUrl).toBe('small.file.url');
+    });
+
+    it('should fail given improper file src', async () => {
+        const axiosMock = setupMocks();
+
+        const fileSrc = 'data:image/gif;base64,fileSrc=';
+        const fullGcsDest = 'full/gcs/dest';
+        const smallGcsDest = 'small/gcs/dest';
+
+        await expect(helpers.uploadToGCF(fileSrc, fullGcsDest, smallGcsDest)).rejects.toThrow('Not a valid fileSrc');
+        expect(axiosMock).not.toHaveBeenCalled();
+    });
+
+    it('should fail given empty full destination string', async () => {
+        const axiosMock = setupMocks();
+
+        const fileSrc = 'data:image/png;base64,fileSrc=';
+        const fullGcsDest = '';
+        const smallGcsDest = 'small/gcs/dest';
+
+        await expect(helpers.uploadToGCF(fileSrc, fullGcsDest, smallGcsDest)).rejects.toThrow('GCS destination cannot be empty');
+        expect(axiosMock).not.toHaveBeenCalled();
+    });
+
+    it('should fail given empty small destination string', async () => {
+        const axiosMock = setupMocks();
+
+        const fileSrc = 'data:image/png;base64,fileSrc=';
+        const fullGcsDest = 'full/gcs/dest';
+        const smallGcsDest = '';
+
+        await expect(helpers.uploadToGCF(fileSrc, fullGcsDest, smallGcsDest)).rejects.toThrow('GCS destination cannot be empty');
+        expect(axiosMock).not.toHaveBeenCalled();
+    });
+
+    it('should fail with improper credentials', async () => {
+        const originalGCFUrl = process.env.GCF_URL;
+        process.env.GCF_URL = '';
+
+        const axiosMock = setupMocks();
+        const fileSrc = 'data:image/png;base64,fileSrc=';
+        const fullGcsDest = 'full/gcs/dest';
+        const smallGcsDest = 'small/gcs/dest';
+
+        await expect(helpers.uploadToGCF(fileSrc, fullGcsDest, smallGcsDest)).rejects.toThrow();
+        expect(axiosMock).not.toHaveBeenCalled();
+
+        process.env.GCF_URL = originalGCFUrl;
+    });
+});
+*/

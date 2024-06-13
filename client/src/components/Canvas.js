@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useError } from './ErrorContext';
-import axios from 'axios';
+import api from '../api';
 import { Layer, Rect, Stage, Transformer } from 'react-konva';
 import Modal from './Modal';
 import Input from './Input';
@@ -283,12 +283,12 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
         try {
             if (editMode) {
                 formData.append('gcsDest', outfitToEdit.gcsDest);
-                await axios.patch(`/outfits/${outfitToEdit._id}`, formData, {
+                await api.patch(`/outfits/${outfitToEdit._id}`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data'}
                 });
             } else {
                 formData.append('clientId', client._id);
-                await axios.post('/outfits', formData, {
+                await api.post('/outfits', formData, {
                     headers: { 'Content-Type': 'multipart/form-data'}
                 });
             }

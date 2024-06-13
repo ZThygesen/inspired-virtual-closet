@@ -1,12 +1,49 @@
 import { jest } from '@jest/globals';
 import { app, bucket } from '../../server';
-import { agent } from 'supertest';
+import { agent as supertest } from 'supertest';
 import { MongoClient } from 'mongodb';
 import { ObjectId } from 'mongodb';
 import { helpers } from '../../helpers';
 import cuid2 from '@paralleldrive/cuid2';
+import jwt from 'jsonwebtoken';
 
 describe('outfits', () => {
+    let user;
+    let token;
+    let cookie;
+    let invalidToken;
+    let invalidCookie;
+    async function createUser(db) {
+        user = {
+            _id: new ObjectId(),
+            firstName: 'Jane',
+            lastName: 'Deer',
+            email: 'janedeer11@gmail.com',
+            isAdmin: true
+        }
+
+        const collection = db.collection('clients');
+        await collection.insertOne(user);
+
+        token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
+        cookie = `token=${token}`;
+        invalidToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, 'not-correct-secret');
+        invalidCookie = `token=${invalidToken}`;
+    }
+
+    async function setNonAdmin(db) {
+        const collection = db.collection('clients');
+        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: false } });
+        token = jwt.sign({ id: user._id, isAdmin: false }, process.env.JWT_SECRET);
+        cookie = `token=${token}`;
+    }
+
+    async function removeUser(db) {
+        const collection = db.collection('clients');
+
+        await collection.deleteOne({ _id: user._id });
+    }
+
     async function clearCollection(collection) {
         await collection.deleteMany({ });
     }
@@ -44,6 +81,7 @@ describe('outfits', () => {
 
     let clientId;
     let clientData;
+
     beforeEach(async () => {
         expect(process.env.NODE_ENV).toBe('test');
 
@@ -59,14 +97,21 @@ describe('outfits', () => {
         };
         
         await clientCollection.insertOne(clientData);
+
+        await createUser(db);
     });
 
     afterEach(async () => {
         await clearCollection(collection);
         await clearCollection(clientCollection);
+        await removeUser(db);
         jest.resetAllMocks();
         jest.restoreAllMocks();
     });
+
+    function agent(app) {
+        return supertest(app).set('Cookie', cookie);
+    }
 
     describe('create', () => {
         afterAll(async () => {
@@ -105,6 +150,63 @@ describe('outfits', () => {
             expect(outfit.outfitUrl).toEqual(expect.stringContaining('https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Foutfits%2F'));
             expect(outfit.gcsDest).toEqual(expect.stringContaining('test/outfits/'));
 
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+        });
+
+        it('should fail if non-admin', async () => {
+            await setNonAdmin(db);
+            
+            // perform action to test
+            const response = await agent(app)
+                .post('/outfits')
+                .field('fileSrc', data.fileSrc)
+                .field('stageItemsStr', data.stageItemsStr)
+                .field('outfitName', data.outfitName)
+                .field('clientId', data.clientId);
+    
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only admins are authorized for this action');
+    
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+            
+            // perform action to test
+            const response = await agent(app)
+                .post('/outfits')
+                .field('fileSrc', data.fileSrc)
+                .field('stageItemsStr', data.stageItemsStr)
+                .field('outfitName', data.outfitName)
+                .field('clientId', data.clientId);
+    
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+    
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+            
+            // perform action to test
+            const response = await agent(app)
+                .post('/outfits')
+                .field('fileSrc', data.fileSrc)
+                .field('stageItemsStr', data.stageItemsStr)
+                .field('outfitName', data.outfitName)
+                .field('clientId', data.clientId);
+    
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+    
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
         });
@@ -296,6 +398,25 @@ describe('outfits', () => {
             expect(outfit.gcsDest).toBe(data.gcsDest);
         });
 
+        it('should get outfits - non-admin', async () => {
+            await setNonAdmin(db);
+            // perform action to test
+            const response = await agent(app)
+                .get(`/outfits/${data.clientId}`);
+            
+            // perform checks
+            expect(response.status).toBe(200);
+            expect(response.body).toHaveLength(1);
+
+            const outfit = response.body[0];
+            expect(outfit._id.toString()).toBe(data._id.toString());
+            expect(outfit.clientId).toBe(data.clientId);
+            expect(outfit.stageItems).toEqual(data.stageItems);
+            expect(outfit.outfitName).toBe(data.outfitName);
+            expect(outfit.outfitUrl).toBe(data.outfitUrl);
+            expect(outfit.gcsDest).toBe(data.gcsDest);
+        });
+
         it('should handle multiple outfits', async () => {
             // perform action to test
             data._id = new ObjectId();
@@ -353,6 +474,30 @@ describe('outfits', () => {
             outfit = response.body[0];
             expect(outfit._id.toString()).toEqual(otherOutfit._id.toString());
             expect(outfit.clientId).toBe(otherOutfit.clientId);
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            const response = await agent(app)
+                .get(`/outfits/${data.clientId}`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            const response = await agent(app)
+                .get(`/outfits/${data.clientId}`);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
         });
 
         it('should fail with invalid client id', async () => {
@@ -463,6 +608,75 @@ describe('outfits', () => {
             newGcsDest = files[0].name;
             expect(outfit.gcsDest).toBe(newGcsDest);
         });  
+
+        it('should fail if non-admin', async () => {
+            await setNonAdmin(db);
+
+            // perform action to test
+            const response = await agent(app)
+                .patch(`/outfits/${data._id.toString()}`)
+                .field('fileSrc', patchData.fileSrc)
+                .field('stageItemsStr', patchData.stageItemsStr)
+                .field('outfitName', patchData.outfitName)
+                .field('gcsDest', patchData.gcsDest);
+
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only admins are authorized for this action');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit).toBeTruthy();
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+            expect(files[0].name).toBe(newGcsDest);
+        });  
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            const response = await agent(app)
+                .patch(`/outfits/${data._id.toString()}`)
+                .field('fileSrc', patchData.fileSrc)
+                .field('stageItemsStr', patchData.stageItemsStr)
+                .field('outfitName', patchData.outfitName)
+                .field('gcsDest', patchData.gcsDest);
+
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit).toBeTruthy();
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+            expect(files[0].name).toBe(newGcsDest);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            const response = await agent(app)
+                .patch(`/outfits/${data._id.toString()}`)
+                .field('fileSrc', patchData.fileSrc)
+                .field('stageItemsStr', patchData.stageItemsStr)
+                .field('outfitName', patchData.outfitName)
+                .field('gcsDest', patchData.gcsDest);
+
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit).toBeTruthy();
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+            expect(files[0].name).toBe(newGcsDest);
+        });
 
         it('should fail with missing file source', async () => {
             // perform action to test
@@ -694,6 +908,57 @@ describe('outfits', () => {
             expect(outfit.gcsDest).toBe(data.gcsDest);
         });
 
+        it('should fail if non-admin', async () => {
+            await setNonAdmin(db);
+
+            // perform action to test
+            patchData.newName = '';
+            const response = await agent(app)
+                .patch(`/outfits/name/${data._id.toString()}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only admins are authorized for this action');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit.outfitName).toBe(data.outfitName);
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            patchData.newName = '';
+            const response = await agent(app)
+                .patch(`/outfits/name/${data._id.toString()}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit.outfitName).toBe(data.outfitName);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            patchData.newName = '';
+            const response = await agent(app)
+                .patch(`/outfits/name/${data._id.toString()}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit.outfitName).toBe(data.outfitName);
+        });
+
         it('should fail with missing outfit name', async () => {
             // perform action to test
             patchData.newName = '';
@@ -797,6 +1062,51 @@ describe('outfits', () => {
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(0);
+        });
+
+        it('should fail if non-admin', async () => {
+            await setNonAdmin(db);
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/outfits/not-valid-id`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only admins are authorized for this action');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit).toBeTruthy();
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/outfits/not-valid-id`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit).toBeTruthy();
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/outfits/not-valid-id`);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit).toBeTruthy();
         });
 
         it('should fail with invalid outfit id', async () => {

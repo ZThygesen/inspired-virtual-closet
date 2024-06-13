@@ -4,6 +4,7 @@ import { ClientCardContainer } from '../styles/ClientCard';
 import { Tooltip } from '@mui/material';
 import Modal from './Modal';
 import Input from './Input';
+import { useUser } from './UserContext';
 
 export default function ClientCard({ client, editClient, deleteClient }) {
     const [editOpen, setEditOpen] = useState(false);
@@ -12,6 +13,8 @@ export default function ClientCard({ client, editClient, deleteClient }) {
     const [newEmail, setNewEmail] = useState(client.email);
     const [newRole, setNewRole] = useState(client.isAdmin);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+    const { user } = useUser();
     
     const navigate = useNavigate();
 
@@ -35,9 +38,11 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                 <p className="client-name">{`${client.firstName} ${client.lastName}`}</p>
                 <p className="client-name secondary">{`${client.email} - ${client.isAdmin}`}</p>
                 <div className="client-options">
-                    <Tooltip title="Edit">
-                        <button className="material-icons edit-icon" onClick={() => setEditOpen(true)}>edit</button>
-                    </Tooltip>
+                    { (!client?.isSuperAdmin && user?.isSuperAdmin) &&
+                        <Tooltip title="Edit">
+                            <button className="material-icons edit-icon" onClick={() => setEditOpen(true)}>edit</button>
+                        </Tooltip>
+                    }
                     <Tooltip title="Virtual Closet">
                         <button
                             className="material-icons closet-icon"
@@ -46,18 +51,21 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                             checkroom
                         </button>
                     </Tooltip>
-                    <Tooltip title="Delete">
-                        <button className="material-icons delete-icon" onClick={() => setConfirmDeleteOpen(true)}>delete</button>
-                    </Tooltip>
+                    { (!client?.isSuperAdmin && user?.isSuperAdmin) &&
+                        <Tooltip title="Delete">
+                            <button className="material-icons delete-icon" onClick={() => setConfirmDeleteOpen(true)}>delete</button>
+                        </Tooltip>
+                    }
+                    
                 </div>
             </ClientCardContainer>
-            <Modal
-                open={editOpen}
-                closeFn={handleCloseEdit}
-                isForm={true}
-                submitFn={handleSubmitEdit}
-            >
-                <>
+            { (!client?.isSuperAdmin && user?.isSuperAdmin) &&
+                <Modal
+                    open={editOpen}
+                    closeFn={handleCloseEdit}
+                    isForm={true}
+                    submitFn={handleSubmitEdit}
+                >
                     <h2 className="modal-title">EDIT CLIENT</h2>
                     <Input
                         type="text"
@@ -91,8 +99,8 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                         <button type="button" onClick={handleCloseEdit}>Cancel</button>
                         <button type="submit">Save</button>
                     </div>
-                </>
-            </Modal>
+                </Modal>
+            }
             <Modal
                 open={confirmDeleteOpen}
                 closeFn={() => setConfirmDeleteOpen(false)}

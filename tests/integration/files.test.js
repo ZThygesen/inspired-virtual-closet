@@ -1,12 +1,50 @@
 import { jest } from '@jest/globals';
 import { app, bucket } from '../../server';
-import { agent } from 'supertest';
+import { agent as supertest } from 'supertest';
 import { MongoClient } from 'mongodb';
 import { ObjectId } from 'mongodb';
 import { helpers } from '../../helpers';
 import cuid2 from '@paralleldrive/cuid2';
+import jwt from 'jsonwebtoken';
 
 describe('files', () => {
+    let user;
+    let token;
+    let cookie;
+    let invalidToken;
+    let invalidCookie;
+    async function createUser(db) {
+        user = {
+            _id: new ObjectId(),
+            firstName: 'Jane',
+            lastName: 'Deer',
+            email: 'janedeer11@gmail.com',
+            isAdmin: true
+        }
+
+        const collection = db.collection('clients');
+        await collection.insertOne(user);
+
+        token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
+        cookie = `token=${token}`;
+
+        invalidToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, 'not-correct-secret');
+        invalidCookie = `token=${invalidToken}`;
+    }
+
+    async function setNonAdmin(db) {
+        const collection = db.collection('clients');
+        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: false } });
+        token = jwt.sign({ id: user._id, isAdmin: false }, process.env.JWT_SECRET);
+        cookie = `token=${token}`;
+    }
+
+    async function removeUser(db) {
+        const collection = db.collection('clients');
+
+        await collection.deleteOne({ _id: user._id });
+    }
+
     async function clearCollection(collection) {
         await collection.deleteMany({ });
     }
@@ -44,18 +82,25 @@ describe('files', () => {
         await clearBucket();
     });
 
-    beforeEach(() => {
+    beforeEach(async () => {
         expect(process.env.NODE_ENV).toBe('test');
 
         expect(bucket.id).toBe('edie-styles-virtual-closet-test');
+
+        await createUser(db);
     });
 
     afterEach(async () => {
         await clearCollection(collection);
         await insertOther(collection);
+        await removeUser(db);
         jest.resetAllMocks();
         jest.restoreAllMocks();
     });
+
+    function agent(app) {
+        return supertest(app).set('Cookie', cookie);
+    }
 
     describe('create', () => {
         afterAll(async () => {
@@ -159,6 +204,42 @@ describe('files', () => {
             expect(files).toHaveLength(4);
         });
 
+        it('should add new file - non-admin', async () => {
+            await setNonAdmin(db);
+
+            // perform action to test
+            const response = await agent(app)
+                .post('/files')
+                .field('fileSrc', data.fileSrc)
+                .field('fullFileName', data.fullFileName)
+                .field('clientId', data.clientId)
+                .field('categoryId', data.categoryId)
+                .field('rmbg', data.rmbg);
+
+            // perform checks
+            expect(response.status).toBe(201);
+            expect(response.body.message).toBe('Success!');
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+    
+            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
+            expect(category.items).toHaveLength(1);
+
+            const file = category.items[0];
+            expect(file).toBeTruthy();
+            expect(file.clientId).toBe(data.clientId);
+            expect(file.fileName).toBe('Blazin Blazer');
+            expect(file).toHaveProperty('gcsId');
+
+            const gcsId = file.gcsId;
+            expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
+            expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
+            expect(file.fullGcsDest).toBe(`test/items/${gcsId}/full.png`);
+            expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(6);
+        });
+
         it('should add new file - Other category given', async () => {
             // perform action to test
             const response = await agent(app)
@@ -190,7 +271,7 @@ describe('files', () => {
             expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(6);
+            expect(files).toHaveLength(8);
         });
 
         it('should add new file - not full file name', async () => {
@@ -224,7 +305,53 @@ describe('files', () => {
             expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(8);
+            expect(files).toHaveLength(10);
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+            // perform action to test
+            const response = await agent(app)
+                .post('/files')
+                .field('fileSrc', '')
+                .field('fullFileName', data.fullFileName)
+                .field('clientId', data.clientId)
+                .field('categoryId', data.categoryId)
+                .field('rmbg', data.rmbg);
+
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+    
+            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
+            expect(category.items).toHaveLength(0);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(10);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+            // perform action to test
+            const response = await agent(app)
+                .post('/files')
+                .field('fileSrc', '')
+                .field('fullFileName', data.fullFileName)
+                .field('clientId', data.clientId)
+                .field('categoryId', data.categoryId)
+                .field('rmbg', data.rmbg);
+
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+    
+            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
+            expect(category.items).toHaveLength(0);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(10);
         });
 
         it('should fail with missing file source', async () => {
@@ -246,7 +373,7 @@ describe('files', () => {
             expect(category.items).toHaveLength(0);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(8);
+            expect(files).toHaveLength(10);
         });
 
         it('should fail with invalid MIME file source', async () => {
@@ -268,7 +395,7 @@ describe('files', () => {
             expect(category.items).toHaveLength(0);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(8);
+            expect(files).toHaveLength(10);
         });
 
         it('should fail with invalid file source', async () => {
@@ -290,7 +417,7 @@ describe('files', () => {
             expect(category.items).toHaveLength(0);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(8);
+            expect(files).toHaveLength(10);
         });
 
         it('should fail with missing file name', async () => {
@@ -312,7 +439,7 @@ describe('files', () => {
             expect(category.items).toHaveLength(0);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(8);
+            expect(files).toHaveLength(10);
         });
 
         it('should fail with invalid client id', async () => {
@@ -334,7 +461,7 @@ describe('files', () => {
             expect(category.items).toHaveLength(0);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(8);
+            expect(files).toHaveLength(10);
         });
 
         it('should fail with invalid category id', async () => {
@@ -356,7 +483,7 @@ describe('files', () => {
             expect(category.items).toHaveLength(0);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(8);
+            expect(files).toHaveLength(10);
         });
 
         it('should fail with missing rembg option', async () => {
@@ -377,7 +504,7 @@ describe('files', () => {
             expect(category.items).toHaveLength(0);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(8);
+            expect(files).toHaveLength(10);
         });
 
         it('should fail with nonexistent category id', async () => {
@@ -402,7 +529,7 @@ describe('files', () => {
             expect(category).toBeFalsy();
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(8);
+            expect(files).toHaveLength(10);
         });
     });
     
@@ -496,6 +623,41 @@ describe('files', () => {
             expect(item.gcsId).toBe(file.gcsId);
         });
 
+        it('should get files - non-admin', async () => {
+            await setNonAdmin(db);
+
+            await clearCollection(collection);
+
+            const file = createFile(user._id.toString());
+            await collection.insertOne({
+                _id: categoryData._id,
+                name: categoryData.name,
+                items: [ file ]
+            });
+
+            // perform action to test
+            let response = await agent(app)
+                .get(`/files/${file.clientId}`);
+            
+            // perform checks
+            expect(response.status).toBe(200);
+            expect(response.body).toHaveLength(1);
+
+            const category = response.body[0];
+            expect(category._id.toString()).toBe(categoryData._id.toString());
+            expect(category.name).toBe(categoryData.name);
+            expect(category.items).toHaveLength(1);
+
+            const item = category.items[0];
+            expect(item.clientId).toBe(file.clientId);
+            expect(item.fileName).toBe(file.fileName);
+            expect(item.fullFileUrl).toBe(file.fullFileUrl);
+            expect(item.smallFileUrl).toBe(file.smallFileUrl);
+            expect(item.fullGcsDest).toBe(file.fullGcsDest);
+            expect(item.smallGcsDest).toBe(file.smallGcsDest);
+            expect(item.gcsId).toBe(file.gcsId);
+        });
+
         it('should handle no files for client', async () => {
             // perform action to test
             let response = await agent(app)
@@ -554,6 +716,30 @@ describe('files', () => {
             files = categories.map(category => category.items).flat();
             expect(files.length).toBe(1);
             files.forEach(file => expect(file.clientId).toBe(clientId3));
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            let response = await agent(app)
+                .get(`/files/not-valid-id`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT')
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            let response = await agent(app)
+                .get(`/files/not-valid-id`);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature')
         });
 
         it('should fail with invalid client id', async () => {
@@ -628,6 +814,32 @@ describe('files', () => {
             expect(file.gcsId).toBe(fileData.gcsId);
         });
 
+        it('should update file name - non-admin', async () => {
+            await setNonAdmin(db);
+
+            // perform action to test
+            let response = await agent(app)
+                .patch(`/files/${categoryId.toString()}/${fileData.gcsId}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Success!');
+
+            const category = await collection.findOne({ _id: data._id });
+            expect(category.name).toBe(data.name);
+            expect(category.items).toHaveLength(4);
+            const file = category.items.find(item => item.gcsId === fileData.gcsId);
+
+            expect(file.clientId).toBe(fileData.clientId);
+            expect(file.fileName).toBe(patchData.newName);
+            expect(file.fullFileUrl).toBe(fileData.fullFileUrl);
+            expect(file.smallFileUrl).toBe(fileData.smallFileUrl);
+            expect(file.fullGcsDest).toBe(fileData.fullGcsDest);
+            expect(file.smallGcsDest).toBe(fileData.smallGcsDest);
+            expect(file.gcsId).toBe(fileData.gcsId);
+        });
+
         it('should update file name given Other category', async () => {
             // perform action to test
             await clearCollection(collection);
@@ -655,6 +867,44 @@ describe('files', () => {
             expect(file.fullGcsDest).toBe(fileData.fullGcsDest);
             expect(file.smallGcsDest).toBe(fileData.smallGcsDest);
             expect(file.gcsId).toBe(fileData.gcsId);
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            delete patchData.newName;
+            let response = await agent(app)
+                .patch(`/files/${categoryId.toString()}/${fileData.gcsId}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            const category = await collection.findOne({ _id: data._id });
+            expect(category.name).toBe(data.name);
+            const file = category.items.find(item => item.gcsId === fileData.gcsId);
+            expect(file.fileName).not.toBe(patchData.newName);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            delete patchData.newName;
+            let response = await agent(app)
+                .patch(`/files/${categoryId.toString()}/${fileData.gcsId}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+
+            const category = await collection.findOne({ _id: data._id });
+            expect(category.name).toBe(data.name);
+            const file = category.items.find(item => item.gcsId === fileData.gcsId);
+            expect(file.fileName).not.toBe(patchData.newName);
         });
 
         it('should fail with missing file name', async () => {
@@ -806,6 +1056,45 @@ describe('files', () => {
             expect(file.gcsId).toBe(fileData.gcsId);
         });
 
+        it('should update file category - non-admin', async () => {
+            await setNonAdmin(db);
+
+            let currCategory = await collection.findOne({ _id: data._id });
+            let currItems = currCategory.items;
+            expect(currItems).toHaveLength(4);
+
+            let newCategory = await collection.findOne({ _id: newCategoryData._id });
+            let newItems = newCategory.items;
+            expect(newItems).toHaveLength(1);
+
+            // perform action to test
+            let response = await agent(app)
+                .patch(`/files/category/${data._id.toString()}/${fileData.gcsId}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Success!');
+
+            currCategory = await collection.findOne({ _id: data._id });
+            currItems = currCategory.items;
+            expect(currItems).toHaveLength(3);
+
+            newCategory = await collection.findOne({ _id: newCategoryData._id });
+            newItems = newCategory.items;
+            expect(newItems).toHaveLength(2);
+
+            const file = newItems.find(item => item.gcsId === fileData.gcsId);
+
+            expect(file.clientId).toBe(fileData.clientId);
+            expect(file.fileName).toBe(fileData.fileName);
+            expect(file.fullFileUrl).toBe(fileData.fullFileUrl);
+            expect(file.smallFileUrl).toBe(fileData.smallFileUrl);
+            expect(file.fullGcsDest).toBe(fileData.fullGcsDest);
+            expect(file.smallGcsDest).toBe(fileData.smallGcsDest);
+            expect(file.gcsId).toBe(fileData.gcsId);
+        });
+
         it('should update file category - current is Other', async () => {
             await collection.updateOne({ _id: 0 }, { $push: { items: fileData } });
             let currCategory = await collection.findOne({ _id: 0 });
@@ -910,6 +1199,54 @@ describe('files', () => {
             expect(file.fullGcsDest).toBe(fileData.fullGcsDest);
             expect(file.smallGcsDest).toBe(fileData.smallGcsDest);
             expect(file.gcsId).toBe(fileData.gcsId);
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            // perform action to test
+            delete patchData.newCategoryId;
+            let response = await agent(app)
+                .patch(`/files/category/${data._id.toString()}/${fileData.gcsId}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            const currCategory = await collection.findOne({ _id: data._id });
+            const currItems = currCategory.items;
+            expect(currItems).toHaveLength(4);
+            const file = currItems.find(item => item.gcsId === fileData.gcsId);
+            expect(file).toBeTruthy();
+
+            const newCategory = await collection.findOne({ _id: newCategoryData._id });
+            const newItems = newCategory.items;
+            expect(newItems).toHaveLength(1);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            // perform action to test
+            delete patchData.newCategoryId;
+            let response = await agent(app)
+                .patch(`/files/category/${data._id.toString()}/${fileData.gcsId}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+
+            const currCategory = await collection.findOne({ _id: data._id });
+            const currItems = currCategory.items;
+            expect(currItems).toHaveLength(4);
+            const file = currItems.find(item => item.gcsId === fileData.gcsId);
+            expect(file).toBeTruthy();
+
+            const newCategory = await collection.findOne({ _id: newCategoryData._id });
+            const newItems = newCategory.items;
+            expect(newItems).toHaveLength(1);
         });
 
         it('should fail with missing new category id', async () => {
@@ -1129,6 +1466,31 @@ describe('files', () => {
             expect(files).toHaveLength(0);
         });
 
+        it('should delete file - non-admin', async () => {
+            await setNonAdmin(db);
+
+            let category = await collection.findOne({ _id: data._id });
+            expect(category.items).toHaveLength(4);
+            let file = category.items.find(item => item.gcsId === fileData.gcsId);
+            expect(file).toBeTruthy();
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/files/${data._id.toString()}/${fileData.gcsId}`);
+            
+            // perform checks
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Success!');
+
+            category = await collection.findOne({ _id: data._id });
+            expect(category.items).toHaveLength(3);
+            file = category.items.find(item => item.gcsId === fileData.gcsId);
+            expect(file).toBeFalsy();
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(0);
+        });
+
         it('should delete file - Other category', async () => {
             await clearCollection(collection);
             await collection.insertOne({ _id: 0, name: 'Other', items: [ fileData ] });
@@ -1153,6 +1515,56 @@ describe('files', () => {
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(0);
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            let category = await collection.findOne({ _id: data._id });
+            expect(category.items).toHaveLength(4);
+            let file = category.items.find(item => item.gcsId === fileData.gcsId);
+            expect(file).toBeTruthy();
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/files/${data._id.toString()}/${fileData.gcsId}`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+
+            category = await collection.findOne({ _id: data._id });
+            expect(category.items).toHaveLength(4);
+            file = category.items.find(item => item.gcsId === fileData.gcsId);
+            expect(file).toBeTruthy();
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(2);
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            let category = await collection.findOne({ _id: data._id });
+            expect(category.items).toHaveLength(4);
+            let file = category.items.find(item => item.gcsId === fileData.gcsId);
+            expect(file).toBeTruthy();
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/files/${data._id.toString()}/${fileData.gcsId}`);
+            
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+
+            category = await collection.findOne({ _id: data._id });
+            expect(category.items).toHaveLength(4);
+            file = category.items.find(item => item.gcsId === fileData.gcsId);
+            expect(file).toBeTruthy();
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(2);
         });
 
         it('should fail with invalid category id', async () => {
