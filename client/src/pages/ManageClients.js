@@ -49,6 +49,7 @@ export default function ManageClients() {
     const [newClientLName, setNewClientLName] = useState('');
     const [newClientEmail, setNewClientEmail] = useState('');
     const [newClientRole, setNewClientRole] = useState(false);
+    const [newClientCredits, setNewClientCredits] = useState(350);
     const [loading, setLoading] = useState(false);
 
     const [deleteProgressOpen, setDeleteProgressOpen] = useState(false);
@@ -104,6 +105,7 @@ export default function ManageClients() {
                 firstName: newClientFName,
                 lastName: newClientLName,
                 email: newClientEmail,
+                credits: newClientCredits,
                 isAdmin: newClientRole
             });
             handleClose();
@@ -118,11 +120,12 @@ export default function ManageClients() {
         }
     }
 
-    async function editClient(client, newFirstName, newLastName, newEmail, newIsAdmin) {
+    async function editClient(client, newFirstName, newLastName, newEmail, newCredits, newIsAdmin) {
         setLoading(true);
         if (client.firstName === newFirstName && 
             client.lastName === newLastName &&
             client.email === newEmail &&
+            client.credits === newCredits &&
             client.isAdmin === newIsAdmin
         ) {
             setLoading(false);
@@ -133,6 +136,7 @@ export default function ManageClients() {
                 newFirstName: newFirstName, 
                 newLastName: newLastName,
                 newEmail: newEmail,
+                credits: newCredits,
                 newIsAdmin: newIsAdmin
             });  
             await getClients();
@@ -340,6 +344,13 @@ export default function ManageClients() {
                                 label="Email"
                                 value={newClientEmail}
                                 onChange={e => setNewClientEmail(e.target.value)}
+                            />
+                            <Input
+                                type="number"
+                                id="credits"
+                                label="Credits"
+                                value={newClientCredits}
+                                onChange={e => setNewClientCredits(e.target.value)}
                             />
                             <Input 
                                 type="checkbox"

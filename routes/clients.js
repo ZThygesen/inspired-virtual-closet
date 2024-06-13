@@ -20,6 +20,11 @@ const clients = {
                 throw helpers.createError('an email is required for client creation', 400);
             }
 
+            const credits = req?.body?.credits;
+            if (!credits || typeof credits !== 'number') {
+                throw helpers.createError('credits missing or must be of type number to create client', 400);
+            }
+
             const isAdmin = req?.body?.isAdmin;
             if (isAdmin === null || isAdmin === undefined) {
                 throw helpers.createError('a role status is required for client creation', 400);
@@ -29,6 +34,7 @@ const clients = {
                 firstName: firstName,
                 lastName: lastName,
                 email: email,
+                credits: credits,
                 isAdmin: isAdmin
             }
             
@@ -77,6 +83,11 @@ const clients = {
                 throw helpers.createError('an email is required for client update', 400);
             }
 
+            const credits = req?.body?.newCredits;
+            if (!credits || typeof credits !== 'number') {
+                throw helpers.createError('credits missing or must be of type number to update client', 400);
+            }
+
             const isAdmin = req?.body?.newIsAdmin;
             if (isAdmin === null || isAdmin === undefined) {
                 throw helpers.createError('a role status is required for client update', 400);
@@ -89,6 +100,7 @@ const clients = {
                         firstName: firstName,
                         lastName: lastName,
                         email: email,
+                        credits: credits,
                         isAdmin: isAdmin
                     }
                 }

@@ -19,6 +19,7 @@ describe('outfits', () => {
             firstName: 'Jane',
             lastName: 'Deer',
             email: 'janedeer11@gmail.com',
+            credits: 350,
             isAdmin: true
         }
 
@@ -93,6 +94,7 @@ describe('outfits', () => {
             firstName: 'John',
             lastName: 'Doe',
             email: 'jdoe@gmail.com',
+            credits: 350,
             isAdmin: false
         };
         

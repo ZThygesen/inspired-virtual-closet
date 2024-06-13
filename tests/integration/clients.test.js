@@ -16,6 +16,7 @@ describe('clients', () => {
             firstName: 'Jane',
             lastName: 'Deer',
             email: 'janedeer11@gmail.com',
+            credits: 350,
             isAdmin: true,
             isSuperAdmin: true
         }
@@ -85,6 +86,7 @@ describe('clients', () => {
                 firstName: 'John',
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
+                credits: 350,
                 isAdmin: false
             };
         });
@@ -106,6 +108,7 @@ describe('clients', () => {
             expect(client.firstName).toBe(data.firstName);
             expect(client.lastName).toBe(data.lastName);
             expect(client.email).toBe(data.email);
+            expect(client.credits).toBe(data.credits);
             expect(client.isAdmin).toBe(data.isAdmin);
         });
 
@@ -192,6 +195,28 @@ describe('clients', () => {
             await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
         });
 
+        it('should fail with missing credits', async () => {
+            delete data.credits;
+            const response = await agent(app)
+                .post('/api/clients')
+                .send(data);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('credits missing or must be of type number to create client');
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+        });
+
+        it('should fail with invalid credits', async () => {
+            data.credits = '350';
+            const response = await agent(app)
+                .post('/api/clients')
+                .send(data);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('credits missing or must be of type number to create client');
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+        });
+
         it('should fail with missing admin status', async () => {
             delete data.isAdmin;
             const response = await agent(app)
@@ -212,6 +237,7 @@ describe('clients', () => {
                 firstName: 'John',
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
+                credits: 350,
                 isAdmin: false
             };
             await collection.insertOne(data);
@@ -231,6 +257,7 @@ describe('clients', () => {
             expect(client.firstName).toBe(data.firstName);
             expect(client.lastName).toBe(data.lastName);
             expect(client.email).toBe(data.email);
+            expect(client.credits).toBe(data.credits);
             expect(client.isAdmin).toBe(data.isAdmin);
         });
 
@@ -296,6 +323,7 @@ describe('clients', () => {
                 firstName: 'John',
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
+                credits: 350,
                 isAdmin: false
             };
             await collection.insertOne(data);
@@ -304,6 +332,7 @@ describe('clients', () => {
                 newFirstName: 'Jane',
                 newLastName: 'Deer',
                 newEmail: 'jdeer@gmail.com',
+                newCredits: 450,
                 newIsAdmin: true
             };
         });
@@ -315,6 +344,7 @@ describe('clients', () => {
             expect(client.firstName).toBe(data.firstName);
             expect(client.lastName).toBe(data.lastName);
             expect(client.email).toBe(data.email);
+            expect(client.credits).toBe(data.credits);
             expect(client.isAdmin).toBe(data.isAdmin);
 
             const response = await agent(app)
@@ -331,6 +361,7 @@ describe('clients', () => {
             expect(client.firstName).toBe(patchData.newFirstName);
             expect(client.lastName).toBe(patchData.newLastName);
             expect(client.email).toBe(patchData.newEmail);
+            expect(client.credits).toBe(patchData.newCredits);
             expect(client.isAdmin).toBe(patchData.newIsAdmin);
         }); 
 
@@ -430,6 +461,7 @@ describe('clients', () => {
             patchData.newFirstName = data.firstName;
             patchData.newLastName = data.lastName;
             patchData.newEmail = data.email;
+            patchData.newCredits = data.credits;
             patchData.newIsAdmin = data.isAdmin;
 
             const response = await agent(app)
@@ -490,6 +522,36 @@ describe('clients', () => {
             expect(client).toStrictEqual(data);
         });
 
+        it('should fail with missing credits', async () => {
+            patchData.newCredits = null;
+            const response = await agent(app)
+                .patch(`/api/clients/${data._id.toString()}`)
+                .send(patchData);
+
+            // perform checks
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('credits missing or must be of type number to update client');
+
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
+            const client = await collection.findOne({ _id: data._id });
+            expect(client).toStrictEqual(data);
+        });
+
+        it('should fail invalid credits', async () => {
+            patchData.newCredits = '450';
+            const response = await agent(app)
+                .patch(`/api/clients/${data._id.toString()}`)
+                .send(patchData);
+
+            // perform checks
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('credits missing or must be of type number to update client');
+
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
+            const client = await collection.findOne({ _id: data._id });
+            expect(client).toStrictEqual(data);
+        });
+
         it('should fail with no role status', async () => {
             patchData.newIsAdmin = null;
             const response = await agent(app)
@@ -513,7 +575,8 @@ describe('clients', () => {
                 _id: new ObjectId(),
                 firstName: 'John',
                 lastName: 'Doe',
-                email: '',
+                email: 'jdoe@gmail.com',
+                credits: 350,
                 isAdmin: false
             };
             await collection.insertOne(data);

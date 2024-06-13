@@ -11,6 +11,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
     const [newFirstName, setNewFirstName] = useState(client.firstName);
     const [newLastName, setNewLastName] = useState(client.lastName);
     const [newEmail, setNewEmail] = useState(client.email);
+    const [newCredits, setNewCredits] = useState(client.credits);
     const [newRole, setNewRole] = useState(client.isAdmin);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
@@ -21,7 +22,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
     function handleSubmitEdit(e) {
         e.preventDefault();
         setEditOpen(false);
-        editClient(client, newFirstName, newLastName, newEmail, newRole);
+        editClient(client, newFirstName, newLastName, newEmail, newCredits, newRole);
     }
 
     function handleCloseEdit() {
@@ -30,13 +31,14 @@ export default function ClientCard({ client, editClient, deleteClient }) {
         setNewLastName(client.lastName);
         setNewEmail(client.email);
         setNewRole(client.isAdmin);
+        setNewCredits(client.credits);
     }
 
     return (
         <>
             <ClientCardContainer>
                 <p className="client-name">{`${client.firstName} ${client.lastName}`}</p>
-                <p className="client-name secondary">{`${client.email} - ${client.isAdmin}`}</p>
+                <p className="client-name secondary">{`${client.email} - ${client.isAdmin} - ${client?.isSuperAdmin || false} - ${client.credits || 0}`}</p>
                 <div className="client-options">
                     { (!client?.isSuperAdmin && user?.isSuperAdmin) &&
                         <Tooltip title="Edit">
@@ -87,6 +89,13 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                         label="Email"
                         value={newEmail}
                         onChange={e => setNewEmail(e.target.value)}
+                    />
+                    <Input
+                        type="number"
+                        id="credits"
+                        label="Credits"
+                        value={newCredits}
+                        onChange={e => setNewCredits(e.target.value)}
                     />
                     <Input
                         type="checkbox"

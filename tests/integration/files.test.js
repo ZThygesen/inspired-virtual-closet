@@ -19,6 +19,7 @@ describe('files', () => {
             firstName: 'Jane',
             lastName: 'Deer',
             email: 'janedeer11@gmail.com',
+            credits: 350,
             isAdmin: true
         }
 

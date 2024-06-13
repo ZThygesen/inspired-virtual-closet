@@ -59,6 +59,7 @@ describe('clients', () => {
                 firstName: 'John',
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
+                credits: 350,
                 isAdmin: false
             };
         });
@@ -172,6 +173,42 @@ describe('clients', () => {
             expect(err.message).toBe('an email is required for client creation');
         });
 
+        it('should fail with missing credits', async () => {
+            // perform action to test
+            delete data.credits;
+            const req = { body: data, locals: { db: mockDb } };
+
+            await clients.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.insertOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('credits missing or must be of type number to create client');
+        });
+
+        it('should fail with invalid credits', async () => {
+            // perform action to test
+            data.credits = '350';
+            const req = { body: data, locals: { db: mockDb } };
+
+            await clients.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.insertOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('credits missing or must be of type number to create client');
+        });
+
         it('should fail with missing admin status', async () => {
             // perform action to test
             delete data.isAdmin;
@@ -199,6 +236,7 @@ describe('clients', () => {
                 firstName: 'John',
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
+                credits: 350,
                 isAdmin: false
             };
         });
@@ -271,6 +309,7 @@ describe('clients', () => {
                 newFirstName: 'John',
                 newLastName: 'Doe',
                 newEmail: 'jdoe@gmail.com',
+                newCredits: 450,
                 newIsAdmin: false
             };
 
@@ -419,6 +458,42 @@ describe('clients', () => {
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
             expect(err.message).toBe('an email is required for client update');
+        });
+
+        it('should fail with missing credits', async () => {
+            // perform action to test
+            data.newCredits = undefined;
+            const req = { body: data, params: { clientId: clientId }, locals: { db: mockDb } };
+
+            await clients.patch(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('credits missing or must be of type number to update client');
+        });
+
+        it('should fail with invalid credits', async () => {
+            // perform action to test
+            data.newCredits = '450';
+            const req = { body: data, params: { clientId: clientId }, locals: { db: mockDb } };
+
+            await clients.patch(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('credits missing or must be of type number to update client');
         });
 
         it('should fail with missing admin status', async () => {
