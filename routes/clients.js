@@ -129,9 +129,9 @@ const clients = {
 
 const router = express.Router();
 
-router.post('/', auth.requireAdmin, clients.post);
+router.post('/', auth.requireSuperAdmin, auth.requireAdmin, clients.post);
 router.get('/', auth.requireAdmin, clients.get);
-router.patch('/:clientId', auth.requireAdmin, clients.patch);
-router.delete('/:clientId', auth.requireAdmin, clients.delete);
+router.patch('/:clientId', auth.requireSuperAdmin, auth.requireAdmin, clients.patch);
+router.delete('/:clientId', auth.requireSuperAdmin, auth.requireAdmin, clients.delete);
 
 export { clients, router as clientsRouter };

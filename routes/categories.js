@@ -138,9 +138,9 @@ const categories = {
 
 const router = express.Router();
 
-router.post('/', auth.requireAdmin, categories.post);
+router.post('/', auth.requireSuperAdmin, auth.requireAdmin, categories.post);
 router.get('/', categories.get);
-router.patch('/:categoryId', auth.requireAdmin, categories.patch);
-router.delete('/:categoryId', auth.requireAdmin, categories.delete);
+router.patch('/:categoryId', auth.requireSuperAdmin, auth.requireAdmin, categories.patch);
+router.delete('/:categoryId', auth.requireSuperAdmin, auth.requireAdmin, categories.delete);
 
 export { categories, router as categoriesRouter }; 

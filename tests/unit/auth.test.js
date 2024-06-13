@@ -105,7 +105,7 @@ describe('auth', () => {
             expect(mockGetPayload).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
             expect(mockCollection.findOne).toHaveBeenCalledWith({ email: mockEmail });
-            expect(mockSign).toHaveBeenCalledWith({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
+            expect(mockSign).toHaveBeenCalledWith({ id: user._id, isAdmin: user.isAdmin, isSuperAdmin: false }, process.env.JWT_SECRET);
             expect(mockRes.cookie).toHaveBeenCalledWith('token', mockToken, { httpOnly: true, secure: true, sameSite: 'strict' });
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ user: user });
@@ -255,7 +255,7 @@ describe('auth', () => {
             expect(mockGetPayload).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
             expect(mockCollection.findOne).toHaveBeenCalledWith({ email: mockEmail });
-            expect(mockSign).toHaveBeenCalledWith({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
+            expect(mockSign).toHaveBeenCalledWith({ id: user._id, isAdmin: user.isAdmin, isSuperAdmin: false }, process.env.JWT_SECRET);
             expect(mockRes.cookie).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
@@ -514,6 +514,38 @@ describe('auth', () => {
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(401);
             expect(err.message).toBe('only admins are authorized for this action');
+        });
+    });
+
+    describe('requireSuperAdmin', () => {
+        it('should accept super admin', async () => {
+            const req = { user: { isSuperAdmin: true }};
+
+            auth.requireSuperAdmin(req, mockRes, mockNext);
+
+            expect(mockNext).toHaveBeenCalledWith();
+        });
+
+        it('should fail if not super admin', async () => {
+            const req = { user: { isSuperAdmin: false }};
+
+            auth.requireSuperAdmin(req, mockRes, mockNext);
+
+            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(401);
+            expect(err.message).toBe('only super admins are authorized for this action');
+        });
+
+        it('should fail if user not given', async () => {
+            const req = { };
+
+            auth.requireSuperAdmin(req, mockRes, mockNext);
+
+            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(401);
+            expect(err.message).toBe('only super admins are authorized for this action');
         });
     });
 

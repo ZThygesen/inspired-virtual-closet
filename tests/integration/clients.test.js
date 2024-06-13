@@ -16,22 +16,30 @@ describe('clients', () => {
             firstName: 'Jane',
             lastName: 'Deer',
             email: 'janedeer11@gmail.com',
-            isAdmin: true
+            isAdmin: true,
+            isSuperAdmin: true
         }
 
         const collection = db.collection('clients');
         await collection.insertOne(user);
 
-        token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
+        token = jwt.sign({ id: user._id, isAdmin: user.isAdmin, isSuperAdmin: user.isSuperAdmin }, process.env.JWT_SECRET);
         cookie = `token=${token}`;
-        invalidToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, 'not-correct-secret');
+        invalidToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin, isSuperAdmin: user.isSuperAdmin }, 'not-correct-secret');
         invalidCookie = `token=${invalidToken}`;
+    }
+
+    async function setNonSuperAdmin(db) {
+        const collection = db.collection('clients');
+        await collection.updateOne({ _id: user._id }, { $set: { isSuperAdmin: false } });
+        token = jwt.sign({ id: user._id, isAdmin: true, isSuperAdmin: false }, process.env.JWT_SECRET);
+        cookie = `token=${token}`;
     }
 
     async function setNonAdmin(db) {
         const collection = db.collection('clients');
-        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: false } });
-        token = jwt.sign({ id: user._id, isAdmin: false }, process.env.JWT_SECRET);
+        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: false, isSuperAdmin: false } });
+        token = jwt.sign({ id: user._id, isAdmin: false, isSuperAdmin: false }, process.env.JWT_SECRET);
         cookie = `token=${token}`;
     }
 
@@ -101,6 +109,18 @@ describe('clients', () => {
             expect(client.isAdmin).toBe(data.isAdmin);
         });
 
+        it('should fail if user not super admin', async () => {
+            await setNonSuperAdmin(db);
+
+            const response = await agent(app)
+                .post('/api/clients')
+                .send(data);
+
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only super admins are authorized for this action');
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+        });
+
         it('should fail if user not admin', async () => {
             await setNonAdmin(db);
 
@@ -109,7 +129,7 @@ describe('clients', () => {
                 .send(data);
 
             expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only admins are authorized for this action');
+            expect(response.body.message).toBe('only super admins are authorized for this action');
             await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
         });
 
@@ -236,14 +256,14 @@ describe('clients', () => {
             expect(response.body).toHaveLength(0);
         });
 
-        it('should fail if non-admin', async () => {
+        it('should fail if not admin', async () => {
             await setNonAdmin(db);
 
             const response = await agent(app)
                 .get('/api/clients');
 
             expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only admins are authorized for this action');
+            expect(response.body.message).toBe('only super admins are authorized for this action');
         });
 
         it('should fail with missing token', async () => {
@@ -314,7 +334,23 @@ describe('clients', () => {
             expect(client.isAdmin).toBe(patchData.newIsAdmin);
         }); 
 
-        it('should fail if non-admin', async () => {
+        it('should fail if not super admin', async () => {
+            await setNonSuperAdmin(db);
+
+            const response = await agent(app)
+                .patch(`/api/clients/${data._id.toString()}`)
+                .send(patchData);
+
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only super admins are authorized for this action');
+
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
+            const client = await collection.findOne({ _id: data._id });
+            expect(client).toStrictEqual(data);
+        });  
+
+        it('should fail if not admin', async () => {
             await setNonAdmin(db);
 
             const response = await agent(app)
@@ -323,7 +359,7 @@ describe('clients', () => {
 
             // perform checks
             expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only admins are authorized for this action');
+            expect(response.body.message).toBe('only super admins are authorized for this action');
 
             await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
             const client = await collection.findOne({ _id: data._id });
@@ -497,7 +533,23 @@ describe('clients', () => {
             expect(client).toBeFalsy();
         });
 
-        it('should fail if non-admin', async () => {
+        it('should fail if not super admin', async () => {
+            await setNonSuperAdmin(db);
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/api/clients/${data._id.toString()}`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only super admins are authorized for this action');
+
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
+            const client = await collection.findOne({ _id: data._id });
+            expect(client).toStrictEqual(data);
+        });
+
+        it('should fail if not admin', async () => {
             await setNonAdmin(db);
 
             // perform action to test
@@ -506,7 +558,7 @@ describe('clients', () => {
             
             // perform checks
             expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only admins are authorized for this action');
+            expect(response.body.message).toBe('only super admins are authorized for this action');
 
             await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
             const client = await collection.findOne({ _id: data._id });

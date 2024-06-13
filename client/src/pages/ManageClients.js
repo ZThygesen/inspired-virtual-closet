@@ -10,6 +10,7 @@ import Modal from '../components/Modal';
 import Input from '../components/Input';
 import { CircularProgress } from '@mui/material';
 import { ManageClientsContainer } from '../styles/ManageClients';
+import { useUser } from '../components/UserContext';
 
 const CircleProgress = styled(CircularProgress)`
     & * {
@@ -54,6 +55,8 @@ export default function ManageClients() {
     const [deleteProgressMessage, setDeleteProgressMessage] = useState('');
     const [deleteProgressNumerator, setDeleteProgressNumerator] = useState(0)
     const [deleteProgressDenominator, setDeleteProgressDenominator] = useState(1);
+
+    const { user } = useUser();
 
     const getClients = useCallback(async () => {
         setLoading(true);
@@ -300,55 +303,59 @@ export default function ManageClients() {
                         ))
                     }
                 </div>
-                <div className="footer">
-                    <ActionButton variant={'secondary'} onClick={() => setOpenModal(true)}>ADD CLIENT</ActionButton>
-                </div>
+                { user?.isSuperAdmin &&
+                    <div className="footer">
+                        <ActionButton variant={'secondary'} onClick={() => setOpenModal(true)}>ADD CLIENT</ActionButton>
+                    </div>
+                }
             </ManageClientsContainer>
             <Loading open={loading} />
-            <Modal
-                open={openModal}
-                closeFn={handleClose}
-                isForm={true}
-                submitFn={addClient}
-            >
-                <>
-                    <h2 className="modal-title">ADD CLIENT</h2>
-                    <div className="modal-content">
-                        <Input
-                            type="text"
-                            id="first-name"
-                            label="First Name"
-                            value={newClientFName}
-                            onChange={e => setNewClientFName(e.target.value)}
-                        />
-                        <Input 
-                            type="text"
-                            id="last-name"
-                            label="Last Name"
-                            value={newClientLName}
-                            onChange={e => setNewClientLName(e.target.value)}
-                        />
-                        <Input 
-                            type="text"
-                            id="email"
-                            label="Email"
-                            value={newClientEmail}
-                            onChange={e => setNewClientEmail(e.target.value)}
-                        />
-                        <Input 
-                            type="checkbox"
-                            id="role"
-                            label="Admin"
-                            value={newClientRole}
-                            onChange={e => setNewClientRole(e.target.checked)}
-                        />
-                    </div>
-                    <div className="modal-options">
-                        <button type="button" onClick={handleClose}>Cancel</button>
-                        <button type="submit">Submit</button>
-                    </div>
-                </>
-            </Modal>
+            { user?.isSuperAdmin &&
+                <Modal
+                    open={openModal}
+                    closeFn={handleClose}
+                    isForm={true}
+                    submitFn={addClient}
+                >
+                    <>
+                        <h2 className="modal-title">ADD CLIENT</h2>
+                        <div className="modal-content">
+                            <Input
+                                type="text"
+                                id="first-name"
+                                label="First Name"
+                                value={newClientFName}
+                                onChange={e => setNewClientFName(e.target.value)}
+                            />
+                            <Input 
+                                type="text"
+                                id="last-name"
+                                label="Last Name"
+                                value={newClientLName}
+                                onChange={e => setNewClientLName(e.target.value)}
+                            />
+                            <Input 
+                                type="text"
+                                id="email"
+                                label="Email"
+                                value={newClientEmail}
+                                onChange={e => setNewClientEmail(e.target.value)}
+                            />
+                            <Input 
+                                type="checkbox"
+                                id="role"
+                                label="Admin"
+                                value={newClientRole}
+                                onChange={e => setNewClientRole(e.target.checked)}
+                            />
+                        </div>
+                        <div className="modal-options">
+                            <button type="button" onClick={handleClose}>Cancel</button>
+                            <button type="submit">Submit</button>
+                        </div>
+                    </>
+                </Modal>
+            }
             <Modal
                 open={deleteProgressOpen}
             >

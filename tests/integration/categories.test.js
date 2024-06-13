@@ -17,22 +17,30 @@ describe('categories', () => {
             firstName: 'Jane',
             lastName: 'Deer',
             email: 'janedeer11@gmail.com',
-            isAdmin: true
+            isAdmin: true,
+            isSuperAdmin: true
         }
 
         const collection = db.collection('clients');
         await collection.insertOne(user);
 
-        token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
+        token = jwt.sign({ id: user._id, isAdmin: user.isAdmin, isSuperAdmin: user.isSuperAdmin }, process.env.JWT_SECRET);
         cookie = `token=${token}`;
-        invalidToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, 'not-correct-secret');
+        invalidToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin, isSuperAdmin: user.isSuperAdmin }, 'not-correct-secret');
         invalidCookie = `token=${invalidToken}`;
+    }
+
+    async function setNonSuperAdmin(db) {
+        const collection = db.collection('clients');
+        await collection.updateOne({ _id: user._id }, { $set: { isSuperAdmin: false } });
+        token = jwt.sign({ id: user._id, isAdmin: true, isSuperAdmin: false }, process.env.JWT_SECRET);
+        cookie = `token=${token}`;
     }
 
     async function setNonAdmin(db) {
         const collection = db.collection('clients');
-        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: false } });
-        token = jwt.sign({ id: user._id, isAdmin: false }, process.env.JWT_SECRET);
+        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: false, isSuperAdmin: false } });
+        token = jwt.sign({ id: user._id, isAdmin: false, isSuperAdmin: false }, process.env.JWT_SECRET);
         cookie = `token=${token}`;
     }
 
@@ -109,7 +117,24 @@ describe('categories', () => {
             expect(category.items).toEqual([]);
         }); 
 
-        it('should fail if non-admin', async () => {
+        it('should fail if not super admin', async () => {
+            await setNonSuperAdmin(db);
+
+            const response = await agent(app)
+                .post('/categories')
+                .send(data);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only super admins are authorized for this action');
+
+            const categories = await collection.find({ }).toArray();
+            expect(categories).toHaveLength(1);
+            expect(categories[0]._id).toBe(0);
+            expect(categories[0].name).toBe('Other');
+        }); 
+
+        it('should fail if not admin', async () => {
             await setNonAdmin(db);
 
             const response = await agent(app)
@@ -118,13 +143,13 @@ describe('categories', () => {
             
             // perform checks
             expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only admins are authorized for this action');
+            expect(response.body.message).toBe('only super admins are authorized for this action');
 
             const categories = await collection.find({ }).toArray();
             expect(categories).toHaveLength(1);
             expect(categories[0]._id).toBe(0);
             expect(categories[0].name).toBe('Other');
-        }); 
+        });
 
         it('should fail with missing token', async () => {
             cookie = '';
@@ -354,7 +379,26 @@ describe('categories', () => {
             expect(category.items).toEqual([]);
         });  
 
-        it('should fail if non-admin', async () => {
+        it('should fail if not super admin', async () => {
+            await setNonSuperAdmin(db);
+
+            // perform action to test
+            const response = await agent(app)
+                .patch(`/categories/${data._id.toString()}`)
+                .send(patchData);
+
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only super admins are authorized for this action');
+
+            const categories = await collection.find({ }).toArray();
+            expect(categories).toHaveLength(2);
+            expect(categories[0]._id).toBe(0);
+            expect(categories[0].name).toBe('Other');
+            expect(categories[1]).toStrictEqual(data);
+        }); 
+
+        it('should fail if not admin', async () => {
             await setNonAdmin(db);
 
             // perform action to test
@@ -364,14 +408,14 @@ describe('categories', () => {
 
             // perform checks
             expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only admins are authorized for this action');
+            expect(response.body.message).toBe('only super admins are authorized for this action');
 
             const categories = await collection.find({ }).toArray();
             expect(categories).toHaveLength(2);
             expect(categories[0]._id).toBe(0);
             expect(categories[0].name).toBe('Other');
             expect(categories[1]).toStrictEqual(data);
-        }); 
+        });
 
         it('should fail with missing token', async () => {
             cookie = '';
@@ -595,7 +639,25 @@ describe('categories', () => {
             expect(otherCategory.items).toHaveLength(0);
         });
 
-        it('should fail if non-admin', async () => {
+        it('should fail if not super admin', async () => {
+            await setNonSuperAdmin(db);
+
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/categories/${data._id.toString()}`);
+            
+            // perform checks
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('only super admins are authorized for this action');
+
+            const categories = await collection.find({ }).toArray();
+            expect(categories).toHaveLength(2);
+            expect(categories[0]._id).toBe(0);
+            expect(categories[0].name).toBe('Other');
+            expect(categories[1]).toStrictEqual(data);
+        });
+
+        it('should fail if not admin', async () => {
             await setNonAdmin(db);
 
             // perform action to test
@@ -604,7 +666,7 @@ describe('categories', () => {
             
             // perform checks
             expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only admins are authorized for this action');
+            expect(response.body.message).toBe('only super admins are authorized for this action');
 
             const categories = await collection.find({ }).toArray();
             expect(categories).toHaveLength(2);

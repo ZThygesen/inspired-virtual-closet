@@ -33,7 +33,7 @@ const auth = {
                 throw helpers.createError('user not authorized', 401);
             }
 
-            const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
+            const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin, isSuperAdmin: user?.isSuperAdmin || false }, process.env.JWT_SECRET);
             
             res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'strict' });
             res.status(200).json({ user });
@@ -92,6 +92,14 @@ const auth = {
     requireAdmin(req, res, next) {
         if (!req?.user?.isAdmin) {
             return next(helpers.createError('only admins are authorized for this action', 401));
+        }
+
+        next();
+    },
+
+    requireSuperAdmin(req, res, next) {
+        if (!req?.user?.isSuperAdmin) {
+            return next(helpers.createError('only super admins are authorized for this action', 401));
         }
 
         next();
