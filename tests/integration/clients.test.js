@@ -263,7 +263,7 @@ describe('clients', () => {
                 .get('/api/clients');
 
             expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only super admins are authorized for this action');
+            expect(response.body.message).toBe('only admins are authorized for this action');
         });
 
         it('should fail with missing token', async () => {
