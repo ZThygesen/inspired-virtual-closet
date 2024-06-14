@@ -44,6 +44,15 @@ const files = {
             if ((await collection.find({ _id: id }).toArray()).length !== 1) {
                 throw helpers.createError(`cannot add file: no category or multiple categories with the id "${id.toString()}" exist`, 404);
             }
+            
+            const isSuperAdmin = await helpers.isSuperAdmin(db, clientId);
+            let clientCredits;
+            if (!isSuperAdmin) {
+                clientCredits = await helpers.getCredits(db, clientId);
+                if (clientCredits <= 0) {
+                    throw helpers.createError('client does not have any credits', 403);
+                }
+            }
 
             // create GCS destinations
             const gcsId = cuid2.createId();
@@ -99,6 +108,10 @@ const files = {
 
             if (result.modifiedCount === 0) {
                 throw helpers.createError('insertion of file failed: category not found with given category id', 404);
+            }
+
+            if (!isSuperAdmin) {
+                await helpers.deductCredits(db, clientId, clientCredits);
             }
 
             res.status(201).json({ message: 'Success!'});

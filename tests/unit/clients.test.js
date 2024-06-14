@@ -193,7 +193,7 @@ describe('clients', () => {
 
         it('should fail with invalid credits', async () => {
             // perform action to test
-            data.credits = '350';
+            data.credits = 'not a number';
             const req = { body: data, locals: { db: mockDb } };
 
             await clients.post(req, mockRes, mockNext);
@@ -480,7 +480,7 @@ describe('clients', () => {
 
         it('should fail with invalid credits', async () => {
             // perform action to test
-            data.newCredits = '450';
+            data.newCredits = 'not a number';
             const req = { body: data, params: { clientId: clientId }, locals: { db: mockDb } };
 
             await clients.patch(req, mockRes, mockNext);

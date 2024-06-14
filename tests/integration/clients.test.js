@@ -207,7 +207,7 @@ describe('clients', () => {
         });
 
         it('should fail with invalid credits', async () => {
-            data.credits = '350';
+            data.credits = 'not a number';
             const response = await agent(app)
                 .post('/api/clients')
                 .send(data);
@@ -537,8 +537,8 @@ describe('clients', () => {
             expect(client).toStrictEqual(data);
         });
 
-        it('should fail invalid credits', async () => {
-            patchData.newCredits = '450';
+        it('should fail with invalid credits', async () => {
+            patchData.newCredits = 'not a number';
             const response = await agent(app)
                 .patch(`/api/clients/${data._id.toString()}`)
                 .send(patchData);

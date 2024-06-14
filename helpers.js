@@ -316,6 +316,76 @@ export const helpers = {
                 }
             }
         );
+    },
+
+    // determines if given client is a super admin
+    async isSuperAdmin(db, clientId) {
+        if (!db) {
+            throw this.createError('database instance required to check client super admin status', 500);
+        }
+
+        if (!this.isValidId(clientId)) {
+            throw this.createError('failed to get super admin status: invalid or missing client id', 400);
+        }
+
+        const collection = db.collection('clients');
+        const client = await collection.findOne({ _id: ObjectId(clientId) });
+        
+        const isSuperAdmin = client?.isSuperAdmin || false;
+
+        return isSuperAdmin;
+    },
+
+    // gets how many credits a client has
+    async getCredits(db, clientId) {
+        if (!db) {
+            throw this.createError('database instance required to get client credits', 500);
+        }
+
+        if (!this.isValidId(clientId)) {
+            throw this.createError('failed to get credits: invalid or missing client id', 400);
+        }
+
+        const collection = db.collection('clients');
+        const client = await collection.findOne({ _id: ObjectId(clientId) });
+        
+        const credits = parseInt(client?.credits);
+        if (isNaN(credits)) {
+            throw this.createError('client does not have any credits or does not exist', 403);
+        }
+
+        return credits;
+    },
+
+    // deducts a credit from a client
+    async deductCredits(db, clientId, currCredits) {
+        if (!db) {
+            throw this.createError('database instance required to deduct credits', 500);
+        }
+
+        if (!this.isValidId(clientId)) {
+            throw this.createError('failed to deduct credits: invalid or missing client id', 400);
+        }
+
+        if (isNaN(parseInt(currCredits))) {
+            throw this.createError('credits is missing or not a number', 400);
+        }
+
+        const collection = db.collection('clients');
+        const result = await collection.updateOne(
+            { _id: ObjectId(clientId) },
+            {
+                $set: {
+                    credits: currCredits - 1
+                }
+            }
+        );
+
+        if (result.modifiedCount === 0) {
+            throw this.createError('no credits were deducted', 500);
+        }
+
+        return Promise.resolve();
     }
 
     /*

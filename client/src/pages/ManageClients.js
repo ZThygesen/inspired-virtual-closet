@@ -93,6 +93,7 @@ export default function ManageClients() {
         setNewClientFName('');
         setNewClientLName('');
         setNewClientEmail('');
+        setNewClientCredits(350);
         setNewClientRole(false);
     }
 
@@ -136,7 +137,7 @@ export default function ManageClients() {
                 newFirstName: newFirstName, 
                 newLastName: newLastName,
                 newEmail: newEmail,
-                credits: newCredits,
+                newCredits: newCredits,
                 newIsAdmin: newIsAdmin
             });  
             await getClients();

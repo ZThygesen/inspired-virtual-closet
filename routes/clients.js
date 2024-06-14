@@ -20,8 +20,8 @@ const clients = {
                 throw helpers.createError('an email is required for client creation', 400);
             }
 
-            const credits = req?.body?.credits;
-            if (!credits || typeof credits !== 'number') {
+            const credits = parseInt(req?.body?.credits);
+            if (isNaN(credits)) {
                 throw helpers.createError('credits missing or must be of type number to create client', 400);
             }
 
@@ -83,8 +83,8 @@ const clients = {
                 throw helpers.createError('an email is required for client update', 400);
             }
 
-            const credits = req?.body?.newCredits;
-            if (!credits || typeof credits !== 'number') {
+            const credits = parseInt(req?.body?.newCredits);
+            if (isNaN(credits)) {
                 throw helpers.createError('credits missing or must be of type number to update client', 400);
             }
 

@@ -9,6 +9,7 @@ import Modal from './Modal';
 import invalidImg from '../images/invalid.png';
 import { CircularProgress } from '@mui/material';
 import { resizeImage } from '../resizeImage';
+import Input from './Input';
 
 const CircleProgress = styled(CircularProgress)`
     & * {
@@ -327,17 +328,14 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                 >
                     Submit File(s)
             </ActionButton>
-            <div className="remove-background-option">
-                <label htmlFor="remove-background">
-                    Remove Background
-                    <input 
-                        type="checkbox" 
-                        id="remove-background" 
-                        onChange={toggleRmbg}
-                        // defaultChecked 
-                    />
-                </label>
-            </div>
+            <Input 
+                type="checkbox" 
+                id="remove-background"
+                label="Remove Background" 
+                onChange={toggleRmbg}
+                value={rmbg}
+            />
+            <p>Upload Credits Left: {client?.credits}</p>
             {filteredFiles.length > 0 &&
                 <FileContainer>
                     <h2 className="title">Current Files ({filteredFiles.length})</h2>

@@ -111,7 +111,11 @@ describe('files', () => {
         let mockRemoveBackground;
         let categoryId;
         let categoryData;
+        let clientId;
         let data;
+
+        let clientData;
+        let clientCollection;
         beforeEach(async () => {
             mockRemoveBackground = jest.spyOn(helpers, 'removeBackground');
             mockRemoveBackground.mockImplementation(async (fileSrc) => {
@@ -127,13 +131,27 @@ describe('files', () => {
 
             await collection.insertOne(categoryData);
 
+            clientId = new ObjectId();
             data = {
                 fileSrc: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==',
                 fullFileName: 'Blazin Blazer.png',
-                clientId: (new ObjectId()).toString(),
+                clientId: clientId.toString(),
                 categoryId: categoryId.toString(),
                 rmbg: true
             };
+
+            clientData = {
+                _id: clientId,
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'jdoe@gmail.com',
+                credits: 127,
+                isAdmin: false,
+                isSuperAdmin: false
+            };
+
+            clientCollection = db.collection('clients');
+            await clientCollection.insertOne(clientData);
         });
 
         it('should add new file - remove background', async () => {
@@ -159,6 +177,9 @@ describe('files', () => {
             expect(file.clientId).toBe(data.clientId);
             expect(file.fileName).toBe('Blazin Blazer');
             expect(file).toHaveProperty('gcsId');
+
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits - 1);
 
             const gcsId = file.gcsId;
             expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
@@ -194,6 +215,9 @@ describe('files', () => {
             expect(file.clientId).toBe(data.clientId);
             expect(file.fileName).toBe('Blazin Blazer');
             expect(file).toHaveProperty('gcsId');
+
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits - 1);
 
             const gcsId = file.gcsId;
             expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
@@ -231,6 +255,9 @@ describe('files', () => {
             expect(file.fileName).toBe('Blazin Blazer');
             expect(file).toHaveProperty('gcsId');
 
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits - 1);
+
             const gcsId = file.gcsId;
             expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
             expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
@@ -264,6 +291,9 @@ describe('files', () => {
             expect(file.clientId).toBe(data.clientId);
             expect(file.fileName).toBe('Blazin Blazer');
             expect(file).toHaveProperty('gcsId');
+
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits - 1);
 
             const gcsId = file.gcsId;
             expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
@@ -299,6 +329,9 @@ describe('files', () => {
             expect(file.fileName).toBe('Blazin Blazer');
             expect(file).toHaveProperty('gcsId');
 
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits - 1);
+
             const gcsId = file.gcsId;
             expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
             expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
@@ -307,6 +340,89 @@ describe('files', () => {
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(10);
+        });
+
+        it('should add new file - no credits deducted because client is super admin', async () => {
+            await clearCollection(clientCollection);
+            clientData.isAdmin = true;
+            clientData.isSuperAdmin = true;
+            await clientCollection.insertOne(clientData);
+
+            // perform action to test
+            const response = await agent(app)
+                .post('/files')
+                .field('fileSrc', data.fileSrc)
+                .field('fullFileName', data.fullFileName)
+                .field('clientId', data.clientId)
+                .field('categoryId', 0)
+                .field('rmbg', data.rmbg);
+
+            // perform checks
+            expect(response.status).toBe(201);
+            expect(response.body.message).toBe('Success!');
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+    
+            const category = await collection.findOne({ _id: 0 });
+            expect(category.items).toHaveLength(1);
+
+            const file = category.items[0];
+            expect(file).toBeTruthy();
+            expect(file.clientId).toBe(data.clientId);
+            expect(file.fileName).toBe('Blazin Blazer');
+            expect(file).toHaveProperty('gcsId');
+
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits);
+
+            const gcsId = file.gcsId;
+            expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
+            expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
+            expect(file.fullGcsDest).toBe(`test/items/${gcsId}/full.png`);
+            expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(12);
+        });
+
+        it('should add new file - client has 1 credit', async () => {
+            await clearCollection(clientCollection);
+            clientData.credits = 1;
+            await clientCollection.insertOne(clientData);
+
+            // perform action to test
+            const response = await agent(app)
+                .post('/files')
+                .field('fileSrc', data.fileSrc)
+                .field('fullFileName', data.fullFileName)
+                .field('clientId', data.clientId)
+                .field('categoryId', 0)
+                .field('rmbg', data.rmbg);
+
+            // perform checks
+            expect(response.status).toBe(201);
+            expect(response.body.message).toBe('Success!');
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+    
+            const category = await collection.findOne({ _id: 0 });
+            expect(category.items).toHaveLength(1);
+
+            const file = category.items[0];
+            expect(file).toBeTruthy();
+            expect(file.clientId).toBe(data.clientId);
+            expect(file.fileName).toBe('Blazin Blazer');
+            expect(file).toHaveProperty('gcsId');
+
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits - 1);
+
+            const gcsId = file.gcsId;
+            expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
+            expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
+            expect(file.fullGcsDest).toBe(`test/items/${gcsId}/full.png`);
+            expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with missing token', async () => {
@@ -328,8 +444,11 @@ describe('files', () => {
             const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
             expect(category.items).toHaveLength(0);
 
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits);
+
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(10);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with invalid token', async () => {
@@ -351,8 +470,11 @@ describe('files', () => {
             const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
             expect(category.items).toHaveLength(0);
 
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits);
+
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(10);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with missing file source', async () => {
@@ -373,8 +495,11 @@ describe('files', () => {
             const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
             expect(category.items).toHaveLength(0);
 
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits);
+
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(10);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with invalid MIME file source', async () => {
@@ -395,8 +520,11 @@ describe('files', () => {
             const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
             expect(category.items).toHaveLength(0);
 
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits);
+
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(10);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with invalid file source', async () => {
@@ -417,8 +545,11 @@ describe('files', () => {
             const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
             expect(category.items).toHaveLength(0);
 
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits);
+
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(10);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with missing file name', async () => {
@@ -439,8 +570,11 @@ describe('files', () => {
             const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
             expect(category.items).toHaveLength(0);
 
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits);
+
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(10);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with invalid client id', async () => {
@@ -461,8 +595,11 @@ describe('files', () => {
             const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
             expect(category.items).toHaveLength(0);
 
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits);
+
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(10);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with invalid category id', async () => {
@@ -483,8 +620,11 @@ describe('files', () => {
             const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
             expect(category.items).toHaveLength(0);
 
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits);
+
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(10);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with missing rembg option', async () => {
@@ -504,8 +644,11 @@ describe('files', () => {
             const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
             expect(category.items).toHaveLength(0);
 
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits);
+
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(10);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with nonexistent category id', async () => {
@@ -529,8 +672,96 @@ describe('files', () => {
             const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
             expect(category).toBeFalsy();
 
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits);
+
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(10);
+            expect(files).toHaveLength(14);
+        });
+
+        it('should fail if client doesn\'t exist', async () => {
+            // perform action to test
+            await clearCollection(clientCollection);
+
+            const response = await agent(app)
+                .post('/files')
+                .field('fileSrc', data.fileSrc)
+                .field('fullFileName', data.fullFileName)
+                .field('clientId', data.clientId)
+                .field('categoryId', data.categoryId)
+                .field('rmbg', data.rmbg);
+
+            // perform checks
+            expect(response.status).toBe(403);
+            expect(response.body.message).toBe('client does not have any credits or does not exist');
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+    
+            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
+            expect(category.items).toHaveLength(0);
+
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client).toBeFalsy();
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(14);
+        });
+
+        it('should fail if client has no credits', async () => {
+            // perform action to test
+            await clearCollection(clientCollection);
+            clientData.credits = 0;
+            await clientCollection.insertOne(clientData);
+
+            const response = await agent(app)
+                .post('/files')
+                .field('fileSrc', data.fileSrc)
+                .field('fullFileName', data.fullFileName)
+                .field('clientId', data.clientId)
+                .field('categoryId', data.categoryId)
+                .field('rmbg', data.rmbg);
+
+            // perform checks
+            expect(response.status).toBe(403);
+            expect(response.body.message).toBe('client does not have any credits');
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+    
+            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
+            expect(category.items).toHaveLength(0);
+
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(14);
+        });
+
+        it('should fail if client has credits that is not a number', async () => {
+            // perform action to test
+            await clearCollection(clientCollection);
+            clientData.credits = 'not a number';
+            await clientCollection.insertOne(clientData);
+
+            const response = await agent(app)
+                .post('/files')
+                .field('fileSrc', data.fileSrc)
+                .field('fullFileName', data.fullFileName)
+                .field('clientId', data.clientId)
+                .field('categoryId', data.categoryId)
+                .field('rmbg', data.rmbg);
+
+            // perform checks
+            expect(response.status).toBe(403);
+            expect(response.body.message).toBe('client does not have any credits or does not exist');
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+    
+            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
+            expect(category.items).toHaveLength(0);
+
+            const client = await clientCollection.findOne({ _id: clientId });
+            expect(client.credits).toBe(clientData.credits);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(14);
         });
     });
     

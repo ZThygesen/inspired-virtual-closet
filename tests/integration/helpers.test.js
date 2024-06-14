@@ -310,3 +310,278 @@ describe('moveFilesToOther', () => {
         expect(otherCategory.items).toHaveLength(0);
     });
 });
+
+describe('isSuperAdmin', () => {
+    async function clearCollection(collection) {
+        await collection.deleteMany({ });
+    }
+
+    let mongoClient;
+    let db;
+    let collection;
+
+    beforeAll(async () => {
+        mongoClient = new MongoClient(process.env.DB_URI);
+        await mongoClient.connect();
+        db = mongoClient.db(process.env.DB_NAME_TEST);
+        collection = db.collection('clients');
+    });
+
+    afterAll(async () => {
+        await mongoClient.close();
+    });
+
+    let clientId;
+    let data;
+    beforeEach(async () => {
+        expect(process.env.NODE_ENV).toBe('test');
+
+        clientId = new ObjectId();
+        data = {
+            _id: clientId,
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'jdoe@gmail.com',
+            credits: 212,
+            isAdmin: true,
+            isSuperAdmin: false
+        };
+        await collection.insertOne(data);
+    });
+
+    afterEach(async () => {
+        await clearCollection(collection);
+        jest.resetAllMocks();
+        jest.restoreAllMocks();
+    });
+
+    it('should return isSuperAdmin false', async () => {
+        const isSuperAdmin = await helpers.isSuperAdmin(db, clientId.toString());
+        
+        expect(isSuperAdmin).toBe(false);
+    });
+
+    it('should return isSuperAdmin false (no isSuperAdmin prop)', async () => {
+        await clearCollection(collection);
+        delete data.isSuperAdmin;
+        await collection.insertOne(data);
+
+        const isSuperAdmin = await helpers.isSuperAdmin(db, clientId.toString());
+        
+        expect(isSuperAdmin).toBe(false);
+    });
+
+    it('should return isSuperAdmin false if client doesn\'t exist', async () => {
+        await clearCollection(collection);
+
+        const isSuperAdmin = await helpers.isSuperAdmin(db, clientId.toString());
+
+        expect(isSuperAdmin).toBe(false);
+    });
+
+    it('should return isSuperAdmin true', async () => {
+        await clearCollection(collection);
+        data.isSuperAdmin = true;
+        await collection.insertOne(data);
+
+        const isSuperAdmin = await helpers.isSuperAdmin(db, clientId.toString());
+        
+        expect(isSuperAdmin).toBe(true);
+    });
+
+    it('should fail with missing db', async () => {
+        await expect(helpers.isSuperAdmin(null, clientId.toString())).rejects.toThrow('database instance required to check client super admin status');
+    });
+
+    it('should fail with missing client id', async () => {
+        clientId = '';
+        await expect(helpers.isSuperAdmin(db, clientId)).rejects.toThrow('failed to get super admin status: invalid or missing client id');
+    });
+
+    it('should fail with invalid client id', async () => {
+        clientId = 'not-valid-id';
+        await expect(helpers.isSuperAdmin(db, clientId)).rejects.toThrow('failed to get super admin status: invalid or missing client id');
+    });
+});
+
+describe('getCredits', () => {
+    async function clearCollection(collection) {
+        await collection.deleteMany({ });
+    }
+
+    let mongoClient;
+    let db;
+    let collection;
+
+    beforeAll(async () => {
+        mongoClient = new MongoClient(process.env.DB_URI);
+        await mongoClient.connect();
+        db = mongoClient.db(process.env.DB_NAME_TEST);
+        collection = db.collection('clients');
+    });
+
+    afterAll(async () => {
+        await mongoClient.close();
+    });
+
+    let clientId;
+    let data;
+    beforeEach(async () => {
+        expect(process.env.NODE_ENV).toBe('test');
+
+        clientId = new ObjectId();
+        data = {
+            _id: clientId,
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'jdoe@gmail.com',
+            credits: 212,
+            isAdmin: false
+        };
+        await collection.insertOne(data);
+    });
+
+    afterEach(async () => {
+        await clearCollection(collection);
+        jest.resetAllMocks();
+        jest.restoreAllMocks();
+    });
+
+    it('should get credits', async () => {
+        const credits = await helpers.getCredits(db, clientId.toString());
+        
+        expect(credits).toBe(data.credits);
+    });
+
+    it('should fail with missing db', async () => {
+        await expect(helpers.getCredits(null, clientId.toString())).rejects.toThrow('database instance required to get client credits');
+    });
+
+    it('should fail with missing client id', async () => {
+        clientId = '';
+        await expect(helpers.getCredits(db, clientId)).rejects.toThrow('failed to get credits: invalid or missing client id');
+    });
+
+    it('should fail with invalid client id', async () => {
+        clientId = 'not-valid-id';
+        await expect(helpers.getCredits(db, clientId)).rejects.toThrow('failed to get credits: invalid or missing client id');
+    });
+
+    it('should fail if client doesn\'t exist', async () => {
+        await clearCollection(collection);
+        await expect(helpers.getCredits(db, clientId.toString())).rejects.toThrow('client does not have any credits or does not exist');
+    });
+
+    it('should fail if credits property doesn\'t exist', async () => {
+        await clearCollection(collection);
+        delete data.credits;
+        await collection.insertOne(data);
+        await expect(helpers.getCredits(db, clientId.toString())).rejects.toThrow('client does not have any credits or does not exist');
+    });
+
+    it('should fail if credits property is not a number', async () => {
+        await clearCollection(collection);
+        data.credits = 'not a number';
+        await collection.insertOne(data);
+        await expect(helpers.getCredits(db, clientId.toString())).rejects.toThrow('client does not have any credits or does not exist');
+    });
+});
+
+describe('deductCredits', () => {
+    async function clearCollection(collection) {
+        await collection.deleteMany({ });
+    }
+
+    let mongoClient;
+    let db;
+    let collection;
+
+    beforeAll(async () => {
+        mongoClient = new MongoClient(process.env.DB_URI);
+        await mongoClient.connect();
+        db = mongoClient.db(process.env.DB_NAME_TEST);
+        collection = db.collection('clients');
+    });
+
+    afterAll(async () => {
+        await mongoClient.close();
+    });
+
+    let clientId;
+    let data;
+    beforeEach(async () => {
+        expect(process.env.NODE_ENV).toBe('test');
+
+        clientId = new ObjectId();
+        data = {
+            _id: clientId,
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'jdoe@gmail.com',
+            credits: 212,
+            isAdmin: false
+        };
+        await collection.insertOne(data);
+    });
+
+    afterEach(async () => {
+        await clearCollection(collection);
+        jest.resetAllMocks();
+        jest.restoreAllMocks();
+    });
+
+    it('should deduct credits', async () => {
+        let client = await collection.findOne({ _id: data._id });
+        expect(client.credits).toBe(data.credits);
+
+        await expect(helpers.deductCredits(db, clientId.toString(), data.credits)).resolves;
+        
+        client = await collection.findOne({ _id: data._id });
+        expect(client.credits).toBe(data.credits - 1);
+    });
+
+    it('should fail with missing db', async () => {
+        await expect(helpers.deductCredits(null, clientId.toString(), data.credits)).rejects.toThrow('database instance required to deduct credits');
+    
+        const client = await collection.findOne({ _id: data._id });
+        expect(client.credits).toBe(data.credits);
+    });
+
+    it('should fail with missing client id', async () => {
+        clientId = '';
+        await expect(helpers.deductCredits(db, clientId, data.credits)).rejects.toThrow('failed to deduct credits: invalid or missing client id');
+    
+        const client = await collection.findOne({ _id: data._id });
+        expect(client.credits).toBe(data.credits);
+    });
+
+    it('should fail with invalid client id', async () => {
+        clientId = 'not-valid-id';
+        await expect(helpers.deductCredits(db, clientId, data.credits)).rejects.toThrow('failed to deduct credits: invalid or missing client id');
+    
+        const client = await collection.findOne({ _id: data._id });
+        expect(client.credits).toBe(data.credits);
+    });
+
+    it('should fail with missing credits', async () => {
+        await expect(helpers.deductCredits(db, clientId.toString(), null)).rejects.toThrow('credits is missing or not a number');
+    
+        const client = await collection.findOne({ _id: data._id });
+        expect(client.credits).toBe(data.credits);
+    });
+
+    it('should fail if credits is not a number', async () => {
+        await expect(helpers.deductCredits(db, clientId.toString(), 'not a number')).rejects.toThrow('credits is missing or not a number');
+    
+        const client = await collection.findOne({ _id: data._id });
+        expect(client.credits).toBe(data.credits);
+    });
+
+    it('should fail if client doesn\'t exist', async () => {
+        await clearCollection(collection);
+        await expect(helpers.deductCredits(db, clientId.toString(), data.credits)).rejects.toThrow('no credits were deducted');
+    
+        const client = await collection.findOne({ _id: data._id });
+        expect(client).toBeFalsy();
+    });
+});
