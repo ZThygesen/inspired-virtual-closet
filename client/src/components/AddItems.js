@@ -1,7 +1,7 @@
 import Dropzone from './Dropzone';
 import { AddItemsContainer } from '../styles/AddItems';
 
-export default function AddItems({ display, client, category, openSidebar, updateItems }) {
+export default function AddItems({ display, category, openSidebar, updateItems }) {
     return (
         <AddItemsContainer style={{ display: display ? 'flex' : 'none' }}>
             <div className="category-select">
@@ -18,7 +18,7 @@ export default function AddItems({ display, client, category, openSidebar, updat
                         </>
                 }
             </div>
-            <Dropzone client={client} category={category} disabled={category._id === -1} updateItems={updateItems} />
+            <Dropzone category={category} disabled={category._id === -1} updateItems={updateItems} />
         </AddItemsContainer>
     );
 }

@@ -43,6 +43,8 @@ function CircularProgressWithLabel(props) {
 export default function ManageClients() {
     const { setError } = useError();
 
+    const [superAdmins, setSuperAdmins] = useState([]);
+    const [admins, setAdmins] = useState([]);
     const [clients, setClients] = useState([]);
     const [openModal, setOpenModal] = useState(false);
     const [newClientFName, setNewClientFName] = useState('');
@@ -63,17 +65,27 @@ export default function ManageClients() {
         setLoading(true);
         try {
             const response = await api.get('/api/clients');
-            setClients(response.data.sort(function (a, b) {
-                if (a.firstName < b.firstName) {
+            const allClients = response.data.sort(function (a, b) {
+                const nameA = a.firstName.toLowerCase();
+                const nameB = b.firstName.toLowerCase();
+                if (nameA < nameB) {
                     return -1;
                 } 
-                else if (a.firstName > b.firstName) {
+                else if (nameA > nameB) {
                     return 1;
                 }
                 else {
                     return 0;
                 }
-            }));
+            });
+
+            const superAdmins = allClients.filter(client => client?.isSuperAdmin);
+            const admins = allClients.filter(client => client?.isAdmin && !client?.isSuperAdmin);
+            const clients = allClients.filter(client => !client?.isSuperAdmin && !client?.isAdmin);
+            
+            setSuperAdmins(superAdmins);
+            setAdmins(admins);
+            setClients(clients);
         } catch (err) {
             setError({
                 message: 'There was an error fetching clients.',
@@ -302,6 +314,16 @@ export default function ManageClients() {
             <ManageClientsContainer>
                 <h1 className="title">CLIENTS</h1>
                 <div className="clients">
+                    {
+                        superAdmins.map(client => (
+                            <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
+                        ))
+                    }
+                    {
+                        admins.map(client => (
+                            <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
+                        ))
+                    }
                     {
                         clients.map(client => (
                             <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />

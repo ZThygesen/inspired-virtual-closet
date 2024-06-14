@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ClientProvider } from '../components/ClientContext';
 import { useLocation } from 'react-router-dom';
 import { useError } from '../components/ErrorContext';
 import styled from 'styled-components';
@@ -204,30 +205,32 @@ export default function VirtualCloset() {
 
     return (
         <>
-            <Container>
-                <CategoriesSidebar
-                    sidebarRef={sidebarRef}
-                    open={sidebarOpen}
-                    closeSidebar={closeSidebar}
-                    closeSidebarOnSelect={closeSidebarOnSelect}
-                    categories={categories}
-                    activeCategory={category}
-                    setCategory={setCategory}
-                    addCategory={addCategory}
-                    updateCategories={getCategories}
-                    editCategory={editCategory}
-                    deleteCategory={deleteCategory}
-                />
-                <ClosetNavigation
-                    sidebarRef={sidebarRef}
-                    open={sidebarOpen}
-                    openSidebar={openSidebar}
-                    client={client}
-                    category={category}
-                    getCategories={getCategories}
-                />
-            </Container>
-            <Loading open={loading} />
+            <ClientProvider clientId={client._id}>
+                <Container>
+                    <CategoriesSidebar
+                        sidebarRef={sidebarRef}
+                        open={sidebarOpen}
+                        closeSidebar={closeSidebar}
+                        closeSidebarOnSelect={closeSidebarOnSelect}
+                        categories={categories}
+                        activeCategory={category}
+                        setCategory={setCategory}
+                        addCategory={addCategory}
+                        updateCategories={getCategories}
+                        editCategory={editCategory}
+                        deleteCategory={deleteCategory}
+                    />
+                    <ClosetNavigation
+                        sidebarRef={sidebarRef}
+                        open={sidebarOpen}
+                        openSidebar={openSidebar}
+                        client={client}
+                        category={category}
+                        getCategories={getCategories}
+                    />
+                </Container>
+                <Loading open={loading} />
+            </ClientProvider>
         </>
     )
 }

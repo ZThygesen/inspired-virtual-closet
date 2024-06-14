@@ -62,6 +62,23 @@ const clients = {
         }
     },
 
+    async getClient(req, res, next) {
+        try {
+            const clientId = req?.params?.clientId;
+            if (!helpers.isValidId(clientId)) {
+                throw helpers.createError('failed to get client: invalid or missing client id', 400);
+            }
+
+            const { db } = req.locals;
+            const collection = db.collection('clients');
+            const client = await collection.findOne({ _id: ObjectId(clientId) });
+    
+            res.status(200).json(client);
+        } catch (err) {
+            next(err);
+        }
+    },
+
     async patch(req, res, next) {
         try {
             const { db } = req.locals;
@@ -143,6 +160,7 @@ const router = express.Router();
 
 router.post('/', auth.requireSuperAdmin, auth.requireAdmin, clients.post);
 router.get('/', auth.requireAdmin, clients.get);
+router.get('/:clientId', clients.getClient);
 router.patch('/:clientId', auth.requireSuperAdmin, auth.requireAdmin, clients.patch);
 router.delete('/:clientId', auth.requireSuperAdmin, auth.requireAdmin, clients.delete);
 

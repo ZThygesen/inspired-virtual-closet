@@ -37,8 +37,25 @@ export default function ClientCard({ client, editClient, deleteClient }) {
     return (
         <>
             <ClientCardContainer>
+                { client?.isSuperAdmin ?
+                    <Tooltip title="Super Admin">
+                        <span className="material-icons admin-icon">star</span>
+                    </Tooltip>
+                    :
+                    client?.isAdmin ?
+                    <Tooltip title="Admin">
+                        <span className="material-icons admin-icon">star_border</span>
+                    </Tooltip>
+                    :
+                    <></>
+                }
+                { (client?.isSuperAdmin || client?.isAdmin) &&
+                    <Tooltip title={client?.isSuperAdmin ? "Super Admin" : "Admin"}>
+                        <span className={`material-icons admin-icon ${client?.isSuperAdmin ? "super" : ""}`}>star_border</span>
+                    </Tooltip>
+                }
                 <p className="client-name">{`${client.firstName} ${client.lastName}`}</p>
-                <p className="client-name secondary">{`${client.email} - ${client.isAdmin} - ${client?.isSuperAdmin || false} - ${client.credits || 0}`}</p>
+                <p className="client-email">{client.email}</p>
                 <div className="client-options">
                     { (!client?.isSuperAdmin && user?.isSuperAdmin) &&
                         <Tooltip title="Edit">
@@ -58,8 +75,10 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                             <button className="material-icons delete-icon" onClick={() => setConfirmDeleteOpen(true)}>delete</button>
                         </Tooltip>
                     }
-                    
                 </div>
+                { !client?.isSuperAdmin &&
+                    <p className="client-credits">{client?.credits || 0} Credits</p>
+                }
             </ClientCardContainer>
             { (!client?.isSuperAdmin && user?.isSuperAdmin) &&
                 <Modal

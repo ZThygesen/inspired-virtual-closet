@@ -366,7 +366,7 @@ export const helpers = {
         if (!this.isValidId(clientId)) {
             throw this.createError('failed to deduct credits: invalid or missing client id', 400);
         }
-
+        
         if (isNaN(parseInt(currCredits))) {
             throw this.createError('credits is missing or not a number', 400);
         }

@@ -32,7 +32,7 @@ const AppHeader = styled.header`
         font-weight: 600;
         font-family: 'Fashion';
         color: var(--white);
-        letter-spacing: 4px;
+        letter-spacing: 2px;
         white-space: nowrap;
         padding: 8px 16px;
         background: none;
