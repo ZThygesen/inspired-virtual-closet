@@ -35,12 +35,6 @@ describe('files', () => {
         await collection.deleteOne({ _id: user._id });
     }
 
-    async function removeClient(db) {
-        const collection = db.collection('clients');
-
-        await collection.deleteOne({ _id: client._id });
-    }
-
     let clientId;
     let client;
     async function createClient(db) {
@@ -57,6 +51,12 @@ describe('files', () => {
 
         const collection = db.collection('clients');
         await collection.insertOne(client);
+    }
+
+    async function removeClient(db) {
+        const collection = db.collection('clients');
+
+        await collection.deleteOne({ _id: client._id });
     }
 
     async function clearCollection(collection) {
@@ -376,6 +376,33 @@ describe('files', () => {
             expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
             expect(file.fullGcsDest).toBe(`test/items/${gcsId}/full.png`);
             expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(12);
+        });
+
+        it('should fail if user non-admin and rmbg not selected', async () => {
+            // perform action to test
+            token = jwt.sign({ id: clientId, isAdmin: false, isSuperAdmin: false }, process.env.JWT_SECRET);
+            cookie = `token=${token}`;
+            data.rmbg = false;
+            const response = await agent(app)
+                .post(`/files/${clientId.toString()}`)
+                .field('fileSrc', data.fileSrc)
+                .field('fullFileName', data.fullFileName)
+                .field('categoryId', data.categoryId)
+                .field('rmbg', data.rmbg);
+
+            // perform checks
+            expect(response.status).toBe(403);
+            expect(response.body.message).toBe('non-admins must remove background on file upload');
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+    
+            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
+            expect(category.items).toHaveLength(0);
+
+            const clientData = await clientCollection.findOne({ _id: clientId });
+            expect(clientData.credits).toBe(client.credits);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(12);

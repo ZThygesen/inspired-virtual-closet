@@ -100,6 +100,7 @@ describe('files', () => {
     describe('create', () => {
         let clientId;
         let data;
+        let user;
         beforeEach(() => {
             clientId = (new ObjectId()).toString(),
             data = {
@@ -107,6 +108,11 @@ describe('files', () => {
                 fullFileName: 'blaze-tastic.png',
                 categoryId: (new ObjectId()).toString(),
                 rmbg: 'true'
+            };
+            user = {
+                id: clientId,
+                isAdmin: true,
+                isSuperAdmin: true
             };
 
             mockCollection.toArray.mockResolvedValue([{ category: 'exists' }]);
@@ -129,7 +135,7 @@ describe('files', () => {
         it('should create new file - test environment, remove background', async () => {
             // perform action to test
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -157,7 +163,7 @@ describe('files', () => {
             // perform action to test
             data.rmbg = 'false';
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -185,7 +191,7 @@ describe('files', () => {
             // perform action to test
             process.env.NODE_ENV = 'dev';
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -214,7 +220,7 @@ describe('files', () => {
             process.env.NODE_ENV = 'dev';
             data.rmbg = 'false';
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -242,7 +248,7 @@ describe('files', () => {
             // perform action to test
             process.env.NODE_ENV = 'production';
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -271,7 +277,7 @@ describe('files', () => {
             process.env.NODE_ENV = 'production';
             data.rmbg = 'false';
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -299,7 +305,7 @@ describe('files', () => {
             // perform action to test
             data.categoryId = 0;
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -323,12 +329,12 @@ describe('files', () => {
             expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should create new file - client is super admin', async () => {
+        it('should create new file - client is super admin (no credits deducted)', async () => {
             // perform action to test
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
             mockIsSuperAdmin.mockResolvedValue(true);
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -352,13 +358,73 @@ describe('files', () => {
             expect(mockNext).not.toHaveBeenCalled();
         });
 
+        it('should create new file - user is non-admin and rmbg', async () => {
+            // perform action to test
+            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
+            user.isAdmin = false;
+            user.isSuperAdmin = false;
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
+
+            await files.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('categories');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockCreateId).toHaveBeenCalled();
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
+            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
+            expect(mockRes.status).toHaveBeenCalledWith(201);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it('should fail if user is non-admin and tries to not remove background', async () => {
+            // perform action to test
+            user.isAdmin = false;
+            user.isSuperAdmin = false;
+            data.rmbg = 'false';
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
+
+            await files.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('categories');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
+            expect(mockGetCredits).not.toHaveBeenCalled();
+            expect(mockCreateId).not.toHaveBeenCalled();
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+            expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
+            expect(mockParse).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockDeductCredits).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(403);
+            expect(err.message).toBe('non-admins must remove background on file upload');
+        });
+
         it('should handle find failure', async () => {
             // perform action to test
             const findError = new Error('find failed');
             findError.status = 500;
             mockCollection.find.mockImplementation(() => { throw findError });
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -390,7 +456,7 @@ describe('files', () => {
             toArrayError.status = 500;
             mockCollection.toArray.mockRejectedValue(toArrayError);
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -420,7 +486,7 @@ describe('files', () => {
             // perform action to test
             mockCollection.toArray.mockResolvedValue([]);
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -452,7 +518,7 @@ describe('files', () => {
             error.status = 500;
             mockIsSuperAdmin.mockRejectedValue(error);
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -484,7 +550,7 @@ describe('files', () => {
             creditsError.status = 500;
             mockGetCredits.mockRejectedValue(creditsError);
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -514,7 +580,7 @@ describe('files', () => {
             // perform action to test
             mockGetCredits.mockResolvedValue(0);
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -546,7 +612,7 @@ describe('files', () => {
             createIdError.status = 500;
             mockCreateId.mockImplementation(() => { throw createIdError });
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -578,7 +644,7 @@ describe('files', () => {
             rmbgError.status = 500;
             mockRemoveBackground.mockRejectedValue(rmbgError);
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -611,7 +677,7 @@ describe('files', () => {
             bufferError.status = 500;
             mockb64ToBuffer.mockRejectedValue(bufferError);
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -643,7 +709,7 @@ describe('files', () => {
             thumbError.status = 500;
             mockCreateImageThumbnail.mockRejectedValue(thumbError);
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -675,7 +741,7 @@ describe('files', () => {
             parseError.status = 500;
             mockParse.mockImplementation(() => { throw parseError });
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -708,7 +774,7 @@ describe('files', () => {
                 return { extension: 'png' };
             });
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -741,7 +807,7 @@ describe('files', () => {
             uploadError.status = 500;
             mockUploadToGCS.mockRejectedValueOnce(uploadError);
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -775,7 +841,7 @@ describe('files', () => {
             uploadError.status = 500;
             mockUploadToGCS.mockRejectedValueOnce(uploadError);
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -808,7 +874,7 @@ describe('files', () => {
             updateError.status = 500;
             mockCollection.updateOne.mockRejectedValue(updateError);
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -839,7 +905,7 @@ describe('files', () => {
             // perform action to test
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 0 });
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -874,7 +940,7 @@ describe('files', () => {
 
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -905,7 +971,7 @@ describe('files', () => {
             // perform action to test
             data.fileSrc = null;
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -935,7 +1001,7 @@ describe('files', () => {
             // perform action to test
             delete data.fullFileName;
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -963,7 +1029,7 @@ describe('files', () => {
 
         it('should fail with missing client id', async () => {
             // perform action to test
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -991,7 +1057,7 @@ describe('files', () => {
 
         it('should fail with invalid client id', async () => {
             // perform action to test
-            const req = { params: { clientId: 'not-valid-id' }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: 'not-valid-id' }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -1021,7 +1087,7 @@ describe('files', () => {
             // perform action to test
             data.categoryId = '';
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -1051,7 +1117,7 @@ describe('files', () => {
             // perform action to test
             data.categoryId = 'not-valid-id';
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -1081,7 +1147,7 @@ describe('files', () => {
             // perform action to test
             delete data.rmbg;
 
-            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 

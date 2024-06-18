@@ -46,7 +46,11 @@ const files = {
             if ((await collection.find({ _id: id }).toArray()).length !== 1) {
                 throw helpers.createError(`cannot add file: no category or multiple categories with the id "${id.toString()}" exist`, 404);
             }
-            
+
+            if (!req?.user?.isSuperAdmin && !req?.user?.isAdmin && !parsedRmbg) {
+                throw helpers.createError('non-admins must remove background on file upload', 403);
+            }
+
             const isSuperAdmin = await helpers.isSuperAdmin(db, clientId);
             let clientCredits;
             if (!isSuperAdmin) {
