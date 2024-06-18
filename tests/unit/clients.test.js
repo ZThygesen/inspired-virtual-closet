@@ -30,6 +30,7 @@ describe('clients', () => {
         mockCollection = {
             insertOne: jest.fn().mockResolvedValue(),
             find: jest.fn().mockReturnThis(),
+            findOne: jest.fn().mockResolvedValue(),
             toArray: jest.fn().mockResolvedValue(),
             updateOne: jest.fn().mockResolvedValue(),
             deleteOne: jest.fn().mockResolvedValue()
@@ -298,6 +299,108 @@ describe('clients', () => {
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(500);
             expect(err.message).toBe('array transformation of clients failed');
+        });
+    });
+
+    describe('read client', () => {
+        let data;
+        beforeEach(() => {
+            data = {
+                _id: new ObjectId(),
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'jdoe@gmail.com',
+                credits: 350,
+                isAdmin: false
+            };
+        });
+
+        it('should get client', async () => {
+            // perform action to test
+            const mockClient = data;
+            mockCollection.findOne.mockResolvedValue(mockClient);
+            const req = { params: { clientId: data._id.toString() }, locals: { db: mockDb } };
+
+            await clients.getClient(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: data._id });
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith(mockClient);
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it('should handle findOne failure', async () => {
+            // perform action to test
+            const findError = new Error('retrieval of client failed');
+            findError.status = 500;
+            mockCollection.findOne.mockRejectedValue(findError);
+            const req = { params: { clientId: data._id.toString() }, locals: { db: mockDb } };
+
+            await clients.getClient(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: data._id });
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(500);
+            expect(err.message).toBe('retrieval of client failed');
+        });
+
+        it('should fail if client not found', async () => {
+            // perform action to test
+            mockCollection.findOne.mockResolvedValue();
+            const req = { params: { clientId: data._id.toString() }, locals: { db: mockDb } };
+
+            await clients.getClient(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: data._id });
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(404);
+            expect(err.message).toBe('client not found');
+        });
+
+        it('should fail with missing client id', async () => {
+            // perform action to test
+            const req = { locals: { db: mockDb } };
+
+            await clients.getClient(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.findOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('failed to get client: invalid or missing client id');
+        });
+
+        it('should fail with invalid client id', async () => {
+            // perform action to test
+            const req = { params: { clientId: 'not-valid-id' }, locals: { db: mockDb } };
+
+            await clients.getClient(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.findOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('failed to get client: invalid or missing client id');
         });
     });
     

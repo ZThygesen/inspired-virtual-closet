@@ -313,6 +313,96 @@ describe('clients', () => {
             expect(response.body.message).toBe('invalid signature');
         });
     });
+
+    describe('read client', () => {        
+        let data;
+        beforeEach(async () => {
+            data = {
+                _id: new ObjectId(),
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'jdoe@gmail.com',
+                credits: 350,
+                isAdmin: false
+            };
+            await collection.insertOne(data);
+        });
+
+        it('should get client', async () => {
+            // perform action to test
+            const response = await agent(app)
+                .get(`/api/clients/${data._id.toString()}`);
+            
+            // perform checks
+            expect(response.status).toBe(200);
+
+            const client = response.body;
+            expect(client).toBeTruthy();
+            expect(client._id.toString()).toBe(data._id.toString());
+            expect(client.firstName).toBe(data.firstName);
+            expect(client.lastName).toBe(data.lastName);
+            expect(client.email).toBe(data.email);
+            expect(client.credits).toBe(data.credits);
+            expect(client.isAdmin).toBe(data.isAdmin);
+        });
+
+        it('should get client - non-admin', async () => {
+            // perform action to test
+            await setNonAdmin(db);
+
+            const response = await agent(app)
+                .get(`/api/clients/${data._id.toString()}`);
+            
+            // perform checks
+            expect(response.status).toBe(200);
+
+            const client = response.body;
+            expect(client).toBeTruthy();
+            expect(client._id.toString()).toBe(data._id.toString());
+            expect(client.firstName).toBe(data.firstName);
+            expect(client.lastName).toBe(data.lastName);
+            expect(client.email).toBe(data.email);
+            expect(client.credits).toBe(data.credits);
+            expect(client.isAdmin).toBe(data.isAdmin);
+        });
+
+        it('should fail with invalid id', async () => {
+            const response = await agent(app)
+                .get('/api/clients/not-valid-id');
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('failed to get client: invalid or missing client id');
+        });
+
+        it('should fail if client doesn\'t exist', async () => {
+            await clearCollection(collection);
+            const response = await agent(app)
+                .get(`/api/clients/${data._id.toString()}`);
+
+            expect(response.status).toBe(404);
+            expect(response.body.message).toBe('client not found');
+        });
+
+        it('should fail with missing token', async () => {
+            cookie = '';
+
+            const response = await agent(app)
+                .get('/api/clients');
+
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe('token required to authenticate JWT');
+        });
+
+        it('should fail with invalid token', async () => {
+            cookie = invalidCookie;
+
+            const response = await agent(app)
+                .get('/api/clients');
+
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('invalid signature');
+        });
+    });
     
     describe('update', () => {
         let data;

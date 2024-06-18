@@ -485,6 +485,225 @@ describe('auth', () => {
         });
     });
 
+    describe('checkPermissions', () => {
+        let clientId;
+        let client;
+        let req;
+        beforeEach(() => {
+            clientId = (new ObjectId()).toString();
+
+            client = {
+                _id: ObjectId(clientId),
+                isSuperAdmin: true,
+                isAdmin: true
+            };
+
+            req = { 
+                user: {
+                    id: clientId,
+                    isSuperAdmin: true,
+                    isAdmin: true
+                },
+                params: { 
+                    clientId: clientId 
+                },  
+                locals: { 
+                    db: mockDb 
+                }
+            };
+        });
+
+        it('user: super, client: super', async () => {
+            mockCollection.findOne.mockResolvedValue(client);
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockNext).toHaveBeenCalledWith();
+        });
+
+        it('user: super, client: admin', async () => {
+            client.isSuperAdmin = false;
+            mockCollection.findOne.mockResolvedValue(client);
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockNext).toHaveBeenCalledWith();
+        });
+
+        it('user: super, client: none', async () => {
+            client.isSuperAdmin = false;
+            client.isAdmin = false;
+            mockCollection.findOne.mockResolvedValue(client);
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockNext).toHaveBeenCalledWith();
+        });
+
+        it('user: admin, client: super', async () => {
+            mockCollection.findOne.mockResolvedValue(client);
+            req.user.isSuperAdmin = false;
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(err).toBeInstanceOf(Error)
+            expect(err.status).toBe(403);
+            expect(err.message).toBe('admins have no permissions over super admins');
+        });
+
+        it('user: admin, client: admin (self)', async () => {
+            client.isSuperAdmin = false;
+            mockCollection.findOne.mockResolvedValue(client);
+            req.user.isSuperAdmin = false;
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockNext).toHaveBeenCalledWith();
+        });
+
+        it('user: admin, client: admin (other)', async () => {
+            client._id = new ObjectId();
+            client.isSuperAdmin = false;
+            mockCollection.findOne.mockResolvedValue(client);
+            req.user.isSuperAdmin = false;
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(err).toBeInstanceOf(Error)
+            expect(err.status).toBe(403);
+            expect(err.message).toBe('admins have no permissions over other admins');
+        });
+
+        it('user: admin, client: none', async () => {
+            client.isSuperAdmin = false;
+            client.isAdmin = false;
+            mockCollection.findOne.mockResolvedValue(client);
+            req.user.isSuperAdmin = false;
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockNext).toHaveBeenCalledWith();
+        });
+
+        it('user: none, client: super', async () => {
+            mockCollection.findOne.mockResolvedValue(client);
+            req.user.isSuperAdmin = false;
+            req.user.isAdmin = false;
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(err).toBeInstanceOf(Error)
+            expect(err.status).toBe(403);
+            expect(err.message).toBe('non-admins have no permissions over any admins');
+        });
+
+        it('user: none, client: admin', async () => {
+            client.isSuperAdmin = false;
+            mockCollection.findOne.mockResolvedValue(client);
+            req.user.isSuperAdmin = false;
+            req.user.isAdmin = false;
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(err).toBeInstanceOf(Error)
+            expect(err.status).toBe(403);
+            expect(err.message).toBe('non-admins have no permissions over any admins');
+        });
+
+        it('user: none, client: none (self)', async () => {
+            client.isSuperAdmin = false;
+            client.isAdmin = false;
+            mockCollection.findOne.mockResolvedValue(client);
+            req.user.isSuperAdmin = false;
+            req.user.isAdmin = false;
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockNext).toHaveBeenCalledWith();
+        });
+
+        it('user: none, client: none (other)', async () => {
+            client._id = new ObjectId();
+            client.isSuperAdmin = false;
+            client.isAdmin = false;
+            mockCollection.findOne.mockResolvedValue(client);
+            req.user.isSuperAdmin = false;
+            req.user.isAdmin = false;
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(err).toBeInstanceOf(Error)
+            expect(err.status).toBe(403);
+            expect(err.message).toBe('non-admins only have permissions over themselves');
+        });
+
+        it('should fail with missing client id', async () => {
+            delete req.params;
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(err).toBeInstanceOf(Error)
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('client id is invalid or missing');
+        });
+
+        it('should fail with invalid client id', async () => {
+            req.params.clientId = 'not-valid-id';
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(err).toBeInstanceOf(Error)
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('client id is invalid or missing');
+        });
+
+        it('should fail if no client found', async () => {
+            mockCollection.findOne.mockResolvedValue();
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(err).toBeInstanceOf(Error)
+            expect(err.status).toBe(404);
+            expect(err.message).toBe('client not found');
+        });
+
+        it('should handle findOne error', async () => {
+            const error = new Error('findOne failed');
+            error.status = 500;
+            mockCollection.findOne.mockRejectedValue(error);
+
+            await expect(auth.checkPermissions(req, mockRes, mockNext)).resolves;
+
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(err).toBeInstanceOf(Error)
+            expect(err.status).toBe(500);
+            expect(err.message).toBe('findOne failed');
+        });
+    });
+
     describe('requireAdmin', () => {
         it('should accept admin', async () => {
             const req = { user: { isAdmin: true }};

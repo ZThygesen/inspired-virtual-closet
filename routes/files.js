@@ -4,12 +4,13 @@ import ExpressFormidable from 'express-formidable';
 import cuid2 from '@paralleldrive/cuid2';
 import path from 'path';
 import { helpers } from '../helpers.js';
+import { auth } from './auth.js';
 
 const files = {
     async post(req, res, next) {
         try {
             // read in file fields
-            const { fileSrc, fullFileName, clientId, categoryId, rmbg } = req?.fields;
+            const { fileSrc, fullFileName, categoryId, rmbg } = req?.fields;
 
             if (!fileSrc) {
                 throw helpers.createError('file source is required to create file', 400);
@@ -19,6 +20,7 @@ const files = {
                 throw helpers.createError('file name is required to create file', 400);
             }
 
+            const clientId = req?.params?.clientId;
             if (!helpers.isValidId(clientId)) {
                 throw helpers.createError('failed to add file: invalid or missing client id', 400);
             }
@@ -327,10 +329,10 @@ const files = {
 
 const router = express.Router();
 
-router.post('/', ExpressFormidable(), files.post);
-router.get('/:clientId', files.get);
-router.patch('/:categoryId/:gcsId', files.patchName);
-router.patch('/category/:categoryId/:gcsId', files.patchCategory);
-router.delete('/:categoryId/:gcsId', files.delete);
+router.post('/:clientId', auth.checkPermissions, ExpressFormidable(), files.post);
+router.get('/:clientId', auth.checkPermissions, files.get);
+router.patch('/:clientId/:categoryId/:gcsId', auth.checkPermissions, files.patchName);
+router.patch('/category/:clientId/:categoryId/:gcsId', auth.checkPermissions, files.patchCategory);
+router.delete('/:clientId/:categoryId/:gcsId', auth.checkPermissions, files.delete);
 
 export { files, router as filesRouter };

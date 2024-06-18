@@ -72,6 +72,10 @@ const clients = {
             const { db } = req.locals;
             const collection = db.collection('clients');
             const client = await collection.findOne({ _id: ObjectId(clientId) });
+
+            if (!client) {
+                throw helpers.createError('client not found', 404)
+            }
     
             res.status(200).json(client);
         } catch (err) {
@@ -158,10 +162,10 @@ const clients = {
 
 const router = express.Router();
 
-router.post('/', auth.requireSuperAdmin, auth.requireAdmin, clients.post);
+router.post('/', auth.requireSuperAdmin, clients.post);
 router.get('/', auth.requireAdmin, clients.get);
 router.get('/:clientId', clients.getClient);
-router.patch('/:clientId', auth.requireSuperAdmin, auth.requireAdmin, clients.patch);
-router.delete('/:clientId', auth.requireSuperAdmin, auth.requireAdmin, clients.delete);
+router.patch('/:clientId',  auth.requireSuperAdmin, clients.patch);
+router.delete('/:clientId', auth.requireSuperAdmin, clients.delete);
 
 export { clients, router as clientsRouter };

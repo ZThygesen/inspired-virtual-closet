@@ -98,12 +98,13 @@ describe('files', () => {
     let mockGetCredits;
     let mockDeductCredits;
     describe('create', () => {
+        let clientId;
         let data;
         beforeEach(() => {
+            clientId = (new ObjectId()).toString(),
             data = {
                 fileSrc: 'file source string',
                 fullFileName: 'blaze-tastic.png',
-                clientId: (new ObjectId()).toString(),
                 categoryId: (new ObjectId()).toString(),
                 rmbg: 'true'
             };
@@ -128,7 +129,7 @@ describe('files', () => {
         it('should create new file - test environment, remove background', async () => {
             // perform action to test
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -136,8 +137,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -146,7 +147,7 @@ describe('files', () => {
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, data.clientId, mockCredits);
+            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
             expect(mockNext).not.toHaveBeenCalled();
@@ -156,7 +157,7 @@ describe('files', () => {
             // perform action to test
             data.rmbg = 'false';
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -164,8 +165,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
@@ -174,7 +175,7 @@ describe('files', () => {
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, data.clientId, mockCredits);
+            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
             expect(mockNext).not.toHaveBeenCalled();
@@ -184,7 +185,7 @@ describe('files', () => {
             // perform action to test
             process.env.NODE_ENV = 'dev';
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -192,8 +193,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -202,7 +203,7 @@ describe('files', () => {
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/items/${createIdResponse}/small.png`, imageThumbnailResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, data.clientId, mockCredits);
+            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
             expect(mockNext).not.toHaveBeenCalled();
@@ -213,7 +214,7 @@ describe('files', () => {
             process.env.NODE_ENV = 'dev';
             data.rmbg = 'false';
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -221,8 +222,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
@@ -231,7 +232,7 @@ describe('files', () => {
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/items/${createIdResponse}/small.png`, imageThumbnailResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, data.clientId, mockCredits);
+            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
             expect(mockNext).not.toHaveBeenCalled();
@@ -241,7 +242,7 @@ describe('files', () => {
             // perform action to test
             process.env.NODE_ENV = 'production';
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -249,8 +250,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -259,7 +260,7 @@ describe('files', () => {
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `items/${createIdResponse}/small.png`, imageThumbnailResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, data.clientId, mockCredits);
+            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
             expect(mockNext).not.toHaveBeenCalled();
@@ -270,7 +271,7 @@ describe('files', () => {
             process.env.NODE_ENV = 'production';
             data.rmbg = 'false';
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -278,8 +279,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
@@ -288,7 +289,7 @@ describe('files', () => {
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `items/${createIdResponse}/small.png`, imageThumbnailResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, data.clientId, mockCredits);
+            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
             expect(mockNext).not.toHaveBeenCalled();
@@ -298,7 +299,7 @@ describe('files', () => {
             // perform action to test
             data.categoryId = 0;
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -306,8 +307,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: 0 });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -316,7 +317,7 @@ describe('files', () => {
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, data.clientId, mockCredits);
+            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
             expect(mockNext).not.toHaveBeenCalled();
@@ -327,7 +328,7 @@ describe('files', () => {
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
             mockIsSuperAdmin.mockResolvedValue(true);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -335,7 +336,7 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).not.toHaveBeenCalled();
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
@@ -357,7 +358,7 @@ describe('files', () => {
             findError.status = 500;
             mockCollection.find.mockImplementation(() => { throw findError });
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -389,7 +390,7 @@ describe('files', () => {
             toArrayError.status = 500;
             mockCollection.toArray.mockRejectedValue(toArrayError);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -419,7 +420,7 @@ describe('files', () => {
             // perform action to test
             mockCollection.toArray.mockResolvedValue([]);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -451,7 +452,7 @@ describe('files', () => {
             error.status = 500;
             mockIsSuperAdmin.mockRejectedValue(error);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -459,7 +460,7 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockRemoveBackground).not.toHaveBeenCalled();
@@ -483,7 +484,7 @@ describe('files', () => {
             creditsError.status = 500;
             mockGetCredits.mockRejectedValue(creditsError);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -491,8 +492,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockRemoveBackground).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -509,13 +510,11 @@ describe('files', () => {
             expect(err.message).toBe('getCredits failed');
         });
 
-        it('should handle createId failure', async () => {
+        it('should fail with invalid credits', async () => {
             // perform action to test
-            const createIdError = new Error('createId failed');
-            createIdError.status = 500;
-            mockCreateId.mockImplementation(() => { throw createIdError });
+            mockGetCredits.mockResolvedValue(0);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -523,8 +522,40 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockCreateId).not.toHaveBeenCalled();
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+            expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
+            expect(mockParse).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockDeductCredits).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(403);
+            expect(err.message).toBe('client does not have any credits');
+        });
+
+        it('should handle createId failure', async () => {
+            // perform action to test
+            const createIdError = new Error('createId failed');
+            createIdError.status = 500;
+            mockCreateId.mockImplementation(() => { throw createIdError });
+
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+
+            await files.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('categories');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -547,7 +578,7 @@ describe('files', () => {
             rmbgError.status = 500;
             mockRemoveBackground.mockRejectedValue(rmbgError);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -555,8 +586,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -580,7 +611,7 @@ describe('files', () => {
             bufferError.status = 500;
             mockb64ToBuffer.mockRejectedValue(bufferError);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -588,8 +619,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
@@ -612,7 +643,7 @@ describe('files', () => {
             thumbError.status = 500;
             mockCreateImageThumbnail.mockRejectedValue(thumbError);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -620,8 +651,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -644,7 +675,7 @@ describe('files', () => {
             parseError.status = 500;
             mockParse.mockImplementation(() => { throw parseError });
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -652,8 +683,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -677,7 +708,7 @@ describe('files', () => {
                 return { extension: 'png' };
             });
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -685,8 +716,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -710,7 +741,7 @@ describe('files', () => {
             uploadError.status = 500;
             mockUploadToGCS.mockRejectedValueOnce(uploadError);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -718,8 +749,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -744,7 +775,7 @@ describe('files', () => {
             uploadError.status = 500;
             mockUploadToGCS.mockRejectedValueOnce(uploadError);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -752,8 +783,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -777,7 +808,7 @@ describe('files', () => {
             updateError.status = 500;
             mockCollection.updateOne.mockRejectedValue(updateError);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -785,8 +816,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -808,7 +839,7 @@ describe('files', () => {
             // perform action to test
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 0 });
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -816,8 +847,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -843,7 +874,7 @@ describe('files', () => {
 
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -851,8 +882,8 @@ describe('files', () => {
             expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, data.clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, data.clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
@@ -861,7 +892,7 @@ describe('files', () => {
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, data.clientId, mockCredits);
+            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalled();
@@ -874,7 +905,7 @@ describe('files', () => {
             // perform action to test
             data.fileSrc = null;
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -904,7 +935,7 @@ describe('files', () => {
             // perform action to test
             delete data.fullFileName;
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -932,8 +963,6 @@ describe('files', () => {
 
         it('should fail with missing client id', async () => {
             // perform action to test
-            data.clientId = undefined;
-
             const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
@@ -962,9 +991,7 @@ describe('files', () => {
 
         it('should fail with invalid client id', async () => {
             // perform action to test
-            data.clientId = 'not-valid-id';
-
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: 'not-valid-id' }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -994,7 +1021,7 @@ describe('files', () => {
             // perform action to test
             data.categoryId = '';
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -1024,7 +1051,7 @@ describe('files', () => {
             // perform action to test
             data.categoryId = 'not-valid-id';
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
@@ -1054,7 +1081,7 @@ describe('files', () => {
             // perform action to test
             delete data.rmbg;
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await files.post(req, mockRes, mockNext);
 
