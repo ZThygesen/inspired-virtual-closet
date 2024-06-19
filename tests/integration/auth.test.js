@@ -99,7 +99,10 @@ describe('auth', () => {
 
     afterEach(async () => {
         cookie = `token=${token}`;
-        client._id = clientId;
+        if (client) {
+            client._id = clientId;
+        }
+        
 
         jest.resetAllMocks();
         jest.restoreAllMocks();
@@ -108,6 +111,686 @@ describe('auth', () => {
     function agent(app) {
         return supertest(app).set('Cookie', cookie);
     }
+
+    describe('categories', () => {
+        async function insertOther(collection) {
+            await collection.insertOne({ _id: 0, name: 'Other', items: [] });
+        }
+
+        let mongoClient;
+        let db;
+        let collection;
+        beforeAll(async () => {
+            mongoClient = new MongoClient(process.env.DB_URI);
+            await mongoClient.connect();
+            db = mongoClient.db(process.env.DB_NAME_TEST);
+            collection = db.collection('categories');
+
+            await createUser(db);
+        });
+
+        afterAll(async () => {
+            await clearClients(db);
+            await collection.deleteMany({ });
+            await insertOther(collection);
+            await mongoClient.close();
+        });
+
+        describe('create', () => {
+            let data;
+            beforeAll(async () => {
+                data = {
+                    category: 'T-Shirts'
+                };
+            });
+
+            it('should succeed (super user)', async () => {
+                await setUserSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post('/categories')
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(201);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail (admin user)', async () => {
+                await setUserAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post('/categories')
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail (normal user)', async () => {
+                await setUserNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post('/categories')
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail with missing token', async () => {
+                cookie = '';
+
+                // perform action to test
+                const response = await agent(app)
+                    .post('/categories')
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('token required to authenticate JWT');
+            });
+
+            it('should fail with invalid token', async () => {
+                cookie = invalidCookie;
+
+                // perform action to test
+                const response = await agent(app)
+                    .post('/categories')
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(500);
+                expect(response.body.message).toBe('invalid signature');
+            });
+        });
+
+        describe('read', () => {
+            it('should succeed (super user)', async () => {
+                await setUserSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get('/categories');
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should succeed (admin user)', async () => {
+                await setUserAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get('/categories');
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should succeed (normal user)', async () => {
+                await setUserNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get('/categories');
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should fail with missing token', async () => {
+                cookie = '';
+
+                // perform action to test
+                const response = await agent(app)
+                    .get('/categories');
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('token required to authenticate JWT');
+            });
+
+            it('should fail with invalid token', async () => {
+                cookie = invalidCookie;
+
+                // perform action to test
+                const response = await agent(app)
+                    .get('/categories');
+
+                // perform checks
+                expect(response.status).toBe(500);
+                expect(response.body.message).toBe('invalid signature');
+            });
+        });
+
+        describe('update', () => {
+            let data;
+            let patchData;
+            beforeAll(async () => {
+                data = {
+                    _id: new ObjectId(),
+                    name: 'T-Shirts',
+                    items: []
+                };
+                await collection.insertOne(data);
+
+                patchData = {
+                    newName: 'Jeans'
+                };
+            });
+
+            it('should succeed (super user)', async () => {
+                await setUserSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/categories/${data._id.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail (admin user)', async () => {
+                await setUserAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/categories/${data._id.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail (normal user)', async () => {
+                await setUserNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/categories/${data._id.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail with missing token', async () => {
+                cookie = '';
+
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/categories/${data._id.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('token required to authenticate JWT');
+            });
+
+            it('should fail with invalid token', async () => {
+                cookie = invalidCookie;
+
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/categories/${data._id.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(500);
+                expect(response.body.message).toBe('invalid signature');
+            });
+        });
+
+        describe('delete', () => {
+            let data;
+            beforeEach(async () => {
+                data = {
+                    _id: new ObjectId(),
+                    name: 'T-Shirts',
+                    items: [{ item: 1 }, { item: 2 }, { item: 3 }]
+                };
+                await collection.insertOne(data);
+            });
+
+            it('should succeed (super user)', async () => {
+                await setUserSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/categories/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail (admin user)', async () => {
+                await setUserAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/categories/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail (normal user)', async () => {
+                await setUserNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/categories/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail with missing token', async () => {
+                cookie = '';
+
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/categories/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('token required to authenticate JWT');
+            });
+
+            it('should fail with invalid token', async () => {
+                cookie = invalidCookie;
+
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/categories/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(500);
+                expect(response.body.message).toBe('invalid signature');
+            });
+        });
+    });
+
+    describe('clients', () => {
+
+        let mongoClient;
+        let db;
+        let collection;
+        beforeAll(async () => {
+            mongoClient = new MongoClient(process.env.DB_URI);
+            await mongoClient.connect();
+            db = mongoClient.db(process.env.DB_NAME_TEST);
+            collection = db.collection('clients');
+
+            await createUser(db);
+        });
+
+        afterAll(async () => {
+            await clearClients(db);
+            await collection.deleteMany({ });
+            await mongoClient.close();
+        });
+
+        describe('create', () => {
+            let data;
+            beforeAll(() => {
+                data = {
+                    firstName: 'John',
+                    lastName: 'Doe',
+                    email: 'jdoe@gmail.com',
+                    credits: 350,
+                    isAdmin: false
+                };
+            });
+
+            it('should succeed (super user)', async () => {
+                await setUserSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post('/api/clients')
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(201);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail (admin user)', async () => {
+                await setUserAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post('/api/clients')
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail (normal user)', async () => {
+                await setUserNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post('/api/clients')
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail with missing token', async () => {
+                cookie = '';
+
+                // perform action to test
+                const response = await agent(app)
+                    .post('/api/clients')
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('token required to authenticate JWT');
+            });
+
+            it('should fail with invalid token', async () => {
+                cookie = invalidCookie;
+
+                // perform action to test
+                const response = await agent(app)
+                    .post('/api/clients')
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(500);
+                expect(response.body.message).toBe('invalid signature');
+            });
+        });
+
+        describe('read', () => {
+            it('should succeed (super user)', async () => {
+                await setUserSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get('/api/clients');
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should succeed (admin user)', async () => {
+                await setUserAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get('/api/clients');
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should fail (normal user)', async () => {
+                await setUserNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get('/api/clients');
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only admins are authorized for this action')
+            });
+
+            it('should fail with missing token', async () => {
+                cookie = '';
+
+                // perform action to test
+                const response = await agent(app)
+                    .get('/api/clients');
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('token required to authenticate JWT');
+            });
+
+            it('should fail with invalid token', async () => {
+                cookie = invalidCookie;
+
+                // perform action to test
+                const response = await agent(app)
+                    .get('/api/clients');
+
+                // perform checks
+                expect(response.status).toBe(500);
+                expect(response.body.message).toBe('invalid signature');
+            });
+        });
+
+        describe('read client', () => {
+            let data;
+            beforeAll(async () => {
+                data = {
+                    _id: new ObjectId(),
+                    firstName: 'John',
+                    lastName: 'Doe',
+                    email: 'jdoe@gmail.com',
+                    credits: 350,
+                    isAdmin: false
+                };
+                await collection.insertOne(data);
+            });
+
+            it('should succeed (super user)', async () => {
+                await setUserSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/api/clients/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should succeed (admin user)', async () => {
+                await setUserAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/api/clients/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should succeed (normal user)', async () => {
+                await setUserNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/api/clients/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should fail with missing token', async () => {
+                cookie = '';
+
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/api/clients/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('token required to authenticate JWT');
+            });
+
+            it('should fail with invalid token', async () => {
+                cookie = invalidCookie;
+
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/api/clients/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(500);
+                expect(response.body.message).toBe('invalid signature');
+            });
+        });
+
+        describe('update', () => {
+            let data;
+            let patchData;
+            beforeAll(async () => {
+                data = {
+                    _id: new ObjectId(),
+                    firstName: 'John',
+                    lastName: 'Doe',
+                    email: 'jdoe@gmail.com',
+                    credits: 350,
+                    isAdmin: false
+                };
+                await collection.insertOne(data);
+
+                patchData = {
+                    newFirstName: 'Jane',
+                    newLastName: 'Deer',
+                    newEmail: 'jdeer@gmail.com',
+                    newCredits: 450,
+                    newIsAdmin: true
+                };
+            });
+
+            it('should succeed (super user)', async () => {
+                await setUserSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/api/clients/${data._id.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail (admin user)', async () => {
+                await setUserAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/api/clients/${data._id.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail (normal user)', async () => {
+                await setUserNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/api/clients/${data._id.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail with missing token', async () => {
+                cookie = '';
+
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/api/clients/${data._id.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('token required to authenticate JWT');
+            });
+
+            it('should fail with invalid token', async () => {
+                cookie = invalidCookie;
+
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/api/clients/${data._id.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(500);
+                expect(response.body.message).toBe('invalid signature');
+            });
+        });
+
+        describe('delete', () => {
+            let data;
+            beforeEach(async () => {
+                data = {
+                    _id: new ObjectId(),
+                    firstName: 'John',
+                    lastName: 'Doe',
+                    email: 'jdoe@gmail.com',
+                    credits: 350,
+                    isAdmin: false
+                };
+                await collection.insertOne(data);
+            });
+
+            it('should succeed (super user)', async () => {
+                await setUserSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/api/clients/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail (admin user)', async () => {
+                await setUserAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/api/clients/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail (normal user)', async () => {
+                await setUserNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/api/clients/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail with missing token', async () => {
+                cookie = '';
+
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/api/clients/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('token required to authenticate JWT');
+            });
+
+            it('should fail with invalid token', async () => {
+                cookie = invalidCookie;
+
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/api/clients/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(500);
+                expect(response.body.message).toBe('invalid signature');
+            });
+        });
+    });
 
     describe('files', () => {
         async function insertOther(collection) {

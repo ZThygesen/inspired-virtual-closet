@@ -8,8 +8,6 @@ describe('clients', () => {
     let user;
     let token;
     let cookie;
-    let invalidToken;
-    let invalidCookie;
     async function createUser(db) {
         user = {
             _id: new ObjectId(),
@@ -25,22 +23,6 @@ describe('clients', () => {
         await collection.insertOne(user);
 
         token = jwt.sign({ id: user._id, isAdmin: user.isAdmin, isSuperAdmin: user.isSuperAdmin }, process.env.JWT_SECRET);
-        cookie = `token=${token}`;
-        invalidToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin, isSuperAdmin: user.isSuperAdmin }, 'not-correct-secret');
-        invalidCookie = `token=${invalidToken}`;
-    }
-
-    async function setNonSuperAdmin(db) {
-        const collection = db.collection('clients');
-        await collection.updateOne({ _id: user._id }, { $set: { isSuperAdmin: false } });
-        token = jwt.sign({ id: user._id, isAdmin: true, isSuperAdmin: false }, process.env.JWT_SECRET);
-        cookie = `token=${token}`;
-    }
-
-    async function setNonAdmin(db) {
-        const collection = db.collection('clients');
-        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: false, isSuperAdmin: false } });
-        token = jwt.sign({ id: user._id, isAdmin: false, isSuperAdmin: false }, process.env.JWT_SECRET);
         cookie = `token=${token}`;
     }
 
@@ -110,54 +92,6 @@ describe('clients', () => {
             expect(client.email).toBe(data.email);
             expect(client.credits).toBe(data.credits);
             expect(client.isAdmin).toBe(data.isAdmin);
-        });
-
-        it('should fail if user not super admin', async () => {
-            await setNonSuperAdmin(db);
-
-            const response = await agent(app)
-                .post('/api/clients')
-                .send(data);
-
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only super admins are authorized for this action');
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
-        });
-
-        it('should fail if user not admin', async () => {
-            await setNonAdmin(db);
-
-            const response = await agent(app)
-                .post('/api/clients')
-                .send(data);
-
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only super admins are authorized for this action');
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
-        });
-
-        it('should fail with missing token', async () => {
-            cookie = '';
-
-            const response = await agent(app)
-                .post('/api/clients')
-                .send(data);
-
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('token required to authenticate JWT');
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
-        });
-
-        it('should fail with invalid token', async () => {
-            cookie = invalidCookie;
-
-            const response = await agent(app)
-                .post('/api/clients')
-                .send(data);
-
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('invalid signature');
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
         });
 
         it('should fail with missing first name', async () => {
@@ -282,36 +216,6 @@ describe('clients', () => {
             expect(response.status).toBe(200);
             expect(response.body).toHaveLength(0);
         });
-
-        it('should fail if not admin', async () => {
-            await setNonAdmin(db);
-
-            const response = await agent(app)
-                .get('/api/clients');
-
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only admins are authorized for this action');
-        });
-
-        it('should fail with missing token', async () => {
-            cookie = '';
-
-            const response = await agent(app)
-                .get('/api/clients');
-
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('token required to authenticate JWT');
-        });
-
-        it('should fail with invalid token', async () => {
-            cookie = invalidCookie;
-
-            const response = await agent(app)
-                .get('/api/clients');
-
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('invalid signature');
-        });
     });
 
     describe('read client', () => {        
@@ -346,27 +250,7 @@ describe('clients', () => {
             expect(client.isAdmin).toBe(data.isAdmin);
         });
 
-        it('should get client - non-admin', async () => {
-            // perform action to test
-            await setNonAdmin(db);
-
-            const response = await agent(app)
-                .get(`/api/clients/${data._id.toString()}`);
-            
-            // perform checks
-            expect(response.status).toBe(200);
-
-            const client = response.body;
-            expect(client).toBeTruthy();
-            expect(client._id.toString()).toBe(data._id.toString());
-            expect(client.firstName).toBe(data.firstName);
-            expect(client.lastName).toBe(data.lastName);
-            expect(client.email).toBe(data.email);
-            expect(client.credits).toBe(data.credits);
-            expect(client.isAdmin).toBe(data.isAdmin);
-        });
-
-        it('should fail with invalid id', async () => {
+        it('should fail with invalid client id', async () => {
             const response = await agent(app)
                 .get('/api/clients/not-valid-id');
 
@@ -381,26 +265,6 @@ describe('clients', () => {
 
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('client not found');
-        });
-
-        it('should fail with missing token', async () => {
-            cookie = '';
-
-            const response = await agent(app)
-                .get('/api/clients');
-
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('token required to authenticate JWT');
-        });
-
-        it('should fail with invalid token', async () => {
-            cookie = invalidCookie;
-
-            const response = await agent(app)
-                .get('/api/clients');
-
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('invalid signature');
         });
     });
     
@@ -453,70 +317,6 @@ describe('clients', () => {
             expect(client.email).toBe(patchData.newEmail);
             expect(client.credits).toBe(patchData.newCredits);
             expect(client.isAdmin).toBe(patchData.newIsAdmin);
-        }); 
-
-        it('should fail if not super admin', async () => {
-            await setNonSuperAdmin(db);
-
-            const response = await agent(app)
-                .patch(`/api/clients/${data._id.toString()}`)
-                .send(patchData);
-
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only super admins are authorized for this action');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
-        });  
-
-        it('should fail if not admin', async () => {
-            await setNonAdmin(db);
-
-            const response = await agent(app)
-                .patch(`/api/clients/${data._id.toString()}`)
-                .send(patchData);
-
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only super admins are authorized for this action');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
-        });  
-
-        it('should fail with missing token', async () => {
-            cookie = '';
-
-            const response = await agent(app)
-                .patch(`/api/clients/${data._id.toString()}`)
-                .send(patchData);
-
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('token required to authenticate JWT');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
-        }); 
-
-        it('should fail with invalid token', async () => {
-            cookie = invalidCookie;
-
-            const response = await agent(app)
-                .patch(`/api/clients/${data._id.toString()}`)
-                .send(patchData);
-
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('invalid signature');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
         }); 
 
         it('should fail with invalid client id in request', async () => {
@@ -684,70 +484,6 @@ describe('clients', () => {
             await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
             const client = await collection.findOne({ _id: data._id });
             expect(client).toBeFalsy();
-        });
-
-        it('should fail if not super admin', async () => {
-            await setNonSuperAdmin(db);
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/api/clients/${data._id.toString()}`);
-            
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only super admins are authorized for this action');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
-        });
-
-        it('should fail if not admin', async () => {
-            await setNonAdmin(db);
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/api/clients/${data._id.toString()}`);
-            
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only super admins are authorized for this action');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
-        });
-
-        it('should fail with missing token', async () => {
-            cookie = '';
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/api/clients/${data._id.toString()}`);
-            
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('token required to authenticate JWT');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
-        });
-
-        it('should fail with invalid token', async () => {
-            cookie = invalidCookie;
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/api/clients/${data._id.toString()}`);
-            
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('invalid signature');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
         });
 
         it('should fail with invalid client id in request', async () => {
