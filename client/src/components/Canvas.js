@@ -283,12 +283,11 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
         try {
             if (editMode) {
                 formData.append('gcsDest', outfitToEdit.gcsDest);
-                await api.patch(`/outfits/${outfitToEdit._id}`, formData, {
+                await api.patch(`/outfits/${client._id}/${outfitToEdit._id}`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data'}
                 });
             } else {
-                formData.append('clientId', client._id);
-                await api.post('/outfits', formData, {
+                await api.post(`/outfits/${client._id}`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data'}
                 });
             }

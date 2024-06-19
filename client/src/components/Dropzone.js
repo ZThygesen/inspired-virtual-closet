@@ -302,13 +302,12 @@ export default function Dropzone({ category, disabled, updateItems }) {
         const formData = new FormData();
         formData.append('fileSrc', file.src);
         formData.append('fullFileName', file.name);
-        formData.append('clientId', client._id);
         formData.append('categoryId', category._id);
         formData.append('rmbg', rmbg);
 
         return new Promise(async (resolve, reject) => {
             try {
-                await api.post('/files', formData, {
+                await api.post(`/files/${client._id}`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data'}
                 }); 
             } catch (err) {

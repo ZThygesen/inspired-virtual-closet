@@ -16,7 +16,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
     const { user } = useUser();
-    
+
     const navigate = useNavigate();
 
     function handleSubmitEdit(e) {
@@ -49,34 +49,37 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                     :
                     <></>
                 }
-                { (client?.isSuperAdmin || client?.isAdmin) &&
-                    <Tooltip title={client?.isSuperAdmin ? "Super Admin" : "Admin"}>
-                        <span className={`material-icons admin-icon ${client?.isSuperAdmin ? "super" : ""}`}>star_border</span>
-                    </Tooltip>
-                }
                 <p className="client-name">{`${client.firstName} ${client.lastName}`}</p>
-                <p className="client-email">{client.email}</p>
+                { user?.isSuperAdmin &&
+                    <p className="client-email">{client.email}</p>
+                }
                 <div className="client-options">
                     { (!client?.isSuperAdmin && user?.isSuperAdmin) &&
                         <Tooltip title="Edit">
                             <button className="material-icons edit-icon" onClick={() => setEditOpen(true)}>edit</button>
                         </Tooltip>
                     }
-                    <Tooltip title="Virtual Closet">
-                        <button
-                            className="material-icons closet-icon"
-                            onClick={() => navigate(`${client.firstName.toLowerCase()}-${client.lastName.toLowerCase()}`, { state: { client: client } })}
-                        >
-                            checkroom
-                        </button>
-                    </Tooltip>
+                    { (user?.isSuperAdmin || (!client?.isSuperAdmin && !client?.isAdmin) || client?._id === user?._id) &&
+                        <Tooltip title="Virtual Closet">
+                            <button
+                                className="material-icons closet-icon"
+                                onClick={() => navigate(`${client.firstName.toLowerCase()}-${client.lastName.toLowerCase()}`, { state: { client: client } })}
+                            >
+                                checkroom
+                            </button>
+                        </Tooltip>
+                    }
+                    
                     { (!client?.isSuperAdmin && user?.isSuperAdmin) &&
                         <Tooltip title="Delete">
                             <button className="material-icons delete-icon" onClick={() => setConfirmDeleteOpen(true)}>delete</button>
                         </Tooltip>
                     }
                 </div>
-                { !client?.isSuperAdmin &&
+                {   ((user?.isSuperAdmin && !client?.isSuperAdmin) || // user is super admin and client is not
+                    (!client?.isSuperAdmin && !client?.isAdmin) ||  // client is non-admin
+                    (!client?.isSuperAdmin && client?.isAdmin && (client?._id === user?._id))) // client is admin and matches curr user's id (is self)
+                    &&
                     <p className="client-credits">{client?.credits || 0} Credits</p>
                 }
             </ClientCardContainer>

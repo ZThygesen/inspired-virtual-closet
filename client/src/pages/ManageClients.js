@@ -314,15 +314,14 @@ export default function ManageClients() {
             <ManageClientsContainer>
                 <h1 className="title">CLIENTS</h1>
                 <div className="clients">
-                    { user?.isSuperAdmin &&
+                    {
                         superAdmins.map(client => (
                             <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
                         ))
                     }
-                    { user?.isAdmin &&
+                    {
                         admins.map(client => (
-                            client?.id === user?.id ?
-                            <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} /> : <></>
+                            <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
                         ))
                     }
                     { 
