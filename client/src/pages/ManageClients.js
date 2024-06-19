@@ -43,12 +43,15 @@ function CircularProgressWithLabel(props) {
 export default function ManageClients() {
     const { setError } = useError();
 
+    const [superAdmins, setSuperAdmins] = useState([]);
+    const [admins, setAdmins] = useState([]);
     const [clients, setClients] = useState([]);
     const [openModal, setOpenModal] = useState(false);
     const [newClientFName, setNewClientFName] = useState('');
     const [newClientLName, setNewClientLName] = useState('');
     const [newClientEmail, setNewClientEmail] = useState('');
     const [newClientRole, setNewClientRole] = useState(false);
+    const [newClientCredits, setNewClientCredits] = useState(350);
     const [loading, setLoading] = useState(false);
 
     const [deleteProgressOpen, setDeleteProgressOpen] = useState(false);
@@ -62,17 +65,27 @@ export default function ManageClients() {
         setLoading(true);
         try {
             const response = await api.get('/api/clients');
-            setClients(response.data.sort(function (a, b) {
-                if (a.firstName < b.firstName) {
+            const allClients = response.data.sort(function (a, b) {
+                const nameA = a.firstName.toLowerCase();
+                const nameB = b.firstName.toLowerCase();
+                if (nameA < nameB) {
                     return -1;
                 } 
-                else if (a.firstName > b.firstName) {
+                else if (nameA > nameB) {
                     return 1;
                 }
                 else {
                     return 0;
                 }
-            }));
+            });
+
+            const superAdmins = allClients.filter(client => client?.isSuperAdmin);
+            const admins = allClients.filter(client => client?.isAdmin && !client?.isSuperAdmin);
+            const clients = allClients.filter(client => !client?.isSuperAdmin && !client?.isAdmin);
+            
+            setSuperAdmins(superAdmins);
+            setAdmins(admins);
+            setClients(clients);
         } catch (err) {
             setError({
                 message: 'There was an error fetching clients.',
@@ -92,6 +105,7 @@ export default function ManageClients() {
         setNewClientFName('');
         setNewClientLName('');
         setNewClientEmail('');
+        setNewClientCredits(350);
         setNewClientRole(false);
     }
 
@@ -104,6 +118,7 @@ export default function ManageClients() {
                 firstName: newClientFName,
                 lastName: newClientLName,
                 email: newClientEmail,
+                credits: newClientCredits,
                 isAdmin: newClientRole
             });
             handleClose();
@@ -118,11 +133,12 @@ export default function ManageClients() {
         }
     }
 
-    async function editClient(client, newFirstName, newLastName, newEmail, newIsAdmin) {
+    async function editClient(client, newFirstName, newLastName, newEmail, newCredits, newIsAdmin) {
         setLoading(true);
         if (client.firstName === newFirstName && 
             client.lastName === newLastName &&
             client.email === newEmail &&
+            client.credits === newCredits &&
             client.isAdmin === newIsAdmin
         ) {
             setLoading(false);
@@ -133,6 +149,7 @@ export default function ManageClients() {
                 newFirstName: newFirstName, 
                 newLastName: newLastName,
                 newEmail: newEmail,
+                newCredits: newCredits,
                 newIsAdmin: newIsAdmin
             });  
             await getClients();
@@ -298,6 +315,16 @@ export default function ManageClients() {
                 <h1 className="title">CLIENTS</h1>
                 <div className="clients">
                     {
+                        superAdmins.map(client => (
+                            <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
+                        ))
+                    }
+                    {
+                        admins.map(client => (
+                            <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
+                        ))
+                    }
+                    { 
                         clients.map(client => (
                             <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
                         ))
@@ -340,6 +367,13 @@ export default function ManageClients() {
                                 label="Email"
                                 value={newClientEmail}
                                 onChange={e => setNewClientEmail(e.target.value)}
+                            />
+                            <Input
+                                type="number"
+                                id="credits"
+                                label="Credits"
+                                value={newClientCredits}
+                                onChange={e => setNewClientCredits(e.target.value)}
                             />
                             <Input 
                                 type="checkbox"

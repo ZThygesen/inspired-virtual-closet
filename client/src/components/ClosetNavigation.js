@@ -239,8 +239,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
                         sendOutfitToCanvas={sendOutfitToCanvas} 
                     />
                     <AddItems 
-                        display={closetMode === 3} 
-                        client={client} 
+                        display={closetMode === 3}
                         category={category} 
                         openSidebar={openSidebar} 
                         updateItems={updateItems} 

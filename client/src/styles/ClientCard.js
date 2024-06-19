@@ -11,6 +11,15 @@ export const ClientCardContainer = styled.div`
     border-radius: 25px;
     padding: 40px 20px;
     background-color: var(--white);
+    position: relative;
+
+    .admin-icon {
+        font-size: 38px !important;
+        color: var(--secondary) !important;
+        position: absolute;
+        top: 6px;
+        right: 6px;
+    }
 
     .client-name {
         font-family: 'Fashion';
@@ -19,10 +28,10 @@ export const ClientCardContainer = styled.div`
         letter-spacing: 2px;
         word-break: break-word;
         text-align: center;
+    }
 
-        &.secondary {
-            font-size: 20px;
-        }
+    .client-email {
+        font-size: 18px;
     }
 
     .client-options {
@@ -49,6 +58,12 @@ export const ClientCardContainer = styled.div`
     .closet-icon {
         font-size: 60px !important;
         color: var(--secondary) !important;
+    }
+
+    .client-credits {
+        font-size: 20px;
+        position: absolute;
+        bottom: 8px;
     }
 
     @media (min-width: 480px) {

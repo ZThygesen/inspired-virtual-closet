@@ -20,6 +20,11 @@ const clients = {
                 throw helpers.createError('an email is required for client creation', 400);
             }
 
+            const credits = parseInt(req?.body?.credits);
+            if (isNaN(credits)) {
+                throw helpers.createError('credits missing or must be of type number to create client', 400);
+            }
+
             const isAdmin = req?.body?.isAdmin;
             if (isAdmin === null || isAdmin === undefined) {
                 throw helpers.createError('a role status is required for client creation', 400);
@@ -29,6 +34,7 @@ const clients = {
                 firstName: firstName,
                 lastName: lastName,
                 email: email,
+                credits: credits,
                 isAdmin: isAdmin
             }
             
@@ -56,6 +62,27 @@ const clients = {
         }
     },
 
+    async getClient(req, res, next) {
+        try {
+            const clientId = req?.params?.clientId;
+            if (!helpers.isValidId(clientId)) {
+                throw helpers.createError('failed to get client: invalid or missing client id', 400);
+            }
+
+            const { db } = req.locals;
+            const collection = db.collection('clients');
+            const client = await collection.findOne({ _id: ObjectId(clientId) });
+
+            if (!client) {
+                throw helpers.createError('client not found', 404)
+            }
+    
+            res.status(200).json(client);
+        } catch (err) {
+            next(err);
+        }
+    },
+
     async patch(req, res, next) {
         try {
             const { db } = req.locals;
@@ -77,6 +104,11 @@ const clients = {
                 throw helpers.createError('an email is required for client update', 400);
             }
 
+            const credits = parseInt(req?.body?.newCredits);
+            if (isNaN(credits)) {
+                throw helpers.createError('credits missing or must be of type number to update client', 400);
+            }
+
             const isAdmin = req?.body?.newIsAdmin;
             if (isAdmin === null || isAdmin === undefined) {
                 throw helpers.createError('a role status is required for client update', 400);
@@ -89,6 +121,7 @@ const clients = {
                         firstName: firstName,
                         lastName: lastName,
                         email: email,
+                        credits: credits,
                         isAdmin: isAdmin
                     }
                 }
@@ -129,9 +162,10 @@ const clients = {
 
 const router = express.Router();
 
-router.post('/', auth.requireSuperAdmin, auth.requireAdmin, clients.post);
+router.post('/', auth.requireSuperAdmin, clients.post);
 router.get('/', auth.requireAdmin, clients.get);
-router.patch('/:clientId', auth.requireSuperAdmin, auth.requireAdmin, clients.patch);
-router.delete('/:clientId', auth.requireSuperAdmin, auth.requireAdmin, clients.delete);
+router.get('/:clientId', clients.getClient);
+router.patch('/:clientId',  auth.requireSuperAdmin, clients.patch);
+router.delete('/:clientId', auth.requireSuperAdmin, clients.delete);
 
 export { clients, router as clientsRouter };

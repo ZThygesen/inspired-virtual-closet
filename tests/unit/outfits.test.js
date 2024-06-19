@@ -83,13 +83,14 @@ describe('outfits', () => {
     });
 
     describe('create', () => {
+        let clientId;
         let data;
         beforeEach(() => {
+            clientId = (new ObjectId()).toString(); 
             data = {
                 fileSrc: 'file source string',
                 stageItemsStr: 'stage items string',
-                outfitName: 'Blazin Blazer Blast',
-                clientId: (new ObjectId()).toString()
+                outfitName: 'Blazin Blazer Blast'
             };
 
             mockCollection.toArray.mockResolvedValue([{ client: 'exists' }]);
@@ -102,13 +103,13 @@ describe('outfits', () => {
         it('should create new outfit - test environment', async () => {
             // perform action to test
             mockCollection.insertOne.mockResolvedValue({ insertedId: 'success_id' });
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
@@ -116,7 +117,7 @@ describe('outfits', () => {
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
-                clientId: data.clientId,
+                clientId: clientId,
                 stageItems: JSONResponse,
                 outfitName: data.outfitName,
                 outfitUrl: uploadToGCSResponse,
@@ -131,21 +132,21 @@ describe('outfits', () => {
             // perform action to test
             process.env.NODE_ENV = 'dev';
             mockCollection.insertOne.mockResolvedValue({ insertedId: 'success_id' });
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
-                clientId: data.clientId,
+                clientId: clientId,
                 stageItems: JSONResponse,
                 outfitName: data.outfitName,
                 outfitUrl: uploadToGCSResponse,
@@ -160,21 +161,21 @@ describe('outfits', () => {
             // perform action to test
             process.env.NODE_ENV = 'production';
             mockCollection.insertOne.mockResolvedValue({ insertedId: 'success_id' });
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
-                clientId: data.clientId,
+                clientId: clientId,
                 stageItems: JSONResponse,
                 outfitName: data.outfitName,
                 outfitUrl: uploadToGCSResponse,
@@ -191,7 +192,7 @@ describe('outfits', () => {
             parseError.status = 500;
             mockJSONParse.mockImplementation(() => { throw parseError });
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
@@ -218,14 +219,14 @@ describe('outfits', () => {
             findError.status = 500;
             mockCollection.find.mockImplementation(() => { throw findError });
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
@@ -246,14 +247,14 @@ describe('outfits', () => {
             toArrayError.status = 500;
             mockCollection.toArray.mockRejectedValue(toArrayError);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
@@ -274,14 +275,14 @@ describe('outfits', () => {
             bufferError.status = 500;
             mockb64ToBuffer.mockRejectedValue(bufferError);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).not.toHaveBeenCalled();
@@ -302,14 +303,14 @@ describe('outfits', () => {
             createIdError.status = 500;
             mockCreateId.mockImplementation(() => { throw createIdError });
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
@@ -330,14 +331,14 @@ describe('outfits', () => {
             uploadError.status = 500;
             mockUploadToGCS.mockRejectedValue(uploadError);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
@@ -358,14 +359,14 @@ describe('outfits', () => {
             insertError.status = 500;
             mockCollection.insertOne.mockRejectedValue(insertError);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
@@ -373,7 +374,7 @@ describe('outfits', () => {
             
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
-                clientId: data.clientId,
+                clientId: clientId,
                 stageItems: JSONResponse,
                 outfitName: data.outfitName,
                 outfitUrl: uploadToGCSResponse,
@@ -390,14 +391,14 @@ describe('outfits', () => {
         it('should fail if nothing inserted into database', async () => {
             // perform action to test
             mockCollection.insertOne.mockResolvedValue({ insertedId: '' });
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
             expect(mockCreateId).toHaveBeenCalled();
@@ -405,7 +406,7 @@ describe('outfits', () => {
             
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
-                clientId: data.clientId,
+                clientId: clientId,
                 stageItems: JSONResponse,
                 outfitName: data.outfitName,
                 outfitUrl: uploadToGCSResponse,
@@ -423,14 +424,14 @@ describe('outfits', () => {
             // perform action to test
             mockCollection.toArray.mockResolvedValue([]);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
@@ -442,21 +443,21 @@ describe('outfits', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe(`cannot create outfit: no client or multiple clients with the id "${data.clientId}" exist`);
+            expect(err.message).toBe(`cannot create outfit: no client or multiple clients with the id "${clientId}" exist`);
         });
 
         it('should fail if multiple clients found given client id', async () => {
             // perform action to test
             mockCollection.toArray.mockResolvedValue([{ client: 'exists' }, { anotherClient: 'exists' }]);
 
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.clientId) });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
@@ -468,13 +469,13 @@ describe('outfits', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe(`cannot create outfit: no client or multiple clients with the id "${data.clientId}" exist`);
+            expect(err.message).toBe(`cannot create outfit: no client or multiple clients with the id "${clientId}" exist`);
         });
 
         it('should fail with missing file source', async () => {
             // perform action to test
             data.fileSrc = '';
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
@@ -498,7 +499,7 @@ describe('outfits', () => {
         it('should fail with missing stage items', async () => {
             // perform action to test
             delete data.stageItemsStr;
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
@@ -522,7 +523,7 @@ describe('outfits', () => {
         it('should fail with invalid stage items', async () => {
             // perform action to test
             data.stageItemsStr = { stage: 'items' };
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
@@ -546,7 +547,7 @@ describe('outfits', () => {
         it('should fail with missing outfit name', async () => {
             // perform action to test
             data.outfitName = null;
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 
@@ -569,7 +570,6 @@ describe('outfits', () => {
 
         it('should fail with missing client id', async () => {
             // perform action to test
-            data.clientId = undefined;
             const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
@@ -593,8 +593,7 @@ describe('outfits', () => {
 
         it('should fail with invalid client id', async () => {
             // perform action to test
-            data.clientId = 'not-valid-id';
-            const req = { fields: data, locals: { db: mockDb, bucket: mockBucket } };
+            const req = { params: { clientId: 'not-valid-id' }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
 
             await outfits.post(req, mockRes, mockNext);
 

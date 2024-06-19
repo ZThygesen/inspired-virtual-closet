@@ -15,6 +15,7 @@ export default function Input({ type, id, label, value, onChange }) {
             required
         />
         :
+        type === 'checkbox' ?
         <FormControlLabel 
             label={label}
             control={
@@ -26,5 +27,22 @@ export default function Input({ type, id, label, value, onChange }) {
                 />
             }
         />
+        :
+        <>
+            <TextInput 
+                id={id}
+                label={label}
+                value={value}
+                onChange={onChange}
+                InputLabelProps={{ required: false }}
+                variant="outlined"
+                fullWidth
+                required
+                inputProps={{
+                    type: 'number',
+                    min: 0
+                }}
+            />
+        </>
     );
 }

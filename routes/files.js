@@ -4,12 +4,13 @@ import ExpressFormidable from 'express-formidable';
 import cuid2 from '@paralleldrive/cuid2';
 import path from 'path';
 import { helpers } from '../helpers.js';
+import { auth } from './auth.js';
 
 const files = {
     async post(req, res, next) {
         try {
             // read in file fields
-            const { fileSrc, fullFileName, clientId, categoryId, rmbg } = req?.fields;
+            const { fileSrc, fullFileName, categoryId, rmbg } = req?.fields;
 
             if (!fileSrc) {
                 throw helpers.createError('file source is required to create file', 400);
@@ -19,6 +20,7 @@ const files = {
                 throw helpers.createError('file name is required to create file', 400);
             }
 
+            const clientId = req?.params?.clientId;
             if (!helpers.isValidId(clientId)) {
                 throw helpers.createError('failed to add file: invalid or missing client id', 400);
             }
@@ -43,6 +45,19 @@ const files = {
             const collection = db.collection('categories');
             if ((await collection.find({ _id: id }).toArray()).length !== 1) {
                 throw helpers.createError(`cannot add file: no category or multiple categories with the id "${id.toString()}" exist`, 404);
+            }
+
+            if (!req?.user?.isSuperAdmin && !req?.user?.isAdmin && !parsedRmbg) {
+                throw helpers.createError('non-admins must remove background on file upload', 403);
+            }
+
+            const isSuperAdmin = await helpers.isSuperAdmin(db, clientId);
+            let clientCredits;
+            if (!isSuperAdmin) {
+                clientCredits = await helpers.getCredits(db, clientId);
+                if (clientCredits <= 0) {
+                    throw helpers.createError('client does not have any credits', 403);
+                }
             }
 
             // create GCS destinations
@@ -99,6 +114,10 @@ const files = {
 
             if (result.modifiedCount === 0) {
                 throw helpers.createError('insertion of file failed: category not found with given category id', 404);
+            }
+
+            if (!isSuperAdmin) {
+                await helpers.deductCredits(db, clientId, clientCredits);
             }
 
             res.status(201).json({ message: 'Success!'});
@@ -314,10 +333,10 @@ const files = {
 
 const router = express.Router();
 
-router.post('/', ExpressFormidable(), files.post);
-router.get('/:clientId', files.get);
-router.patch('/:categoryId/:gcsId', files.patchName);
-router.patch('/category/:categoryId/:gcsId', files.patchCategory);
-router.delete('/:categoryId/:gcsId', files.delete);
+router.post('/:clientId', auth.checkPermissions, ExpressFormidable(), files.post);
+router.get('/:clientId', auth.checkPermissions, files.get);
+router.patch('/:clientId/:categoryId/:gcsId', auth.checkPermissions, files.patchName);
+router.patch('/category/:clientId/:categoryId/:gcsId', auth.checkPermissions, files.patchCategory);
+router.delete('/:clientId/:categoryId/:gcsId', auth.checkPermissions, files.delete);
 
 export { files, router as filesRouter };

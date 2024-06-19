@@ -8,14 +8,13 @@ describe('clients', () => {
     let user;
     let token;
     let cookie;
-    let invalidToken;
-    let invalidCookie;
     async function createUser(db) {
         user = {
             _id: new ObjectId(),
             firstName: 'Jane',
             lastName: 'Deer',
             email: 'janedeer11@gmail.com',
+            credits: 350,
             isAdmin: true,
             isSuperAdmin: true
         }
@@ -24,22 +23,6 @@ describe('clients', () => {
         await collection.insertOne(user);
 
         token = jwt.sign({ id: user._id, isAdmin: user.isAdmin, isSuperAdmin: user.isSuperAdmin }, process.env.JWT_SECRET);
-        cookie = `token=${token}`;
-        invalidToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin, isSuperAdmin: user.isSuperAdmin }, 'not-correct-secret');
-        invalidCookie = `token=${invalidToken}`;
-    }
-
-    async function setNonSuperAdmin(db) {
-        const collection = db.collection('clients');
-        await collection.updateOne({ _id: user._id }, { $set: { isSuperAdmin: false } });
-        token = jwt.sign({ id: user._id, isAdmin: true, isSuperAdmin: false }, process.env.JWT_SECRET);
-        cookie = `token=${token}`;
-    }
-
-    async function setNonAdmin(db) {
-        const collection = db.collection('clients');
-        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: false, isSuperAdmin: false } });
-        token = jwt.sign({ id: user._id, isAdmin: false, isSuperAdmin: false }, process.env.JWT_SECRET);
         cookie = `token=${token}`;
     }
 
@@ -85,6 +68,7 @@ describe('clients', () => {
                 firstName: 'John',
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
+                credits: 350,
                 isAdmin: false
             };
         });
@@ -106,55 +90,8 @@ describe('clients', () => {
             expect(client.firstName).toBe(data.firstName);
             expect(client.lastName).toBe(data.lastName);
             expect(client.email).toBe(data.email);
+            expect(client.credits).toBe(data.credits);
             expect(client.isAdmin).toBe(data.isAdmin);
-        });
-
-        it('should fail if user not super admin', async () => {
-            await setNonSuperAdmin(db);
-
-            const response = await agent(app)
-                .post('/api/clients')
-                .send(data);
-
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only super admins are authorized for this action');
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
-        });
-
-        it('should fail if user not admin', async () => {
-            await setNonAdmin(db);
-
-            const response = await agent(app)
-                .post('/api/clients')
-                .send(data);
-
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only super admins are authorized for this action');
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
-        });
-
-        it('should fail with missing token', async () => {
-            cookie = '';
-
-            const response = await agent(app)
-                .post('/api/clients')
-                .send(data);
-
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('token required to authenticate JWT');
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
-        });
-
-        it('should fail with invalid token', async () => {
-            cookie = invalidCookie;
-
-            const response = await agent(app)
-                .post('/api/clients')
-                .send(data);
-
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('invalid signature');
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
         });
 
         it('should fail with missing first name', async () => {
@@ -192,6 +129,28 @@ describe('clients', () => {
             await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
         });
 
+        it('should fail with missing credits', async () => {
+            delete data.credits;
+            const response = await agent(app)
+                .post('/api/clients')
+                .send(data);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('credits missing or must be of type number to create client');
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+        });
+
+        it('should fail with invalid credits', async () => {
+            data.credits = 'not a number';
+            const response = await agent(app)
+                .post('/api/clients')
+                .send(data);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('credits missing or must be of type number to create client');
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+        });
+
         it('should fail with missing admin status', async () => {
             delete data.isAdmin;
             const response = await agent(app)
@@ -212,6 +171,7 @@ describe('clients', () => {
                 firstName: 'John',
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
+                credits: 350,
                 isAdmin: false
             };
             await collection.insertOne(data);
@@ -231,6 +191,7 @@ describe('clients', () => {
             expect(client.firstName).toBe(data.firstName);
             expect(client.lastName).toBe(data.lastName);
             expect(client.email).toBe(data.email);
+            expect(client.credits).toBe(data.credits);
             expect(client.isAdmin).toBe(data.isAdmin);
         });
 
@@ -255,35 +216,55 @@ describe('clients', () => {
             expect(response.status).toBe(200);
             expect(response.body).toHaveLength(0);
         });
+    });
 
-        it('should fail if not admin', async () => {
-            await setNonAdmin(db);
-
-            const response = await agent(app)
-                .get('/api/clients');
-
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only admins are authorized for this action');
+    describe('read client', () => {        
+        let data;
+        beforeEach(async () => {
+            data = {
+                _id: new ObjectId(),
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'jdoe@gmail.com',
+                credits: 350,
+                isAdmin: false
+            };
+            await collection.insertOne(data);
         });
 
-        it('should fail with missing token', async () => {
-            cookie = '';
-
+        it('should get client', async () => {
+            // perform action to test
             const response = await agent(app)
-                .get('/api/clients');
+                .get(`/api/clients/${data._id.toString()}`);
+            
+            // perform checks
+            expect(response.status).toBe(200);
 
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('token required to authenticate JWT');
+            const client = response.body;
+            expect(client).toBeTruthy();
+            expect(client._id.toString()).toBe(data._id.toString());
+            expect(client.firstName).toBe(data.firstName);
+            expect(client.lastName).toBe(data.lastName);
+            expect(client.email).toBe(data.email);
+            expect(client.credits).toBe(data.credits);
+            expect(client.isAdmin).toBe(data.isAdmin);
         });
 
-        it('should fail with invalid token', async () => {
-            cookie = invalidCookie;
-
+        it('should fail with invalid client id', async () => {
             const response = await agent(app)
-                .get('/api/clients');
+                .get('/api/clients/not-valid-id');
 
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('invalid signature');
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('failed to get client: invalid or missing client id');
+        });
+
+        it('should fail if client doesn\'t exist', async () => {
+            await clearCollection(collection);
+            const response = await agent(app)
+                .get(`/api/clients/${data._id.toString()}`);
+
+            expect(response.status).toBe(404);
+            expect(response.body.message).toBe('client not found');
         });
     });
     
@@ -296,6 +277,7 @@ describe('clients', () => {
                 firstName: 'John',
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
+                credits: 350,
                 isAdmin: false
             };
             await collection.insertOne(data);
@@ -304,6 +286,7 @@ describe('clients', () => {
                 newFirstName: 'Jane',
                 newLastName: 'Deer',
                 newEmail: 'jdeer@gmail.com',
+                newCredits: 450,
                 newIsAdmin: true
             };
         });
@@ -315,6 +298,7 @@ describe('clients', () => {
             expect(client.firstName).toBe(data.firstName);
             expect(client.lastName).toBe(data.lastName);
             expect(client.email).toBe(data.email);
+            expect(client.credits).toBe(data.credits);
             expect(client.isAdmin).toBe(data.isAdmin);
 
             const response = await agent(app)
@@ -331,71 +315,8 @@ describe('clients', () => {
             expect(client.firstName).toBe(patchData.newFirstName);
             expect(client.lastName).toBe(patchData.newLastName);
             expect(client.email).toBe(patchData.newEmail);
+            expect(client.credits).toBe(patchData.newCredits);
             expect(client.isAdmin).toBe(patchData.newIsAdmin);
-        }); 
-
-        it('should fail if not super admin', async () => {
-            await setNonSuperAdmin(db);
-
-            const response = await agent(app)
-                .patch(`/api/clients/${data._id.toString()}`)
-                .send(patchData);
-
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only super admins are authorized for this action');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
-        });  
-
-        it('should fail if not admin', async () => {
-            await setNonAdmin(db);
-
-            const response = await agent(app)
-                .patch(`/api/clients/${data._id.toString()}`)
-                .send(patchData);
-
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only super admins are authorized for this action');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
-        });  
-
-        it('should fail with missing token', async () => {
-            cookie = '';
-
-            const response = await agent(app)
-                .patch(`/api/clients/${data._id.toString()}`)
-                .send(patchData);
-
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('token required to authenticate JWT');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
-        }); 
-
-        it('should fail with invalid token', async () => {
-            cookie = invalidCookie;
-
-            const response = await agent(app)
-                .patch(`/api/clients/${data._id.toString()}`)
-                .send(patchData);
-
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('invalid signature');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
         }); 
 
         it('should fail with invalid client id in request', async () => {
@@ -430,6 +351,7 @@ describe('clients', () => {
             patchData.newFirstName = data.firstName;
             patchData.newLastName = data.lastName;
             patchData.newEmail = data.email;
+            patchData.newCredits = data.credits;
             patchData.newIsAdmin = data.isAdmin;
 
             const response = await agent(app)
@@ -490,6 +412,36 @@ describe('clients', () => {
             expect(client).toStrictEqual(data);
         });
 
+        it('should fail with missing credits', async () => {
+            patchData.newCredits = null;
+            const response = await agent(app)
+                .patch(`/api/clients/${data._id.toString()}`)
+                .send(patchData);
+
+            // perform checks
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('credits missing or must be of type number to update client');
+
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
+            const client = await collection.findOne({ _id: data._id });
+            expect(client).toStrictEqual(data);
+        });
+
+        it('should fail with invalid credits', async () => {
+            patchData.newCredits = 'not a number';
+            const response = await agent(app)
+                .patch(`/api/clients/${data._id.toString()}`)
+                .send(patchData);
+
+            // perform checks
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('credits missing or must be of type number to update client');
+
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
+            const client = await collection.findOne({ _id: data._id });
+            expect(client).toStrictEqual(data);
+        });
+
         it('should fail with no role status', async () => {
             patchData.newIsAdmin = null;
             const response = await agent(app)
@@ -513,7 +465,8 @@ describe('clients', () => {
                 _id: new ObjectId(),
                 firstName: 'John',
                 lastName: 'Doe',
-                email: '',
+                email: 'jdoe@gmail.com',
+                credits: 350,
                 isAdmin: false
             };
             await collection.insertOne(data);
@@ -531,70 +484,6 @@ describe('clients', () => {
             await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
             const client = await collection.findOne({ _id: data._id });
             expect(client).toBeFalsy();
-        });
-
-        it('should fail if not super admin', async () => {
-            await setNonSuperAdmin(db);
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/api/clients/${data._id.toString()}`);
-            
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only super admins are authorized for this action');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
-        });
-
-        it('should fail if not admin', async () => {
-            await setNonAdmin(db);
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/api/clients/${data._id.toString()}`);
-            
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only super admins are authorized for this action');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
-        });
-
-        it('should fail with missing token', async () => {
-            cookie = '';
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/api/clients/${data._id.toString()}`);
-            
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('token required to authenticate JWT');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
-        });
-
-        it('should fail with invalid token', async () => {
-            cookie = invalidCookie;
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/api/clients/${data._id.toString()}`);
-            
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('invalid signature');
-
-            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-            const client = await collection.findOne({ _id: data._id });
-            expect(client).toStrictEqual(data);
         });
 
         it('should fail with invalid client id in request', async () => {

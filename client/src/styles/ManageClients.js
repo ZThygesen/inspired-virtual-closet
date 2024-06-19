@@ -11,6 +11,7 @@ export const ManageClientsContainer = styled(PageContainer)`
     align-items: center;
     background-color: var(--white);
     padding: 0;
+    position: relative;
 
     .title {
         width: 100%;
@@ -50,6 +51,7 @@ export const ManageClientsContainer = styled(PageContainer)`
         background-color: var(--primary-light);
         padding: 20px;
         box-shadow: var(--top-shadow);
+        z-index: 500;
     }
 
     @media (min-width: 480px) {

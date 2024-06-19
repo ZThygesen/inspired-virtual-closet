@@ -11,30 +11,21 @@ describe('outfits', () => {
     let user;
     let token;
     let cookie;
-    let invalidToken;
-    let invalidCookie;
     async function createUser(db) {
         user = {
             _id: new ObjectId(),
             firstName: 'Jane',
             lastName: 'Deer',
             email: 'janedeer11@gmail.com',
-            isAdmin: true
-        }
+            credits: 350,
+            isAdmin: true,
+            isSuperAdmin: true
+        };
 
         const collection = db.collection('clients');
         await collection.insertOne(user);
 
-        token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET);
-        cookie = `token=${token}`;
-        invalidToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, 'not-correct-secret');
-        invalidCookie = `token=${invalidToken}`;
-    }
-
-    async function setNonAdmin(db) {
-        const collection = db.collection('clients');
-        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: false } });
-        token = jwt.sign({ id: user._id, isAdmin: false }, process.env.JWT_SECRET);
+        token = jwt.sign({ id: user._id, isAdmin: user.isAdmin, isSuperAdmin: user.isSuperAdmin }, process.env.JWT_SECRET);
         cookie = `token=${token}`;
     }
 
@@ -42,6 +33,30 @@ describe('outfits', () => {
         const collection = db.collection('clients');
 
         await collection.deleteOne({ _id: user._id });
+    }
+
+    let clientId;
+    let client;
+    async function createClient(db) {
+        clientId = new ObjectId();
+        client = {
+            _id: clientId,
+            firstName: 'Jane',
+            lastName: 'Deer',
+            email: 'janedeer11@gmail.com',
+            credits: 350,
+            isAdmin: false,
+            isSuperAdmin: false
+        };
+
+        const collection = db.collection('clients');
+        await collection.insertOne(client);
+    }
+
+    async function removeClient(db) {
+        const collection = db.collection('clients');
+
+        await collection.deleteOne({ _id: client._id });
     }
 
     async function clearCollection(collection) {
@@ -79,32 +94,20 @@ describe('outfits', () => {
         await clearBucket();
     });
 
-    let clientId;
-    let clientData;
-
     beforeEach(async () => {
         expect(process.env.NODE_ENV).toBe('test');
 
         expect(bucket.id).toBe('edie-styles-virtual-closet-test');
 
-        clientId = (new ObjectId()).toString();
-        clientData = {
-            _id: ObjectId(clientId),
-            firstName: 'John',
-            lastName: 'Doe',
-            email: 'jdoe@gmail.com',
-            isAdmin: false
-        };
-        
-        await clientCollection.insertOne(clientData);
-
         await createUser(db);
+        await createClient(db);
     });
 
     afterEach(async () => {
         await clearCollection(collection);
-        await clearCollection(clientCollection);
         await removeUser(db);
+        await removeClient(db);
+
         jest.resetAllMocks();
         jest.restoreAllMocks();
     });
@@ -131,20 +134,19 @@ describe('outfits', () => {
         it('should create new outfit', async () => {    
             // perform action to test
             const response = await agent(app)
-                .post('/outfits')
+                .post(`/outfits/${clientId.toString()}`)
                 .field('fileSrc', data.fileSrc)
                 .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName)
-                .field('clientId', data.clientId);
+                .field('outfitName', data.outfitName);
     
             // perform checks
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
     
-            const outfit = await collection.findOne({ clientId: clientId, outfitName: 'Epic Party Outfit' });
+            const outfit = await collection.findOne({ clientId: clientId.toString(), outfitName: 'Epic Party Outfit' });
             expect(outfit).toBeTruthy();
             expect(outfit).toHaveProperty('_id');
-            expect(outfit.clientId).toBe(data.clientId);
+            expect(outfit.clientId).toBe(clientId.toString());
             expect(outfit.stageItems).toEqual(JSON.parse(data.stageItemsStr));
             expect(outfit.outfitName).toBe(data.outfitName);
             expect(outfit.outfitUrl).toEqual(expect.stringContaining('https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Foutfits%2F'));
@@ -154,71 +156,13 @@ describe('outfits', () => {
             expect(files).toHaveLength(1);
         });
 
-        it('should fail if non-admin', async () => {
-            await setNonAdmin(db);
-            
-            // perform action to test
-            const response = await agent(app)
-                .post('/outfits')
-                .field('fileSrc', data.fileSrc)
-                .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName)
-                .field('clientId', data.clientId);
-    
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only admins are authorized for this action');
-    
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-        });
-
-        it('should fail with missing token', async () => {
-            cookie = '';
-            
-            // perform action to test
-            const response = await agent(app)
-                .post('/outfits')
-                .field('fileSrc', data.fileSrc)
-                .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName)
-                .field('clientId', data.clientId);
-    
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('token required to authenticate JWT');
-    
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-        });
-
-        it('should fail with invalid token', async () => {
-            cookie = invalidCookie;
-            
-            // perform action to test
-            const response = await agent(app)
-                .post('/outfits')
-                .field('fileSrc', data.fileSrc)
-                .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName)
-                .field('clientId', data.clientId);
-    
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('invalid signature');
-    
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-        });
-
         it('should fail with missing file source', async () => {    
             // perform action to test
             const response = await agent(app)
-                .post('/outfits')
+                .post(`/outfits/${clientId.toString()}`)
                 .field('fileSrc', '')
                 .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName)
-                .field('clientId', data.clientId);
+                .field('outfitName', data.outfitName);
     
             // perform checks
             expect(response.status).toBe(400);
@@ -231,11 +175,10 @@ describe('outfits', () => {
         it('should fail with invalid MIME file source', async () => {    
             // perform action to test
             const response = await agent(app)
-                .post('/outfits')
+                .post(`/outfits/${clientId.toString()}`)
                 .field('fileSrc', 'data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==')
                 .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName)
-                .field('clientId', data.clientId);
+                .field('outfitName', data.outfitName);
     
             // perform checks
             expect(response.status).toBe(500);
@@ -248,11 +191,10 @@ describe('outfits', () => {
         it('should fail with invalid file source', async () => {    
             // perform action to test
             const response = await agent(app)
-                .post('/outfits')
+                .post(`/outfits/${clientId.toString()}`)
                 .field('fileSrc', 'data:image/png;base64,')
                 .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName)
-                .field('clientId', data.clientId);
+                .field('outfitName', data.outfitName);
     
             // perform checks
             expect(response.status).toBe(500);
@@ -265,11 +207,10 @@ describe('outfits', () => {
         it('should fail with missing stage items string', async () => {    
             // perform action to test
             const response = await agent(app)
-                .post('/outfits')
+                .post(`/outfits/${clientId.toString()}`)
                 .field('fileSrc', data.fileSrc)
                 .field('stageItemsStr', '')
-                .field('outfitName', data.outfitName)
-                .field('clientId', data.clientId);
+                .field('outfitName', data.outfitName);
     
             // perform checks
             expect(response.status).toBe(400);
@@ -282,11 +223,10 @@ describe('outfits', () => {
         it('should fail with valid stage items string but invalid json', async () => {    
             // perform action to test
             const response = await agent(app)
-                .post('/outfits')
+                .post(`/outfits/${clientId.toString()}`)
                 .field('fileSrc', data.fileSrc)
                 .field('stageItemsStr', '{"stageItems":11.13')
-                .field('outfitName', data.outfitName)
-                .field('clientId', data.clientId);
+                .field('outfitName', data.outfitName);
     
             // perform checks
             expect(response.status).toBe(500);
@@ -299,11 +239,10 @@ describe('outfits', () => {
         it('should fail with missing outfit name', async () => {    
             // perform action to test
             const response = await agent(app)
-                .post('/outfits')
+                .post(`/outfits/${clientId.toString()}`)
                 .field('fileSrc', data.fileSrc)
                 .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', '')
-                .field('clientId', data.clientId);
+                .field('outfitName', '');
     
             // perform checks
             expect(response.status).toBe(400);
@@ -313,35 +252,17 @@ describe('outfits', () => {
             expect(files).toHaveLength(1);
         });
 
-        it('should fail with missing client id', async () => {    
-            // perform action to test
-            const response = await agent(app)
-                .post('/outfits')
-                .field('fileSrc', data.fileSrc)
-                .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName)
-                .field('clientId', '');
-    
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('failed to update outfit: invalid or missing client id');
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-        });
-
         it('should fail with invalid client id', async () => {    
             // perform action to test
             const response = await agent(app)
-                .post('/outfits')
+                .post('/outfits/not-valid-id')
                 .field('fileSrc', data.fileSrc)
                 .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName)
-                .field('clientId', 'not-valid-id');
+                .field('outfitName', data.outfitName);
     
             // perform checks
             expect(response.status).toBe(400);
-            expect(response.body.message).toBe('failed to update outfit: invalid or missing client id');
+            expect(response.body.message).toBe('client id is invalid or missing');
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
@@ -349,17 +270,16 @@ describe('outfits', () => {
 
         it('should fail if client doesn\'t exist', async () => {    
             // perform action to test
-            await clearCollection(clientCollection);
+            await removeClient(db);
             const response = await agent(app)
-                .post('/outfits')
+                .post(`/outfits/${clientId.toString()}`)
                 .field('fileSrc', data.fileSrc)
                 .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName)
-                .field('clientId', data.clientId);
+                .field('outfitName', data.outfitName);
     
             // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe(`cannot create outfit: no client or multiple clients with the id "${data.clientId}" exist`);
+            expect(response.status).toBe(404);
+            expect(response.body.message).toBe('client not found');
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
@@ -371,7 +291,7 @@ describe('outfits', () => {
         beforeEach(async () => {
             data = {
                 _id: new ObjectId(),
-                clientId: clientId,
+                clientId: clientId.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
                 outfitUrl: 'outfit.url',
@@ -381,25 +301,6 @@ describe('outfits', () => {
         });
 
         it('should get outfits', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .get(`/outfits/${data.clientId}`);
-            
-            // perform checks
-            expect(response.status).toBe(200);
-            expect(response.body).toHaveLength(1);
-
-            const outfit = response.body[0];
-            expect(outfit._id.toString()).toBe(data._id.toString());
-            expect(outfit.clientId).toBe(data.clientId);
-            expect(outfit.stageItems).toEqual(data.stageItems);
-            expect(outfit.outfitName).toBe(data.outfitName);
-            expect(outfit.outfitUrl).toBe(data.outfitUrl);
-            expect(outfit.gcsDest).toBe(data.gcsDest);
-        });
-
-        it('should get outfits - non-admin', async () => {
-            await setNonAdmin(db);
             // perform action to test
             const response = await agent(app)
                 .get(`/outfits/${data.clientId}`);
@@ -444,7 +345,7 @@ describe('outfits', () => {
         it('should only return client\'s outfits', async () => {
             // perform action to test
             const otherOutfit = { ...data };
-            const otherClient = { ...clientData };
+            const otherClient = { ...client };
 
             otherOutfit._id = new ObjectId();
             otherOutfit.clientId = (new ObjectId()).toString();
@@ -476,30 +377,6 @@ describe('outfits', () => {
             expect(outfit.clientId).toBe(otherOutfit.clientId);
         });
 
-        it('should fail with missing token', async () => {
-            cookie = '';
-
-            // perform action to test
-            const response = await agent(app)
-                .get(`/outfits/${data.clientId}`);
-            
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('token required to authenticate JWT');
-        });
-
-        it('should fail with invalid token', async () => {
-            cookie = invalidCookie;
-
-            // perform action to test
-            const response = await agent(app)
-                .get(`/outfits/${data.clientId}`);
-            
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('invalid signature');
-        });
-
         it('should fail with invalid client id', async () => {
             // perform action to test
             const response = await agent(app)
@@ -507,18 +384,18 @@ describe('outfits', () => {
             
             // perform checks
             expect(response.status).toBe(400);
-            expect(response.body.message).toBe('failed to get outfits: invalid or missing client id');
+            expect(response.body.message).toBe('client id is invalid or missing');
         });
 
         it('should fail if client doesn\'t exist', async () => {
             // perform action to test
-            await clearCollection(clientCollection);
+            await removeClient(db);
             const response = await agent(app)
                 .get(`/outfits/${data.clientId}`);
             
             // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe(`cannot get outfits: no client or multiple clients with the id "${data.clientId}" exist`);
+            expect(response.status).toBe(404);
+            expect(response.body.message).toBe('client not found');
         });
     });
     
@@ -558,7 +435,7 @@ describe('outfits', () => {
         beforeEach(async () => {
             data = {
                 _id: new ObjectId(),
-                clientId: (new ObjectId()).toString(),
+                clientId: clientId.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
                 outfitUrl: url,
@@ -579,7 +456,7 @@ describe('outfits', () => {
         it('should update outfit content', async () => {
             // perform action to test
             const response = await agent(app)
-                .patch(`/outfits/${data._id.toString()}`)
+                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
                 .field('fileSrc', patchData.fileSrc)
                 .field('stageItemsStr', patchData.stageItemsStr)
                 .field('outfitName', patchData.outfitName)
@@ -609,79 +486,10 @@ describe('outfits', () => {
             expect(outfit.gcsDest).toBe(newGcsDest);
         });  
 
-        it('should fail if non-admin', async () => {
-            await setNonAdmin(db);
-
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/${data._id.toString()}`)
-                .field('fileSrc', patchData.fileSrc)
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', patchData.gcsDest);
-
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only admins are authorized for this action');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
-        });  
-
-        it('should fail with missing token', async () => {
-            cookie = '';
-
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/${data._id.toString()}`)
-                .field('fileSrc', patchData.fileSrc)
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', patchData.gcsDest);
-
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('token required to authenticate JWT');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
-        });
-
-        it('should fail with invalid token', async () => {
-            cookie = invalidCookie;
-
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/${data._id.toString()}`)
-                .field('fileSrc', patchData.fileSrc)
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', patchData.gcsDest);
-
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('invalid signature');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
-        });
-
         it('should fail with missing file source', async () => {
             // perform action to test
             const response = await agent(app)
-                .patch(`/outfits/${data._id.toString()}`)
+                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
                 .field('fileSrc', '')
                 .field('stageItemsStr', patchData.stageItemsStr)
                 .field('outfitName', patchData.outfitName)
@@ -699,10 +507,10 @@ describe('outfits', () => {
             expect(files[0].name).toBe(newGcsDest);
         });  
 
-        it('should fail with invalid file source', async () => {
+        it('should fail with invalid MIME file source', async () => {
             // perform action to test
             const response = await agent(app)
-                .patch(`/outfits/${data._id.toString()}`)
+                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
                 .field('fileSrc', 'data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD7AP8+AD8fAB9eAF99AH/0nKUYAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==')
                 .field('stageItemsStr', patchData.stageItemsStr)
                 .field('outfitName', patchData.outfitName)
@@ -720,10 +528,31 @@ describe('outfits', () => {
             expect(files[0].name).toBe(newGcsDest);
         });  
 
+        it('should fail with invalid file source', async () => {
+            // perform action to test
+            const response = await agent(app)
+                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
+                .field('fileSrc', 'data:image/png;base64,')
+                .field('stageItemsStr', patchData.stageItemsStr)
+                .field('outfitName', patchData.outfitName)
+                .field('gcsDest', patchData.gcsDest);
+
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('arrayBuffer not successfully converted to buffer');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit).toBeTruthy();
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+            expect(files[0].name).toBe(newGcsDest);
+        });  
+
         it('should fail with missing stage items string', async () => {
             // perform action to test
             const response = await agent(app)
-                .patch(`/outfits/${data._id.toString()}`)
+                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
                 .field('fileSrc', patchData.fileSrc)
                 .field('stageItemsStr', '')
                 .field('outfitName', patchData.outfitName)
@@ -741,10 +570,31 @@ describe('outfits', () => {
             expect(files[0].name).toBe(newGcsDest);
         });  
 
+        it('should fail with valid stage items string but invalid json', async () => {
+            // perform action to test
+            const response = await agent(app)
+                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
+                .field('fileSrc', patchData.fileSrc)
+                .field('stageItemsStr', '{"stageItems":11.13')
+                .field('outfitName', patchData.outfitName)
+                .field('gcsDest', patchData.gcsDest);
+
+            // perform checks
+            expect(response.status).toBe(500);
+            expect(response.body.message).toEqual(expect.stringContaining('Expected \',\' or \'}\' after property value in JSON'));
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit).toBeTruthy();
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+            expect(files[0].name).toBe(newGcsDest);
+        }); 
+
         it('should fail with missing outfit name', async () => {
             // perform action to test
             const response = await agent(app)
-                .patch(`/outfits/${data._id.toString()}`)
+                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
                 .field('fileSrc', patchData.fileSrc)
                 .field('stageItemsStr', patchData.stageItemsStr)
                 .field('outfitName', '')
@@ -765,7 +615,7 @@ describe('outfits', () => {
         it('should fail with missing gcs dest', async () => {
             // perform action to test
             const response = await agent(app)
-                .patch(`/outfits/${data._id.toString()}`)
+                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
                 .field('fileSrc', patchData.fileSrc)
                 .field('stageItemsStr', patchData.stageItemsStr)
                 .field('outfitName', patchData.outfitName)
@@ -787,7 +637,7 @@ describe('outfits', () => {
             // perform action to test
             const invalidGcsDest = `test/outfits/${gcsId}.jpg`
             const response = await agent(app)
-                .patch(`/outfits/${data._id.toString()}`)
+                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
                 .field('fileSrc', patchData.fileSrc)
                 .field('stageItemsStr', patchData.stageItemsStr)
                 .field('outfitName', patchData.outfitName)
@@ -809,7 +659,7 @@ describe('outfits', () => {
             // perform action to test
             const invalidGcsDest = 'test/outfits/not-valid-gcs-dest.png'
             const response = await agent(app)
-                .patch(`/outfits/${data._id.toString()}`)
+                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
                 .field('fileSrc', patchData.fileSrc)
                 .field('stageItemsStr', patchData.stageItemsStr)
                 .field('outfitName', patchData.outfitName)
@@ -830,7 +680,7 @@ describe('outfits', () => {
         it('should fail with invalid outfit id', async () => {
             // perform action to test
             const response = await agent(app)
-                .patch(`/outfits/not-valid-id`)
+                .patch(`/outfits/${data.clientId}/not-valid-id`)
                 .field('fileSrc', patchData.fileSrc)
                 .field('stageItemsStr', patchData.stageItemsStr)
                 .field('outfitName', patchData.outfitName)
@@ -852,7 +702,7 @@ describe('outfits', () => {
             // perform action to test
             const newId = (new ObjectId()).toString();
             const response = await agent(app)
-                .patch(`/outfits/${newId}`)
+                .patch(`/outfits/${data.clientId}/${newId}`)
                 .field('fileSrc', patchData.fileSrc)
                 .field('stageItemsStr', patchData.stageItemsStr)
                 .field('outfitName', patchData.outfitName)
@@ -861,6 +711,43 @@ describe('outfits', () => {
             // perform checks
             expect(response.status).toBe(400);
             expect(response.body.message).toBe(`cannot create outfit: no outfit or multiple outfits with the id "${newId}" exist`);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+            expect(files[0].name).toBe(newGcsDest);
+        });
+
+        it('should fail with invalid client id', async () => {
+            // perform action to test
+            const response = await agent(app)
+                .patch(`/outfits/not-valid-id/${data._id.toString()}`)
+                .field('fileSrc', patchData.fileSrc)
+                .field('stageItemsStr', patchData.stageItemsStr)
+                .field('outfitName', patchData.outfitName)
+                .field('gcsDest', patchData.gcsDest);
+
+            // perform checks
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('client id is invalid or missing');
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
+            expect(files[0].name).toBe(newGcsDest);
+        });
+
+        it('should fail if client doesn\'t exist', async () => {
+            // perform action to test
+            await removeClient(db);
+            const response = await agent(app)
+                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
+                .field('fileSrc', patchData.fileSrc)
+                .field('stageItemsStr', patchData.stageItemsStr)
+                .field('outfitName', patchData.outfitName)
+                .field('gcsDest', patchData.gcsDest);
+
+            // perform checks
+            expect(response.status).toBe(404);
+            expect(response.body.message).toBe('client not found');
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
@@ -876,7 +763,7 @@ describe('outfits', () => {
             outfitId = new ObjectId();
             data = {
                 _id: outfitId,
-                clientId: clientId,
+                clientId: clientId.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
                 outfitUrl: 'outfit.url',
@@ -892,7 +779,7 @@ describe('outfits', () => {
         it('should update outfit name', async () => {
             // perform action to test
             const response = await agent(app)
-                .patch(`/outfits/name/${data._id.toString()}`)
+                .patch(`/outfits/name/${data.clientId}/${data._id.toString()}`)
                 .send(patchData);
             
             // perform checks
@@ -908,62 +795,11 @@ describe('outfits', () => {
             expect(outfit.gcsDest).toBe(data.gcsDest);
         });
 
-        it('should fail if non-admin', async () => {
-            await setNonAdmin(db);
-
-            // perform action to test
-            patchData.newName = '';
-            const response = await agent(app)
-                .patch(`/outfits/name/${data._id.toString()}`)
-                .send(patchData);
-            
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only admins are authorized for this action');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit.outfitName).toBe(data.outfitName);
-        });
-
-        it('should fail with missing token', async () => {
-            cookie = '';
-
-            // perform action to test
-            patchData.newName = '';
-            const response = await agent(app)
-                .patch(`/outfits/name/${data._id.toString()}`)
-                .send(patchData);
-            
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('token required to authenticate JWT');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit.outfitName).toBe(data.outfitName);
-        });
-
-        it('should fail with invalid token', async () => {
-            cookie = invalidCookie;
-
-            // perform action to test
-            patchData.newName = '';
-            const response = await agent(app)
-                .patch(`/outfits/name/${data._id.toString()}`)
-                .send(patchData);
-            
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('invalid signature');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit.outfitName).toBe(data.outfitName);
-        });
-
         it('should fail with missing outfit name', async () => {
             // perform action to test
             patchData.newName = '';
             const response = await agent(app)
-                .patch(`/outfits/name/${data._id.toString()}`)
+                .patch(`/outfits/name/${data.clientId}/${data._id.toString()}`)
                 .send(patchData);
             
             // perform checks
@@ -977,7 +813,7 @@ describe('outfits', () => {
         it('should fail with invalid outfit id', async () => {
             // perform action to test
             const response = await agent(app)
-                .patch(`/outfits/name/not-valid-id`)
+                .patch(`/outfits/name/${data.clientId}/not-valid-id`)
                 .send(patchData);
             
             // perform checks
@@ -992,12 +828,41 @@ describe('outfits', () => {
             // perform action to test
             const newId = (new ObjectId()).toString();
             const response = await agent(app)
-                .patch(`/outfits/name/${newId}`)
+                .patch(`/outfits/name/${data.clientId}/${newId}`)
                 .send(patchData);
             
             // perform checks
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('update failed: outfit not found with given outfit id');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit.outfitName).toBe(data.outfitName);
+        });
+
+        it('should fail with invalid client id', async () => {
+            // perform action to test
+            const response = await agent(app)
+                .patch(`/outfits/name/not-valid-id/${data._id.toString()}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('client id is invalid or missing');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit.outfitName).toBe(data.outfitName);
+        });
+
+        it('should fail if client doesn\'t exist', async () => {
+            // perform action to test
+            await removeClient(db);
+            const response = await agent(app)
+                .patch(`/outfits/name/${data.clientId}/${data._id.toString()}`)
+                .send(patchData);
+            
+            // perform checks
+            expect(response.status).toBe(404);
+            expect(response.body.message).toBe('client not found');
 
             const outfit = await collection.findOne({ _id: data._id });
             expect(outfit.outfitName).toBe(data.outfitName);
@@ -1039,7 +904,7 @@ describe('outfits', () => {
         beforeEach(async () => {
             data = {
                 _id: new ObjectId(),
-                clientId: clientId,
+                clientId: clientId.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
                 outfitUrl: url,
@@ -1051,7 +916,7 @@ describe('outfits', () => {
         it('should delete outfit', async () => {
             // perform action to test
             const response = await agent(app)
-                .delete(`/outfits/${data._id.toString()}`);
+                .delete(`/outfits/${data.clientId}/${data._id.toString()}`);
             
             // perform checks
             expect(response.status).toBe(200);
@@ -1064,55 +929,10 @@ describe('outfits', () => {
             expect(files).toHaveLength(0);
         });
 
-        it('should fail if non-admin', async () => {
-            await setNonAdmin(db);
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/outfits/not-valid-id`);
-            
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('only admins are authorized for this action');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
-        });
-
-        it('should fail with missing token', async () => {
-            cookie = '';
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/outfits/not-valid-id`);
-            
-            // perform checks
-            expect(response.status).toBe(401);
-            expect(response.body.message).toBe('token required to authenticate JWT');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
-        });
-
-        it('should fail with invalid token', async () => {
-            cookie = invalidCookie;
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/outfits/not-valid-id`);
-            
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('invalid signature');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
-        });
-
         it('should fail with invalid outfit id', async () => {
             // perform action to test
             const response = await agent(app)
-                .delete(`/outfits/not-valid-id`);
+                .delete(`/outfits/${data.clientId}/not-valid-id`);
             
             // perform checks
             expect(response.status).toBe(400);
@@ -1126,7 +946,7 @@ describe('outfits', () => {
             // perform action to test
             const newId = (new ObjectId()).toString();
             const response = await agent(app)
-                .delete(`/outfits/${newId}`);
+                .delete(`/outfits/${data.clientId}/${newId}`);
             
             // perform checks
             expect(response.status).toBe(404);
@@ -1145,7 +965,7 @@ describe('outfits', () => {
             await collection.insertOne(newOutfit);
 
             const response = await agent(app)
-                .delete(`/outfits/${newOutfit._id.toString()}`);
+                .delete(`/outfits/${data.clientId}/${data._id.toString()}`);
             
             // perform checks
             expect(response.status).toBe(404);
@@ -1164,11 +984,38 @@ describe('outfits', () => {
             await collection.insertOne(newOutfit);
 
             const response = await agent(app)
-                .delete(`/outfits/${newOutfit._id.toString()}`);
+                .delete(`/outfits/${data.clientId}/${data._id.toString()}`);
             
             // perform checks
             expect(response.status).toBe(500);
             expect(response.body.message).toBe('No such object: edie-styles-virtual-closet-test/invalid-gest-dest');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit).toBeTruthy();
+        });
+
+        it('should fail with invalid client id', async () => {
+            // perform action to test
+            const response = await agent(app)
+                .delete(`/outfits/not-valid-id/${data._id.toString()}`);
+            
+            // perform checks
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('client id is invalid or missing');
+
+            const outfit = await collection.findOne({ _id: data._id });
+            expect(outfit).toBeTruthy();
+        });
+
+        it('should fail if outfit has invalid gcs dest', async () => {
+            // perform action to test
+            await removeClient(db);
+            const response = await agent(app)
+                .delete(`/outfits/${data.clientId}/${data._id.toString()}`);
+            
+            // perform checks
+            expect(response.status).toBe(404);
+            expect(response.body.message).toBe('client not found');
 
             const outfit = await collection.findOne({ _id: data._id });
             expect(outfit).toBeTruthy();

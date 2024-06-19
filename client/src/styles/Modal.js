@@ -20,7 +20,7 @@ export const ModalContentContainer = styled.div`
     }
 
     &:not(.image-modal) {
-        width: min(90%, 500px);
+        width: min(90%, 524px);
         max-height: 80%;
         gap: 24px;
         background-color: var(--white);

@@ -6,6 +6,7 @@ import Loading from './Loading';
 import { ClothesContainer, DropdownContainer, SwapCategoryDropdown } from '../styles/Clothes';
 import cuid from 'cuid';
 import Modal from './Modal';
+import { useClient } from './ClientContext';
 
 export default function Clothes({ display, category, updateItems, addCanvasItem }) {
     const { setError } = useError();
@@ -15,6 +16,8 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
     const [categoryOptions, setCategoryOptions] = useState([]);
     const [swapCategoryOpen, setSwapCategoryOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    const { client } = useClient();
 
     function handleSwapCategoryClose() {
         setSwapCategoryOpen(false);
@@ -32,7 +35,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
         setLoading(true);
 
         try {
-            await api.patch(`/files/category/${category._id}/${itemToSwapCategory.gcsId}`, {
+            await api.patch(`/files/category/${client._id}/${category._id}/${itemToSwapCategory.gcsId}`, {
                 newCategoryId: currCategorySelected.value
             });
             await updateItems();
@@ -121,7 +124,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
         }
 
         try {
-            await api.patch(`/files/${category._id}/${item.gcsId}`, { newName: newName });
+            await api.patch(`/files/${client._id}/${category._id}/${item.gcsId}`, { newName: newName });
             await updateItems();
         } catch (err) {
             setError({
@@ -137,7 +140,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
         setLoading(true);
 
         try {
-            await api.delete(`/files/${category._id}/${item.gcsId}`);
+            await api.delete(`/files/${client._id}/${category._id}/${item.gcsId}`);
             await updateItems();
         } catch (err) {
             setError({

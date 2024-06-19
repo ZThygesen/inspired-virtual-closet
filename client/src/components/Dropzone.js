@@ -3,12 +3,15 @@ import { useError } from './ErrorContext';
 import api from '../api';
 import cuid from 'cuid';
 import styled from 'styled-components';
-import { DropContainer, FileContainer, FileCard } from '../styles/Dropzone';
+import { DropContainer, UploadOptionsContainer, FileContainer, FileCard } from '../styles/Dropzone';
 import { ActionButton } from '../styles/ActionButton';
 import Modal from './Modal';
 import invalidImg from '../images/invalid.png';
 import { CircularProgress } from '@mui/material';
 import { resizeImage } from '../resizeImage';
+import Input from './Input';
+import { useUser } from './UserContext';
+import { useClient } from './ClientContext';
 
 const CircleProgress = styled(CircularProgress)`
     & * {
@@ -38,10 +41,10 @@ function CircularProgressWithLabel(props) {
     )
 }
 
-export default function Dropzone({ client, category, disabled, updateItems }) {
+export default function Dropzone({ category, disabled, updateItems }) {
     const { setError } = useError();
 
-    const [rmbg, setRmbg] = useState(false);
+    const [rmbg, setRmbg] = useState(true);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [filteredFiles, setFilteredFiles] = useState([]);
     const [invalidFiles, setInvalidFiles] = useState([]);
@@ -56,7 +59,35 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [numFilesUploaded, setNumFilesUploaded] = useState(0);
     const [resultModalOpen, setResultModalOpen] = useState(false);
+    const [hasCredits, setHasCredits] = useState(false);
     const fileInputRef = useRef();
+
+    const { user } = useUser();
+    const { client, updateClient } = useClient();
+
+    useEffect(() => {
+        function checkCredits() {
+            if (client?.isSuperAdmin) {
+                setHasCredits(true);
+                return;
+            }
+            
+            if (!client?.credits) {
+                setHasCredits(false);
+                return;
+            }
+
+            if (filteredFiles.length - numFilesUploaded > client?.credits) {
+                setHasCredits(false);
+                return;
+            } 
+
+            setHasCredits(true)
+            
+        }
+
+        checkCredits();
+    }, [filteredFiles, client, numFilesUploaded]);
 
     useEffect(() => {
         const filteredArray = [...selectedFiles];
@@ -246,6 +277,10 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                 });
                 setUploadModalOpen(false);
                 setNumFilesUploaded(0);
+                updateItems(true);
+                setSelectedFiles([]);
+                setFilteredFiles([]);
+                setInvalidFiles([]);
                 return;
             }
             
@@ -267,19 +302,19 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
         const formData = new FormData();
         formData.append('fileSrc', file.src);
         formData.append('fullFileName', file.name);
-        formData.append('clientId', client._id);
         formData.append('categoryId', category._id);
         formData.append('rmbg', rmbg);
 
         return new Promise(async (resolve, reject) => {
             try {
-                await api.post('/files', formData, {
+                await api.post(`/files/${client._id}`, formData, {
                     headers: { 'Content-Type': 'multipart/form-data'}
                 }); 
             } catch (err) {
                 reject(err);
             }
 
+            await updateClient();
             resolve();
         });
     }
@@ -320,28 +355,36 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                     &nbsp;or drag & drop here
                 </p>
             </ DropContainer>
-            <ActionButton
-                    className="tertiary small"
-                    onClick={() => setConfirmModalOpen(true)}
-                    disabled={!(invalidFiles.length === 0 && filteredFiles.length) || disabled}
-                >
-                    Submit File(s)
-            </ActionButton>
-            <div className="remove-background-option">
-                <label htmlFor="remove-background">
-                    Remove Background
-                    <input 
+            <UploadOptionsContainer>
+                { !client?.isSuperAdmin &&
+                    <p className="upload-credits">Upload Credits Left: {client?.credits}</p>
+                }
+                <ActionButton
+                        className="tertiary small"
+                        onClick={() => setConfirmModalOpen(true)}
+                        disabled={!(invalidFiles.length === 0 && filteredFiles.length && hasCredits) || disabled}
+                    >
+                        Submit File(s)
+                </ActionButton>
+                { (user?.isAdmin || user?.isSuperAdmin) && 
+                    <Input 
                         type="checkbox" 
-                        id="remove-background" 
+                        id="remove-background"
+                        label="Remove Background" 
                         onChange={toggleRmbg}
-                        // defaultChecked 
-                    />
-                </label>
-            </div>
-            {filteredFiles.length > 0 &&
+                        value={rmbg}
+                    />   
+                }
+            </UploadOptionsContainer>
+            { filteredFiles.length > 0 &&
                 <FileContainer>
                     <h2 className="title">Current Files ({filteredFiles.length})</h2>
-                    {invalidFiles.length ?
+                    { (!hasCredits) ?
+                        <p className="file-error-message">
+                            You do not have enough credits to upload these files.
+                        </p> : ''
+                    }
+                    { invalidFiles.length ?
                         <p className="file-error-message">
                             Please remove all unsupported files.
                         </p> : ''
@@ -385,6 +428,19 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
             >
                 <div className="modal-content">
                     <p className="large bold">Are you sure you want to add these {filteredFiles.length} items to <span className="category-name large bold">{category.name}</span>?</p>
+                    { (user?.isSuperAdmin || user?.isAdmin) &&
+                    <>
+                        <p className="medium">The background WILL {rmbg ? '' : 'NOT'} be removed.</p>
+                        <Input 
+                            type="checkbox" 
+                            id="remove-background"
+                            label="Remove Background" 
+                            onChange={toggleRmbg}
+                            value={rmbg}
+                        />
+                    </>
+                    }
+                    <p className="medium warning">You have {client?.credits} credits left.</p>
                 </div>
                 <div className="modal-options">
                     <button onClick={() => setConfirmModalOpen(false)}>Cancel</button>
@@ -418,6 +474,9 @@ export default function Dropzone({ client, category, disabled, updateItems }) {
                 <div className="modal-content">
                     <p className="medium">{numFilesUploaded}/{filteredFiles.length} files uploaded...</p>
                     <CircularProgressWithLabel value={(numFilesUploaded / filteredFiles.length) * 100} />
+                    { !client?.isSuperAdmin &&
+                        <p className="medium">{client?.credits} Credits Left</p>
+                    }
                 </div>
             </Modal>
         </>

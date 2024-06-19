@@ -9,7 +9,7 @@ const outfits = {
     async post(req, res, next) {
         try {
             // read in outfit fields
-            const { fileSrc, stageItemsStr, outfitName, clientId } = req?.fields;
+            const { fileSrc, stageItemsStr, outfitName } = req?.fields;
 
             if (!fileSrc) {
                 throw helpers.createError('file source is required to create outfit', 400);
@@ -23,6 +23,7 @@ const outfits = {
                 throw helpers.createError('outfit name is required to create outfit', 400);
             }
 
+            const clientId = req?.params?.clientId;
             if (!helpers.isValidId(clientId)) {
                 throw helpers.createError('failed to update outfit: invalid or missing client id', 400);
             }
@@ -240,10 +241,10 @@ const outfits = {
 
 const router = express.Router();
 
-router.post('/', auth.requireAdmin, ExpressFormidable(), outfits.post);
-router.get('/:clientId', outfits.get);
-router.patch('/:outfitId', auth.requireAdmin, ExpressFormidable(), outfits.patchFull);
-router.patch('/name/:outfitId', auth.requireAdmin, outfits.patchPartial);
-router.delete('/:outfitId', auth.requireAdmin, outfits.delete);
+router.post('/:clientId', auth.requireAdmin, auth.checkPermissions, ExpressFormidable(), outfits.post);
+router.get('/:clientId', auth.checkPermissions, outfits.get);
+router.patch('/:clientId/:outfitId', auth.requireAdmin, auth.checkPermissions, ExpressFormidable(), outfits.patchFull);
+router.patch('/name/:clientId/:outfitId', auth.requireAdmin, auth.checkPermissions, outfits.patchPartial);
+router.delete('/:clientId/:outfitId', auth.requireAdmin, auth.checkPermissions, outfits.delete);
 
 export { outfits, router as outfitsRouter };

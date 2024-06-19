@@ -963,7 +963,7 @@ describe('moveFilesToOther', () => {
 
     let mockCreateError;
     beforeEach(() => {
-        categoryId = (new ObjectId()).toString()
+        categoryId = (new ObjectId()).toString();
 
         mockCollection = {
             findOne: jest.fn().mockResolvedValue({ _id: ObjectId(categoryId), name: 'Blazers', items: [] }),
@@ -1079,6 +1079,319 @@ describe('moveFilesToOther', () => {
         expect(mockDb.collection).toHaveBeenCalledWith('categories');
         expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
         expect(mockCollection.updateOne).toHaveBeenCalled();
+    });
+});
+
+describe('isSuperAdmin', () => {
+    let mockCollection;
+    let mockDb;
+
+    let mockCreateError;
+
+    let clientId;
+    let mockClient;
+    beforeEach(() => {
+        mockCollection = {
+            findOne: jest.fn()
+        };
+        
+        mockDb = {
+            collection: jest.fn(() => mockCollection)
+        };
+
+        mockCreateError = jest.spyOn(helpers, 'createError');
+        mockCreateError.mockImplementation((message, status) => {
+            const error = new Error(message);
+            error.status = status;
+            return error;
+        });
+
+        clientId = (new ObjectId()).toString();
+        mockClient = {
+            isSuperAdmin: false
+        };
+
+        mockCollection.findOne.mockResolvedValue(mockClient);
+    });
+
+    afterEach(() => {
+        jest.resetAllMocks();
+        jest.restoreAllMocks();
+    });
+
+    it ('should return isSuperAdmin false', async () => {
+        const isSuperAdmin = await helpers.isSuperAdmin(mockDb, clientId);
+
+        expect(isSuperAdmin).toBe(false)
+        expect(mockDb.collection).toHaveBeenCalledWith('clients');
+        expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
+    });
+
+    it ('should return isSuperAdmin false (no isSuperAdmin property)', async () => {
+        mockCollection.findOne.mockResolvedValue({ notIsSuperAdminProp: true });
+        const isSuperAdmin = await helpers.isSuperAdmin(mockDb, clientId);
+
+        expect(isSuperAdmin).toBe(false)
+        expect(mockDb.collection).toHaveBeenCalledWith('clients');
+        expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
+    });
+
+    it ('should return isSuperAdmin false (no client found)', async () => {
+        mockCollection.findOne.mockResolvedValue();
+        const isSuperAdmin = await helpers.isSuperAdmin(mockDb, clientId);
+
+        expect(isSuperAdmin).toBe(false)
+        expect(mockDb.collection).toHaveBeenCalledWith('clients');
+        expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
+    });
+
+    it ('should return isSuperAdmin true', async () => {
+        mockCollection.findOne.mockResolvedValue({ isSuperAdmin: true });
+        const isSuperAdmin = await helpers.isSuperAdmin(mockDb, clientId);
+
+        expect(isSuperAdmin).toBe(true)
+        expect(mockDb.collection).toHaveBeenCalledWith('clients');
+        expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
+    });
+
+    it ('should fail if no db instance given', async () => {
+        await expect(helpers.isSuperAdmin(null, clientId)).rejects.toThrow('database instance required to check client super admin status');
+
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.findOne).not.toHaveBeenCalled();
+    });
+
+    it ('should fail with missing clientId', async () => {
+        clientId = '';
+        await expect(helpers.isSuperAdmin(mockDb, clientId)).rejects.toThrow('failed to get super admin status: invalid or missing client id');
+
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.findOne).not.toHaveBeenCalled();
+    });
+
+    it ('should fail with invalid clientId', async () => {
+        clientId = 'not-valid-id';
+        await expect(helpers.isSuperAdmin(mockDb, clientId)).rejects.toThrow('failed to get super admin status: invalid or missing client id');
+
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.findOne).not.toHaveBeenCalled();
+    });
+
+    it ('should handle findOne failure', async () => {
+        const error = new Error('findOne failed');
+        mockCollection.findOne.mockRejectedValue(error);
+
+        await expect(helpers.isSuperAdmin(mockDb, clientId)).rejects.toThrow('findOne failed');
+
+        expect(mockDb.collection).toHaveBeenCalledWith('clients');
+        expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
+    });
+});
+
+describe('getCredits', () => {
+    let mockCollection;
+    let mockDb;
+
+    let mockCreateError;
+
+    let clientId;
+    let mockClient;
+    beforeEach(() => {
+        mockCollection = {
+            findOne: jest.fn()
+        };
+        
+        mockDb = {
+            collection: jest.fn(() => mockCollection)
+        };
+
+        mockCreateError = jest.spyOn(helpers, 'createError');
+        mockCreateError.mockImplementation((message, status) => {
+            const error = new Error(message);
+            error.status = status;
+            return error;
+        });
+
+        clientId = (new ObjectId()).toString();
+        mockClient = {
+            credits: 12
+        };
+
+        mockCollection.findOne.mockResolvedValue(mockClient);
+    });
+
+    afterEach(() => {
+        jest.resetAllMocks();
+        jest.restoreAllMocks();
+    });
+
+    it ('should get credits', async () => {
+        const credits = await helpers.getCredits(mockDb, clientId);
+
+        expect(credits).toBe(12)
+        expect(mockDb.collection).toHaveBeenCalledWith('clients');
+        expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
+    });
+
+    it ('should fail if no db instance given', async () => {
+        await expect(helpers.getCredits(null, clientId)).rejects.toThrow('database instance required to get client credits');
+
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.findOne).not.toHaveBeenCalled();
+    });
+
+    it ('should fail with missing clientId', async () => {
+        clientId = '';
+        await expect(helpers.getCredits(mockDb, clientId)).rejects.toThrow('failed to get credits: invalid or missing client id');
+
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.findOne).not.toHaveBeenCalled();
+    });
+
+    it ('should fail with invalid clientId', async () => {
+        clientId = 'not-valid-id';
+        await expect(helpers.getCredits(mockDb, clientId)).rejects.toThrow('failed to get credits: invalid or missing client id');
+
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.findOne).not.toHaveBeenCalled();
+    });
+
+    it ('should handle findOne failure', async () => {
+        const error = new Error('findOne failed');
+        mockCollection.findOne.mockRejectedValue(error);
+
+        await expect(helpers.getCredits(mockDb, clientId)).rejects.toThrow('findOne failed');
+
+        expect(mockDb.collection).toHaveBeenCalledWith('clients');
+        expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
+    });
+
+    it ('should fail if no client found', async () => {
+        mockCollection.findOne.mockResolvedValue();
+
+        await expect(helpers.getCredits(mockDb, clientId)).rejects.toThrow('client does not have any credits or does not exist');
+
+        expect(mockDb.collection).toHaveBeenCalledWith('clients');
+        expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
+    });
+
+    it ('should fail if client with no credits prop found', async () => {
+        mockCollection.findOne.mockResolvedValue({ notCredits: 12 });
+
+        await expect(helpers.getCredits(mockDb, clientId)).rejects.toThrow('client does not have any credits or does not exist');
+
+        expect(mockDb.collection).toHaveBeenCalledWith('clients');
+        expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
+    });
+
+    it ('should fail if credits are not a number', async () => {
+        mockCollection.findOne.mockResolvedValue({ credits: 'not a number' });
+
+        await expect(helpers.getCredits(mockDb, clientId)).rejects.toThrow('client does not have any credits or does not exist');
+
+        expect(mockDb.collection).toHaveBeenCalledWith('clients');
+        expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
+    });
+});
+
+describe('deductCredits', () => {
+    let mockCollection;
+    let mockDb;
+
+    let mockCreateError;
+
+    let clientId;
+    let mockCredits;
+    beforeEach(() => {
+        mockCollection = {
+            updateOne: jest.fn()
+        };
+        
+        mockDb = {
+            collection: jest.fn(() => mockCollection)
+        };
+
+        mockCreateError = jest.spyOn(helpers, 'createError');
+        mockCreateError.mockImplementation((message, status) => {
+            const error = new Error(message);
+            error.status = status;
+            return error;
+        });
+
+        clientId = (new ObjectId()).toString();
+        mockCredits = 12;
+
+        mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
+    });
+
+    afterEach(() => {
+        jest.resetAllMocks();
+        jest.restoreAllMocks();
+    });
+
+    it ('should deduct credits', async () => {
+        await expect(helpers.deductCredits(mockDb, clientId, mockCredits)).resolves;
+
+        expect(mockDb.collection).toHaveBeenCalledWith('clients');
+        expect(mockCollection.updateOne).toHaveBeenCalledWith({ _id: ObjectId(clientId) }, { $set: { credits: mockCredits - 1 }});
+    });
+
+    it ('should fail if no db instance given', async () => {
+        await expect(helpers.deductCredits(null, clientId, mockCredits)).rejects.toThrow('database instance required to deduct credits');
+
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.updateOne).not.toHaveBeenCalled();
+    });
+
+    it ('should fail with missing clientId', async () => {
+        clientId = '';
+        await expect(helpers.deductCredits(mockDb, clientId, mockCredits)).rejects.toThrow('failed to deduct credits: invalid or missing client id');
+
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.updateOne).not.toHaveBeenCalled();
+    });
+
+    it ('should fail with invalid clientId', async () => {
+        clientId = 'not-valid-id';
+        await expect(helpers.deductCredits(mockDb, clientId, mockCredits)).rejects.toThrow('failed to deduct credits: invalid or missing client id');
+
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.updateOne).not.toHaveBeenCalled();
+    });
+
+    it ('should fail with missing credits', async () => {
+        mockCredits = null;
+        await expect(helpers.deductCredits(mockDb, clientId, mockCredits)).rejects.toThrow('credits is missing or not a number');
+
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.updateOne).not.toHaveBeenCalled();
+    });
+
+    it ('should fail if credits is not a number', async () => {
+        mockCredits = 'not a number';
+        await expect(helpers.deductCredits(mockDb, clientId, mockCredits)).rejects.toThrow('credits is missing or not a number');
+
+        expect(mockDb.collection).not.toHaveBeenCalled();
+        expect(mockCollection.updateOne).not.toHaveBeenCalled();
+    });
+
+    it ('should handle updateOne failure', async () => {
+        const error = new Error('updateOne failed');
+        mockCollection.updateOne.mockRejectedValue(error);
+
+        await expect(helpers.deductCredits(mockDb, clientId, mockCredits)).rejects.toThrow('updateOne failed');
+
+        expect(mockDb.collection).toHaveBeenCalledWith('clients');
+        expect(mockCollection.updateOne).toHaveBeenCalledWith({ _id: ObjectId(clientId) }, { $set: { credits: mockCredits - 1 }});
+    });
+
+    it ('should fail if no deduction made', async () => {
+        mockCollection.updateOne.mockResolvedValue({ modifiedCount: 0 });
+
+        await expect(helpers.deductCredits(mockDb, clientId, mockCredits)).rejects.toThrow('no credits were deducted');
+
+        expect(mockDb.collection).toHaveBeenCalledWith('clients');
+        expect(mockCollection.updateOne).toHaveBeenCalledWith({ _id: ObjectId(clientId) }, { $set: { credits: mockCredits - 1 }});
     });
 });
 

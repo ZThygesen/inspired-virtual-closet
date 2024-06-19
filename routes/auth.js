@@ -89,6 +89,63 @@ const auth = {
         }
     },
 
+    async checkPermissions(req, res, next) {
+        try {
+            const clientId = req?.params?.clientId;
+            if (!helpers.isValidId(clientId)) {
+                return next(helpers.createError('client id is invalid or missing', 400));
+            }
+
+            const { db } = req.locals;
+            const collection = db.collection('clients');
+            const client = await collection.findOne({ _id: ObjectId(clientId )});
+            if (!client) {
+                return next(helpers.createError('client not found', 404));
+            }
+
+            switch (true) {
+                case req?.user?.isSuperAdmin:
+                    // super admin users have all permissions
+                    break;
+                
+                case req?.user?.isAdmin:
+                    // admin users have no permissions over super admins
+                    if (client?.isSuperAdmin) {
+                        return next(helpers.createError('admins have no permissions over super admins', 403));
+                    }
+
+                    // admin users only have permissions over admins if it's themselves
+                    if (client?.isAdmin) {
+                        if (client?._id?.toString() === req?.user?.id) {
+                            break;
+                        } else {
+                            return next(helpers.createError('admins have no permissions over other admins', 403));
+                        }
+                    }
+
+                    // admin users have permissions over all non-admins
+                    break;
+            
+                default:
+                    // non-admins have no permissions over any admin
+                    if (client?.isSuperAdmin || client?.isAdmin) {
+                        return next(helpers.createError('non-admins have no permissions over any admins', 403))
+                    }
+
+                    // non-admins only have permissions over non-admins if it's themselves
+                    if (client?._id?.toString() === req?.user?.id) {
+                        break;
+                    }
+                    
+                    return next(helpers.createError('non-admins only have permissions over themselves', 403));
+            }
+
+            next();
+        } catch (err) {
+            next(err);
+        }
+    },
+
     requireAdmin(req, res, next) {
         if (!req?.user?.isAdmin) {
             return next(helpers.createError('only admins are authorized for this action', 401));
