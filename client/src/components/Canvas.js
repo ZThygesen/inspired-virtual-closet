@@ -297,6 +297,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
 
     async function handleAddOutfitOpen() {
         transformerRef.current.nodes([]);
+        setSaveOutfitOpen(true);
 
         // get current width and scale of stage
         const currentWidth = stageRef.current.width();
@@ -315,8 +316,6 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
         stageRef.current.width(currentWidth);
         stageRef.current.height(currentHeight);
         stageRef.current.scale(currentScale);
-
-        setSaveOutfitOpen(true);
     }
 
     function handleSaveOutfitClose() {

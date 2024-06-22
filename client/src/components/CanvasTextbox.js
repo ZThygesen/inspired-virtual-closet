@@ -101,8 +101,15 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
     function onClick() {
         if (!isEditing) {
             setIsEditing(true); 
-        }    
+        }
     }
+
+    useEffect(() => {
+        if (isEditing) {
+            console.log('isEditing')
+            transformerRef.current.moveToTop();
+        }
+    }, [isEditing, transformerRef]);
 
     function onTransform() {
         const scaleX = groupRef.current.scaleX();
@@ -150,12 +157,11 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
                     height={100}
                     padding={8}
                     fontSize={16}
-                    opacity={isEditing ? 0 : 1}
                     
                     // if attrs exist (edit mode)
                     {...otherTextAttrs}
                 />
-                {isEditing && 
+                { isEditing && 
                     <Html>
                         <textarea
                             ref={inputRef}
@@ -165,16 +171,16 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
                             onChange={e => setText(e.target.value)}
                             style={{
                                 position: 'absolute',
-                                top: textboxRef.current.y(),
-                                left: textboxRef.current.x(),
-                                width: textboxRef.current.width(),
-                                height: textboxRef.current.height(),
+                                top: textboxRef.current.y() + 8,
+                                left: textboxRef.current.x() + 8,
+                                width: textboxRef.current.width() - 16,
+                                height: textboxRef.current.height() - 16,
                                 fontSize: textboxRef.current.fontSize() + 'px',
                                 border: 'none',
-                                padding: '8px',
+                                padding: '0px',
                                 margin: '0px',
                                 overflow: 'hidden',
-                                background: 'none',
+                                backgroundColor: 'white',
                                 outline: 'none',
                                 resize: 'none',
                                 lineHeight: textboxRef.current.lineHeight(),
