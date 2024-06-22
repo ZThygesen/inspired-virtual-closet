@@ -134,7 +134,7 @@ export const ClosetNavigationContainer = styled.div`
     }
 
     @media (min-width: 800px) {
-        &.sidebar-open {
+        &.sidebar-open:not(.canvas-mode) {
             margin-left: 320px;
         }
     }

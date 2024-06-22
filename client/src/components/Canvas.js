@@ -9,6 +9,9 @@ import CanvasImage from './CanvasImage';
 import CanvasTextbox from './CanvasTextbox';
 import { CanvasContainer } from '../styles/Canvas';
 import { Tooltip } from '@mui/material';
+import { useSidebar } from './SidebarContext';
+
+const ASPECT_RATIO = 5 / 4;
 
 export default function Canvas({ display, sidebarRef, client, images, textboxes, addCanvasItem, removeCanvasItems, updateOutfits, editMode, outfitToEdit, cancelEdit }) {
     const { setError } = useError();
@@ -20,6 +23,8 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
     const [selectionEndCoords, setSelectionEndCoords] = useState({ x2: 0, y2: 0 });
     const [shiftKeyPressed, setShiftKeyPressed] = useState(false);
     const [ctrlKeyPressed, setCtrlKeyPressed] = useState(false);
+
+    const { setMobileMode, setCanvasMode } = useSidebar();
 
     // outfit functionality
     const [saveOutfitOpen, setSaveOutfitOpen] = useState(false);
@@ -33,12 +38,43 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
     const transformerRef = useRef();
     const selectionRectRef = useRef();
 
+    useEffect(() => {
+        if (display) {
+            setCanvasMode(true);
+        } else {
+            setCanvasMode(false);
+            setMobileMode(false);
+        }
+        
+    }, [display, setCanvasMode, setMobileMode]);
+
     const handleResize = useCallback(() => {
         if (display) {
-            const { clientWidth, clientHeight } = containerRef?.current;
-            setContainerSize({ w: clientWidth, h: clientHeight - 75 });
+            let clientWidth = window.innerWidth - 40;
+            if (clientWidth - containerSize.w <= 320) {
+                setMobileMode(true);
+            } else {
+                setMobileMode(false);
+                clientWidth = clientWidth - 320;
+            }
+
+            const { clientHeight } = containerRef?.current;
+            
+            let width;
+            let height;
+            if (clientWidth > clientHeight * ASPECT_RATIO) {
+                width = clientHeight * ASPECT_RATIO;
+                height = clientHeight;
+            } else {
+                width = clientWidth;
+                height = clientWidth / ASPECT_RATIO;
+            }
+
+            if (containerSize.w !== width || containerSize.h !== height - 75) {
+                setContainerSize({ w: width, h: height - 75 });
+            }
         }
-    }, [display]);
+    }, [display, setMobileMode, containerSize]);
 
     useEffect(() => {
         handleResize();
@@ -61,6 +97,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
 
         function handleTransitionEnd(e) {
             if (e.target === sidebarRef.current && display) {
+                // handleResize();
                 cancelAnimationFrame(animationId);
             }
         }
@@ -324,7 +361,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
     return (
         <>
             <CanvasContainer style={{ display: display ? 'flex' : 'none' }} ref={containerRef}>
-                <div className="canvas-header" ref={headerRef}>
+                <div className="canvas-header" ref={headerRef} style={{ width: containerSize.w }}>
                     <div className="canvas-options">
                         <Tooltip title="Remove Selected Items">
                             <span>

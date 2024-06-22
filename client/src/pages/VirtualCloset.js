@@ -7,6 +7,7 @@ import api from '../api';
 import ClosetNavigation from '../components/ClosetNavigation';
 import CategoriesSidebar from '../components/CategoriesSidebar';
 import Loading from '../components/Loading';
+import { SidebarProvider } from '../components/SidebarContext';
 
 const Container = styled.div`
     flex: 1;
@@ -18,33 +19,11 @@ export default function VirtualCloset() {
     const { setError } = useError();
 
     const { client } = useLocation().state;
-    const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 800 ? true : false);
-    const [closeSidebarOnSelect, setCloseSidebarOnSelect] = useState(window.innerWidth > 800 ? false : true);
     const [category, setCategory] = useState({});
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const sidebarRef = useRef();
-    
-    useEffect(() => {
-        function handleResize() {
-            if (window.innerWidth <= 800) {
-                setCloseSidebarOnSelect(true);
-
-                if (sidebarOpen) {
-                    setSidebarOpen(false);
-                }
-            } else {
-                setCloseSidebarOnSelect(false);
-            }
-        }
-
-        window.addEventListener('resize', handleResize);
-
-        return () => {
-            window.removeEventListener('resize', handleResize);
-        }
-    }, [sidebarOpen]);
     
     const getCategories = useCallback(async (updateCat = undefined, animateLoad = false) => {
         if (animateLoad) {
@@ -195,23 +174,20 @@ export default function VirtualCloset() {
         
     }
 
-    function openSidebar() {
-        setSidebarOpen(true);
-    }
+    // function openSidebar() {
+    //     setSidebarOpen(true);
+    // }
 
-    function closeSidebar() {
-        setSidebarOpen(false);
-    }
+    // function closeSidebar() {
+    //     setSidebarOpen(false);
+    // }
 
     return (
-        <>
-            <ClientProvider clientId={client._id}>
+        <ClientProvider clientId={client._id}>
+            <SidebarProvider>
                 <Container>
                     <CategoriesSidebar
                         sidebarRef={sidebarRef}
-                        open={sidebarOpen}
-                        closeSidebar={closeSidebar}
-                        closeSidebarOnSelect={closeSidebarOnSelect}
                         categories={categories}
                         activeCategory={category}
                         setCategory={setCategory}
@@ -222,15 +198,13 @@ export default function VirtualCloset() {
                     />
                     <ClosetNavigation
                         sidebarRef={sidebarRef}
-                        open={sidebarOpen}
-                        openSidebar={openSidebar}
                         client={client}
                         category={category}
                         getCategories={getCategories}
                     />
                 </Container>
                 <Loading open={loading} />
-            </ClientProvider>
-        </>
+            </SidebarProvider>
+        </ClientProvider>
     )
 }
