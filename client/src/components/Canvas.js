@@ -61,7 +61,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
                 clientWidth = clientWidth - 320;
             }
 
-            let clientHeight = containerRef?.current.clientHeight - 75;
+            let clientHeight = (containerRef?.current?.clientHeight - 75) || 0;
             
             let width;
             let height;

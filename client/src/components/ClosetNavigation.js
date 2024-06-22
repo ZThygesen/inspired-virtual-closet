@@ -9,14 +9,13 @@ import Canvas from './Canvas';
 import Outfits from './Outfits';
 import AddItems from './AddItems';
 import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
-import logo from '../images/big_logo_cropped.png';
 import { useUser } from './UserContext';
 import { useSidebar } from './SidebarContext';
 
 const logoCanvasItem = {
     canvasId: 0,
     type: 'image',
-    src: logo
+    src: 'https://storage.googleapis.com/edie-styles-virtual-closet/logo.png'
 }
 
 export default function ClosetNavigation({ sidebarRef, client, category, getCategories }) {
