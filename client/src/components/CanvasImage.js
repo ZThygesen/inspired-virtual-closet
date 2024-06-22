@@ -58,10 +58,13 @@ export default function CanvasImage({ imageObj, handleSelectItems, canvasResized
             <Image
                 image={image}
                 ref={imageRef}
+
                 onDragMove={handleDrag}
                 onMouseDown={onMouseDown}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
+
+                onTouchStart={onMouseDown}
                 
                 // default attrs
                 name="image"

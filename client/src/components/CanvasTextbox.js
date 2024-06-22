@@ -122,11 +122,15 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
         <>
             <Group
                 ref={groupRef}
+
                 onDragMove={handleDrag}
                 onMouseDown={onMouseDown}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
                 onClick={onClick}
+
+                onTouchStart={onMouseDown}
+
                 onTransform={onTransform}
 
                 // default attrs

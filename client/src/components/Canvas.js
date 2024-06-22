@@ -11,12 +11,15 @@ import { CanvasContainer } from '../styles/Canvas';
 import { Tooltip } from '@mui/material';
 import { useSidebar } from './SidebarContext';
 
-const ASPECT_RATIO = 5 / 4;
+const initialWidth = 1000;
+const initialHeight = 800;
+const ASPECT_RATIO = initialWidth / initialHeight;
 
 export default function Canvas({ display, sidebarRef, client, images, textboxes, addCanvasItem, removeCanvasItems, updateOutfits, editMode, outfitToEdit, cancelEdit }) {
     const { setError } = useError();
     
     const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+    const [scale, setScale] = useState({ x: 1, y: 1 });
     const [selectedItems, setSelectedItems] = useState([]);
     const [selecting, setSelecting] = useState(false);
     const [selectionStartCoords, setSelectionStartCoords] = useState({ x1: 0, y1: 0 });
@@ -72,6 +75,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
 
             if (containerSize.w !== width || containerSize.h !== height - 75) {
                 setContainerSize({ w: width, h: height - 75 });
+                setScale({ x: width / initialWidth, y: height / initialHeight });
             }
         }
     }, [display, setMobileMode, containerSize]);
@@ -172,10 +176,10 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
 
         e.evt.preventDefault();
 
-        const x1 = stageRef.current.getPointerPosition().x;
-        const y1 = stageRef.current.getPointerPosition().y;
-        const x2 = stageRef.current.getPointerPosition().x;
-        const y2 = stageRef.current.getPointerPosition().y;
+        const x1 = stageRef.current.getPointerPosition().x / scale.x;
+        const y1 = stageRef.current.getPointerPosition().y / scale.y;
+        const x2 = stageRef.current.getPointerPosition().x / scale.x;
+        const y2 = stageRef.current.getPointerPosition().y / scale.y;
 
         setSelectionStartCoords({x1: x1, y1: y1});
         setSelectionEndCoords({x2: x2, y2: y2});
@@ -191,8 +195,8 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
 
         e.evt.preventDefault();
 
-        const x2 = stageRef.current.getPointerPosition().x;
-        const y2 = stageRef.current.getPointerPosition().y;
+        const x2 = stageRef.current.getPointerPosition().x / scale.x;
+        const y2 = stageRef.current.getPointerPosition().y / scale.y;
 
         setSelectionEndCoords({x2: x2, y2: y2});
 
@@ -293,7 +297,25 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
 
     async function handleAddOutfitOpen() {
         transformerRef.current.nodes([]);
+
+        // get current width and scale of stage
+        const currentWidth = stageRef.current.width();
+        const currentHeight = stageRef.current.height();
+        const currentScale = { x: stageRef.current.scaleX(), y: stageRef.current.scaleY() };
+        
+        // set stage to universal width and scale
+        stageRef.current.width(initialWidth);
+        stageRef.current.height(initialHeight);
+        stageRef.current.scale({ x: 1, y: 1 });
+
+        // save stage as image
         setOutfitImageData(stageRef.current.toDataURL({ pixelRatio: 2 }));
+
+        // reset stage to previous width and scale
+        stageRef.current.width(currentWidth);
+        stageRef.current.height(currentHeight);
+        stageRef.current.scale(currentScale);
+
         setSaveOutfitOpen(true);
     }
 
@@ -417,17 +439,25 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
                 <Stage 
                     width={containerSize.w}
                     height={containerSize.h}
+                    scale={scale}
                     ref={stageRef}
+
                     onMouseDown={onMouseDown}
                     onMouseMove={onMouseMove}
                     onMouseUp={onMouseUp}
                     onClick={handleClick}
+
+                    onTouchStart={onMouseDown}
+                    onTouchMove={onMouseMove}
+                    onTouchEnd={onMouseUp}
+                    onTap={handleClick}
                 >
                     <Layer>
                         {
                             images?.map(image => (
                                 <CanvasImage
                                     imageObj={image}
+                                    scale={scale}
                                     handleSelectItems={handleSelectItems}
                                     canvasResized={containerSize}
                                     key={image.canvasId}
