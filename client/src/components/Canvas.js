@@ -61,7 +61,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
                 clientWidth = clientWidth - 320;
             }
 
-            const { clientHeight } = containerRef?.current;
+            let clientHeight = containerRef?.current.clientHeight - 75;
             
             let width;
             let height;
@@ -73,8 +73,8 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
                 height = clientWidth / ASPECT_RATIO;
             }
 
-            if (containerSize.w !== width || containerSize.h !== height - 75) {
-                setContainerSize({ w: width, h: height - 75 });
+            if (containerSize.w !== width || containerSize.h !== height) {
+                setContainerSize({ w: width, h: height });
                 setScale({ x: width / initialWidth, y: height / initialHeight });
             }
         }
