@@ -99,8 +99,7 @@ export const helpers = {
                 Accept: 'application/json',
             },
             body: JSON.stringify({
-                image_file_b64: base64Image.split(',')[1],
-                crop: true
+                image_file_b64: base64Image.split(',')[1]
             })
         });
         

@@ -173,7 +173,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
 
     return (
         <>
-            <ClosetNavigationContainer className={`${sidebarOpen ? 'sidebar-open' : ''} ${closetMode === 1 && mobileMode ? 'canvas-mode' : ''}`}>
+            <ClosetNavigationContainer className={`${sidebarOpen ? 'sidebar-open' : ''} ${closetMode === 1 && mobileMode ? 'canvas-mode-mobile' : ''}`}>
                 <div className="closet-title">
                     {!sidebarOpen &&
                         <Tooltip title="Open Sidebar">
@@ -187,7 +187,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
                         </Tooltip>
                     }
                 </div>
-                <div className="closet-options">
+                <div className={`closet-options ${closetMode === 1 ? 'canvas-mode' : ''}`}>
                     <ul>
                         {
                             closetModes.map((mode, index) => (
