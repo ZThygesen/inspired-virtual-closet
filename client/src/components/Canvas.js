@@ -26,6 +26,9 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
     const [selectionEndCoords, setSelectionEndCoords] = useState({ x2: 0, y2: 0 });
     const [shiftKeyPressed, setShiftKeyPressed] = useState(false);
     const [ctrlKeyPressed, setCtrlKeyPressed] = useState(false);
+    const [singleTextboxSelected, setSingleTextboxSelected] = useState(false);
+    const [textboxSelected, setTextboxSelected] = useState(null);
+    const [fontAdjust, setFontAdjust] = useState(0);
 
     const { setMobileMode, setCanvasMode } = useSidebar();
 
@@ -379,10 +382,81 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
         cancelEdit();
     }
 
+    useEffect(() => {
+        let textboxCount = 0;
+        let textbox = null;
+        selectedItems.forEach(item => {
+            if (item.type === 'textbox') {
+                textboxCount++;
+                textbox = item;
+            }
+        });
+
+        if (textboxCount !== 1) {
+            setSingleTextboxSelected(false);
+        } else {
+            setSingleTextboxSelected(true);
+        }
+
+        setFontAdjust(0);
+        setTextboxSelected(textbox);
+        
+    }, [selectedItems]);
+
+    function handleIncreaseFontSize() {
+        setFontAdjust(current => {
+            return current < 0 ? 1 : ((current + 1) % 10) + 1;
+        });
+    }
+
+    function handleDecreaseFontSize() {
+        setFontAdjust(current => {
+            return current > 0 ? -1 : ((current - 1) % -10) - 1;
+        });
+    }
+
     return (
         <>
             <CanvasContainer style={{ display: display ? 'flex' : 'none' }} ref={containerRef}>
                 <div className="canvas-header" ref={headerRef} style={{ width: containerSize.w }}>
+                    <div className="canvas-options">
+                        <Tooltip title="Add Text Box">
+                            <span>
+                                <button
+                                    className="material-icons add-text-btn"
+                                    onClick={handleAddTextbox}
+                                >
+                                    title
+                                </button>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Decrease Font Size">
+                            <span>
+                                <button
+                                    className="material-icons decrease-font-size"
+                                    onClick={handleDecreaseFontSize}
+                                    disabled={!singleTextboxSelected}
+                                >
+                                    remove
+                                </button>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Increase Font Size">
+                            <span>
+                                <button
+                                    className="material-icons increase-font-size"
+                                    onClick={handleIncreaseFontSize}
+                                    disabled={!singleTextboxSelected}
+                                >
+                                    add
+                                </button>
+                            </span>
+                        </Tooltip>
+                    </div>
+                    <div className="canvas-title">
+                        <h2 className="main-title">Canvas</h2>
+                        <p className="sub-title">{editMode && outfitToEdit ? "(editing)" : ""}</p> {/* <span>{outfitToEdit.outfitName}</span></p>} */}
+                    </div>
                     <div className="canvas-options">
                         <Tooltip title="Remove Selected Items">
                             <span>
@@ -395,22 +469,6 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
                                 </button>
                             </span>
                         </Tooltip>
-                        <Tooltip title="Add Text Box">
-                            <span>
-                                <button
-                                    className="material-icons add-text-btn"
-                                    onClick={handleAddTextbox}
-                                >
-                                    title
-                                </button>
-                            </span>
-                        </Tooltip>
-                    </div>
-                    <div className="canvas-title">
-                        <h2 className="main-title">Canvas</h2>
-                        <p className="sub-title">{editMode && outfitToEdit ? "(editing)" : ""}</p> {/* <span>{outfitToEdit.outfitName}</span></p>} */}
-                    </div>
-                    <div className="canvas-options">
                         <Tooltip title="Cancel Outfit Edit">
                             <span>
                                 <button
@@ -467,6 +525,8 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
                             textboxes?.map(textbox => (
                                 <CanvasTextbox 
                                     textbox={textbox}
+                                    selected={textbox.canvasId === textboxSelected?.canvasId}
+                                    fontAdjust={fontAdjust}
                                     handleSelectItems={handleSelectItems}
                                     canvasResized={containerSize}
                                     transformerRef={transformerRef}

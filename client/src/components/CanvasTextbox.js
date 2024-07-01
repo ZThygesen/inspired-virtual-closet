@@ -2,13 +2,36 @@ import { useEffect, useRef, useState } from "react";
 import { Group, Text } from "react-konva";
 import { Html } from "react-konva-utils";
 
-export default function CanvasTextbox({ textbox, handleSelectItems, canvasResized, transformerRef }) {
+export default function CanvasTextbox({ textbox, selected, fontAdjust, handleSelectItems, canvasResized, transformerRef }) {
     const groupRef = useRef();
     const textboxRef = useRef();
     const inputRef = useRef();
-    const [text, setText] = useState(textbox.textAttrs?.text || textbox.initialText);
-    const { text: _, ...otherTextAttrs } = textbox.textAttrs || {};
+    const [text, setText] = useState(textbox?.textAttrs?.text || textbox.initialText);
+    const [fontSize, setFontSize] = useState(textbox?.textAttrs?.fontSize || 16);
+    const { text: _, fontSize: __, ...otherTextAttrs } = textbox.textAttrs || {};
     const [isEditing, setIsEditing] = useState(false);
+    
+    useEffect(() => {
+        if (selected) {
+            if (fontAdjust > 0) {
+                setFontSize(current => {
+                    if (current < 32) {
+                        return current + 1;
+                    } else {
+                        return current;
+                    }
+                });
+            } else if (fontAdjust < 0) {
+                setFontSize(current => {
+                    if (current > 14) {
+                        return current - 1;
+                    } else {
+                        return current;
+                    }
+                });
+            }
+        }
+    }, [selected, fontAdjust]);
 
     useEffect(() => {
         handleDrag();
@@ -104,13 +127,6 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
         }
     }
 
-    useEffect(() => {
-        if (isEditing) {
-            console.log('isEditing')
-            transformerRef.current.moveToTop();
-        }
-    }, [isEditing, transformerRef]);
-
     function onTransform() {
         const scaleX = groupRef.current.scaleX();
         const scaleY = groupRef.current.scaleY();
@@ -156,10 +172,12 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
                     width={150}
                     height={100}
                     padding={8}
-                    fontSize={16}
+                    fontSize={fontSize}
                     
                     // if attrs exist (edit mode)
                     {...otherTextAttrs}
+
+                    
                 />
                 { isEditing && 
                     <Html>
