@@ -38,6 +38,7 @@ const outfits = {
     
             // convert outfit file to buffer
             const fileBuffer = await helpers.b64ToBuffer(fileSrc);
+            const whiteBgBuffer = await helpers.addWhiteBackground(fileBuffer);
     
             // create file destination
             let gcsDest = `outfits/${cuid2.createId()}.png`;
@@ -49,7 +50,7 @@ const outfits = {
             }
     
             // upload to GCS
-            const url = await helpers.uploadToGCS(bucket, gcsDest, fileBuffer);
+            const url = await helpers.uploadToGCS(bucket, gcsDest, whiteBgBuffer);
     
             // create outfit object
             const outfit = {
@@ -127,6 +128,7 @@ const outfits = {
     
             // convert new outfit file to buffer
             const fileBuffer = await helpers.b64ToBuffer(fileSrc);
+            const whiteBgBuffer = await helpers.addWhiteBackground(fileBuffer);
     
             // create new file destination
             let newGcsDest = `outfits/${cuid2.createId()}.png`;
@@ -147,7 +149,7 @@ const outfits = {
             await helpers.deleteFromGCS(bucket, gcsDest);
 
             // upload to GCS
-            const url = await helpers.uploadToGCS(bucket, newGcsDest, fileBuffer);
+            const url = await helpers.uploadToGCS(bucket, newGcsDest, whiteBgBuffer);
     
             // update outfit in db            
             const result = await collection.updateOne(

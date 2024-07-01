@@ -147,7 +147,30 @@ export const helpers = {
             throw err;
         }
 
-        return thumbBuffer
+        return thumbBuffer;
+    },
+
+    // convert transparent background to white
+    async addWhiteBackground(imgBuffer) {
+        if (!imgBuffer || !Buffer.isBuffer(imgBuffer) || imgBuffer.length === 0) {
+            throw this.createError('invalid buffer input', 500);
+        }
+        
+        let bgBuffer;
+        try {
+            bgBuffer = await sharp(imgBuffer)
+            .flatten({ background: '#FFFFFF' })
+            .png()
+            .toBuffer();
+
+            if (!bgBuffer || !Buffer.isBuffer(bgBuffer)) {
+                throw this.createError('error creating white background', 500);
+            }
+        } catch (err) {
+            throw err;
+        }
+
+        return bgBuffer;
     },
 
     // connect to Google Cloud
