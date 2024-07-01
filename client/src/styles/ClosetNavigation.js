@@ -13,7 +13,7 @@ export const ClosetNavigationContainer = styled.div`
     .closet-title,
     .closet-options {
         width: 100%;
-        min-height: var(--subheader-height);
+        height: var(--subheader-height);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -58,6 +58,23 @@ export const ClosetNavigationContainer = styled.div`
 
     .closet-options {
         align-items: flex-end;
+    }
+
+    .closet-options.canvas-mode {
+        z-index: 249;
+        position: absolute;
+        top: calc(var(--subheader-height));
+        transform: translateY(-100%); 
+        transition: transform 0.3s;
+
+        & li {
+            box-shadow: none;
+        }
+    }
+
+    .closet-title:hover + .closet-options.canvas-mode,
+    .closet-options.canvas-mode:hover {
+        transform: translateY(0%);
     }
 
     ul {
@@ -134,7 +151,7 @@ export const ClosetNavigationContainer = styled.div`
     }
 
     @media (min-width: 800px) {
-        &.sidebar-open {
+        &.sidebar-open:not(.canvas-mode-mobile) {
             margin-left: 320px;
         }
     }

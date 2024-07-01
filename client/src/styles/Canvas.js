@@ -1,13 +1,13 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
 export const CanvasContainer = styled.div`
     width: 100%;
     height: 100%;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
 
     & .canvas-header {
-        width: 100%;
-        height: 100%;
         min-height: var(--header-height);
         display: flex;
         align-items: center;
@@ -18,6 +18,7 @@ export const CanvasContainer = styled.div`
         border-radius: 25px 25px 0 0;
         background-color: var(--white);
         z-index: 100;
+        /* transition: width 0.5s, height 0.5s; */
     }
 
     & .canvas-title {
@@ -71,12 +72,12 @@ export const CanvasContainer = styled.div`
     } 
     
     & .konvajs-content {
-        width: 100% !important;
+        /* width: 100% !important; */
     }
 
     & canvas {
         box-shadow: var(--canvas-shadow);
         border-radius: 0 0 25px 25px;
-        width: 100% !important;
+        /* width: 100% !important; */
     }
 `;

@@ -2,13 +2,36 @@ import { useEffect, useRef, useState } from "react";
 import { Group, Text } from "react-konva";
 import { Html } from "react-konva-utils";
 
-export default function CanvasTextbox({ textbox, handleSelectItems, canvasResized, transformerRef }) {
+export default function CanvasTextbox({ textbox, selected, fontAdjust, handleSelectItems, canvasResized, transformerRef }) {
     const groupRef = useRef();
     const textboxRef = useRef();
     const inputRef = useRef();
-    const [text, setText] = useState(textbox.textAttrs?.text || textbox.initialText);
-    const { text: _, ...otherTextAttrs } = textbox.textAttrs || {};
+    const [text, setText] = useState(textbox?.textAttrs?.text || textbox.initialText);
+    const [fontSize, setFontSize] = useState(textbox?.textAttrs?.fontSize || 16);
+    const { text: _, fontSize: __, ...otherTextAttrs } = textbox.textAttrs || {};
     const [isEditing, setIsEditing] = useState(false);
+    
+    useEffect(() => {
+        if (selected) {
+            if (fontAdjust > 0) {
+                setFontSize(current => {
+                    if (current < 32) {
+                        return current + 1;
+                    } else {
+                        return current;
+                    }
+                });
+            } else if (fontAdjust < 0) {
+                setFontSize(current => {
+                    if (current > 14) {
+                        return current - 1;
+                    } else {
+                        return current;
+                    }
+                });
+            }
+        }
+    }, [selected, fontAdjust]);
 
     useEffect(() => {
         handleDrag();
@@ -101,7 +124,7 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
     function onClick() {
         if (!isEditing) {
             setIsEditing(true); 
-        }    
+        }
     }
 
     function onTransform() {
@@ -122,11 +145,15 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
         <>
             <Group
                 ref={groupRef}
+
                 onDragMove={handleDrag}
                 onMouseDown={onMouseDown}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
                 onClick={onClick}
+
+                onTouchStart={onMouseDown}
+
                 onTransform={onTransform}
 
                 // default attrs
@@ -145,13 +172,14 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
                     width={150}
                     height={100}
                     padding={8}
-                    fontSize={16}
-                    opacity={isEditing ? 0 : 1}
+                    fontSize={fontSize}
                     
                     // if attrs exist (edit mode)
                     {...otherTextAttrs}
+
+                    
                 />
-                {isEditing && 
+                { isEditing && 
                     <Html>
                         <textarea
                             ref={inputRef}
@@ -161,16 +189,16 @@ export default function CanvasTextbox({ textbox, handleSelectItems, canvasResize
                             onChange={e => setText(e.target.value)}
                             style={{
                                 position: 'absolute',
-                                top: textboxRef.current.y(),
-                                left: textboxRef.current.x(),
-                                width: textboxRef.current.width(),
-                                height: textboxRef.current.height(),
+                                top: textboxRef.current.y() + 8,
+                                left: textboxRef.current.x() + 8,
+                                width: textboxRef.current.width() - 16,
+                                height: textboxRef.current.height() - 16,
                                 fontSize: textboxRef.current.fontSize() + 'px',
                                 border: 'none',
-                                padding: '8px',
+                                padding: '0px',
                                 margin: '0px',
                                 overflow: 'hidden',
-                                background: 'none',
+                                backgroundColor: 'white',
                                 outline: 'none',
                                 resize: 'none',
                                 lineHeight: textboxRef.current.lineHeight(),

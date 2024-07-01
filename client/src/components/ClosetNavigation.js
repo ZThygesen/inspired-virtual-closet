@@ -9,16 +9,16 @@ import Canvas from './Canvas';
 import Outfits from './Outfits';
 import AddItems from './AddItems';
 import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
-import logo from '../images/big_logo_cropped.png';
 import { useUser } from './UserContext';
+import { useSidebar } from './SidebarContext';
 
 const logoCanvasItem = {
     canvasId: 0,
     type: 'image',
-    src: logo
+    src: 'https://storage.googleapis.com/edie-styles-virtual-closet/logo.png'
 }
 
-export default function ClosetNavigation({ sidebarRef, open, openSidebar, client, category, getCategories }) {
+export default function ClosetNavigation({ sidebarRef, client, category, getCategories }) {
     const { setError } = useError();
     
     const [closetMode, setClosetMode] = useState(0);
@@ -30,6 +30,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
     const [outfitEditMode, setOutfitEditMode] = useState(false);
     const [outfitToEdit, setOutfitToEdit] = useState(null);
 
+    const { sidebarOpen, setSidebarOpen, mobileMode } = useSidebar();
     const { user } = useUser();
 
     const ref = useRef();
@@ -172,11 +173,11 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
 
     return (
         <>
-            <ClosetNavigationContainer className={open ? 'sidebar-open' : ''}>
+            <ClosetNavigationContainer className={`${sidebarOpen ? 'sidebar-open' : ''} ${closetMode === 1 && mobileMode ? 'canvas-mode-mobile' : ''}`}>
                 <div className="closet-title">
-                    {!open &&
+                    {!sidebarOpen &&
                         <Tooltip title="Open Sidebar">
-                            <button className="material-icons open-sidebar-icon" onClick={openSidebar}>chevron_right</button>
+                            <button className="material-icons open-sidebar-icon" onClick={() => setSidebarOpen(true)}>chevron_right</button>
                         </Tooltip>
                     }
                     <h1 className="client-closet">{`${client.firstName.toUpperCase()} ${client.lastName.toUpperCase()}'S CLOSET`}</h1>
@@ -186,7 +187,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
                         </Tooltip>
                     }
                 </div>
-                <div className="closet-options">
+                <div className={`closet-options ${closetMode === 1 ? 'canvas-mode' : ''}`}>
                     <ul>
                         {
                             closetModes.map((mode, index) => (
@@ -219,7 +220,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
                     />
                     { user?.isAdmin &&
                         <Canvas 
-                            display={closetMode === 1} 
+                            display={closetMode === 1}
                             sidebarRef={sidebarRef} 
                             client={client} 
                             images={canvasItems.filter(item => item.type === 'image')}
@@ -240,8 +241,7 @@ export default function ClosetNavigation({ sidebarRef, open, openSidebar, client
                     />
                     <AddItems 
                         display={closetMode === 3}
-                        category={category} 
-                        openSidebar={openSidebar} 
+                        category={category}
                         updateItems={updateItems} 
                     />
                 </div>

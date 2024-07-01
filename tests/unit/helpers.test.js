@@ -569,6 +569,100 @@ describe('createImageThumbnail', () => {
     });
 });
 
+describe('addWhiteBackground', () => {
+    let mockBuffer;
+    let mockBgBuffer = Buffer.from('mock thumbnail data');
+
+    let mockFlatten;
+    let mockPng;
+    let mockToBuffer;
+    beforeEach(() => {
+        mockBuffer = Buffer.from('mock image data');
+
+        mockFlatten = jest.spyOn(sharp.prototype, 'flatten').mockReturnThis();
+        mockPng = jest.spyOn(sharp.prototype, 'png').mockReturnThis();
+        mockToBuffer = jest.spyOn(sharp.prototype, 'toBuffer').mockResolvedValue(mockBgBuffer);
+    });
+        
+    afterEach(() => {
+        jest.resetAllMocks();
+        jest.restoreAllMocks();
+    });
+
+    it('should create a thumbnail from the image buffer', async () => {
+        const whiteBgBuffer = await helpers.addWhiteBackground(mockBuffer)
+
+        expect(mockFlatten).toHaveBeenCalledWith({ background: '#FFFFFF' });
+        expect(mockPng).toHaveBeenCalled();
+        expect(mockToBuffer).toHaveBeenCalled();
+
+        expect(whiteBgBuffer).toBe(mockBgBuffer);
+    });
+
+    it('should fail if empty buffer', async () => {
+        mockBuffer = Buffer.from('');
+
+        await expect(helpers.addWhiteBackground(mockBuffer)).rejects.toThrow('invalid buffer input');
+        expect(mockFlatten).not.toHaveBeenCalled();
+        expect(mockPng).not.toHaveBeenCalled();
+        expect(mockToBuffer).not.toHaveBeenCalled();
+    });
+
+    it('should fail if input not buffer', async () => {
+        mockBuffer = 'not a buffer';
+
+        await expect(helpers.addWhiteBackground(mockBuffer)).rejects.toThrow('invalid buffer input');
+        expect(mockFlatten).not.toHaveBeenCalled();
+        expect(mockPng).not.toHaveBeenCalled();
+        expect(mockToBuffer).not.toHaveBeenCalled();
+    });
+
+    it('should fail if flatten fails', async () => {
+        mockFlatten.mockImplementation(() => { throw new Error('flatten failed') });
+
+        await expect(helpers.addWhiteBackground(mockBuffer)).rejects.toThrow('flatten failed');
+        expect(mockFlatten).toHaveBeenCalledWith({ background: '#FFFFFF' });
+        expect(mockPng).not.toHaveBeenCalled();
+        expect(mockToBuffer).not.toHaveBeenCalled();
+    });
+
+    it('should fail if png fails', async () => {
+        mockPng.mockImplementation(() => { throw new Error('png failed') });
+
+        await expect(helpers.addWhiteBackground(mockBuffer)).rejects.toThrow('png failed');
+        expect(mockFlatten).toHaveBeenCalledWith({ background: '#FFFFFF' });
+        expect(mockPng).toHaveBeenCalled();
+        expect(mockToBuffer).not.toHaveBeenCalled();
+    });
+
+    it('should fail if toBuffer fails', async () => {
+        mockToBuffer.mockImplementation(() => { throw new Error('toBuffer failed') });
+
+        await expect(helpers.addWhiteBackground(mockBuffer)).rejects.toThrow('toBuffer failed');
+        expect(mockFlatten).toHaveBeenCalledWith({ background: '#FFFFFF' });
+        expect(mockPng).toHaveBeenCalled();
+        expect(mockToBuffer).toHaveBeenCalled();
+    });
+
+    it('should fail if toBuffer returns nothing', async () => {
+        mockToBuffer.mockReturnValue();
+
+        await expect(helpers.addWhiteBackground(mockBuffer)).rejects.toThrow('error creating white background');
+        expect(mockFlatten).toHaveBeenCalledWith({ background: '#FFFFFF' });
+        expect(mockPng).toHaveBeenCalled();
+        expect(mockToBuffer).toHaveBeenCalled();
+    });
+
+    it('should fail if toBuffer doesn\'t return a buffer', async () => {
+        mockToBuffer.mockReturnValue('not a buffer');
+
+        await expect(helpers.addWhiteBackground(mockBuffer)).rejects.toThrow('error creating white background');
+        expect(mockFlatten).toHaveBeenCalledWith({ background: '#FFFFFF' });
+        expect(mockPng).toHaveBeenCalled();
+        expect(mockToBuffer).toHaveBeenCalled();
+    });
+});
+
 describe('googleConnect', () => {
     afterEach(() => {
         process.env.NODE_ENV = 'test';

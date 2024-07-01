@@ -17,6 +17,8 @@ describe('outfits', () => {
     let mockCreateId;
     let createIdResponse = '4n_1d_f0r_0u7f1t5';
     let mockb64ToBuffer;
+    let mockAddWhiteBackground;
+    let whiteBackgroundResponse = Buffer.from('white background data');
     let mockUploadToGCS;
     let uploadToGCSResponse = 'outfit.file.url';
     let mockDeleteFromGCS;
@@ -67,6 +69,9 @@ describe('outfits', () => {
             return Buffer.from(fileSrc);
         });
 
+        mockAddWhiteBackground = jest.spyOn(helpers, 'addWhiteBackground');
+        mockAddWhiteBackground.mockImplementation(() => whiteBackgroundResponse);
+
         mockUploadToGCS = jest.spyOn(helpers, 'uploadToGCS');
         mockUploadToGCS.mockImplementation(() => uploadToGCSResponse);
 
@@ -113,8 +118,9 @@ describe('outfits', () => {
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('clients');
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, whiteBackgroundResponse);
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
                 clientId: clientId,
@@ -142,8 +148,9 @@ describe('outfits', () => {
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, whiteBackgroundResponse);
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
                 clientId: clientId,
@@ -171,8 +178,9 @@ describe('outfits', () => {
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `outfits/${createIdResponse}.png`, whiteBackgroundResponse);
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
                 clientId: clientId,
@@ -202,6 +210,7 @@ describe('outfits', () => {
             expect(mockCollection.find).not.toHaveBeenCalled();
             expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
@@ -229,6 +238,7 @@ describe('outfits', () => {
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
@@ -257,6 +267,7 @@ describe('outfits', () => {
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
@@ -285,6 +296,7 @@ describe('outfits', () => {
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
@@ -295,6 +307,35 @@ describe('outfits', () => {
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(500);
             expect(err.message).toBe('b64toBuffer conversion of file source failed');
+        });
+
+        it('should handle addWhiteBackground failure', async () => {
+            // perform action to test
+            const bufferError = new Error('white background conversion failed');
+            bufferError.status = 500;
+            mockAddWhiteBackground.mockRejectedValue(bufferError);
+
+            const req = { params: { clientId: clientId }, fields: data, locals: { db: mockDb, bucket: mockBucket } };
+
+            await outfits.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
+            expect(mockCreateId).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
+            expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
+            expect(mockCollection.insertOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(500);
+            expect(err.message).toBe('white background conversion failed');
         });
 
         it('should handle createId failure', async () => {
@@ -313,6 +354,7 @@ describe('outfits', () => {
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
@@ -341,8 +383,9 @@ describe('outfits', () => {
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, whiteBackgroundResponse);
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
@@ -369,8 +412,9 @@ describe('outfits', () => {
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, whiteBackgroundResponse);
             
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
@@ -401,8 +445,9 @@ describe('outfits', () => {
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, whiteBackgroundResponse);
             
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.insertOne).toHaveBeenCalledWith({
@@ -434,6 +479,7 @@ describe('outfits', () => {
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
@@ -460,6 +506,7 @@ describe('outfits', () => {
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(clientId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalledWith('outfits');
@@ -484,6 +531,7 @@ describe('outfits', () => {
             expect(mockCollection.find).not.toHaveBeenCalled();
             expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
@@ -508,6 +556,7 @@ describe('outfits', () => {
             expect(mockCollection.find).not.toHaveBeenCalled();
             expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
@@ -532,6 +581,7 @@ describe('outfits', () => {
             expect(mockCollection.find).not.toHaveBeenCalled();
             expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
@@ -556,6 +606,7 @@ describe('outfits', () => {
             expect(mockCollection.find).not.toHaveBeenCalled();
             expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
@@ -579,6 +630,7 @@ describe('outfits', () => {
             expect(mockCollection.find).not.toHaveBeenCalled();
             expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
@@ -602,6 +654,7 @@ describe('outfits', () => {
             expect(mockCollection.find).not.toHaveBeenCalled();
             expect(mockCollection.toArray).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockUploadToGCS).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
@@ -863,12 +916,13 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, whiteBackgroundResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
@@ -886,12 +940,13 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/outfits/${createIdResponse}.png`, whiteBackgroundResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
@@ -909,12 +964,13 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `outfits/${createIdResponse}.png`, whiteBackgroundResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
@@ -934,6 +990,7 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
             expect(mockCollection.find).not.toHaveBeenCalled();
@@ -962,6 +1019,7 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
             expect(mockCollection.find).not.toHaveBeenCalled();
@@ -977,6 +1035,35 @@ describe('outfits', () => {
             expect(err.message).toBe('b64toBuffer conversion of file source failed');
         });
 
+        it('should handle addWhiteBackground failure', async () => {
+            // perform action to test
+            const bufferError = new Error('white background conversion failed');
+            bufferError.status = 500;
+            mockAddWhiteBackground.mockRejectedValue(bufferError);
+
+            const req = { fields: data, params: { outfitId: outfitId }, locals: { db: mockDb, bucket: mockBucket } };
+
+            await outfits.patchFull(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
+            expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
+            expect(mockCreateId).not.toHaveBeenCalled();
+            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(500);
+            expect(err.message).toBe('white background conversion failed');
+        });
+
         it('should handle createId failure', async () => {
             // perform action to test
             const createIdError = new Error('createId failed');
@@ -990,6 +1077,7 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
             expect(mockCollection.find).not.toHaveBeenCalled();
@@ -1018,6 +1106,7 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
@@ -1046,6 +1135,7 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
@@ -1072,6 +1162,7 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
@@ -1100,6 +1191,7 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
@@ -1128,12 +1220,13 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, whiteBackgroundResponse);
             expect(mockCollection.updateOne).not.toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
@@ -1156,12 +1249,13 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, whiteBackgroundResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
@@ -1182,12 +1276,13 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).toHaveBeenCalledWith(data.stageItemsStr);
             expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockAddWhiteBackground).toHaveBeenCalledWith(Buffer.from(data.fileSrc));
             expect(mockCreateId).toHaveBeenCalled();
             expect(mockDb.collection).toHaveBeenCalledWith('outfits');
             expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(outfitId) });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, data.gcsDest);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/outfits/${createIdResponse}.png`, whiteBackgroundResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockRes.status).not.toHaveBeenCalled();
             expect(mockRes.json).not.toHaveBeenCalled();
@@ -1207,6 +1302,7 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
             expect(mockCollection.find).not.toHaveBeenCalled();
@@ -1232,6 +1328,7 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
             expect(mockCollection.find).not.toHaveBeenCalled();
@@ -1257,6 +1354,7 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
             expect(mockCollection.find).not.toHaveBeenCalled();
@@ -1282,6 +1380,7 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
             expect(mockCollection.find).not.toHaveBeenCalled();
@@ -1306,6 +1405,7 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
             expect(mockCollection.find).not.toHaveBeenCalled();
@@ -1331,6 +1431,7 @@ describe('outfits', () => {
             // perform checks
             expect(mockJSONParse).not.toHaveBeenCalled();
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockAddWhiteBackground).not.toHaveBeenCalled();
             expect(mockCreateId).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
             expect(mockCollection.find).not.toHaveBeenCalled();

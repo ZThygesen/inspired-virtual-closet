@@ -6,8 +6,9 @@ import Modal from './Modal';
 import Input from './Input';
 import { CategorySettings } from '../styles/CategoriesSidebar';
 import { useUser } from './UserContext';
+import { useSidebar } from './SidebarContext';
 
-export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, closeSidebarOnSelect, categories, activeCategory, setCategory, addCategory, editCategory, deleteCategory }) {
+export default function CategoriesSidebar({ sidebarRef, categories, activeCategory, setCategory, addCategory, editCategory, deleteCategory }) {
     const [addOpen, setAddOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [categoryToEdit, setCategoryToEdit] = useState({});
@@ -15,6 +16,9 @@ export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, clos
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState({});
     const [settingsOpen, setSettingsOpen] = useState(false);
+
+    const { sidebarOpen, setSidebarOpen, mobileMode } = useSidebar();
+
     const ref = useRef();
 
     const { user } = useUser();
@@ -98,7 +102,7 @@ export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, clos
 
     return (
         <>
-            <CategoriesSidebarContainer id="sidebar" className={`${open ? 'open' : ''} ${user?.isSuperAdmin ? 'admin' : ''}`} ref={sidebarRef}>
+            <CategoriesSidebarContainer id="sidebar" className={`${sidebarOpen ? 'open' : ''} ${user?.isSuperAdmin ? 'admin' : ''}`} ref={sidebarRef}>
                 <div className="categories-header">
                     { user?.isSuperAdmin &&
                         <Tooltip title="Manage Categories">
@@ -107,7 +111,7 @@ export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, clos
                     }
                     <h2 className="header-title">CATEGORIES</h2>
                     <Tooltip title="Close Sidebar">
-                        <button className="material-icons close-sidebar-icon" onClick={closeSidebar}>chevron_left</button>
+                        <button className="material-icons close-sidebar-icon" onClick={() => setSidebarOpen(false)}>chevron_left</button>
                     </Tooltip>
                 </div>
                 <div className="categories-container" ref={ref}>
@@ -117,8 +121,8 @@ export default function CategoriesSidebar({ sidebarRef, open, closeSidebar, clos
                                 key={cuid()}
                                 onClick={() => {
                                     setCategory(category);
-                                    if (closeSidebarOnSelect) {
-                                        closeSidebar();
+                                    if (mobileMode) {
+                                        setSidebarOpen(false);
                                     }
                                 }}
                                 className={category._id === activeCategory?._id ? 'active category-button' : 'category-button'}

@@ -5,7 +5,7 @@ import { useUser } from '../components/UserContext';
 import axios from 'axios';
 import { HomeContainer } from '../styles/Home';
 import ActionButton from '../components/ActionButton'
-import logo from '../images/big_logo.png';
+import logo from '../images/logo.png';
 import Loading from '../components/Loading';
 import { GoogleLogin } from '@react-oauth/google';
 
