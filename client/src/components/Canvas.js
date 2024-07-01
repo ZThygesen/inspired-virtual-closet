@@ -33,6 +33,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
     const { setMobileMode, setCanvasMode } = useSidebar();
 
     // outfit functionality
+    const [cancelEditOpen, setCancelEditOpen] = useState(false);
     const [saveOutfitOpen, setSaveOutfitOpen] = useState(false);
     const [outfitName, setOutfitName] = useState('');
     const [outfitImageData, setOutfitImageData] = useState('');
@@ -380,22 +381,17 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
     function handleCancelEdit() {
         clearCanvas();
         cancelEdit();
+        setCancelEditOpen(false);
     }
 
     useEffect(() => {
-        let textboxCount = 0;
         let textbox = null;
-        selectedItems.forEach(item => {
-            if (item.type === 'textbox') {
-                textboxCount++;
-                textbox = item;
-            }
-        });
 
-        if (textboxCount !== 1) {
-            setSingleTextboxSelected(false);
-        } else {
+        if (selectedItems.length === 1 && selectedItems[0].type === 'textbox') {
+            textbox = selectedItems[0];
             setSingleTextboxSelected(true);
+        } else {
+            setSingleTextboxSelected(false);
         }
 
         setFontAdjust(0);
@@ -473,7 +469,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
                             <span>
                                 <button
                                     className="material-icons cancel-edit-btn"
-                                    onClick={handleCancelEdit}
+                                    onClick={() => setCancelEditOpen(true)}
                                     disabled={editMode ? false : true}
                                 >
                                     close
@@ -536,7 +532,13 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
                         }
                         <Transformer 
                             ref={transformerRef} 
-                            borderStroke="#f47853" 
+                            keepRatio={true}
+                            borderStroke="#f47853"
+                            enabledAnchors={singleTextboxSelected ? 
+                                ['top-left', 'top-center', 'top-right', 'bottom-left', 'bottom-center', 'bottom-right', 'middle-left', 'middle-right']
+                                :
+                                ['top-left', 'top-right', 'bottom-left', 'bottom-right']
+                            } 
                             anchorStroke="#f47853" 
                             anchorFill="#f47853" 
                             anchorCornerRadius={100} 
@@ -579,6 +581,22 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
                     <div className="modal-options">
                         <button type="button" onClick={handleSaveOutfitClose}>Cancel</button>
                         <button type="submit">{editMode ? "Save Outfit" : "Add Outfit"}</button>
+                    </div>
+                </>
+            </Modal>
+            <Modal
+                open={cancelEditOpen}
+                closeFn={handleCancelEdit}
+            >
+                <>
+                    <h2 className="modal-title">CANCEL EDIT</h2>
+                    <div className="modal-content">
+                        <p className="medium">Are you sure you want to cancel editing this outfit?</p>
+                        <p className="warning small">You will lose all progress since the last save!</p>
+                    </div>
+                    <div className="modal-options">
+                        <button type="button" onClick={() => setCancelEditOpen(false)}>No</button>
+                        <button type="button" onClick={handleCancelEdit}>Yes</button>
                     </div>
                 </>
             </Modal>
