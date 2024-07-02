@@ -300,7 +300,7 @@ describe('outfits', () => {
             await collection.insertOne(data);
         });
 
-        it('should get outfits', async () => {
+        it('should get outfit', async () => {
             // perform action to test
             const response = await agent(app)
                 .get(`/outfits/${data.clientId}`);
@@ -365,6 +365,7 @@ describe('outfits', () => {
             expect(outfit._id.toString()).toBe(data._id.toString());
             expect(outfit.clientId).toBe(data.clientId);
 
+
             response = await agent(app)
                 .get(`/outfits/${otherOutfit.clientId}`);
             
@@ -373,7 +374,7 @@ describe('outfits', () => {
             expect(response.body).toHaveLength(1);
             
             outfit = response.body[0];
-            expect(outfit._id.toString()).toEqual(otherOutfit._id.toString());
+            expect(outfit._id.toString()).toBe(otherOutfit._id.toString());
             expect(outfit.clientId).toBe(otherOutfit.clientId);
         });
 
@@ -500,7 +501,7 @@ describe('outfits', () => {
             expect(response.body.message).toBe('file source is required to update outfit');
 
             const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
+            expect(outfit).toStrictEqual(data);
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
@@ -521,7 +522,7 @@ describe('outfits', () => {
             expect(response.body.message).toBe('not a valid base64 image string');
 
             const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
+            expect(outfit).toStrictEqual(data);
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
@@ -542,7 +543,7 @@ describe('outfits', () => {
             expect(response.body.message).toBe('arrayBuffer not successfully converted to buffer');
 
             const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
+            expect(outfit).toStrictEqual(data);
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
@@ -563,7 +564,7 @@ describe('outfits', () => {
             expect(response.body.message).toBe('stage items string is required to update outfit');
 
             const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
+            expect(outfit).toStrictEqual(data);
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
@@ -584,7 +585,7 @@ describe('outfits', () => {
             expect(response.body.message).toEqual(expect.stringContaining('Expected \',\' or \'}\' after property value in JSON'));
 
             const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
+            expect(outfit).toStrictEqual(data);
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
@@ -605,7 +606,7 @@ describe('outfits', () => {
             expect(response.body.message).toBe('outfit name is required to update outfit');
 
             const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
+            expect(outfit).toStrictEqual(data);
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
@@ -626,7 +627,7 @@ describe('outfits', () => {
             expect(response.body.message).toBe('gcsDest is required to update outfit');
 
             const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
+            expect(outfit).toStrictEqual(data);
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
@@ -648,7 +649,7 @@ describe('outfits', () => {
             expect(response.body.message).toBe(`No such object: edie-styles-virtual-closet-test/${invalidGcsDest}`);
 
             const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
+            expect(outfit).toStrictEqual(data);
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
@@ -670,7 +671,7 @@ describe('outfits', () => {
             expect(response.body.message).toBe(`No such object: edie-styles-virtual-closet-test/${invalidGcsDest}`);
 
             const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
+            expect(outfit).toStrictEqual(data);
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
@@ -691,7 +692,7 @@ describe('outfits', () => {
             expect(response.body.message).toBe('failed to update outfit content: invalid or missing outfit id');
 
             const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
+            expect(outfit).toStrictEqual(data);
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
