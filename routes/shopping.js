@@ -187,7 +187,7 @@ const router = express.Router();
 router.post('/:clientId', auth.requireAdmin, auth.checkPermissions, shopping.post);
 router.get('/:clientId', auth.checkPermissions, shopping.get);
 router.patch('/:clientId/:shoppingId', auth.requireAdmin, auth.checkPermissions, shopping.patchFull);
-router.patch('/purchased/:clientId/:shoppingId', auth.requireAdmin, auth.checkPermissions, shopping.patchPurchased);
+router.patch('/purchased/:clientId/:shoppingId', auth.checkPermissions, shopping.patchPurchased);
 router.delete('/:clientId/:shoppingId', auth.requireAdmin, auth.checkPermissions, shopping.delete);
 
 export { shopping, router as shoppingRouter };

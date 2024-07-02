@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Tooltip } from '@mui/material';
 import Modal from './Modal';
 import Input from './Input';
@@ -14,6 +14,11 @@ export default function ShoppingCard({ shoppingItem, editShoppingItem, togglePur
     const [newPurchased, setNewPurchased] = useState(shoppingItem.purchased);
 
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+    const [notesExpanded, setNotesExpanded] = useState(false);
+    const [firstExpand, setFirstExpand] = useState(true);
+    const notesContainerRef = useRef();
+    const notesRef = useRef();
 
     const { user } = useUser();
 
@@ -37,6 +42,47 @@ export default function ShoppingCard({ shoppingItem, editShoppingItem, togglePur
         deleteShoppingItem(shoppingItem);
     }
 
+    useEffect(() => {
+        function handleAnimationStart() {
+            notesRef.current.style.position = 'unset';
+        }
+
+        function handleAnimationEnd() {
+            if (!notesExpanded) {
+                notesRef.current.style.position = 'absolute';
+            }
+            
+        }
+
+        notesRef.current.addEventListener('animationstart', handleAnimationStart);
+        notesRef.current.addEventListener('animationend', handleAnimationEnd);
+
+        const notesCurr = notesRef.current;
+        return () => {
+            notesCurr.removeEventListener('animationstart', handleAnimationStart);
+            notesCurr.removeEventListener('animationend', handleAnimationEnd);
+        }
+    }, [notesExpanded]);
+
+    useEffect(() => {
+        function handleClick(e) {
+            if (!notesContainerRef.current.contains(e.target)) {
+                setNotesExpanded(false);
+            }
+        }
+
+        window.addEventListener('click', handleClick);
+
+        return () => {
+            window.removeEventListener('click', handleClick);
+        }
+    }, []);
+
+    function toggleNotes() {
+        setFirstExpand(false);
+        setNotesExpanded(current => !current);
+    }
+
     return (
         <>
             <ShoppingCardContainer>
@@ -47,12 +93,25 @@ export default function ShoppingCard({ shoppingItem, editShoppingItem, togglePur
                         alt={shoppingItem.itemName}
                     />
                 </a>
-                <p className="shopping-item-notes">Notes: {shoppingItem.notes}</p>
+                <div className={`shopping-item-notes-container ${firstExpand ? '' : notesExpanded ? 'expanded' : 'not-expanded'}`} ref={notesContainerRef}>
+                    <Tooltip title="Expand Notes" placement="top">
+                        <button 
+                            className="material-icons notes-dropdown-btn" 
+                            onClick={toggleNotes}
+                        >
+                            keyboard_arrow_down
+                        </button>
+                    </Tooltip>
+                    <div className="shopping-item-notes">
+                        <p className="shopping-item-notes-title" onClick={toggleNotes}>Notes</p>
+                        <p className="shopping-item-notes-details" ref={notesRef}>{shoppingItem.notes}</p>
+                    </div>
+                </div>
                 <div className="shopping-item-options">
                     { shoppingItem.purchased ?
                         <Tooltip title="Not Purchased?">
                             <button
-                                className='material-icons shopping-item-option important'
+                                className='material-icons shopping-item-option'
                                 onClick={() => togglePurchasedStatus(shoppingItem)}
                             >
                                 close
@@ -68,16 +127,6 @@ export default function ShoppingCard({ shoppingItem, editShoppingItem, togglePur
                             </button>
                         </Tooltip>
                     }
-                    <Tooltip title="View Item">
-                        <a
-                            className='material-icons shopping-item-option important'
-                            href={shoppingItem.itemLink}
-                            target="_blank"
-                            rel="noreferrer"
-                        >
-                            shortcut
-                        </a>
-                    </Tooltip>
                     { user?.isAdmin &&
                         <>
                         <Tooltip title="Edit">
@@ -98,6 +147,16 @@ export default function ShoppingCard({ shoppingItem, editShoppingItem, togglePur
                         </Tooltip>
                         </>
                     }
+                    <Tooltip title="View Item">
+                        <a
+                            className='material-icons shopping-item-option important'
+                            href={shoppingItem.itemLink}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            shortcut
+                        </a>
+                    </Tooltip>
                 </div>
             </ShoppingCardContainer>
             <Modal

@@ -8,6 +8,7 @@ import { ShoppingContainer } from '../styles/Shopping';
 import cuid from 'cuid';
 import Input from './Input';
 import Modal from './Modal';
+import { useUser } from './UserContext';
 import { useClient } from './ClientContext';
 
 export default function Shopping({ display, shoppingItems, updateShoppingItems }) {
@@ -24,6 +25,7 @@ export default function Shopping({ display, shoppingItems, updateShoppingItems }
 
     const [loading, setLoading] = useState(false);
 
+    const { user } = useUser();
     const { client } = useClient();
 
     useEffect(() => {
@@ -163,6 +165,7 @@ export default function Shopping({ display, shoppingItems, updateShoppingItems }
                             {
                                 purchased?.map(shoppingItem => (
                                     <ShoppingCard
+                                        className="shopping-card"
                                         shoppingItem={shoppingItem}
                                         editShoppingItem={editShoppingItem}
                                         togglePurchasedStatus={togglePurchasedStatus}
@@ -175,9 +178,12 @@ export default function Shopping({ display, shoppingItems, updateShoppingItems }
                         </>   
                     }
                 </div>
-                <Tooltip title="Add Shopping Item">
-                    <button className="material-icons add-shopping-item" onClick={() => setAddShoppingOpen(true)}>add</button>
-                </Tooltip>
+                { user?.isAdmin &&
+                    <Tooltip title="Add Shopping Item">
+                        <button className="material-icons add-shopping-item" onClick={() => setAddShoppingOpen(true)}>add</button>
+                    </Tooltip>
+                }
+                
             </ShoppingContainer>
             <Loading open={loading} />
             <Modal 

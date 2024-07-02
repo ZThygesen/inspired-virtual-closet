@@ -22,7 +22,6 @@ export const ShoppingContainer = styled.div`
         flex-direction: column;
         flex-wrap: wrap;
         align-items: center;
-        overflow-y: auto;
     }
 
     .shopping-subtitle {
@@ -33,7 +32,7 @@ export const ShoppingContainer = styled.div`
     .shopping-items {
         display: flex;
         flex-wrap: wrap;
-        align-items: center;
+        align-items: stretch;
         justify-content: center;
     }
 
@@ -58,7 +57,6 @@ export const ShoppingContainer = styled.div`
 
         &:hover {
             background-color: var(--secondary);
-            transform: scale(1.1);
         }
     }
 `;
@@ -68,40 +66,116 @@ export const ShoppingCardContainer = styled.div`
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     box-shadow: var(--box-shadow);
     padding: 20px;
     border-radius: 25px;
-    max-width: 250px;
+    width: 300px;
+    max-width: 350px;
     margin: 12px;
+    position: relative;
 
-    p:not(.shopping-item-notes) {
+    .shopping-item-name {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         font-size: 28px;
         color: var(--black);
         font-family: 'Fashion';
         font-weight: 600;
         letter-spacing: 2px;
         text-align: center;
+        word-break: break-word;
+        flex-grow: 1;
     }
 
-    .shopping-item-name {
-        word-break: break-word;
+    a {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     img {
-        width: 250px;
-        height: auto;
+        width: auto;
+        height: 250px;
         cursor: pointer;
+        margin: 12px 0;
+        border-radius: 25px;
     }
 
-    .shopping-item-notes {
-        
+    .shopping-item-notes-container {
+        position: relative;
+        width: 100%;
+        height: 50px;
+        background-color: var(--white);
+
+        .shopping-item-notes {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            margin: 0 10px;
+            padding: 8px 0;
+            transition: 0.3s;
+        }
+
+        &.expanded .shopping-item-notes {
+            border-radius: 12px;
+            box-shadow: var(--box-shadow);
+            background-color: var(--white);
+        }
+
+        .shopping-item-notes-title {
+            width: 100%;
+            font-size: 20px;
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        .shopping-item-notes-details {
+            width: 100%;
+            padding: 0 8px 12px 8px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            position: absolute;
+
+            transform: translateY(-100%);
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        &.expanded .shopping-item-notes-details {
+            animation: showDropdown 0.3s forwards;
+        }
+
+        &.not-expanded .shopping-item-notes-details {
+            animation: hideDropdown 0.3s forwards;
+        }
+
+        .notes-dropdown-btn {
+            position: absolute;
+            left: -17px;
+            top: 14px;
+            background: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: 0.3s;
+
+            &:hover {
+                background-color: var(--material-btn-bg)
+            }
+        }
+
+        &.expanded .notes-dropdown-btn {
+            transform: rotate(180deg);
+        }
     }
 
     .shopping-item-options {
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 5px 0 15px 0;
+        margin: 15px 0 15px 0;
     }
 
     .shopping-item-option {
@@ -121,5 +195,37 @@ export const ShoppingCardContainer = styled.div`
 
     .shopping-item-option.important {
         color: var(--secondary);
+    }
+
+    @keyframes showDropdown {
+        0% {
+            visibility: visible;
+            opacity: 0;
+            transform: translateY(0%);
+        }
+
+        100% {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0%);
+        }
+    }
+
+    @keyframes hideDropdown {
+        0% {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0%);
+        }
+        99% {
+            visibility: visible;
+            opacity: 0;
+            transform: translateY(0%);
+        }
+        100% {
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(-100%);
+        }
     }
 `;

@@ -3574,8 +3574,8 @@ describe('auth', () => {
                     .send(patchData);
 
                 // perform checks
-                expect(response.status).toBe(401);
-                expect(response.body.message).toBe('only admins are authorized for this action');
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('non-admins have no permissions over any admins');
             });
 
             it('should fail (normal user, admin client)', async () => {
@@ -3587,8 +3587,8 @@ describe('auth', () => {
                     .send(patchData);
 
                 // perform checks
-                expect(response.status).toBe(401);
-                expect(response.body.message).toBe('only admins are authorized for this action');
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('non-admins have no permissions over any admins');
             });
 
             it('should fail (normal user, normal client - other)', async () => {
@@ -3600,11 +3600,11 @@ describe('auth', () => {
                     .send(patchData);
 
                 // perform checks
-                expect(response.status).toBe(401);
-                expect(response.body.message).toBe('only admins are authorized for this action');
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('non-admins only have permissions over themselves');
             });
 
-            it('should fail (normal user, normal client - same)', async () => {
+            it('should succeed (normal user, normal client - same)', async () => {
                 await setUserNormal(db);
                 await setClientNormal(db);
                 client._id = user._id
@@ -3614,8 +3614,8 @@ describe('auth', () => {
                     .send(patchData);
 
                 // perform checks
-                expect(response.status).toBe(401);
-                expect(response.body.message).toBe('only admins are authorized for this action');
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
             });
 
             it('should fail with missing token', async () => {
