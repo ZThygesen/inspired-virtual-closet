@@ -25,7 +25,7 @@ const outfits = {
 
             const clientId = req?.params?.clientId;
             if (!helpers.isValidId(clientId)) {
-                throw helpers.createError('failed to update outfit: invalid or missing client id', 400);
+                throw helpers.createError('failed to create outfit: invalid or missing client id', 400);
             }
 
             const stageItems = JSON.parse(stageItemsStr);
