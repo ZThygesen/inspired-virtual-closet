@@ -2895,4 +2895,930 @@ describe('auth', () => {
             });
         });
     });
+
+    describe('shopping', () => {
+        let mongoClient;
+        let db;
+        let collection;
+        beforeAll(async () => {
+            mongoClient = new MongoClient(process.env.DB_URI);
+            await mongoClient.connect();
+            db = mongoClient.db(process.env.DB_NAME_TEST);
+            collection = db.collection('shopping');
+
+            await createUser(db);
+            await createClient(db);
+        });
+
+        afterAll(async () => {
+            await clearClients(db);
+            await collection.deleteMany({ });
+            await mongoClient.close();
+        });
+
+        describe('create', () => {
+            let data;
+            beforeEach(async () => {
+                data = {
+                    itemName: 'Cool New Shirt',
+                    itemLink: 'cool-new-shirt.link',
+                    imageLink: 'cool-new-shirt-image.link',
+                    notes: 'Size: M, Color: Red'
+                };
+            });
+
+            it('should succeed (super user, super client)', async () => {
+                await setUserSuper(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post(`/shopping/${client._id.toString()}`)
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(201);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should succeed (super user, admin client)', async () => {
+                await setUserSuper(db);
+                await setClientAdmin(db);
+
+                // perform action to test
+                const response = await agent(app)
+                    .post(`/shopping/${client._id.toString()}`)
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(201);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should succeed (super user, normal client)', async () => {
+                await setUserSuper(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post(`/shopping/${client._id.toString()}`)
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(201);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail (admin user, super client)', async () => {
+                await setUserAdmin(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post(`/shopping/${client._id.toString()}`)
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('admins have no permissions over super admins');
+            });
+
+            it('should fail (admin user, admin client - other)', async () => {
+                await setUserAdmin(db);
+                await setClientAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post(`/shopping/${client._id.toString()}`)
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('admins have no permissions over other admins');
+            });
+
+            it('should succeed (admin user, admin client - self)', async () => {
+                await setUserAdmin(db);
+                await setClientAdmin(db);
+                client._id = user._id;
+                // perform action to test
+                const response = await agent(app)
+                    .post(`/shopping/${client._id.toString()}`)
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(201);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should succeed (admin user, normal client)', async () => {
+                await setUserAdmin(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post(`/shopping/${client._id.toString()}`)
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(201);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail (normal user, super client)', async () => {
+                await setUserNormal(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post(`/shopping/${client._id.toString()}`)
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only admins are authorized for this action');
+            });
+
+            it('should fail (normal user, admin client)', async () => {
+                await setUserNormal(db);
+                await setClientAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post(`/shopping/${client._id.toString()}`)
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only admins are authorized for this action');
+            });
+
+            it('should fail (normal user, normal client - other)', async () => {
+                await setUserNormal(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post(`/shopping/${client._id.toString()}`)
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only admins are authorized for this action');
+            });
+
+            it('should fail (normal user, normal client - same)', async () => {
+                await setUserNormal(db);
+                await setClientNormal(db);
+                client._id = user._id
+                // perform action to test
+                const response = await agent(app)
+                    .post(`/shopping/${client._id.toString()}`)
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only admins are authorized for this action');
+            });
+
+            it('should fail with missing token', async () => {
+                cookie = '';
+
+                // perform action to test
+                const response = await agent(app)
+                    .post(`/shopping/${client._id.toString()}`)
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('token required to authenticate JWT');
+            });
+
+            it('should fail with invalid token', async () => {
+                cookie = invalidCookie;
+
+                // perform action to test
+                const response = await agent(app)
+                    .post(`/shopping/${client._id.toString()}`)
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(500);
+                expect(response.body.message).toBe('invalid signature');
+            });
+        });
+
+        describe('read', () => {
+            it('should succeed (super user, super client)', async () => {
+                await setUserSuper(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/shopping/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should succeed (super user, admin client)', async () => {
+                await setUserSuper(db);
+                await setClientAdmin(db);
+
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/shopping/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should succeed (super user, normal client)', async () => {
+                await setUserSuper(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/shopping/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should fail (admin user, super client)', async () => {
+                await setUserAdmin(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/shopping/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('admins have no permissions over super admins');
+            });
+
+            it('should fail (admin user, admin client - other)', async () => {
+                await setUserAdmin(db);
+                await setClientAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/shopping/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('admins have no permissions over other admins');
+            });
+
+            it('should succeed (admin user, admin client - self)', async () => {
+                await setUserAdmin(db);
+                await setClientAdmin(db);
+                client._id = user._id;
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/shopping/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should succeed (admin user, normal client)', async () => {
+                await setUserAdmin(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/shopping/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should fail (normal user, super client)', async () => {
+                await setUserNormal(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/shopping/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('non-admins have no permissions over any admins');
+            });
+
+            it('should fail (normal user, admin client)', async () => {
+                await setUserNormal(db);
+                await setClientAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/shopping/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('non-admins have no permissions over any admins');
+            });
+
+            it('should fail (normal user, normal client - other)', async () => {
+                await setUserNormal(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/shopping/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('non-admins only have permissions over themselves');
+            });
+
+            it('should succeed (normal user, normal client - same)', async () => {
+                await setUserNormal(db);
+                await setClientNormal(db);
+                client._id = user._id
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/shopping/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should fail with missing token', async () => {
+                cookie = '';
+
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/shopping/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('token required to authenticate JWT');
+            });
+
+            it('should fail with invalid token', async () => {
+                cookie = invalidCookie;
+
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/shopping/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(500);
+                expect(response.body.message).toBe('invalid signature');
+            });
+        });
+
+        describe('update full', () => {
+            let shoppingId;
+            let patchData;
+            beforeEach(async () => {
+                shoppingId = new ObjectId();
+
+                await collection.insertOne({ 
+                    _id: shoppingId,
+                    clientId: client._id.toString(),
+                    itemName: 'Cool New Shirt',
+                    itemLink: 'cool-new-shirt.link',
+                    imageLink: 'cool-new-shirt-image.link',
+                    notes: 'Size: M, Color: Red',
+                    purchased: false
+                });
+
+                patchData = {
+                    newItemName: 'Cool Shirt',
+                    newItemLink: 'cool-shirt.link',
+                    newImageLink: 'cool-shirt-image.link',
+                    newNotes: 'Size: L, Color: Blue',
+                    newPurchased: true
+                };
+            });
+
+            it('should succeed (super user, super client)', async () => {
+                await setUserSuper(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should succeed (super user, admin client)', async () => {
+                await setUserSuper(db);
+                await setClientAdmin(db);
+
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should succeed (super user, normal client)', async () => {
+                await setUserSuper(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail (admin user, super client)', async () => {
+                await setUserAdmin(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('admins have no permissions over super admins');
+            });
+
+            it('should fail (admin user, admin client - other)', async () => {
+                await setUserAdmin(db);
+                await setClientAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('admins have no permissions over other admins');
+            });
+
+            it('should succeed (admin user, admin client - self)', async () => {
+                await setUserAdmin(db);
+                await setClientAdmin(db);
+                client._id = user._id;
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should succeed (admin user, normal client)', async () => {
+                await setUserAdmin(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail (normal user, super client)', async () => {
+                await setUserNormal(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only admins are authorized for this action');
+            });
+
+            it('should fail (normal user, admin client)', async () => {
+                await setUserNormal(db);
+                await setClientAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only admins are authorized for this action');
+            });
+
+            it('should fail (normal user, normal client - other)', async () => {
+                await setUserNormal(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only admins are authorized for this action');
+            });
+
+            it('should fail (normal user, normal client - same)', async () => {
+                await setUserNormal(db);
+                await setClientNormal(db);
+                client._id = user._id
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only admins are authorized for this action');
+            });
+
+            it('should fail with missing token', async () => {
+                cookie = '';
+
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('token required to authenticate JWT');
+            });
+
+            it('should fail with invalid token', async () => {
+                cookie = invalidCookie;
+
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(500);
+                expect(response.body.message).toBe('invalid signature');
+            });
+        });
+
+        describe('update purchased', () => {
+            let shoppingId;
+            let patchData;
+            beforeEach(async () => {
+                shoppingId = new ObjectId();
+
+                await collection.insertOne({ 
+                    _id: shoppingId,
+                    clientId: client._id.toString(),
+                    itemName: 'Cool New Shirt',
+                    itemLink: 'cool-new-shirt.link',
+                    imageLink: 'cool-new-shirt-image.link',
+                    notes: 'Size: M, Color: Red',
+                    purchased: false
+                });
+
+                patchData = { newPurchased: true };
+            });
+
+            it('should succeed (super user, super client)', async () => {
+                await setUserSuper(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/purchased/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should succeed (super user, admin client)', async () => {
+                await setUserSuper(db);
+                await setClientAdmin(db);
+
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/purchased/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should succeed (super user, normal client)', async () => {
+                await setUserSuper(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/purchased/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail (admin user, super client)', async () => {
+                await setUserAdmin(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/purchased/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('admins have no permissions over super admins');
+            });
+
+            it('should fail (admin user, admin client - other)', async () => {
+                await setUserAdmin(db);
+                await setClientAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/purchased/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('admins have no permissions over other admins');
+            });
+
+            it('should succeed (admin user, admin client - self)', async () => {
+                await setUserAdmin(db);
+                await setClientAdmin(db);
+                client._id = user._id;
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/purchased/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should succeed (admin user, normal client)', async () => {
+                await setUserAdmin(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/purchased/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail (normal user, super client)', async () => {
+                await setUserNormal(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/purchased/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('non-admins have no permissions over any admins');
+            });
+
+            it('should fail (normal user, admin client)', async () => {
+                await setUserNormal(db);
+                await setClientAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/purchased/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('non-admins have no permissions over any admins');
+            });
+
+            it('should fail (normal user, normal client - other)', async () => {
+                await setUserNormal(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/purchased/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('non-admins only have permissions over themselves');
+            });
+
+            it('should succeed (normal user, normal client - same)', async () => {
+                await setUserNormal(db);
+                await setClientNormal(db);
+                client._id = user._id
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/purchased/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail with missing token', async () => {
+                cookie = '';
+
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/purchased/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('token required to authenticate JWT');
+            });
+
+            it('should fail with invalid token', async () => {
+                cookie = invalidCookie;
+
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/purchased/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(500);
+                expect(response.body.message).toBe('invalid signature');
+            });
+        });
+
+        describe('delete', () => {
+            let shoppingId;
+            beforeEach(async () => {
+                shoppingId = new ObjectId();
+
+                await collection.insertOne({ 
+                    _id: shoppingId,
+                    clientId: client._id.toString(),
+                    itemName: 'Cool New Shirt',
+                    itemLink: 'cool-new-shirt.link',
+                    imageLink: 'cool-new-shirt-image.link',
+                    notes: 'Size: M, Color: Red',
+                    purchased: false
+                });
+            });
+
+            it('should succeed (super user, super client)', async () => {
+                await setUserSuper(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/shopping/${client._id.toString()}/${shoppingId.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should succeed (super user, admin client)', async () => {
+                await setUserSuper(db);
+                await setClientAdmin(db);
+
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/shopping/${client._id.toString()}/${shoppingId.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should succeed (super user, normal client)', async () => {
+                await setUserSuper(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/shopping/${client._id.toString()}/${shoppingId.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail (admin user, super client)', async () => {
+                await setUserAdmin(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/shopping/${client._id.toString()}/${shoppingId.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('admins have no permissions over super admins');
+            });
+
+            it('should fail (admin user, admin client - other)', async () => {
+                await setUserAdmin(db);
+                await setClientAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/shopping/${client._id.toString()}/${shoppingId.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('admins have no permissions over other admins');
+            });
+
+            it('should succeed (admin user, admin client - self)', async () => {
+                await setUserAdmin(db);
+                await setClientAdmin(db);
+                client._id = user._id;
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/shopping/${client._id.toString()}/${shoppingId.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should succeed (admin user, normal client)', async () => {
+                await setUserAdmin(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/shopping/${client._id.toString()}/${shoppingId.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+                expect(response.body.message).toBe('Success!');
+            });
+
+            it('should fail (normal user, super client)', async () => {
+                await setUserNormal(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/shopping/${client._id.toString()}/${shoppingId.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only admins are authorized for this action');
+            });
+
+            it('should fail (normal user, admin client)', async () => {
+                await setUserNormal(db);
+                await setClientAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/shopping/${client._id.toString()}/${shoppingId.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only admins are authorized for this action');
+            });
+
+            it('should fail (normal user, normal client - other)', async () => {
+                await setUserNormal(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/shopping/${client._id.toString()}/${shoppingId.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only admins are authorized for this action');
+            });
+
+            it('should fail (normal user, normal client - same)', async () => {
+                await setUserNormal(db);
+                await setClientNormal(db);
+                client._id = user._id
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/shopping/${client._id.toString()}/${shoppingId.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only admins are authorized for this action');
+            });
+
+            it('should fail with missing token', async () => {
+                cookie = '';
+
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/shopping/${client._id.toString()}/${shoppingId.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('token required to authenticate JWT');
+            });
+
+            it('should fail with invalid token', async () => {
+                cookie = invalidCookie;
+
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/shopping/${client._id.toString()}/${shoppingId.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(500);
+                expect(response.body.message).toBe('invalid signature');
+            });
+        });
+    });
 });

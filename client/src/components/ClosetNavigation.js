@@ -7,6 +7,7 @@ import { Tooltip } from '@mui/material';
 import Clothes from './Clothes';
 import Canvas from './Canvas';
 import Outfits from './Outfits';
+import Shopping from './Shopping';
 import AddItems from './AddItems';
 import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
 import { useUser } from './UserContext';
@@ -23,12 +24,14 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
     
     const [closetMode, setClosetMode] = useState(0);
     const [currCategory, setCurrCategory] = useState(category?.name);
-    const [showIcons, setShowIcons] = useState(window.innerWidth > 480 ? false : true);
+    const [showIcons, setShowIcons] = useState(window.innerWidth > 700 ? false : true);
     const [canvasItems, setCanvasItems] = useState([logoCanvasItem]);
 
     const [outfits, setOutfits] = useState([]);
     const [outfitEditMode, setOutfitEditMode] = useState(false);
     const [outfitToEdit, setOutfitToEdit] = useState(null);
+
+    const [shoppingItems, setShoppingItems] = useState([]);
 
     const { sidebarOpen, setSidebarOpen, mobileMode } = useSidebar();
     const { user } = useUser();
@@ -44,7 +47,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
 
     useEffect(() => {
         function handleResize() {
-            if (window.innerWidth <= 480) {
+            if (window.innerWidth <= 700) {
                 setShowIcons(true);
             } else {
                 setShowIcons(false);
@@ -62,7 +65,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
         if (category.name !== currCategory) {
             setCurrCategory(category.name);
             scrollToRef(ref);
-            if (closetMode !== 0 && closetMode !== 3) {
+            if (closetMode !== 0 && closetMode !== 4) {
                 setClosetMode(0);
             }
         }
@@ -164,10 +167,27 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
         getOutfits();
     }, [getOutfits]);
 
+    const getShoppingItems = useCallback(async () => {
+        try {
+            const response = await api.get(`/shopping/${client._id}`);
+            setShoppingItems(response.data);
+        } catch (err) {
+            setError({
+                message: 'There was an error fetching client shopping items.',
+                status: err.response.status
+            });
+        }
+    }, [client, setError]);
+
+    useEffect(() => {
+        getShoppingItems();
+    }, [getShoppingItems]);
+
     const closetModes = [
         { name: 'CLOTHES', icon: 'checkroom'},
         { name: `CANVAS (${canvasItems.length - 1})`, icon: 'swipe'},
         { name: `OUTFITS (${outfits.length})`, icon: 'dry_cleaning'},
+        { name: `SHOPPING (${shoppingItems.length})`, icon: 'sell'},
         { name: 'ADD ITEMS', icon: 'add_box'}
     ];
 
@@ -239,8 +259,13 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
                         updateOutfits={getOutfits} 
                         sendOutfitToCanvas={sendOutfitToCanvas} 
                     />
-                    <AddItems 
+                    <Shopping 
                         display={closetMode === 3}
+                        shoppingItems={shoppingItems}
+                        updateShoppingItems={getShoppingItems}
+                    />
+                    <AddItems   
+                        display={closetMode === 4}
                         category={category}
                         updateItems={updateItems} 
                     />

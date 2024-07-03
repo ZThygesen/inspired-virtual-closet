@@ -50,6 +50,9 @@ app.use('/files', auth.authenticateJWT, injectDb, filesRouter);
 import { outfitsRouter } from './routes/outfits.js';
 app.use('/outfits', auth.authenticateJWT, injectDb, outfitsRouter);
 
+import { shoppingRouter } from './routes/shopping.js';
+app.use('/shopping', auth.authenticateJWT, injectDb, shoppingRouter);
+
 if (process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production') {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);

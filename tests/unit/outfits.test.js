@@ -640,7 +640,7 @@ describe('outfits', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to update outfit: invalid or missing client id');
+            expect(err.message).toBe('failed to create outfit: invalid or missing client id');
         });
 
         it('should fail with invalid client id', async () => {
@@ -664,7 +664,7 @@ describe('outfits', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to update outfit: invalid or missing client id');
+            expect(err.message).toBe('failed to create outfit: invalid or missing client id');
         });
     });
 
