@@ -34,6 +34,15 @@ export default function CanvasTextbox({ textbox, selected, fontAdjust, handleSel
     }, [selected, fontAdjust]);
 
     useEffect(() => {
+        if (!selected) {
+            setIsEditing(false);
+            if (text === "") {
+                setText(textbox.initialText);
+            }
+        }
+    }, [selected, text, textbox]);
+
+    useEffect(() => {
         handleDrag();
     }, [canvasResized]);
 
@@ -152,7 +161,7 @@ export default function CanvasTextbox({ textbox, selected, fontAdjust, handleSel
                 onMouseLeave={onMouseLeave}
                 onClick={onClick}
 
-                onTouchStart={onMouseDown}
+                onTouchStart={() => { onClick(); onMouseDown(); }}
 
                 onTransform={onTransform}
 
@@ -186,6 +195,7 @@ export default function CanvasTextbox({ textbox, selected, fontAdjust, handleSel
                             type="text"
                             name="textbox"
                             value={text}
+                            placeholder={text}
                             onChange={e => setText(e.target.value)}
                             style={{
                                 position: 'absolute',
@@ -204,7 +214,8 @@ export default function CanvasTextbox({ textbox, selected, fontAdjust, handleSel
                                 lineHeight: textboxRef.current.lineHeight(),
                                 fontFamily: textboxRef.current.fontFamily(),
                                 transformOrigin: 'left top',
-                                textAlign: textboxRef.current.align()
+                                textAlign: textboxRef.current.align(),
+                                touchAction: 'manipulation'
                             }}
                             autoFocus
                         />

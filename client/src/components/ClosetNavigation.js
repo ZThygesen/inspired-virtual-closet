@@ -22,6 +22,9 @@ const logoCanvasItem = {
 export default function ClosetNavigation({ sidebarRef, client, category, getCategories }) {
     const { setError } = useError();
     
+    const closetTitleRef = useRef();
+    const [closetTitleHeight, setClosetTitleHeight] = useState(closetTitleRef?.current?.offsetHeight || 0);
+
     const [closetMode, setClosetMode] = useState(0);
     const [currCategory, setCurrCategory] = useState(category?.name);
     const [showIcons, setShowIcons] = useState(window.innerWidth > 700 ? false : true);
@@ -47,11 +50,21 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
 
     useEffect(() => {
         function handleResize() {
-            if (window.innerWidth <= 700) {
-                setShowIcons(true);
+            if (user?.isAdmin || user?.isSuperAdmin) {
+                if (window.innerWidth <= 700) {
+                    setShowIcons(true);
+                } else {
+                    setShowIcons(false);
+                }
             } else {
-                setShowIcons(false);
+                if (window.innerWidth <= 600) {
+                    setShowIcons(true);
+                } else {
+                    setShowIcons(false);
+                }
             }
+
+            setClosetTitleHeight(closetTitleRef.current.offsetHeight);
         }
 
         window.addEventListener('resize', handleResize);
@@ -59,7 +72,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
         return () => {
             window.removeEventListener('resize', handleResize);
         }
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         if (category.name !== currCategory || currCategoryClicked) {
@@ -195,8 +208,8 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
 
     return (
         <>
-            <ClosetNavigationContainer className={`${sidebarOpen ? 'sidebar-open' : ''} ${closetMode === 1 && mobileMode ? 'canvas-mode-mobile' : ''}`}>
-                <div className="closet-title">
+            <ClosetNavigationContainer className={`${sidebarOpen ? 'sidebar-open' : ''} ${closetMode === 1 && mobileMode ? 'canvas-mode-mobile' : ''} ${user?.isAdmin || user?.isSuperAdmin ? 'user-admin' : 'user-non-admin'}`}>
+                <div className="closet-title" ref={closetTitleRef}>
                     {!sidebarOpen &&
                         <Tooltip title="Open Sidebar">
                             <button className="material-icons open-sidebar-icon" onClick={() => setSidebarOpen(true)}>chevron_right</button>
@@ -209,7 +222,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
                         </Tooltip>
                     }
                 </div>
-                <div className={`closet-options ${closetMode === 1 ? 'canvas-mode' : ''}`}>
+                <div className={`closet-options ${closetMode === 1 ? 'canvas-mode' : ''}`} style={{ top: `${closetMode === 1 ? `${closetTitleHeight}px` : 'unset'}` }}>
                     <ul>
                         {
                             closetModes.map((mode, index) => (

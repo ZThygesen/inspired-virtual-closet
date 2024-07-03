@@ -13,7 +13,7 @@ export const ClosetNavigationContainer = styled.div`
     .closet-title,
     .closet-options {
         width: 100%;
-        height: var(--subheader-height);
+        min-height: var(--subheader-height);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -25,6 +25,27 @@ export const ClosetNavigationContainer = styled.div`
     .closet-title {
         padding: 12px 60px;
         text-align: center;
+    }
+
+    .closet-options {
+        align-items: flex-end;
+    }
+
+    .closet-options.canvas-mode {
+        z-index: 249;
+        position: absolute;
+        /* top: calc(var(--subheader-height)); */
+        transform: translateY(-100%); 
+        transition: transform 0.3s;
+
+        & li {
+            box-shadow: none;
+        }
+    }
+
+    .closet-title:hover + .closet-options.canvas-mode,
+    .closet-options.canvas-mode:hover {
+        transform: translateY(0%);
     }
 
     .open-sidebar-icon,
@@ -54,27 +75,6 @@ export const ClosetNavigationContainer = styled.div`
         font-size: 36px;
         letter-spacing: 2px;
         font-weight: 600;
-    }
-
-    .closet-options {
-        align-items: flex-end;
-    }
-
-    .closet-options.canvas-mode {
-        z-index: 249;
-        position: absolute;
-        top: calc(var(--subheader-height));
-        transform: translateY(-100%); 
-        transition: transform 0.3s;
-
-        & li {
-            box-shadow: none;
-        }
-    }
-
-    .closet-title:hover + .closet-options.canvas-mode,
-    .closet-options.canvas-mode:hover {
-        transform: translateY(0%);
     }
 
     ul {
@@ -150,8 +150,14 @@ export const ClosetNavigationContainer = styled.div`
         }
     }
 
-    @media (min-width: 800px) {
-        &.sidebar-open:not(.canvas-mode-mobile) {
+    @media (min-width: 900px) {
+        &.sidebar-open.user-non-admin:not(.canvas-mode-mobile) {
+            margin-left: 320px;
+        }
+    }
+
+    @media (min-width: 1050px) {
+        &.sidebar-open.user-admin:not(.canvas-mode-mobile) {
             margin-left: 320px;
         }
     }

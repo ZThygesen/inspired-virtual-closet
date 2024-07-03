@@ -174,14 +174,6 @@ export default function VirtualCloset() {
         
     }
 
-    // function openSidebar() {
-    //     setSidebarOpen(true);
-    // }
-
-    // function closeSidebar() {
-    //     setSidebarOpen(false);
-    // }
-
     return (
         <ClientProvider clientId={client._id}>
             <SidebarProvider>
