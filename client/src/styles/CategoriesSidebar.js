@@ -90,8 +90,11 @@ export const CategoriesSidebarContainer = styled.div`
             font-weight: 600;
             font-family: 'Fashion';
             letter-spacing: 2px;
-            word-break: break-word;
             text-align: left;
+        }
+
+        & .category-name {
+            word-break: break-word;
         }
     }
 
