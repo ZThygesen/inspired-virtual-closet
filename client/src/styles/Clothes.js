@@ -30,11 +30,24 @@ export const ClothingCardContainer = styled.div`
     justify-content: center;
     gap: 8px;
     box-shadow: var(--box-shadow);
-    padding: 20px;
+    padding: 48px 20px 20px 20px;
     border-radius: 25px;
     width: 250px;
     max-width: 250px;
     margin: 12px;
+    position: relative;
+
+    &.on-canvas {
+        box-shadow: var(--active-shadow);
+    }
+
+    .on-canvas-icon {
+        font-size: 36px !important;
+        color: var(--secondary) !important;
+        position: absolute;
+        top: 6px;
+        right: 12px;
+    }
 
     .file-name {
         display: flex;
@@ -90,6 +103,10 @@ export const ClothingCardContainer = styled.div`
 
     .item-option.important {
         color: var(--secondary);
+    }
+
+    .item-option.sent-to-canvas {
+        color: var(--primary);
     }
 `;
 

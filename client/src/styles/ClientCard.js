@@ -15,7 +15,7 @@ export const ClientCardContainer = styled.div`
     position: relative;
 
     &.is-self {
-        box-shadow: 0 3px 5px rgba(244, 120, 83);
+        box-shadow: var(--active-shadow);
     }
 
     .you-icon,

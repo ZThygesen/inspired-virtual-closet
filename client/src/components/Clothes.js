@@ -8,7 +8,7 @@ import cuid from 'cuid';
 import Modal from './Modal';
 import { useClient } from './ClientContext';
 
-export default function Clothes({ display, category, updateItems, addCanvasItem }) {
+export default function Clothes({ display, category, updateItems, addCanvasItem, canvasItems }) {
     const { setError } = useError();
 
     const [itemToSwapCategory, setItemToSwapCategory] = useState({});
@@ -162,6 +162,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem 
                             <ClothingCard
                                 item={item}
                                 editable={category._id !== -1}
+                                onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === item.gcsId)}
                                 sendToCanvas={sendToCanvas}
                                 swapCategory={swapCategory}
                                 editItem={editItem}

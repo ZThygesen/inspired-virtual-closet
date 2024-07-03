@@ -6,6 +6,7 @@ export const SidebarProvider = ({ children }) => {
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 800 ? true : false);
     const [mobileMode, setMobileMode] = useState(window.innerWidth <= 800 ? true : false);
     const [canvasMode, setCanvasMode] = useState(false);
+    const [currCategoryClicked, setCurrCategoryClicked] = useState(false);
 
     useEffect(() => {
         if (mobileMode) {
@@ -33,7 +34,7 @@ export const SidebarProvider = ({ children }) => {
     }, [canvasMode]);
 
     return (
-        <SidebarContext.Provider value={{ sidebarOpen, setSidebarOpen, mobileMode, setMobileMode, canvasMode, setCanvasMode }}>
+        <SidebarContext.Provider value={{ sidebarOpen, setSidebarOpen, mobileMode, setMobileMode, canvasMode, setCanvasMode, currCategoryClicked, setCurrCategoryClicked }}>
             {children}
         </SidebarContext.Provider>
     );

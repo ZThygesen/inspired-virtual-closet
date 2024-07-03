@@ -33,7 +33,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
 
     const [shoppingItems, setShoppingItems] = useState([]);
 
-    const { sidebarOpen, setSidebarOpen, mobileMode } = useSidebar();
+    const { sidebarOpen, setSidebarOpen, mobileMode, currCategoryClicked, setCurrCategoryClicked } = useSidebar();
     const { user } = useUser();
 
     const ref = useRef();
@@ -62,14 +62,15 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
     }, []);
 
     useEffect(() => {
-        if (category.name !== currCategory) {
+        if (category.name !== currCategory || currCategoryClicked) {
             setCurrCategory(category.name);
             scrollToRef(ref);
             if (closetMode !== 0 && closetMode !== 4) {
                 setClosetMode(0);
             }
+            setCurrCategoryClicked(false);
         }
-    }, [category, currCategory, closetMode]);
+    }, [category, currCategory, closetMode, currCategoryClicked, setCurrCategoryClicked]);
 
     async function updateItems(animateLoad = false) {
         await getCategories(category, animateLoad);
@@ -82,8 +83,9 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
         if (type === 'image') {
             canvasItem = {
                 canvasId: cuid(),
+                itemId: item.gcsId,
                 type: type,
-                src: item.fullFileUrl
+                src: item.fullFileUrl,
             }
         } else {
             canvasItem = {
@@ -236,7 +238,8 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
                         display={closetMode === 0} 
                         category={category} 
                         updateItems={updateItems} 
-                        addCanvasItem={addCanvasItem} 
+                        addCanvasItem={addCanvasItem}
+                        canvasItems={canvasItems}
                     />
                     { user?.isAdmin &&
                         <Canvas 

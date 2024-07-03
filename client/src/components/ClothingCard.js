@@ -5,7 +5,7 @@ import Input from './Input';
 import { ClothingCardContainer } from '../styles/Clothes';
 import { useUser } from './UserContext';
 
-export default function ClothingCard({ item, editable, sendToCanvas, swapCategory, editItem, deleteItem }) {
+export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, swapCategory, editItem, deleteItem }) {
     const [editOpen, setEditOpen] = useState(false);
     const [newItemName, setNewItemName] = useState(item.fileName);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -34,7 +34,12 @@ export default function ClothingCard({ item, editable, sendToCanvas, swapCategor
 
     return (
         <>
-            <ClothingCardContainer>
+            <ClothingCardContainer className={onCanvas ? 'on-canvas' : ''}>
+                { onCanvas &&
+                    <Tooltip title="On Canvas">
+                        <span className="material-icons on-canvas-icon">swipe</span>
+                    </Tooltip>
+                }
                 <p className="file-name">{item.fileName}</p>
                 <div className="clothing-card-img">
                     <img
@@ -47,7 +52,7 @@ export default function ClothingCard({ item, editable, sendToCanvas, swapCategor
                     { user?.isAdmin &&
                         <Tooltip title="Send to Canvas">
                             <button 
-                                className='material-icons item-option important'
+                                className="material-icons item-option important"
                                 onClick={() => sendToCanvas(item)}
                             >
                                 shortcut
