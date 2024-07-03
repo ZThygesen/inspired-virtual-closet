@@ -36,11 +36,13 @@ export default function ClothingCard({ item, editable, sendToCanvas, swapCategor
         <>
             <ClothingCardContainer>
                 <p className="file-name">{item.fileName}</p>
-                <img
-                    src={item.smallFileUrl}
-                    alt={item.fileName}
-                    onClick={() => setImageModalOpen(true)}
-                />
+                <div className="clothing-card-img">
+                    <img
+                        src={item.smallFileUrl}
+                        alt={item.fileName}
+                        onClick={() => setImageModalOpen(true)}
+                    />
+                </div>
                 <div className="item-options">
                     { user?.isAdmin &&
                         <Tooltip title="Send to Canvas">

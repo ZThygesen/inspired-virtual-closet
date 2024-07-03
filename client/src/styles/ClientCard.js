@@ -1,23 +1,36 @@
 import styled from 'styled-components';
 
 export const ClientCardContainer = styled.div`
-    height: fit-content;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 8px;
     box-shadow: var(--box-shadow);
+    padding: 48px 20px 40px 20px;
     border-radius: 25px;
-    padding: 40px 20px;
     background-color: var(--white);
+    width: 300px;
+    max-width: 300px;
     position: relative;
 
+    &.is-self {
+        box-shadow: 0 3px 5px rgba(244, 120, 83);
+    }
+
+    .you-icon,
     .admin-icon {
         font-size: 38px !important;
         color: var(--secondary) !important;
         position: absolute;
         top: 6px;
+    }
+
+    .you-icon {
+        left: 6px;
+    }
+
+    .admin-icon {
         right: 6px;
     }
 
@@ -32,6 +45,9 @@ export const ClientCardContainer = styled.div`
 
     .client-email {
         font-size: 18px;
+        word-break: break-word;
+        text-align: center;
+        flex-grow: 1;
     }
 
     .client-options {
@@ -42,7 +58,7 @@ export const ClientCardContainer = styled.div`
 
     .client-options button {
         font-size: 36px;
-        color: #a7a7a7;
+        color: var(--material-btn);
         background: transparent;
         border-radius: 50%;
         padding: 8px;
