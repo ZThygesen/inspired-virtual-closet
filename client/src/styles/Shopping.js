@@ -25,8 +25,25 @@ export const ShoppingContainer = styled.div`
     }
 
     .shopping-subtitle {
+        display: flex;
+        align-items: center;
+        gap: 8px; 
         font-size: 28px;
         font-weight: 500;
+        
+
+        &.purchased {
+            color: var(--primary);
+        }
+
+        &.not-purchased {
+            color: var(--secondary);
+        }
+
+        .purchased-icon {
+            font-size: 32px !important;
+            color: var(--primary);
+        }
     }
 
     .shopping-items {
@@ -71,7 +88,7 @@ export const ShoppingCardContainer = styled.div`
     padding: 20px;
     border-radius: 25px;
     width: 300px;
-    max-width: 350px;
+    max-width: 300px;
     margin: 12px;
     position: relative;
 
@@ -175,7 +192,7 @@ export const ShoppingCardContainer = styled.div`
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 15px 0 15px 0;
+        margin: 5px 0 15px 0;
     }
 
     .shopping-item-option {

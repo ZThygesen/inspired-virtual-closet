@@ -137,7 +137,7 @@ export default function Shopping({ display, shoppingItems, updateShoppingItems }
                 <div className="shopping-items-container">
                     { notPurchased.length > 0 &&
                         <>
-                        <h3 className="shopping-subtitle">Not Purchased</h3>
+                        <h3 className="shopping-subtitle not-purchased">TODO: Purchase Items</h3>
                         <div className="shopping-items">
                             {
                                 notPurchased?.map(shoppingItem => (
@@ -160,7 +160,7 @@ export default function Shopping({ display, shoppingItems, updateShoppingItems }
 
                     { purchased.length > 0 &&
                         <>
-                        <h3 className="shopping-subtitle">Purchased</h3>
+                        <h3 className="shopping-subtitle purchased">Purchased <span className="material-icons purchased-icon">check</span></h3>
                         <div className="shopping-items">
                             {
                                 purchased?.map(shoppingItem => (
@@ -217,9 +217,9 @@ export default function Shopping({ display, shoppingItems, updateShoppingItems }
                             onChange={e => setNewImageLink(e.target.value)}
                         />
                         <Input 
-                            type="text"
+                            type="textarea"
                             id="notes"
-                            label="Notes"
+                            label="Notes &nbsp;"
                             value={newNotes}
                             onChange={e => setNewNotes(e.target.value)}
                             required={false}

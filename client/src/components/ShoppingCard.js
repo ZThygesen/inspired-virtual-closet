@@ -160,27 +160,6 @@ export default function ShoppingCard({ shoppingItem, editShoppingItem, togglePur
                 </div>
             </ShoppingCardContainer>
             <Modal
-                open={confirmDeleteOpen}
-                closeFn={() => setConfirmDeleteOpen(false)}
-            >
-                <>
-                    <h2 className="modal-title">DELETE SHOPPING ITEM</h2>
-                    <div className="modal-content">
-                        <p className="medium">Are you sure you want to delete this shopping item?</p>
-                        <p className="large bold underline">{shoppingItem.itemName}</p>
-                        <img
-                            src={shoppingItem.imageLink}
-                            alt={shoppingItem.itemName}
-                            className="delete-img"
-                        />
-                    </div>
-                    <div className="modal-options">
-                        <button onClick={() => setConfirmDeleteOpen(false)}>Cancel</button>
-                        <button onClick={handleSubmitDelete}>Delete</button>
-                    </div>
-                </>
-            </Modal>
-            <Modal
                 open={editOpen}
                 closeFn={handleCloseEdit}
                 isForm={true}
@@ -211,17 +190,45 @@ export default function ShoppingCard({ shoppingItem, editShoppingItem, togglePur
                             onChange={e => setNewImageLink(e.target.value)}
                         />
                         <Input 
-                            type="text"
+                            type="textarea"
                             id="notes"
-                            label="Notes"
+                            label="Notes &nbsp;"
                             value={newNotes}
                             onChange={e => setNewNotes(e.target.value)}
                             required={false}
+                        />
+                        <Input 
+                            type="checkbox"
+                            id="purchased"
+                            label="Purchased"
+                            value={newPurchased}
+                            onChange={e => setNewPurchased(e.target.checked)}
                         />
                     </div>
                     <div className="modal-options">
                         <button type="button" onClick={handleCloseEdit}>Cancel</button>
                         <button type="submit">Save</button>
+                    </div>
+                </>
+            </Modal>
+            <Modal
+                open={confirmDeleteOpen}
+                closeFn={() => setConfirmDeleteOpen(false)}
+            >
+                <>
+                    <h2 className="modal-title">DELETE SHOPPING ITEM</h2>
+                    <div className="modal-content">
+                        <p className="medium">Are you sure you want to delete this shopping item?</p>
+                        <p className="large bold underline">{shoppingItem.itemName}</p>
+                        <img
+                            src={shoppingItem.imageLink}
+                            alt={shoppingItem.itemName}
+                            className="delete-img"
+                        />
+                    </div>
+                    <div className="modal-options">
+                        <button onClick={() => setConfirmDeleteOpen(false)}>Cancel</button>
+                        <button onClick={handleSubmitDelete}>Delete</button>
                     </div>
                 </>
             </Modal>
