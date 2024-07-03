@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useUser } from './UserContext';
 
 const SidebarContext = createContext();
 
@@ -6,7 +7,9 @@ export const SidebarProvider = ({ children }) => {
     const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 800 ? true : false);
     const [mobileMode, setMobileMode] = useState(window.innerWidth <= 800 ? true : false);
     const [canvasMode, setCanvasMode] = useState(false);
+    const [currCategoryClicked, setCurrCategoryClicked] = useState(false);
 
+    const { user } = useUser();
     useEffect(() => {
         if (mobileMode) {
             setSidebarOpen(false);
@@ -17,23 +20,33 @@ export const SidebarProvider = ({ children }) => {
     useEffect(() => {
         function handleResize() {
             if (!canvasMode) {
-                if (window.innerWidth <= 800) {
-                    setMobileMode(true);
+                if (user?.isAdmin || user?.isSuperAdmin) {
+                    if (window.innerWidth <= 1050) {
+                        setMobileMode(true);
+                    } else {
+                        setMobileMode(false);
+                    }
                 } else {
-                    setMobileMode(false);
+                    if (window.innerWidth <= 900) {
+                        setMobileMode(true);
+                    } else {
+                        setMobileMode(false);
+                    }
                 }
+                
             }
         }
 
+        handleResize();
         window.addEventListener('resize', handleResize);
 
         return () => {
             window.removeEventListener('resize', handleResize);
         }
-    }, [canvasMode]);
+    }, [canvasMode, user]);
 
     return (
-        <SidebarContext.Provider value={{ sidebarOpen, setSidebarOpen, mobileMode, setMobileMode, canvasMode, setCanvasMode }}>
+        <SidebarContext.Provider value={{ sidebarOpen, setSidebarOpen, mobileMode, setMobileMode, canvasMode, setCanvasMode, currCategoryClicked, setCurrCategoryClicked }}>
             {children}
         </SidebarContext.Provider>
     );

@@ -27,7 +27,7 @@ export const CanvasContainer = styled.div`
         align-items: center;
 
         & .main-title {
-            font-size: 36px;
+            font-size: 28px;
             font-family: 'Fashion';
             font-weight: 600;
             letter-spacing: 2px;
@@ -36,7 +36,7 @@ export const CanvasContainer = styled.div`
         & .sub-title,
         & .sub-title span {
             max-width: 100%;
-            font-size: 20px;
+            font-size: 16px;
             text-align: center;
 
             & span {
@@ -47,15 +47,15 @@ export const CanvasContainer = styled.div`
 
     .canvas-options {
         display: flex;
-        gap: 8px;
+        /* gap: 8px; */
     }
 
     .canvas-options button {
-        padding: 6px;
+        padding: 4px;
         background: none;
         border-radius: 50%;
         cursor: pointer;
-        font-size: 38px !important;
+        font-size: 26px !important;
         color: var(--black) !important;
         transition: all 0.1s;
 
@@ -79,5 +79,26 @@ export const CanvasContainer = styled.div`
         box-shadow: var(--canvas-shadow);
         border-radius: 0 0 25px 25px;
         /* width: 100% !important; */
+    }
+
+    @media (min-width: 600px) {
+        & .canvas-title {
+            & .main-title {
+                font-size: 36px;
+            }
+
+            & .sub-title {
+                font-size: 20px;
+            }
+        }
+
+        .canvas-options {
+            gap: 8px;
+        }
+
+        .canvas-options button {
+            padding: 6px;
+            font-size: 38px !important;
+        }
     }
 `;

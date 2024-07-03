@@ -59,7 +59,7 @@ export default function Home() {
             <HomeContainer>
                 <img src={logo} alt="Edie Styles" className="big-logo" />
                 <div className="home-options">
-                    <h1>Virtual Closet</h1>
+                    <h1>Inspired<br />Virtual Closet</h1>
                     { isAuthenticated ? 
                         ( isAdmin ?
                             <ActionButton variant={'primary'} onClick={() => navigate('clients')}>Manage Clients</ActionButton>

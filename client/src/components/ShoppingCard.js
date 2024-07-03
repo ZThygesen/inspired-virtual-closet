@@ -87,7 +87,7 @@ export default function ShoppingCard({ shoppingItem, editShoppingItem, togglePur
         <>
             <ShoppingCardContainer>
                 <p className="shopping-item-name">{shoppingItem.itemName}</p>
-                <a href={shoppingItem.itemLink} target="_blank" rel="noreferrer">
+                <a className="shopping-card-img" href={shoppingItem.itemLink} target="_blank" rel="noreferrer">
                     <img
                         src={shoppingItem.imageLink}
                         alt={shoppingItem.itemName}

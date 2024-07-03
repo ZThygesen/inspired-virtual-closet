@@ -63,11 +63,13 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
         <>
             <OutfitCardContainer>
                 <p className="outfit-name">{outfit.outfitName}</p>
-                <img
-                    src={outfit.outfitUrl}
-                    alt={outfit.outfitName}
-                    onClick={() => setImageModalOpen(true)}
-                />
+                <div className="outfit-card-img">
+                    <img
+                        src={outfit.outfitUrl}
+                        alt={outfit.outfitName}
+                        onClick={() => setImageModalOpen(true)}
+                    />
+                </div>
                 <div className="outfit-options">
                     { user?.isAdmin &&
                     <>

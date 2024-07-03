@@ -106,16 +106,19 @@ export const ShoppingCardContainer = styled.div`
         flex-grow: 1;
     }
 
-    a {
+    a.shopping-card-img {
         width: 100%;
+        height: 250px;
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
     img {
+        max-width: 250px;
+        max-height: 250px;
         width: auto;
-        height: 250px;
+        height: auto;
         cursor: pointer;
         margin: 12px 0;
         border-radius: 25px;

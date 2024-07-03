@@ -36,7 +36,12 @@ export default function ClientCard({ client, editClient, deleteClient }) {
 
     return (
         <>
-            <ClientCardContainer>
+            <ClientCardContainer className={user?._id === client?._id ? 'is-self' : ''}>
+                { user?._id === client?._id &&
+                    <Tooltip title="You">
+                        <span className="material-icons you-icon">person</span>
+                    </Tooltip>
+                }
                 { client?.isSuperAdmin ?
                     <Tooltip title="Super Admin">
                         <span className="material-icons admin-icon">star</span>

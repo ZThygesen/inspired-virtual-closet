@@ -16,7 +16,7 @@ export const OutfitsContainer = styled.div`
     .outfits {
         display: flex;
         flex-wrap: wrap;
-        align-items: center;
+        align-items: stretch;
         justify-content: center;
     }
 `;
@@ -29,24 +29,36 @@ export const OutfitCardContainer = styled.div`
     box-shadow: var(--box-shadow);
     padding: 20px;
     border-radius: 25px;
-    max-width: 250px;
+    width: 300px;
+    max-width: 300px;
     margin: 12px;
 
-    p {
+    .outfit-name {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         font-size: 28px;
         color: var(--black);
         font-family: 'Fashion';
         font-weight: 600;
         letter-spacing: 2px;
         text-align: center;
+        word-break: break-word;
+        flex-grow: 1;
     }
 
-    .outfit-name {
-        word-break: break-word;
+    .outfit-card-img {
+        width: 100%;
+        height: 250px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     img {
-        width: 250px;
+        max-width: 250px;
+        max-height: 250px;
+        width: auto;
         height: auto;
         cursor: pointer;
     }

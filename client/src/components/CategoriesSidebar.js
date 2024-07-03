@@ -17,7 +17,7 @@ export default function CategoriesSidebar({ sidebarRef, categories, activeCatego
     const [categoryToDelete, setCategoryToDelete] = useState({});
     const [settingsOpen, setSettingsOpen] = useState(false);
 
-    const { sidebarOpen, setSidebarOpen, mobileMode } = useSidebar();
+    const { sidebarOpen, setSidebarOpen, mobileMode, setCurrCategoryClicked } = useSidebar();
 
     const ref = useRef();
 
@@ -123,6 +123,10 @@ export default function CategoriesSidebar({ sidebarRef, categories, activeCatego
                                     setCategory(category);
                                     if (mobileMode) {
                                         setSidebarOpen(false);
+                                    }
+
+                                    if (category._id === activeCategory?._id) {
+                                        setCurrCategoryClicked(true);
                                     }
                                 }}
                                 className={category._id === activeCategory?._id ? 'active category-button' : 'category-button'}
