@@ -4,7 +4,7 @@ import { agent as supertest } from 'supertest';
 import { MongoClient, ObjectId } from 'mongodb';
 import jwt from 'jsonwebtoken';
 
-describe('clients', () => {
+describe('shopping', () => {
     let user;
     let token;
     let cookie;
@@ -748,33 +748,5 @@ describe('clients', () => {
             const shoppingItem = await collection.findOne({ _id: data._id });
             expect(shoppingItem).toBeTruthy();
         });
-
-    //     it('should fail with invalid client id in request', async () => {
-    //         // perform action to test
-    //         const response = await agent(app)
-    //             .delete(`/api/clients/not-valid-id`);
-            
-    //         // perform checks
-    //         expect(response.status).toBe(400);
-    //         expect(response.body.message).toBe('failed to delete client: invalid or missing client id');
-
-    //         await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-    //         const client = await collection.findOne({ _id: data._id });
-    //         expect(client).toStrictEqual(data);
-    //     });
-
-    //     it('should fail if no client found', async () => {
-    //         // perform action to test
-    //         const response = await agent(app)
-    //             .delete(`/api/clients/${(new ObjectId).toString()}`);
-            
-    //         // perform checks
-    //         expect(response.status).toBe(404);
-    //         expect(response.body.message).toBe('deletion failed: client not found with given client id');
-
-    //         await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
-    //         const client = await collection.findOne({ _id: data._id });
-    //         expect(client).toStrictEqual(data);
-    //     });
     });
 });

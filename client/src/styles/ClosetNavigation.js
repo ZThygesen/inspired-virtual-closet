@@ -34,7 +34,6 @@ export const ClosetNavigationContainer = styled.div`
     .closet-options.canvas-mode {
         z-index: 249;
         position: absolute;
-        /* top: calc(var(--subheader-height)); */
         transform: translateY(-100%); 
         transition: transform 0.3s;
 
@@ -44,7 +43,8 @@ export const ClosetNavigationContainer = styled.div`
     }
 
     .closet-title:hover + .closet-options.canvas-mode,
-    .closet-options.canvas-mode:hover {
+    .closet-options.canvas-mode:hover,
+    .closet-options.canvas-mode.expanded {
         transform: translateY(0%);
     }
 
@@ -71,10 +71,32 @@ export const ClosetNavigationContainer = styled.div`
     }
 
     .client-closet {
+        display: flex;
+        align-items: center;
+        gap: 4px;
         font-family: 'Fashion';
-        font-size: 36px;
+        font-size: 30px;
         letter-spacing: 2px;
         font-weight: 600;
+        position: relative;
+
+        & .expand-closet-options {
+            font-size: 36px !important;
+            background: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: 0.3s;
+
+            &:hover {
+                background-color: var(--material-btn-bg);
+            }
+        }
+    }
+
+    .closet-title.expanded {
+        & .expand-closet-options {
+            transform: rotate(180deg);
+        }
     }
 
     ul {

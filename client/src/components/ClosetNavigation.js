@@ -36,6 +36,8 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
 
     const [shoppingItems, setShoppingItems] = useState([]);
 
+    const [optionsExpanded, setOptionsExpanded] = useState(false);
+
     const { sidebarOpen, setSidebarOpen, mobileMode, currCategoryClicked, setCurrCategoryClicked } = useSidebar();
     const { user } = useUser();
 
@@ -67,12 +69,17 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
             setClosetTitleHeight(closetTitleRef.current.offsetHeight);
         }
 
+        handleResize();
         window.addEventListener('resize', handleResize);
 
         return () => {
             window.removeEventListener('resize', handleResize);
         }
     }, [user]);
+
+    function handleExpandOptions() {
+        setOptionsExpanded(current => !current);
+    }
 
     useEffect(() => {
         if (category.name !== currCategory || currCategoryClicked) {
@@ -209,20 +216,27 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
     return (
         <>
             <ClosetNavigationContainer className={`${sidebarOpen ? 'sidebar-open' : ''} ${closetMode === 1 && mobileMode ? 'canvas-mode-mobile' : ''} ${user?.isAdmin || user?.isSuperAdmin ? 'user-admin' : 'user-non-admin'}`}>
-                <div className="closet-title" ref={closetTitleRef}>
+                <div className={`closet-title ${optionsExpanded ? 'expanded' : ''}`} ref={closetTitleRef}>
                     {!sidebarOpen &&
                         <Tooltip title="Open Sidebar">
                             <button className="material-icons open-sidebar-icon" onClick={() => setSidebarOpen(true)}>chevron_right</button>
                         </Tooltip>
                     }
-                    <h1 className="client-closet">{`${client.firstName.toUpperCase()} ${client.lastName.toUpperCase()}'S CLOSET`}</h1>
+                    <h1 className="client-closet">
+                        {`${client.firstName.toUpperCase()} ${client.lastName.toUpperCase()}`}
+                        { closetMode === 1 &&
+                            <Tooltip title="Expand Options" placement="top">
+                                <button className="material-icons expand-closet-options" onClick={handleExpandOptions}>expand_more</button>
+                            </Tooltip>
+                        }
+                    </h1>
                     { user?.isAdmin &&
                         <Tooltip title="Clients">
                             <Link to={'/clients'} className="material-icons clients-icon">people</Link>
                         </Tooltip>
                     }
                 </div>
-                <div className={`closet-options ${closetMode === 1 ? 'canvas-mode' : ''}`} style={{ top: `${closetMode === 1 ? `${closetTitleHeight}px` : 'unset'}` }}>
+                <div className={`closet-options ${closetMode === 1 ? 'canvas-mode' : ''} ${optionsExpanded ? 'expanded' : ''}`} style={{ top: `${closetMode === 1 ? `${closetTitleHeight}px` : 'unset'}` }}>
                     <ul>
                         {
                             closetModes.map((mode, index) => (
