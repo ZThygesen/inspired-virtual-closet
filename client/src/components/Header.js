@@ -24,17 +24,24 @@ const AppHeader = styled.header`
         font-family: 'Mallows';
         color: var(--white);
         font-size: 60px;
+        white-space: nowrap;
         cursor: pointer;
     }
 
-    .logout {
+    .links {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .logout,
+    .main-site {
         font-size: 24px;
         font-weight: 600;
         font-family: 'Fashion';
         color: var(--white);
         letter-spacing: 2px;
         white-space: nowrap;
-        padding: 8px 16px;
         background: none;
         cursor: pointer;
         transition: 0.1s;
@@ -42,6 +49,17 @@ const AppHeader = styled.header`
 
         &:hover {
             color: var(--black);
+        }
+    }
+
+    @media (min-width: 450px) {
+        .links {
+            flex-direction: row;
+            gap: 28px;
+        }
+
+        .logout,
+        .main-site {
         }
     }
 
@@ -81,11 +99,16 @@ export default function Header() {
         <>
             <AppHeader>
                 <Link to="/" className="logo">Edie styles</Link>
-                { user && 
-                    <button className="logout" onClick={handleLogout}>
-                        Log Out
-                    </button>
-                }
+                <div className="links">
+                    <a className="main-site" href="https://ediestyles.com/" target="_blank" rel="noreferrer">
+                        Main Site
+                    </a>
+                    { user &&
+                        <button className="logout" onClick={handleLogout}>
+                            Log Out
+                        </button>
+                    }
+                </div>
             </AppHeader>
             <Loading open={loading} />
         </>
