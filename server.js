@@ -1,19 +1,16 @@
 import express from 'express';
 import process from 'process';
 import { config } from 'dotenv';
-import { mongoConnect } from './mongoConnect.js';
-import { googleConnect } from './googleConnect.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { Server } from 'socket.io';
-import http from 'http';
+import { helpers } from './helpers.js';
+import { auth } from './routes/auth.js'
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
-const server = http.createServer(app);
-const io = new Server(server)
-
 app.use(express.json());
+app.use(cookieParser());
 config();
 const port = process.env.PORT || 5000;
 
@@ -23,10 +20,8 @@ let serviceAuth;
 let bucket;
 async function connect() {
     try {
-        const mongoClient = await mongoConnect();
-        db = mongoClient.db(process.env.DB_NAME);
-
-        ({ serviceAuth, bucket } = await googleConnect());
+        db = await helpers.mongoConnect();
+        ({ serviceAuth, bucket } = await helpers.googleConnect());
     } catch (err) {
         console.error(err);
     }
@@ -34,33 +29,29 @@ async function connect() {
 
 await connect();
 
-import categories from './routes/categories.js';
-app.use('/categories', categories);
+function injectDb(req, res, next) {
+    req.locals = { db, bucket };
+    next();
+}
 
-import clients from './routes/clients.js';
-app.use('/api/clients', clients);
+// routes
+import { authRouter } from './routes/auth.js';
+app.use('/google-auth', injectDb, authRouter);
 
-import files from './routes/files.js';
-app.use('/files', files);
+import { categoriesRouter } from './routes/categories.js';
+app.use('/categories', injectDb, auth.authenticateJWT, categoriesRouter);
 
-import outfits from './routes/outfits.js';
-app.use('/outfits', outfits);
+import { clientsRouter } from './routes/clients.js';
+app.use('/api/clients', injectDb, auth.authenticateJWT, clientsRouter);
 
-app.post('/password', async (req, res, next) => {
-    try {
-        const collection = db.collection('password');
-        const result = await collection.find({ password: req.body.password }).toArray();
+import { filesRouter } from './routes/files.js';
+app.use('/files', injectDb, auth.authenticateJWT, filesRouter);
 
-        if (result.length === 0) {
-            res.json(false);
-        } else {
-            res.json(true);
-        }
+import { outfitsRouter } from './routes/outfits.js';
+app.use('/outfits', injectDb, auth.authenticateJWT, outfitsRouter);
 
-    } catch (err) {
-        next(err);
-    }
-});
+import { shoppingRouter } from './routes/shopping.js';
+app.use('/shopping', injectDb, auth.authenticateJWT, shoppingRouter);
 
 if (process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production') {
     const __filename = fileURLToPath(import.meta.url);
@@ -72,13 +63,21 @@ if (process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || p
     });
 }
 
+// error handling
 app.use((err, req, res, next) => {
     const status = err.status || 500;
-    console.error(`\nError: ${err.message}\nStatus: ${status}\nStack:\n${err.stack}\n`);
+
+    if (process.env.NODE_ENV !== 'test') {
+        console.error(`\nError: ${err.message}\nStatus: ${status}\nStack:\n${err.stack}\n`); 
+    }
     
     res.status(status).json({ message: err.message });
 });
 
-server.listen(port, () => console.log(`Server started on port ${process.env.port || port}`));
+if (process.env.NODE_ENV === 'test') {
+    app.listen(0);
+} else {
+    app.listen(port, () => console.log(`Server started on port ${process.env.port || port}`));
+}
 
-export { db, serviceAuth, bucket, io };
+export { app, bucket, serviceAuth };

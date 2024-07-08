@@ -18,7 +18,7 @@ export const ClothesContainer = styled.div`
     .items {
         display: flex;
         flex-wrap: wrap;
-        align-items: center;
+        align-items: stretch;
         justify-content: center;
     }
 `;
@@ -28,27 +28,53 @@ export const ClothingCardContainer = styled.div`
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     box-shadow: var(--box-shadow);
-    padding: 20px;
+    padding: 48px 20px 20px 20px;
     border-radius: 25px;
+    width: 250px;
     max-width: 250px;
     margin: 12px;
+    position: relative;
 
-    p {
+    &.on-canvas {
+        box-shadow: var(--active-shadow);
+    }
+
+    .on-canvas-icon {
+        font-size: 36px !important;
+        color: var(--secondary) !important;
+        position: absolute;
+        top: 6px;
+        right: 12px;
+    }
+
+    .file-name {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         font-size: 28px;
         color: var(--black);
         font-family: 'Fashion';
         font-weight: 600;
         letter-spacing: 2px;
         text-align: center;
+        word-break: break-word;
+        flex-grow: 1;
     }
 
-    .file-name {
-        word-break: break-word;
+    .clothing-card-img {
+        width: 100%;
+        height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     img {
-        width: 250px;
+        max-width: 200px;
+        max-height: 200px;
+        width: auto;
         height: auto;
         cursor: pointer;
     }
@@ -77,6 +103,10 @@ export const ClothingCardContainer = styled.div`
 
     .item-option.important {
         color: var(--secondary);
+    }
+
+    .item-option.sent-to-canvas {
+        color: var(--primary);
     }
 `;
 

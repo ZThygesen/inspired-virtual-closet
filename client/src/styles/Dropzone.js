@@ -63,6 +63,23 @@ const DropContainer = styled.div`
     .file-input {
         display: none;
     }
+
+    .upload-credits {
+        font-size: 24px;
+    }
+`;
+
+const UploadOptionsContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 12px;
+
+    .upload-credits {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 24px;
+    }
 `;
 
 const FileContainer = styled.div`
@@ -164,4 +181,4 @@ const FileCard = styled.div`
     }
 `;
 
-export { DropContainer, FileContainer, FileCard };
+export { DropContainer, UploadOptionsContainer, FileContainer, FileCard };

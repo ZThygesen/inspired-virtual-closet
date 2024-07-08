@@ -4,6 +4,7 @@ import { Tooltip } from '@mui/material';
 import Modal from './Modal';
 import Input from './Input';
 import { OutfitCardContainer } from '../styles/Outfits';
+import { useUser } from './UserContext';
 
 export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteOutfit }) {
     const { setError } = useError();
@@ -13,6 +14,8 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
     const [newOutfitName, setNewOutfitName] = useState(outfit.outfitName);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const [imageModalOpen, setImageModalOpen] = useState(false);
+
+    const { user } = useUser();
 
     function handleCloseImageModal() {
         setImageModalOpen(false);
@@ -60,36 +63,42 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
         <>
             <OutfitCardContainer>
                 <p className="outfit-name">{outfit.outfitName}</p>
-                <img
-                    src={outfit.outfitUrl}
-                    alt={outfit.outfitName}
-                    onClick={() => setImageModalOpen(true)}
-                />
+                <div className="outfit-card-img">
+                    <img
+                        src={outfit.outfitUrl}
+                        alt={outfit.outfitName}
+                        onClick={() => setImageModalOpen(true)}
+                    />
+                </div>
                 <div className="outfit-options">
-                    <Tooltip title="Edit Outfit on Canvas">
-                        <button 
-                            className='material-icons outfit-option important'
-                            onClick={() => setEditOpen(true)}
-                        >
-                            shortcut
-                        </button>
-                    </Tooltip>
-                    <Tooltip title="Edit Outfit Name">
-                        <button
-                            className='material-icons outfit-option'
-                            onClick={() => setEditNameOpen(true)}
-                        >
-                            edit
-                        </button>
-                    </Tooltip>
-                    <Tooltip title="Delete Outfit">
-                        <button
-                            className='material-icons outfit-option'
-                            onClick={() => setConfirmDeleteOpen(true)}
-                        >
-                            delete
-                        </button>
-                    </Tooltip>
+                    { user?.isAdmin &&
+                    <>
+                        <Tooltip title="Edit Outfit on Canvas">
+                            <button 
+                                className='material-icons outfit-option important'
+                                onClick={() => setEditOpen(true)}
+                            >
+                                shortcut
+                            </button>
+                        </Tooltip>
+                        <Tooltip title="Edit Outfit Name">
+                            <button
+                                className='material-icons outfit-option'
+                                onClick={() => setEditNameOpen(true)}
+                            >
+                                edit
+                            </button>
+                        </Tooltip>
+                        <Tooltip title="Delete Outfit">
+                            <button
+                                className='material-icons outfit-option'
+                                onClick={() => setConfirmDeleteOpen(true)}
+                            >
+                                delete
+                            </button>
+                        </Tooltip>
+                    </>
+                    }
                     <Tooltip title="Download Outfit">
                         <button
                             className='material-icons outfit-option important'

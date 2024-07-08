@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { TextField } from '@mui/material';
+import { TextField, Checkbox as CB } from '@mui/material';
 
 export const TextInput = styled(TextField)`
     * {
@@ -43,4 +43,7 @@ export const TextInput = styled(TextField)`
             border-color: var(--secondary);
         }
     }
+`;
+
+export const Checkbox = styled(CB)`
 `;

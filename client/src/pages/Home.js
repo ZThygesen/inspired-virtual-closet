@@ -1,54 +1,57 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useError } from '../components/ErrorContext';
+import { useUser } from '../components/UserContext';
 import axios from 'axios';
 import { HomeContainer } from '../styles/Home';
 import ActionButton from '../components/ActionButton'
-import logo from '../images/big_logo.png';
-import Modal from '../components/Modal';
-import Input from '../components/Input';
+import logo from '../images/logo.png';
 import Loading from '../components/Loading';
+import { GoogleLogin } from '@react-oauth/google';
 
 export default function Home() {
     const { setError } = useError();
-    
-    const [loginOpen, setLoginOpen] = useState(false);
-    const [password, setPassword] = useState('');
-    const [incorrect, setIncorrect] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const { user, setUser, loading } = useUser();
 
     const navigate = useNavigate();
 
-    function handleLoginOpen() {
-        setLoginOpen(true);
-    }
+    useEffect(() => {
+        if (user) {
+            setIsAuthenticated(true);
 
-    function handleLoginClose() {
-        setLoginOpen(false);
-        setPassword('');
-    }
-
-    async function handleSubmitLogin(e) {
-        e.preventDefault();
-        setLoading(true);
-
-        setTimeout(async () => {
-            try {
-                const response = await axios.post('/password', { password: password });
-                if (response.data) {
-                    navigate('clients');
-                } else {
-                    setIncorrect(true);
-                }
-            } catch (err) {
-                setError({
-                    message: 'There was an error fetching the password.',
-                    status: err.response.status
-                });
-            } finally {
-                setLoading(false);
+            if (user.isAdmin) {
+                setIsAdmin(true);
+            } else {
+                setIsAdmin(false);
             }
-        }, 350);
+        } else {
+            setIsAuthenticated(false);
+        }
+    }, [user]);
+
+    async function handleGoogleLogin(credentialResponse) {
+        try {
+            const response = await axios.post('/google-auth', 
+                {
+                    credential: credentialResponse.credential,
+                    clientId: credentialResponse.clientId
+                },
+                {
+                    withCredentials: true
+                }
+            );
+
+            const user = response?.data?.user;
+            if (user) {
+                setUser(user);
+            } else {
+                setUser(null);
+            }
+        } catch (err) {
+            setError({ message: err.message, status: err.status }); 
+        }
     }
 
     return (
@@ -56,37 +59,29 @@ export default function Home() {
             <HomeContainer>
                 <img src={logo} alt="Edie Styles" className="big-logo" />
                 <div className="home-options">
-                    <h1>Virtual Closet</h1>
-                    <ActionButton variant={'primary'} onClick={handleLoginOpen}>Log In</ActionButton>
+                    <h1>Inspired<br />Virtual Closet</h1>
+                    { isAuthenticated ? 
+                        ( isAdmin ?
+                            <ActionButton variant={'primary'} onClick={() => navigate('clients')}>Manage Clients</ActionButton>
+                            :
+                            <ActionButton 
+                                variant={'primary'}
+                                onClick={() => navigate(`${user.firstName.toLowerCase()}-${user.lastName.toLowerCase()}`, { state: { client: user } })}
+                            >
+                                My Closet
+                            </ActionButton>
+                        )
+                        :
+                        <GoogleLogin
+                            onSuccess={handleGoogleLogin}
+                            onError={() => {
+                                console.log('login failed');
+                            }}
+                            shape='pill'
+                        />
+                    }
                 </div>
             </HomeContainer>
-            <Modal
-                open={loginOpen}
-                closeFn={handleLoginClose}
-                isForm={true}
-                submitFn={handleSubmitLogin}
-            >
-                <div className="modal-title">LOG IN</div>
-                <div className="modal-content">
-                    {
-                        incorrect ? 
-                            <p className="medium warning">Incorrect password!</p>
-                            :
-                            <p className="medium">Enter password to log in.</p>
-                    }
-                    <Input 
-                        type="text"
-                        id="password"
-                        label="Password"
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                    />
-                </div>
-                <div className="modal-options">
-                    <button type="button" onClick={handleLoginClose}>Cancel</button>
-                    <button type="submit">Log In</button>
-                </div>
-            </Modal>
             <Loading open={loading} />
         </>
     );

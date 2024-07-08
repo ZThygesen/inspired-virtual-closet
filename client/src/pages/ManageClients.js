@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useError } from '../components/ErrorContext';
-import axios from 'axios';
+import api from '../api'
 import cuid from 'cuid';
 import styled from 'styled-components';
 import ClientCard from '../components/ClientCard';
@@ -10,6 +10,7 @@ import Modal from '../components/Modal';
 import Input from '../components/Input';
 import { CircularProgress } from '@mui/material';
 import { ManageClientsContainer } from '../styles/ManageClients';
+import { useUser } from '../components/UserContext';
 
 const CircleProgress = styled(CircularProgress)`
     & * {
@@ -42,10 +43,15 @@ function CircularProgressWithLabel(props) {
 export default function ManageClients() {
     const { setError } = useError();
 
+    const [superAdmins, setSuperAdmins] = useState([]);
+    const [admins, setAdmins] = useState([]);
     const [clients, setClients] = useState([]);
     const [openModal, setOpenModal] = useState(false);
     const [newClientFName, setNewClientFName] = useState('');
     const [newClientLName, setNewClientLName] = useState('');
+    const [newClientEmail, setNewClientEmail] = useState('');
+    const [newClientRole, setNewClientRole] = useState(false);
+    const [newClientCredits, setNewClientCredits] = useState(350);
     const [loading, setLoading] = useState(false);
 
     const [deleteProgressOpen, setDeleteProgressOpen] = useState(false);
@@ -53,21 +59,33 @@ export default function ManageClients() {
     const [deleteProgressNumerator, setDeleteProgressNumerator] = useState(0)
     const [deleteProgressDenominator, setDeleteProgressDenominator] = useState(1);
 
+    const { user } = useUser();
+
     const getClients = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await axios.get('/api/clients');
-            setClients(response.data.sort(function (a, b) {
-                if (a.firstName < b.firstName) {
+            const response = await api.get('/api/clients');
+            const allClients = response.data.sort(function (a, b) {
+                const nameA = a.firstName.toLowerCase();
+                const nameB = b.firstName.toLowerCase();
+                if (nameA < nameB) {
                     return -1;
                 } 
-                else if (a.firstName > b.firstName) {
+                else if (nameA > nameB) {
                     return 1;
                 }
                 else {
                     return 0;
                 }
-            }));
+            });
+
+            const superAdmins = allClients.filter(client => client?.isSuperAdmin);
+            const admins = allClients.filter(client => client?.isAdmin && !client?.isSuperAdmin);
+            const clients = allClients.filter(client => !client?.isSuperAdmin && !client?.isAdmin);
+            
+            setSuperAdmins(superAdmins);
+            setAdmins(admins);
+            setClients(clients);
         } catch (err) {
             setError({
                 message: 'There was an error fetching clients.',
@@ -86,6 +104,9 @@ export default function ManageClients() {
         setOpenModal(false);
         setNewClientFName('');
         setNewClientLName('');
+        setNewClientEmail('');
+        setNewClientCredits(350);
+        setNewClientRole(false);
     }
 
     async function addClient(e) {
@@ -93,15 +114,18 @@ export default function ManageClients() {
         setLoading(true);
 
         try {
-            await axios.post('/api/clients', {
+            await api.post('/api/clients', {
                 firstName: newClientFName,
-                lastName: newClientLName
+                lastName: newClientLName,
+                email: newClientEmail,
+                credits: newClientCredits,
+                isAdmin: newClientRole
             });
             handleClose();
             await getClients();
         } catch(err) {
             setError({
-                message: 'There was an adding the client.',
+                message: 'There was an error adding the client.',
                 status: err.response.status
             });
         } finally {
@@ -109,14 +133,25 @@ export default function ManageClients() {
         }
     }
 
-    async function editClient(client, newFirstName, newLastName) {
+    async function editClient(client, newFirstName, newLastName, newEmail, newCredits, newIsAdmin) {
         setLoading(true);
-        if (client.firstName === newFirstName && client.lastName === newLastName) {
+        if (client.firstName === newFirstName && 
+            client.lastName === newLastName &&
+            client.email === newEmail &&
+            client.credits === newCredits &&
+            client.isAdmin === newIsAdmin
+        ) {
             setLoading(false);
             return;
         }
         try {
-            await axios.patch(`/api/clients/${client._id}`, { newFirstName: newFirstName, newLastName: newLastName });  
+            await api.patch(`/api/clients/${client._id}`, { 
+                newFirstName: newFirstName, 
+                newLastName: newLastName,
+                newEmail: newEmail,
+                newCredits: newCredits,
+                newIsAdmin: newIsAdmin
+            });  
             await getClients();
         } catch (err) {
             setError({
@@ -160,7 +195,6 @@ export default function ManageClients() {
             }
             await pause(750);
         }
-        
 
         // delete client outfits
         if (outfits.length > 0) {
@@ -181,7 +215,7 @@ export default function ManageClients() {
         handleDeleteProgressClose();
 
         try {
-            await axios.delete(`/api/clients/${client._id}`);
+            await api.delete(`/api/clients/${client._id}`);
             
             // update
             await getClients();
@@ -196,9 +230,9 @@ export default function ManageClients() {
     }
 
     async function getClientItems(client) {
-        const items = []
+        const items = [];
         try {
-           const response = await axios.get(`/files/${client._id}`);
+           const response = await api.get(`/files/${client._id}`);
            const categories = response.data;
             for (const category of categories) {
                 for (const item of category.items) {
@@ -220,7 +254,7 @@ export default function ManageClients() {
     async function getClientOutfits(client) {
         let outfits = [];
         try {
-            const response = await axios.get(`/outfits/${client._id}`);
+            const response = await api.get(`/outfits/${client._id}`);
             outfits = response.data;
         } catch (err) {
             setError({
@@ -236,7 +270,7 @@ export default function ManageClients() {
     async function deleteClientItems(items) {
         try {
             for (const item of items) {
-                await axios.delete(`/files/${item.categoryId}/${item.gcsId}`);
+                await api.delete(`/files/${item.categoryId}/${item.gcsId}`);
                 setDeleteProgressNumerator(current => current + 1);
             }
         } catch (err) {
@@ -253,7 +287,7 @@ export default function ManageClients() {
     async function deleteClientOutfits(outfits) {
         try {
             for (const outfit of outfits) {
-                await axios.delete(`/outfits/${outfit._id}`);
+                await api.delete(`/outfits/${outfit._id}`);
                 setDeleteProgressNumerator(current => current + 1);
             }
         } catch (err) {
@@ -281,46 +315,81 @@ export default function ManageClients() {
                 <h1 className="title">CLIENTS</h1>
                 <div className="clients">
                     {
+                        superAdmins.map(client => (
+                            <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
+                        ))
+                    }
+                    {
+                        admins.map(client => (
+                            <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
+                        ))
+                    }
+                    { 
                         clients.map(client => (
                             <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
                         ))
                     }
                 </div>
-                <div className="footer">
-                    <ActionButton variant={'secondary'} onClick={() => setOpenModal(true)}>ADD CLIENT</ActionButton>
-                </div>
+                { user?.isSuperAdmin &&
+                    <div className="footer">
+                        <ActionButton variant={'secondary'} onClick={() => setOpenModal(true)}>ADD CLIENT</ActionButton>
+                    </div>
+                }
             </ManageClientsContainer>
             <Loading open={loading} />
-            <Modal
-                open={openModal}
-                closeFn={handleClose}
-                isForm={true}
-                submitFn={addClient}
-            >
-                <>
-                    <h2 className="modal-title">ADD CLIENT</h2>
-                    <div className="modal-content">
-                        <Input
-                            type="text"
-                            id="first-name"
-                            label="First Name"
-                            value={newClientFName}
-                            onChange={e => setNewClientFName(e.target.value)}
-                        />
-                        <Input 
-                            type="text"
-                            id="last-name"
-                            label="Last Name"
-                            value={newClientLName}
-                            onChange={e => setNewClientLName(e.target.value)}
-                        />
-                    </div>
-                    <div className="modal-options">
-                        <button type="button" onClick={handleClose}>Cancel</button>
-                        <button type="submit">Submit</button>
-                    </div>
-                </>
-            </Modal>
+            { user?.isSuperAdmin &&
+                <Modal
+                    open={openModal}
+                    closeFn={handleClose}
+                    isForm={true}
+                    submitFn={addClient}
+                >
+                    <>
+                        <h2 className="modal-title">ADD CLIENT</h2>
+                        <div className="modal-content">
+                            <Input
+                                type="text"
+                                id="first-name"
+                                label="First Name"
+                                value={newClientFName}
+                                onChange={e => setNewClientFName(e.target.value)}
+                            />
+                            <Input 
+                                type="text"
+                                id="last-name"
+                                label="Last Name"
+                                value={newClientLName}
+                                onChange={e => setNewClientLName(e.target.value)}
+                            />
+                            <Input 
+                                type="text"
+                                id="email"
+                                label="Email"
+                                value={newClientEmail}
+                                onChange={e => setNewClientEmail(e.target.value)}
+                            />
+                            <Input
+                                type="number"
+                                id="credits"
+                                label="Credits"
+                                value={newClientCredits}
+                                onChange={e => setNewClientCredits(e.target.value)}
+                            />
+                            <Input 
+                                type="checkbox"
+                                id="role"
+                                label="Admin"
+                                value={newClientRole}
+                                onChange={e => setNewClientRole(e.target.checked)}
+                            />
+                        </div>
+                        <div className="modal-options">
+                            <button type="button" onClick={handleClose}>Cancel</button>
+                            <button type="submit">Submit</button>
+                        </div>
+                    </>
+                </Modal>
+            }
             <Modal
                 open={deleteProgressOpen}
             >

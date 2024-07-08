@@ -27,6 +27,27 @@ export const ClosetNavigationContainer = styled.div`
         text-align: center;
     }
 
+    .closet-options {
+        align-items: flex-end;
+    }
+
+    .closet-options.canvas-mode {
+        z-index: 249;
+        position: absolute;
+        transform: translateY(-100%); 
+        transition: transform 0.3s;
+
+        & li {
+            box-shadow: none;
+        }
+    }
+
+    .closet-title:hover + .closet-options.canvas-mode,
+    .closet-options.canvas-mode:hover,
+    .closet-options.canvas-mode.expanded {
+        transform: translateY(0%);
+    }
+
     .open-sidebar-icon,
     .clients-icon {
         position: absolute;
@@ -50,14 +71,32 @@ export const ClosetNavigationContainer = styled.div`
     }
 
     .client-closet {
+        display: flex;
+        align-items: center;
+        gap: 4px;
         font-family: 'Fashion';
-        font-size: 36px;
+        font-size: 30px;
         letter-spacing: 2px;
         font-weight: 600;
+        position: relative;
+
+        & .expand-closet-options {
+            font-size: 36px !important;
+            background: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: 0.3s;
+
+            &:hover {
+                background-color: var(--material-btn-bg);
+            }
+        }
     }
 
-    .closet-options {
-        align-items: flex-end;
+    .closet-title.expanded {
+        & .expand-closet-options {
+            transform: rotate(180deg);
+        }
     }
 
     ul {
@@ -133,8 +172,14 @@ export const ClosetNavigationContainer = styled.div`
         }
     }
 
-    @media (min-width: 800px) {
-        &.sidebar-open {
+    @media (min-width: 900px) {
+        &.sidebar-open.user-non-admin:not(.canvas-mode-mobile) {
+            margin-left: 320px;
+        }
+    }
+
+    @media (min-width: 1050px) {
+        &.sidebar-open.user-admin:not(.canvas-mode-mobile) {
             margin-left: 320px;
         }
     }

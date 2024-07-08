@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ClientProvider } from '../components/ClientContext';
 import { useLocation } from 'react-router-dom';
 import { useError } from '../components/ErrorContext';
 import styled from 'styled-components';
-import axios from 'axios';
+import api from '../api';
 import ClosetNavigation from '../components/ClosetNavigation';
 import CategoriesSidebar from '../components/CategoriesSidebar';
 import Loading from '../components/Loading';
+import { SidebarProvider } from '../components/SidebarContext';
 
 const Container = styled.div`
     flex: 1;
@@ -17,33 +19,11 @@ export default function VirtualCloset() {
     const { setError } = useError();
 
     const { client } = useLocation().state;
-    const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 800 ? true : false);
-    const [closeSidebarOnSelect, setCloseSidebarOnSelect] = useState(window.innerWidth > 800 ? false : true);
     const [category, setCategory] = useState({});
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const sidebarRef = useRef();
-    
-    useEffect(() => {
-        function handleResize() {
-            if (window.innerWidth <= 800) {
-                setCloseSidebarOnSelect(true);
-
-                if (sidebarOpen) {
-                    setSidebarOpen(false);
-                }
-            } else {
-                setCloseSidebarOnSelect(false);
-            }
-        }
-
-        window.addEventListener('resize', handleResize);
-
-        return () => {
-            window.removeEventListener('resize', handleResize);
-        }
-    }, [sidebarOpen]);
     
     const getCategories = useCallback(async (updateCat = undefined, animateLoad = false) => {
         if (animateLoad) {
@@ -53,7 +33,7 @@ export default function VirtualCloset() {
         let categories;
         // get all categories and their data for the current client
         try {
-            const response = await axios.get(`/files/${client._id}`);
+            const response = await api.get(`/files/${client._id}`);
             categories = response.data;
         } catch (err) {
             setError({
@@ -145,7 +125,7 @@ export default function VirtualCloset() {
         setLoading(true);
 
         try {
-            await axios.post('/categories', { category: newCategory });
+            await api.post('/categories', { category: newCategory });
             await getCategories();
         } catch (err) {
             setError({
@@ -165,7 +145,7 @@ export default function VirtualCloset() {
         }
 
         try {
-            await axios.patch(`/categories/${category._id}`, { newName: newName });
+            await api.patch(`/categories/${category._id}`, { newName: newName });
             await getCategories(category);
         } catch (err) {
             setError({
@@ -181,7 +161,7 @@ export default function VirtualCloset() {
         setLoading(true);
         
         try {
-            await axios.delete(`/categories/${category._id}`);
+            await api.delete(`/categories/${category._id}`);
             await getCategories();
         } catch (err) {
             setError({
@@ -194,40 +174,29 @@ export default function VirtualCloset() {
         
     }
 
-    function openSidebar() {
-        setSidebarOpen(true);
-    }
-
-    function closeSidebar() {
-        setSidebarOpen(false);
-    }
-
     return (
-        <>
-            <Container>
-                <CategoriesSidebar
-                    sidebarRef={sidebarRef}
-                    open={sidebarOpen}
-                    closeSidebar={closeSidebar}
-                    closeSidebarOnSelect={closeSidebarOnSelect}
-                    categories={categories}
-                    activeCategory={category}
-                    setCategory={setCategory}
-                    addCategory={addCategory}
-                    updateCategories={getCategories}
-                    editCategory={editCategory}
-                    deleteCategory={deleteCategory}
-                />
-                <ClosetNavigation
-                    sidebarRef={sidebarRef}
-                    open={sidebarOpen}
-                    openSidebar={openSidebar}
-                    client={client}
-                    category={category}
-                    getCategories={getCategories}
-                />
-            </Container>
-            <Loading open={loading} />
-        </>
+        <ClientProvider clientId={client._id}>
+            <SidebarProvider>
+                <Container>
+                    <CategoriesSidebar
+                        sidebarRef={sidebarRef}
+                        categories={categories}
+                        activeCategory={category}
+                        setCategory={setCategory}
+                        addCategory={addCategory}
+                        updateCategories={getCategories}
+                        editCategory={editCategory}
+                        deleteCategory={deleteCategory}
+                    />
+                    <ClosetNavigation
+                        sidebarRef={sidebarRef}
+                        client={client}
+                        category={category}
+                        getCategories={getCategories}
+                    />
+                </Container>
+                <Loading open={loading} />
+            </SidebarProvider>
+        </ClientProvider>
     )
 }
