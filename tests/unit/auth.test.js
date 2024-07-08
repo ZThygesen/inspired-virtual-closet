@@ -278,12 +278,14 @@ describe('auth', () => {
                 email: mockEmail,
                 firstName: 'John',
                 lastName: 'Doe',
-                isAdmin: false
+                isAdmin: false,
+                isSuperAdmin: false
             };
 
             tokenUser = {
                 id: user._id.toString(),
-                isAdmin: user.isAdmin
+                isAdmin: user.isAdmin,
+                isSuperAdmin: false
             };
 
             mockVerify.mockReturnValue(tokenUser);
@@ -414,6 +416,25 @@ describe('auth', () => {
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(401);
             expect(err.message).toBe('no client found with given user id');
+        });
+
+        it('should fail if client and user do not match', async () => {
+            user.isAdmin = true;
+            mockCollection.findOne.mockResolvedValue(user);
+
+            const req = { cookies: data, locals: { db: mockDb }};
+
+            await auth.verify(req, mockRes, mockNext);
+
+            expect(mockVerify).toHaveBeenCalledWith(mockToken, process.env.JWT_SECRET);
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(tokenUser.id) });
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(401);
+            expect(err.message).toBe('client and user do not match');
         });
     });
 

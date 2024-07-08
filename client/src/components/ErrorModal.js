@@ -18,7 +18,7 @@ export default function ErrorModal() {
                 >
                     <span className="small bold warning">Status:</span> {error?.status}
                 </p>
-                <p className="small bold">Refresh the page and try again.</p>
+                <p className="small bold">Refresh the page or log out and sign in again.</p>
                 
             </div>
             <div className="modal-options">

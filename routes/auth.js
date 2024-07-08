@@ -64,13 +64,20 @@ const auth = {
                 throw helpers.createError('no client found with given user id', 401);
             }
 
+            if (client._id.toString() !== userId ||
+                client.isAdmin !== user.isAdmin ||
+                (client?.isSuperAdmin || false) !== (user?.isSuperAdmin || false)
+            ) {
+                throw helpers.createError('client and user do not match', 401);
+            }
+
             res.status(200).json({ user: client });
         } catch (err) {
             next(err);
         }
     },
 
-    authenticateJWT(req, res, next) {
+    async authenticateJWT(req, res, next) {
         try {
             const token = req?.cookies?.token;
             if (!token) {

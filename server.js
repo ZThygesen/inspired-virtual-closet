@@ -39,19 +39,19 @@ import { authRouter } from './routes/auth.js';
 app.use('/google-auth', injectDb, authRouter);
 
 import { categoriesRouter } from './routes/categories.js';
-app.use('/categories', auth.authenticateJWT, injectDb, categoriesRouter);
+app.use('/categories', injectDb, auth.authenticateJWT, categoriesRouter);
 
 import { clientsRouter } from './routes/clients.js';
-app.use('/api/clients', auth.authenticateJWT, injectDb, clientsRouter);
+app.use('/api/clients', injectDb, auth.authenticateJWT, clientsRouter);
 
 import { filesRouter } from './routes/files.js';
-app.use('/files', auth.authenticateJWT, injectDb, filesRouter);
+app.use('/files', injectDb, auth.authenticateJWT, filesRouter);
 
 import { outfitsRouter } from './routes/outfits.js';
-app.use('/outfits', auth.authenticateJWT, injectDb, outfitsRouter);
+app.use('/outfits', injectDb, auth.authenticateJWT, outfitsRouter);
 
 import { shoppingRouter } from './routes/shopping.js';
-app.use('/shopping', auth.authenticateJWT, injectDb, shoppingRouter);
+app.use('/shopping', injectDb, auth.authenticateJWT, shoppingRouter);
 
 if (process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production') {
     const __filename = fileURLToPath(import.meta.url);
