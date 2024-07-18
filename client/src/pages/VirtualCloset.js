@@ -175,28 +175,31 @@ export default function VirtualCloset() {
     }
 
     return (
-        <ClientProvider clientId={client._id}>
-            <SidebarProvider>
-                <Container>
-                    <CategoriesSidebar
-                        sidebarRef={sidebarRef}
-                        categories={categories}
-                        activeCategory={category}
-                        setCategory={setCategory}
-                        addCategory={addCategory}
-                        updateCategories={getCategories}
-                        editCategory={editCategory}
-                        deleteCategory={deleteCategory}
-                    />
-                    <ClosetNavigation
-                        sidebarRef={sidebarRef}
-                        client={client}
-                        category={category}
-                        getCategories={getCategories}
-                    />
-                </Container>
-                <Loading open={loading} />
-            </SidebarProvider>
-        </ClientProvider>
+        <>
+            <ClientProvider clientId={client._id}>
+                <SidebarProvider>
+                    <Container>
+                        <CategoriesSidebar
+                            sidebarRef={sidebarRef}
+                            categories={categories}
+                            activeCategory={category}
+                            setCategory={setCategory}
+                            addCategory={addCategory}
+                            updateCategories={getCategories}
+                            editCategory={editCategory}
+                            deleteCategory={deleteCategory}
+                        />
+                        <ClosetNavigation
+                            sidebarRef={sidebarRef}
+                            client={client}
+                            category={category}
+                            getCategories={getCategories}
+                        />
+                    </Container>
+                    <Loading open={loading} />
+                </SidebarProvider>
+            </ClientProvider>
+            <p className="copyright">© 2024, Edie Styles, LLC</p>
+        </>
     )
 }

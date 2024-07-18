@@ -60,3 +60,7 @@ div[role="tooltip"] > * {
     font-size: 18px !important;
     font-family: 'Roboto', sans-serif;
 }
+
+.copyright {
+    text-align: center;
+}
