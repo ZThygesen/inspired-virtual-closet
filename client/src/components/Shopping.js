@@ -134,6 +134,9 @@ export default function Shopping({ display, shoppingItems, updateShoppingItems }
         <>
             <ShoppingContainer style={{ display: display ? 'flex' : 'none' }}>
                 <h2 className="shopping-title">Shopping</h2>
+                <a href="https://drive.google.com/file/d/1vjY20JfvfqLXqWkTbBorg3F0IvPnNdgw/view?usp=sharing" target="_blank" rel="noreferrer" className="shopping-guide">
+                    Be sure to review the <span className="shop-guide-emphasis">ONLINE SHOPPING GUIDE</span> prior to purchasing anything online!
+                </a>
                 <div className="shopping-items-container">
                     { notPurchased.length > 0 &&
                         <>

@@ -395,16 +395,15 @@ export default function Dropzone({ category, disabled, updateItems }) {
                                 <FileCard key={file.id}>
                                     <button className="material-icons file-remove" onClick={() => removeFile(file)}>close</button>
                                     {file.invalid && <div className="file-error-message">{errorMessage}</div>}
-                                    <img
-                                        src={file.invalid ? invalidImg : file.src}
-                                        alt={file.name}
-                                        id={file.id}
-                                        className={`file-img ${file.invalid ? 'invalid' : ''}`}
-                                        onClick={!file.invalid ? () => openImageModal(file) : () => removeFile(file)}
-                                    />
-                                    <div className="file-info">
-                                        <p className="file-name">{file.name}</p>
-                                        {/* <p className="file-size">({file.fileSize})</p> */}
+                                    <p className="file-name">{file.name}</p>
+                                    <div className="file-card-img">
+                                        <img
+                                            src={file.invalid ? invalidImg : file.src}
+                                            alt={file.name}
+                                            id={file.id}
+                                            className={`file-img ${file.invalid ? 'invalid' : ''}`}
+                                            onClick={!file.invalid ? () => openImageModal(file) : () => removeFile(file)}
+                                        />
                                     </div>
                                 </FileCard>
                             ))

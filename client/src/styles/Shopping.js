@@ -15,6 +15,22 @@ export const ShoppingContainer = styled.div`
         margin-bottom: 16px;
     }
 
+    .shopping-guide {
+        font-size: 20px;
+        text-align: center;
+        margin-bottom: 20px;
+
+        & span {
+            color: var(--primary);
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        &:hover span {
+            text-decoration: underline;
+        }
+    }
+
     .shopping-items-container {
         flex: 1;
         width: 100%;

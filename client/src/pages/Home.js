@@ -82,6 +82,7 @@ export default function Home() {
                     }
                 </div>
             </HomeContainer>
+            <p className="copyright">© 2024 Edie Styles, LLC</p>
             <Loading open={loading} />
         </>
     );
