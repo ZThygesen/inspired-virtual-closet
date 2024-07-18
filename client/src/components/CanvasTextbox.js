@@ -10,6 +10,7 @@ export default function CanvasTextbox({ textbox, selected, fontAdjust, handleSel
     const [fontSize, setFontSize] = useState(textbox?.textAttrs?.fontSize || 16);
     const { text: _, fontSize: __, ...otherTextAttrs } = textbox.textAttrs || {};
     const [isEditing, setIsEditing] = useState(false);
+    const [editStarted, setEditStarted] = useState(true);
     
     useEffect(() => {
         if (selected) {
@@ -83,12 +84,19 @@ export default function CanvasTextbox({ textbox, selected, fontAdjust, handleSel
 
     useEffect(() => {
         // make sure text cursor is at end of text when editing
-        if (isEditing) {
+        if (isEditing && editStarted) {
+            setEditStarted(false);
             inputRef.current.selectionStart = text.length;
             inputRef.current.selectionEnd = text.length;
         }
         
-    }, [isEditing, text.length]);
+    }, [isEditing, text.length, editStarted]);
+
+    useEffect(() => {
+        if (!isEditing) {
+            setEditStarted(true);
+        }
+    }, [isEditing]);
 
     function handleDrag() {
         const node = groupRef.current;
