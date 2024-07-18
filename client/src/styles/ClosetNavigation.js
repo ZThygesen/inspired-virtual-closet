@@ -34,20 +34,12 @@ export const ClosetNavigationContainer = styled.div`
     .closet-options.canvas-mode {
         z-index: 249;
         position: absolute;
-        transform: translateY(-100%); 
         transition: transform 0.3s;
 
         & li {
             box-shadow: none;
         }
     }
-
-    .closet-title:hover + .closet-options.canvas-mode,
-    .closet-options.canvas-mode:hover,
-    .closet-options.canvas-mode.expanded {
-        transform: translateY(0%);
-    }
-
     .open-sidebar-icon,
     .clients-icon {
         position: absolute;
@@ -164,6 +156,28 @@ export const ClosetNavigationContainer = styled.div`
         flex-direction: column;
         align-items: center;
         padding: 20px;
+    }
+
+    @media (hover: hover) {
+        .closet-options.canvas-mode {
+            transform: translateY(-100%); 
+        }
+
+        .closet-title:hover + .closet-options.canvas-mode,
+        .closet-options.canvas-mode:hover,
+        .closet-options.canvas-mode.expanded {
+            transform: translateY(0%);
+    }
+    }
+
+    @media (hover: none) {
+        .closet-options.canvas-mode {
+            transform: translateY(-100%); 
+        }
+
+        .closet-options.canvas-mode.expanded {
+            transform: translateY(0%);
+        }
     }
 
     @media (min-width: 481px) {

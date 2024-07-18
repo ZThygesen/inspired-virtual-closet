@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Tooltip } from '@mui/material';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from './UserContext';
@@ -30,12 +31,18 @@ const AppHeader = styled.header`
 
     .links {
         display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .main-links {
+        display: flex;
         flex-direction: column;
-        gap: 4px;
     }
 
     .logout,
-    .main-site {
+    .main-site,
+    .help {
         font-size: 24px;
         font-weight: 600;
         font-family: 'Fashion';
@@ -52,14 +59,15 @@ const AppHeader = styled.header`
         }
     }
 
-    @media (min-width: 450px) {
+    @media (min-width: 500px) {
         .links {
             flex-direction: row;
             gap: 28px;
         }
 
-        .logout,
-        .main-site {
+        .main-links {
+            flex-direction: row;
+            gap: 28px;
         }
     }
 
@@ -100,14 +108,21 @@ export default function Header() {
             <AppHeader>
                 <Link to="/" className="logo">Edie styles</Link>
                 <div className="links">
-                    <a className="main-site" href="https://ediestyles.com/" target="_blank" rel="noreferrer">
-                        Main Site
-                    </a>
-                    { user &&
-                        <button className="logout" onClick={handleLogout}>
-                            Log Out
-                        </button>
-                    }
+                    <div className="main-links">
+                        <a className="main-site" href="https://ediestyles.com/" target="_blank" rel="noreferrer">
+                            Main Site
+                        </a>
+                        { user &&
+                            <button className="logout" onClick={handleLogout}>
+                                Log Out
+                            </button>
+                        }
+                    </div>
+                    <Tooltip title="Help">
+                        <a className="help" href="https://drive.google.com/file/d/1uWGYDyKMf6u1I4o0oHHxOFkqw7jpV73U/view?usp=sharing" target="_blank" rel="noreferrer">
+                            ?
+                        </a>
+                    </Tooltip>
                 </div>
             </AppHeader>
             <Loading open={loading} />
