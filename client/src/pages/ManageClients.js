@@ -188,7 +188,7 @@ export default function ManageClients() {
             setDeleteProgressDenominator(items.length);
             setDeleteProgressMessage('Deleting client items...');
 
-            const finished = await deleteClientItems(items);
+            const finished = await deleteClientItems(client, items);
             if (!finished) {
                 handleDeleteProgressClose();
                 return;
@@ -202,7 +202,7 @@ export default function ManageClients() {
             setDeleteProgressNumerator(0);
             setDeleteProgressMessage('Deleting client outfits...');
 
-            const finished = await deleteClientOutfits(outfits);
+            const finished = await deleteClientOutfits(client, outfits);
             if (!finished) {
                 handleDeleteProgressClose();
                 return;
@@ -267,10 +267,10 @@ export default function ManageClients() {
         return outfits;
     }       
 
-    async function deleteClientItems(items) {
+    async function deleteClientItems(client, items) {
         try {
             for (const item of items) {
-                await api.delete(`/files/${item.categoryId}/${item.gcsId}`);
+                await api.delete(`/files/${client._id}/${item.categoryId}/${item.gcsId}`);
                 setDeleteProgressNumerator(current => current + 1);
             }
         } catch (err) {
@@ -284,10 +284,10 @@ export default function ManageClients() {
         return true;
     }
 
-    async function deleteClientOutfits(outfits) {
+    async function deleteClientOutfits(client, outfits) {
         try {
             for (const outfit of outfits) {
-                await api.delete(`/outfits/${outfit._id}`);
+                await api.delete(`/outfits/${client._id}/${outfit._id}`);
                 setDeleteProgressNumerator(current => current + 1);
             }
         } catch (err) {
