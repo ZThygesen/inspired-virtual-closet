@@ -89,7 +89,6 @@ const FileContainer = styled.div`
     padding: 20px;
     margin-top: 20px;
     width: 100%;
-    background-color: var(--light-grey);
     border: 2px solid var(--black);
     border-radius: 20px;
 
@@ -124,19 +123,29 @@ const FileCard = styled.div`
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: var(--primary-light);
-    padding: 20px;
-    border-radius: 20px;
+    gap: 8px;
+    padding: 48px 20px 20px 20px;
+    border-radius: 25px;
     position: relative;
-    width: 230px;
+    width: 250px;
+    max-width: 250px;
+    margin: 12px;
     box-shadow: var(--file-card-shadow);
     
+    .file-card-img {
+        width: 100%;
+        height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     .file-img {
         background: transparent;
-        width: 150px;
+        max-width: 200px;
+        max-height: 200px;
         height: auto;
-        border: 1px solid var(--black);
-        border-radius: 25px;
+        width: auto;
         cursor: pointer;
         transition: all 0.1s;
 
@@ -150,12 +159,14 @@ const FileCard = styled.div`
     }
 
     .file-name {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         font-size: 20px;
         font-weight: 600;
-        margin-top: 10px;
-        max-width: 200px;
         word-wrap: break-word;
         text-align: center;
+        flex-grow: 1;
     }
 
     .file-size {
