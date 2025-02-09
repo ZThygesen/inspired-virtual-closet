@@ -45,6 +45,7 @@ export default function Dropzone({ category, disabled, updateItems }) {
     const { setError } = useError();
 
     const [rmbg, setRmbg] = useState(true);
+    const [crop, setCrop] = useState(true);
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [filteredFiles, setFilteredFiles] = useState([]);
     const [invalidFiles, setInvalidFiles] = useState([]);
@@ -97,6 +98,10 @@ export default function Dropzone({ category, disabled, updateItems }) {
 
     function toggleRmbg() {
         setRmbg(current => !current);
+    }
+
+    function toggleCrop() {
+        setCrop(current => !current);
     }
 
     function dragOver(e) {
@@ -304,6 +309,7 @@ export default function Dropzone({ category, disabled, updateItems }) {
         formData.append('fullFileName', file.name);
         formData.append('categoryId', category._id);
         formData.append('rmbg', rmbg);
+        formData.append('crop', crop && rmbg);
 
         return new Promise(async (resolve, reject) => {
             try {
@@ -375,6 +381,15 @@ export default function Dropzone({ category, disabled, updateItems }) {
                         value={rmbg}
                     />   
                 }
+                { ((user?.isAdmin || user?.isSuperAdmin) && rmbg) && 
+                    <Input 
+                        type="checkbox" 
+                        id="crop-image"
+                        label="Crop Image" 
+                        onChange={toggleCrop}
+                        value={crop}
+                    />   
+                }
             </UploadOptionsContainer>
             { filteredFiles.length > 0 &&
                 <FileContainer>
@@ -430,6 +445,10 @@ export default function Dropzone({ category, disabled, updateItems }) {
                     { (user?.isSuperAdmin || user?.isAdmin) &&
                     <>
                         <p className="medium">The background WILL {rmbg ? '' : 'NOT'} be removed.</p>
+                        { rmbg &&
+                            <p className="medium">The image WILL {crop ? '' : 'NOT'} be cropped.</p>
+
+                        }
                         <Input 
                             type="checkbox" 
                             id="remove-background"
@@ -437,6 +456,15 @@ export default function Dropzone({ category, disabled, updateItems }) {
                             onChange={toggleRmbg}
                             value={rmbg}
                         />
+                        { (rmbg) &&
+                            <Input 
+                                type="checkbox" 
+                                id="crop-image"
+                                label="Crop Image" 
+                                onChange={toggleCrop}
+                                value={crop}
+                            />
+                        }
                     </>
                     }
                     <p className="medium warning">You have {client?.credits} credits left.</p>

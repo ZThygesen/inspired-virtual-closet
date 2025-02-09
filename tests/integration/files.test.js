@@ -149,25 +149,27 @@ describe('files', () => {
                 fullFileName: 'Blazin Blazer.png',
                 clientId: clientId.toString(),
                 categoryId: categoryId.toString(),
-                rmbg: true
+                rmbg: true,
+                crop: true
             };
 
             clientCollection = db.collection('clients');
         });
 
-        it('should add new file - remove background', async () => {
+        it('should add new file - remove background, crop', async () => {
             // perform action to test
             const response = await agent(app)
                 .post(`/files/${clientId.toString()}`)
                 .field('fileSrc', data.fileSrc)
                 .field('fullFileName', data.fullFileName)
                 .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
     
             const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
             expect(category.items).toHaveLength(1);
@@ -191,20 +193,21 @@ describe('files', () => {
             expect(files).toHaveLength(2);
         });
 
-        it('should add new file - no remove background', async () => {
+        it('should add new file - remove background, no crop', async () => {
             // perform action to test
-            data.rmbg = false;
+            data.crop = false;
             const response = await agent(app)
                 .post(`/files/${clientId.toString()}`)
                 .field('fileSrc', data.fileSrc)
                 .field('fullFileName', data.fullFileName)
                 .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, false);
     
             const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
             expect(category.items).toHaveLength(1);
@@ -228,21 +231,23 @@ describe('files', () => {
             expect(files).toHaveLength(4);
         });
 
-        it('should add new file - Other category given', async () => {
+        it('should add new file - no remove background', async () => {
             // perform action to test
+            data.rmbg = false;
             const response = await agent(app)
                 .post(`/files/${clientId.toString()}`)
                 .field('fileSrc', data.fileSrc)
                 .field('fullFileName', data.fullFileName)
-                .field('categoryId', 0)
-                .field('rmbg', data.rmbg);
+                .field('categoryId', data.categoryId)
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
     
-            const category = await collection.findOne({ _id: 0 });
+            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
             expect(category.items).toHaveLength(1);
 
             const file = category.items[0];
@@ -264,21 +269,22 @@ describe('files', () => {
             expect(files).toHaveLength(6);
         });
 
-        it('should add new file - not full file name', async () => {
+        it('should add new file - Other category given', async () => {
             // perform action to test
             const response = await agent(app)
                 .post(`/files/${clientId.toString()}`)
                 .field('fileSrc', data.fileSrc)
-                .field('fullFileName', 'Blazin Blazer')
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg);
+                .field('fullFileName', data.fullFileName)
+                .field('categoryId', 0)
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
     
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
+            const category = await collection.findOne({ _id: 0 });
             expect(category.items).toHaveLength(1);
 
             const file = category.items[0];
@@ -300,6 +306,43 @@ describe('files', () => {
             expect(files).toHaveLength(8);
         });
 
+        it('should add new file - not full file name', async () => {
+            // perform action to test
+            const response = await agent(app)
+                .post(`/files/${clientId.toString()}`)
+                .field('fileSrc', data.fileSrc)
+                .field('fullFileName', 'Blazin Blazer')
+                .field('categoryId', data.categoryId)
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
+
+            // perform checks
+            expect(response.status).toBe(201);
+            expect(response.body.message).toBe('Success!');
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
+    
+            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
+            expect(category.items).toHaveLength(1);
+
+            const file = category.items[0];
+            expect(file).toBeTruthy();
+            expect(file.clientId).toBe(data.clientId);
+            expect(file.fileName).toBe('Blazin Blazer');
+            expect(file).toHaveProperty('gcsId');
+
+            const clientData = await clientCollection.findOne({ _id: clientId });
+            expect(clientData.credits).toBe(client.credits - 1);
+
+            const gcsId = file.gcsId;
+            expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
+            expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
+            expect(file.fullGcsDest).toBe(`test/items/${gcsId}/full.png`);
+            expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(10);
+        });
+
         it('should add new file - no credits deducted because client is super admin', async () => {
             await removeClient(db);
             client.isAdmin = true;
@@ -312,12 +355,13 @@ describe('files', () => {
                 .field('fileSrc', data.fileSrc)
                 .field('fullFileName', data.fullFileName)
                 .field('categoryId', 0)
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
     
             const category = await collection.findOne({ _id: 0 });
             expect(category.items).toHaveLength(1);
@@ -338,7 +382,7 @@ describe('files', () => {
             expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(10);
+            expect(files).toHaveLength(12);
         });
 
         it('should add new file - client has 1 credit', async () => {
@@ -352,12 +396,13 @@ describe('files', () => {
                 .field('fileSrc', data.fileSrc)
                 .field('fullFileName', data.fullFileName)
                 .field('categoryId', 0)
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
     
             const category = await collection.findOne({ _id: 0 });
             expect(category.items).toHaveLength(1);
@@ -378,7 +423,7 @@ describe('files', () => {
             expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(12);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail if user non-admin and rmbg not selected', async () => {
@@ -391,11 +436,12 @@ describe('files', () => {
                 .field('fileSrc', data.fileSrc)
                 .field('fullFileName', data.fullFileName)
                 .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(403);
-            expect(response.body.message).toBe('non-admins must remove background on file upload');
+            expect(response.body.message).toBe('non-admins must remove background and crop image on file upload');
             expect(mockRemoveBackground).not.toHaveBeenCalled();
     
             const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
@@ -405,7 +451,35 @@ describe('files', () => {
             expect(clientData.credits).toBe(client.credits);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(12);
+            expect(files).toHaveLength(14);
+        });
+
+        it('should fail if user non-admin and crop not selected', async () => {
+            // perform action to test
+            token = jwt.sign({ id: clientId, isAdmin: false, isSuperAdmin: false }, process.env.JWT_SECRET);
+            cookie = `token=${token}`;
+            data.crop = false;
+            const response = await agent(app)
+                .post(`/files/${clientId.toString()}`)
+                .field('fileSrc', data.fileSrc)
+                .field('fullFileName', data.fullFileName)
+                .field('categoryId', data.categoryId)
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
+
+            // perform checks
+            expect(response.status).toBe(403);
+            expect(response.body.message).toBe('non-admins must remove background and crop image on file upload');
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+    
+            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
+            expect(category.items).toHaveLength(0);
+
+            const clientData = await clientCollection.findOne({ _id: clientId });
+            expect(clientData.credits).toBe(client.credits);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with missing file source', async () => {
@@ -415,7 +489,8 @@ describe('files', () => {
                 .field('fileSrc', '')
                 .field('fullFileName', data.fullFileName)
                 .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(400);
@@ -429,7 +504,7 @@ describe('files', () => {
             expect(clientData.credits).toBe(client.credits);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(12);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with invalid MIME file source', async () => {
@@ -439,7 +514,8 @@ describe('files', () => {
                 .field('fileSrc', 'data:image/gif;base64,invalid-file-source')
                 .field('fullFileName', data.fullFileName)
                 .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(500);
@@ -453,7 +529,7 @@ describe('files', () => {
             expect(clientData.credits).toBe(client.credits);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(12);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with invalid file source', async () => {
@@ -463,7 +539,8 @@ describe('files', () => {
                 .field('fileSrc', 'data:image/png;base64,')
                 .field('fullFileName', data.fullFileName)
                 .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(500);
@@ -477,7 +554,7 @@ describe('files', () => {
             expect(clientData.credits).toBe(client.credits);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(12);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with missing file name', async () => {
@@ -487,7 +564,8 @@ describe('files', () => {
                 .field('fileSrc', data.fileSrc)
                 .field('fullFileName', '')
                 .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(400);
@@ -501,7 +579,7 @@ describe('files', () => {
             expect(clientData.credits).toBe(client.credits);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(12);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with invalid client id', async () => {
@@ -511,7 +589,8 @@ describe('files', () => {
                 .field('fileSrc', data.fileSrc)
                 .field('fullFileName', data.fullFileName)
                 .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(400);
@@ -525,7 +604,7 @@ describe('files', () => {
             expect(clientData.credits).toBe(client.credits);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(12);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with invalid category id', async () => {
@@ -535,7 +614,8 @@ describe('files', () => {
                 .field('fileSrc', data.fileSrc)
                 .field('fullFileName', data.fullFileName)
                 .field('categoryId', '')
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(400);
@@ -549,7 +629,7 @@ describe('files', () => {
             expect(clientData.credits).toBe(client.credits);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(12);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with missing rembg option', async () => {
@@ -558,7 +638,8 @@ describe('files', () => {
                 .post(`/files/${clientId.toString()}`)
                 .field('fileSrc', data.fileSrc)
                 .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId);
+                .field('categoryId', data.categoryId)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(400);
@@ -572,7 +653,31 @@ describe('files', () => {
             expect(clientData.credits).toBe(client.credits);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(12);
+            expect(files).toHaveLength(14);
+        });
+
+        it('should fail with missing crop option', async () => {
+            // perform action to test
+            const response = await agent(app)
+                .post(`/files/${clientId.toString()}`)
+                .field('fileSrc', data.fileSrc)
+                .field('fullFileName', data.fullFileName)
+                .field('categoryId', data.categoryId)
+                .field('rmbg', data.rmbg);
+
+            // perform checks
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('crop image option is required to create file');
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+    
+            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
+            expect(category.items).toHaveLength(0);
+
+            const clientData = await clientCollection.findOne({ _id: clientId });
+            expect(clientData.credits).toBe(client.credits);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(14);
         });
 
         it('should fail with nonexistent category id', async () => {
@@ -585,7 +690,8 @@ describe('files', () => {
                 .field('fileSrc', data.fileSrc)
                 .field('fullFileName', data.fullFileName)
                 .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(404);
@@ -599,7 +705,7 @@ describe('files', () => {
             expect(clientData.credits).toBe(client.credits);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(12);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail if client doesn\'t exist', async () => {
@@ -611,7 +717,8 @@ describe('files', () => {
                 .field('fileSrc', data.fileSrc)
                 .field('fullFileName', data.fullFileName)
                 .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(404);
@@ -625,7 +732,7 @@ describe('files', () => {
             expect(clientData).toBeFalsy();
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(12);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail if client has no credits', async () => {
@@ -639,7 +746,8 @@ describe('files', () => {
                 .field('fileSrc', data.fileSrc)
                 .field('fullFileName', data.fullFileName)
                 .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(403);
@@ -653,7 +761,7 @@ describe('files', () => {
             expect(clientData.credits).toBe(client.credits);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(12);
+            expect(files).toHaveLength(14);
         });
 
         it('should fail if client has credits that is not a number', async () => {
@@ -667,7 +775,8 @@ describe('files', () => {
                 .field('fileSrc', data.fileSrc)
                 .field('fullFileName', data.fullFileName)
                 .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg);
+                .field('rmbg', data.rmbg)
+                .field('crop', data.crop);
 
             // perform checks
             expect(response.status).toBe(403);
@@ -681,7 +790,7 @@ describe('files', () => {
             expect(clientData.credits).toBe(client.credits);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(12);
+            expect(files).toHaveLength(14);
         });
     });
     

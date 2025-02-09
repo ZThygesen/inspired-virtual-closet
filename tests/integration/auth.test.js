@@ -837,7 +837,8 @@ describe('auth', () => {
                     fileSrc: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==',
                     fullFileName: 'Blazin Blazer.png',
                     categoryId: categoryId.toString(),
-                    rmbg: true
+                    rmbg: true,
+                    crop: true
                 };
             });
 
@@ -850,7 +851,8 @@ describe('auth', () => {
                     .field('fileSrc', data.fileSrc)
                     .field('fullFileName', data.fullFileName)
                     .field('categoryId', data.categoryId)
-                    .field('rmbg', data.rmbg);
+                    .field('rmbg', data.rmbg)
+                    .field('crop', data.crop);
 
                 // perform checks
                 expect(response.status).toBe(201);
@@ -869,7 +871,8 @@ describe('auth', () => {
                     .field('fileSrc', data.fileSrc)
                     .field('fullFileName', data.fullFileName)
                     .field('categoryId', data.categoryId)
-                    .field('rmbg', data.rmbg);
+                    .field('rmbg', data.rmbg)
+                    .field('crop', data.crop);
 
                 // perform checks
                 expect(response.status).toBe(201);
@@ -887,7 +890,8 @@ describe('auth', () => {
                     .field('fileSrc', data.fileSrc)
                     .field('fullFileName', data.fullFileName)
                     .field('categoryId', data.categoryId)
-                    .field('rmbg', data.rmbg);
+                    .field('rmbg', data.rmbg)
+                    .field('crop', data.crop);
 
                 // perform checks
                 expect(response.status).toBe(201);
@@ -905,7 +909,8 @@ describe('auth', () => {
                     .field('fileSrc', data.fileSrc)
                     .field('fullFileName', data.fullFileName)
                     .field('categoryId', data.categoryId)
-                    .field('rmbg', data.rmbg);
+                    .field('rmbg', data.rmbg)
+                    .field('crop', data.crop);
 
                 // perform checks
                 expect(response.status).toBe(403);
@@ -923,7 +928,8 @@ describe('auth', () => {
                     .field('fileSrc', data.fileSrc)
                     .field('fullFileName', data.fullFileName)
                     .field('categoryId', data.categoryId)
-                    .field('rmbg', data.rmbg);
+                    .field('rmbg', data.rmbg)
+                    .field('crop', data.crop);
 
                 // perform checks
                 expect(response.status).toBe(403);
@@ -942,7 +948,8 @@ describe('auth', () => {
                     .field('fileSrc', data.fileSrc)
                     .field('fullFileName', data.fullFileName)
                     .field('categoryId', data.categoryId)
-                    .field('rmbg', data.rmbg);
+                    .field('rmbg', data.rmbg)
+                    .field('crop', data.crop);
 
                 // perform checks
                 expect(response.status).toBe(201);
@@ -960,7 +967,8 @@ describe('auth', () => {
                     .field('fileSrc', data.fileSrc)
                     .field('fullFileName', data.fullFileName)
                     .field('categoryId', data.categoryId)
-                    .field('rmbg', data.rmbg);
+                    .field('rmbg', data.rmbg)
+                    .field('crop', data.crop);
 
                 // perform checks
                 expect(response.status).toBe(201);
@@ -978,7 +986,8 @@ describe('auth', () => {
                     .field('fileSrc', data.fileSrc)
                     .field('fullFileName', data.fullFileName)
                     .field('categoryId', data.categoryId)
-                    .field('rmbg', data.rmbg);
+                    .field('rmbg', data.rmbg)
+                    .field('crop', data.crop);
 
                 // perform checks
                 expect(response.status).toBe(403);
@@ -996,7 +1005,8 @@ describe('auth', () => {
                     .field('fileSrc', data.fileSrc)
                     .field('fullFileName', data.fullFileName)
                     .field('categoryId', data.categoryId)
-                    .field('rmbg', data.rmbg);
+                    .field('rmbg', data.rmbg)
+                    .field('crop', data.crop);
 
                 // perform checks
                 expect(response.status).toBe(403);
@@ -1014,7 +1024,8 @@ describe('auth', () => {
                     .field('fileSrc', data.fileSrc)
                     .field('fullFileName', data.fullFileName)
                     .field('categoryId', data.categoryId)
-                    .field('rmbg', data.rmbg);
+                    .field('rmbg', data.rmbg)
+                    .field('crop', data.crop);
 
                 // perform checks
                 expect(response.status).toBe(403);
@@ -1033,7 +1044,8 @@ describe('auth', () => {
                     .field('fileSrc', data.fileSrc)
                     .field('fullFileName', data.fullFileName)
                     .field('categoryId', data.categoryId)
-                    .field('rmbg', data.rmbg);
+                    .field('rmbg', data.rmbg)
+                    .field('crop', data.crop);
 
                 // perform checks
                 expect(response.status).toBe(201);
@@ -1051,7 +1063,8 @@ describe('auth', () => {
                     .field('fileSrc', data.fileSrc)
                     .field('fullFileName', data.fullFileName)
                     .field('categoryId', data.categoryId)
-                    .field('rmbg', data.rmbg);
+                    .field('rmbg', data.rmbg)
+                    .field('crop', data.crop);
 
                 // perform checks
                 expect(response.status).toBe(401);
@@ -1069,7 +1082,8 @@ describe('auth', () => {
                     .field('fileSrc', data.fileSrc)
                     .field('fullFileName', data.fullFileName)
                     .field('categoryId', data.categoryId)
-                    .field('rmbg', data.rmbg);
+                    .field('rmbg', data.rmbg)
+                    .field('crop', data.crop);
 
                 // perform checks
                 expect(response.status).toBe(500);

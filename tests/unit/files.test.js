@@ -107,7 +107,8 @@ describe('files', () => {
                 fileSrc: 'file source string',
                 fullFileName: 'blaze-tastic.png',
                 categoryId: (new ObjectId()).toString(),
-                rmbg: 'true'
+                rmbg: 'true',
+                crop: 'true'
             };
             user = {
                 id: clientId,
@@ -132,7 +133,7 @@ describe('files', () => {
             process.env.NODE_ENV = 'test';
         });
 
-        it('should create new file - test environment, remove background', async () => {
+        it('should create new file - test environment, remove background, crop image', async () => {
             // perform action to test
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
             const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
@@ -146,7 +147,7 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
             expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
@@ -159,7 +160,35 @@ describe('files', () => {
             expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should create new file - non-production environment, no remove background', async () => {
+        it('should create new file - test environment, remove background, no crop image', async () => {
+            // perform action to test
+            data.crop = 'false';
+            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
+
+            await files.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('categories');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockCreateId).toHaveBeenCalled();
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, false);
+            expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
+            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
+            expect(mockRes.status).toHaveBeenCalledWith(201);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it('should create new file - test environment, no remove background', async () => {
             // perform action to test
             data.rmbg = 'false';
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
@@ -187,7 +216,7 @@ describe('files', () => {
             expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should create new file - non-production environment, remove background', async () => {
+        it('should create new file - non-production environment, remove background, crop image', async () => {
             // perform action to test
             process.env.NODE_ENV = 'dev';
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
@@ -202,7 +231,36 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
+            expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
+            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/items/${createIdResponse}/small.png`, imageThumbnailResponse);
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
+            expect(mockRes.status).toHaveBeenCalledWith(201);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it('should create new file - non-production environment, remove background, no crop image', async () => {
+            // perform action to test
+            process.env.NODE_ENV = 'dev';
+            data.crop = 'false';
+            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
+
+            await files.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('categories');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockCreateId).toHaveBeenCalled();
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, false);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
             expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
@@ -244,7 +302,7 @@ describe('files', () => {
             expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should create new file - production environment, remove background', async () => {
+        it('should create new file - production environment, remove background, crop image', async () => {
             // perform action to test
             process.env.NODE_ENV = 'production';
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
@@ -259,7 +317,36 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
+            expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
+            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `items/${createIdResponse}/small.png`, imageThumbnailResponse);
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
+            expect(mockRes.status).toHaveBeenCalledWith(201);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it('should create new file - production environment, remove background, no crop image', async () => {
+            // perform action to test
+            process.env.NODE_ENV = 'production';
+            data.crop = 'false';
+            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
+
+            await files.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('categories');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockCreateId).toHaveBeenCalled();
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, false);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
             expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
@@ -316,7 +403,7 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
             expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
@@ -345,7 +432,7 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).not.toHaveBeenCalled();
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
             expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
@@ -358,7 +445,7 @@ describe('files', () => {
             expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should create new file - user is non-admin and rmbg', async () => {
+        it('should create new file - user is non-admin and rmbg, crop image', async () => {
             // perform action to test
             mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
             user.isAdmin = false;
@@ -374,7 +461,7 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
             expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
@@ -385,6 +472,37 @@ describe('files', () => {
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
             expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it('should fail if user is non-admin and tries to not crop image', async () => {
+            // perform action to test
+            user.isAdmin = false;
+            user.isSuperAdmin = false;
+            data.crop = 'false';
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
+
+            await files.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('categories');
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
+            expect(mockGetCredits).not.toHaveBeenCalled();
+            expect(mockCreateId).not.toHaveBeenCalled();
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+            expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
+            expect(mockParse).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockDeductCredits).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(403);
+            expect(err.message).toBe('non-admins must remove background and crop image on file upload');
         });
 
         it('should fail if user is non-admin and tries to not remove background', async () => {
@@ -415,7 +533,7 @@ describe('files', () => {
             expect(mockNext).toHaveBeenCalled();
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(403);
-            expect(err.message).toBe('non-admins must remove background on file upload');
+            expect(err.message).toBe('non-admins must remove background and crop image on file upload');
         });
 
         it('should handle find failure', async () => {
@@ -655,7 +773,7 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
             expect(mockParse).not.toHaveBeenCalled();
@@ -720,7 +838,7 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
             expect(mockParse).not.toHaveBeenCalled();
@@ -752,7 +870,7 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
             expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
@@ -785,7 +903,7 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
             expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
@@ -818,7 +936,7 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
             expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
@@ -852,7 +970,7 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
             expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
@@ -885,7 +1003,7 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
             expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
@@ -916,7 +1034,7 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
             expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
@@ -951,7 +1069,7 @@ describe('files', () => {
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
             expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
             expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
@@ -1171,6 +1289,36 @@ describe('files', () => {
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
             expect(err.message).toBe('background removal option is required to create file');
+        });
+
+        it('should fail with missing crop image option', async () => {
+            // perform action to test
+            delete data.crop;
+
+            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
+
+            await files.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).not.toHaveBeenCalled();
+            expect(mockCollection.find).not.toHaveBeenCalled();
+            expect(mockCollection.toArray).not.toHaveBeenCalled();
+            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
+            expect(mockGetCredits).not.toHaveBeenCalled();
+            expect(mockCreateId).not.toHaveBeenCalled();
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+            expect(mockb64ToBuffer).not.toHaveBeenCalled();
+            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
+            expect(mockParse).not.toHaveBeenCalled();
+            expect(mockUploadToGCS).not.toHaveBeenCalled();
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockDeductCredits).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('crop image option is required to create file');
         });
     });
 

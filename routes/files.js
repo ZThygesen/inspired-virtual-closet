@@ -10,7 +10,7 @@ const files = {
     async post(req, res, next) {
         try {
             // read in file fields
-            const { fileSrc, fullFileName, categoryId, rmbg } = req?.fields;
+            const { fileSrc, fullFileName, categoryId, rmbg, crop } = req?.fields;
 
             if (!fileSrc) {
                 throw helpers.createError('file source is required to create file', 400);
@@ -40,6 +40,11 @@ const files = {
                 throw helpers.createError('background removal option is required to create file', 400);
             }
             const parsedRmbg = rmbg === "true";
+            
+            if (crop === null || crop === undefined) {
+                throw helpers.createError('crop image option is required to create file', 400);
+            }
+            const parsedCrop = crop === "true";
 
             const { db, bucket } = req.locals;
             const collection = db.collection('categories');
@@ -47,8 +52,8 @@ const files = {
                 throw helpers.createError(`cannot add file: no category or multiple categories with the id "${id.toString()}" exist`, 404);
             }
 
-            if (!req?.user?.isSuperAdmin && !req?.user?.isAdmin && !parsedRmbg) {
-                throw helpers.createError('non-admins must remove background on file upload', 403);
+            if (!req?.user?.isSuperAdmin && !req?.user?.isAdmin && (!parsedRmbg || !parsedCrop)) {
+                throw helpers.createError('non-admins must remove background and crop image on file upload', 403);
             }
 
             const isSuperAdmin = await helpers.isSuperAdmin(db, clientId);
@@ -76,7 +81,7 @@ const files = {
             
             let fullImgBuffer;
             if (parsedRmbg) {
-                fullImgBuffer = await helpers.removeBackground(fileSrc);
+                fullImgBuffer = await helpers.removeBackground(fileSrc, parsedCrop);
             } else {
                 fullImgBuffer = await helpers.b64ToBuffer(fileSrc);
             }

@@ -79,7 +79,7 @@ export const helpers = {
         return buffer;
     },
 
-    async removeBackground(base64Image) {
+    async removeBackground(base64Image, crop = true) {
         const validTypes = [
             'data:image/png;base64',
             'data:image/jpg;base64',
@@ -100,7 +100,7 @@ export const helpers = {
             },
             body: JSON.stringify({
                 image_file_b64: base64Image.split(',')[1],
-                crop: true,
+                crop: crop,
             })
         });
         
