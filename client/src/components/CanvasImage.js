@@ -3,44 +3,28 @@ import useImage from "use-image";
 import { Image } from "react-konva";
 
 export default function CanvasImage({ imageObj, scale, handleSelectItems, canvasResized }) {
-    const [canvasRendered, setCanvasRendered] = useState(false);
     const [image] = useImage(imageObj.src, 'anonymous');
     const imageRef = useRef();
-    
-    useEffect(() => {
-        if (canvasResized.w > 0) {
-            setCanvasRendered(true);
-        }
-    }, [canvasResized.w]);
+
+    const [xPos, setXPos] = useState(null);
 
     let initialWidth = 150;
     let initialX = 20;
-    const scaleX = imageRef?.current?.attrs?.scaleX || 1;
     
     if (imageObj.canvasId === 0) {
         initialWidth = 125;
         const scaleX = imageRef?.current?.attrs?.scaleX || 1;
-        const width = imageObj?.current?.attrs?.width || initialWidth;
-        const testX = Math.round((canvasResized.w / scale.x) - (initialWidth * scaleX) - 20);;
-        if (!canvasRendered && canvasResized.w > 0) {
-            console.log("here")
-            initialX = /*imageRef?.current?.attrs?.x || */ Math.round((canvasResized.w / scale.x) - (initialWidth * scaleX) - 20);
-        }
-        if (imageRef.current && imageRef?.current?.attrs?.x < 0) {
-            
-        }
-        // console.log(prevWidth, initialX);
-        // setPrevWidth(initialX);
-        console.log(canvasRendered, canvasResized.w, testX, initialX, imageRef?.current?.attrs?.x)
+        initialX = Math.round((canvasResized.w / scale.x) - (initialWidth * scaleX) - 20);
     }
 
     const initialHeight = (image?.height / image?.width) * initialWidth || initialWidth;
     const initialY = 20;
 
-    // let xPos = imageRef?.current?.attrs?.x 
-    // const initialX = imageObj.canvasId === 0 ? ((canvasResized.w / scale.x) - (initialWidth * scaleX) - 20) : 20;
-    // console.log(imageRef.current.attrs)
-    // console.log(canvasResized.w, (canvasResized.w / scale.x) - (imageRef.current.attrs.width / scale.x) - 20, imageRef.current)
+    useEffect(() => {
+        if (imageObj.canvasId === 0 && xPos === initialX) {
+            setXPos(initialX);
+        }
+    }, [imageObj, initialX, xPos]);
 
     useEffect(() => {
         handleDrag();
@@ -72,6 +56,12 @@ export default function CanvasImage({ imageObj, scale, handleSelectItems, canvas
         }     
     }
 
+    function onDragEnd(e) {
+        if (imageObj.canvasId === 0) {
+            setXPos(e.target.attrs.x);
+        }
+    }
+
     function onMouseDown() {
         handleSelectItems(imageRef.current);
     }
@@ -93,6 +83,7 @@ export default function CanvasImage({ imageObj, scale, handleSelectItems, canvas
                 ref={imageRef}
 
                 onDragMove={handleDrag}
+                onDragEnd={onDragEnd}
                 onMouseDown={onMouseDown}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
@@ -101,14 +92,12 @@ export default function CanvasImage({ imageObj, scale, handleSelectItems, canvas
                 
                 // default attrs
                 name="image"
-                x={initialX}
+                x={xPos || initialX}
                 y={initialY}
                 width={initialWidth}
                 height={initialHeight}
                 draggable
                 item={imageObj}
-
-                // {...imageRef?.current?.attrs}
                 
                 // if attrs exist (edit mode)
                 {...imageObj.attrs}
