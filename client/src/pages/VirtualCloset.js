@@ -199,7 +199,7 @@ export default function VirtualCloset() {
                     <Loading open={loading} />
                 </SidebarProvider>
             </ClientProvider>
-            <p className="copyright">© 2024 Edie Styles, LLC</p>
+            <p className="copyright">© 2025 Edie Styles, LLC</p>
         </>
     )
 }
