@@ -64,3 +64,7 @@ div[role="tooltip"] > * {
 .copyright {
     text-align: center;
 }
+
+.backdrop {
+    backdrop-filter: blur(4px);
+}

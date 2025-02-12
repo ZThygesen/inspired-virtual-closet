@@ -17,7 +17,7 @@ const CloseModal = styled.div`
     }
 `;
 
-export default function ImageModal({ open, image, closeModal }) {
+export default function ImageModal({ open, image, closeModal, children }) {
     return (
         <div>
             <Backdrop
@@ -37,6 +37,7 @@ export default function ImageModal({ open, image, closeModal }) {
                     src={image.src}
                     alt={image.alt}
                 />
+                {children}
             </Backdrop>
         </div>
     );

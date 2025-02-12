@@ -4,7 +4,8 @@ import { ModalContentContainer } from '../styles/Modal';
 
 export default function Modal({ open, closeFn, isForm, submitFn, isImage, isLoading=false, children }) {
     const handleClick = useCallback((e) => {
-        if (isImage && !isLoading && open && e.target.tagName !== 'IMG') {
+        const classList = Array.from(e.target.classList);
+        if (isImage && !isLoading && open && e.target.tagName !== 'IMG' && !classList.includes('send-to-canvas')) {
             closeFn();
         }
         
@@ -24,7 +25,7 @@ export default function Modal({ open, closeFn, isForm, submitFn, isImage, isLoad
         <MuiModal
             open={open}
             onClose={closeFn}
-            className='backdrop'
+            className="backdrop"
         >
             {isForm ?
                 <form onSubmit={submitFn}>

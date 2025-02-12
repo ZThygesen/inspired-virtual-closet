@@ -1,17 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Tooltip } from '@mui/material';
 import Modal from './Modal';
 import Input from './Input';
 import { ClothingCardContainer } from '../styles/Clothes';
 import { useUser } from './UserContext';
 
-export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, swapCategory, editItem, deleteItem }) {
+export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, swapCategory, editItem, deleteItem, prevClothingModal, nextClothingModal, openClothingModal, isOpen }) {
     const [editOpen, setEditOpen] = useState(false);
     const [newItemName, setNewItemName] = useState(item.fileName);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-    const [imageModalOpen, setImageModalOpen] = useState(false);
-
+    const [imageModalOpen, setImageModalOpen] = useState(isOpen);
     const { user } = useUser();
+
+    useEffect(() => {
+        setImageModalOpen(isOpen);
+    }, [isOpen])
 
     function handleCloseImageModal() {
         setImageModalOpen(false);
@@ -45,7 +48,7 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
                     <img
                         src={item.smallFileUrl}
                         alt={item.fileName}
-                        onClick={() => setImageModalOpen(true)}
+                        onClick={() => { openClothingModal(); setImageModalOpen(true); }}
                     />
                 </div>
                 <div className="item-options">
@@ -98,6 +101,21 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
                 <>  
                     <button className="material-icons close-modal" onClick={handleCloseImageModal}>close</button>
                     <img src={item.fullFileUrl} alt={item.fileName} className="image-modal" />
+                    <button className="material-icons prev-clothing-card" onClick={() => prevClothingModal(item)}>chevron_left</button>
+                    <button className="material-icons next-clothing-card" onClick={() => nextClothingModal(item)}>chevron_right</button>
+                    { user?.isAdmin &&
+                        <Tooltip title="Send to Canvas">
+                            <button 
+                                className="material-icons send-to-canvas"
+                                onClick={() => sendToCanvas(item)}
+                            >
+                                shortcut
+                            </button>
+                        </Tooltip>
+                    }
+                    { onCanvas &&
+                        <p className="on-canvas">Item on canvas!</p>
+                    }
                 </>
             </Modal>
             <Modal
