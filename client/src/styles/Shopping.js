@@ -82,9 +82,9 @@ export const ShoppingContainer = styled.div`
         border: 2px solid var(--black);
         border-radius: 50%;
         padding: 4px;
-        position: absolute;
-        top: 0;
-        right: 0;
+        position: fixed;
+        top: 224px;
+        right: 24px;
         cursor: pointer;
         transition: 0.1s;
 
