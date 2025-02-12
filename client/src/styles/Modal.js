@@ -25,14 +25,14 @@ export const ModalContentContainer = styled.div`
             top: 36px;
         }
 
-        .prev-clothing-card,
-        .next-clothing-card,
+        .prev-card,
+        .next-card,
         .send-to-canvas {
             background: none;
             border-radius: 50%;
             font-size: 88px !important;
             position: absolute;
-            color: var(--white);
+            color: var(--grey);
             padding: 8px;
             transition: 0.1s;
 
@@ -42,11 +42,11 @@ export const ModalContentContainer = styled.div`
             }
         }
 
-        .prev-clothing-card {
+        .prev-card {
             left: 12px;
         }
 
-        .next-clothing-card {
+        .next-card {
             right: 12px;
         }
 

@@ -101,8 +101,8 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
                 <>  
                     <button className="material-icons close-modal" onClick={handleCloseImageModal}>close</button>
                     <img src={item.fullFileUrl} alt={item.fileName} className="image-modal" />
-                    <button className="material-icons prev-clothing-card" onClick={() => prevClothingModal(item)}>chevron_left</button>
-                    <button className="material-icons next-clothing-card" onClick={() => nextClothingModal(item)}>chevron_right</button>
+                    <button className="material-icons prev-card" onClick={prevClothingModal}>chevron_left</button>
+                    <button className="material-icons next-card" onClick={nextClothingModal}>chevron_right</button>
                     { user?.isAdmin &&
                         <Tooltip title="Send to Canvas">
                             <button 
