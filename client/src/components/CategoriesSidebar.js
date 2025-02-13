@@ -17,27 +17,23 @@ export default function CategoriesSidebar({ sidebarRef, categories, activeCatego
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState({});
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [stickyCategory, setStickyCategory] = useState({});
+    const [stickyCategory, setStickyCategory] = useState(null);
 
     const { sidebarOpen, setSidebarOpen, mobileMode, setCurrCategoryClicked } = useSidebar();
 
     const ref = useRef();
+    const expandRef = useRef();
+    const collapseRef = useRef();
 
     const { user } = useUser();
 
     function toggleStickyCategory(category) {
         if (category === stickyCategory) {
-            setStickyCategory({});
+            setStickyCategory(null);
         } else {
             setStickyCategory(category);
         }
     }
-
-    // useEffect(() => {
-    //     if (activeCategory !== stickyCategory) {
-    //         setStickyCategory({});
-    //     }
-    // }, [activeCategory, stickyCategory]);
 
     // set category to 'All' on first render
     useEffect(() => {
@@ -136,16 +132,20 @@ export default function CategoriesSidebar({ sidebarRef, categories, activeCatego
                             <div className={
                                 `
                                     category-container 
-                                    ${(category._id === stickyCategory._id && category._id === activeCategory?._id) ? 'expanded' : ''}
+                                    ${(category._id === stickyCategory?._id && category._id === activeCategory?._id) ? 'expanded' : ''}
                                     ${category._id === activeCategory?._id ? 'active' : ''}
                                 `
                                 } 
                                 key={cuid()}
                             >
                                 <button
-                                    onClick={() => {
+                                    onClick={(e) => {
                                         setCategory(category);
-                                        if (mobileMode) {
+                    
+                                        const target = e.target.className;
+                                        const expand = expandRef.current.className;
+                                        const collapse = collapseRef.current.className;
+                                        if (mobileMode && !(target === expand || target === collapse)) {
                                             setSidebarOpen(false);
                                         }
 
@@ -158,18 +158,19 @@ export default function CategoriesSidebar({ sidebarRef, categories, activeCatego
                                     <p className="category-name">{category.name}</p>
                                     <p 
                                         className="num-items" 
-                                        onClick={() => toggleStickyCategory(category)}
+                                        onClick={() => {
+                                            toggleStickyCategory(category);
+                                        }}
                                     >
                                         <span className="cat-count">{category.items.length}</span>
-                                        <span className="material-icons cat-expand">expand_more</span>
-                                        <span className="material-icons cat-collapse">expand_less</span>
+                                        <span className="material-icons cat-expand" ref={expandRef}>expand_more</span>
+                                        <span className="material-icons cat-collapse" ref={collapseRef}>expand_less</span>
                                     </p>
                                 </button>
                                 <div className="category-items-container">
                                 {
                                     category.items.map(item => (
                                         <ClothingCard
-                                            className=""
                                             item={item}
                                             editable={false}
                                             onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === item.gcsId)}
