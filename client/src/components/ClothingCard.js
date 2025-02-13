@@ -5,7 +5,7 @@ import Input from './Input';
 import { ClothingCardContainer } from '../styles/Clothes';
 import { useUser } from './UserContext';
 
-export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, swapCategory, editItem, deleteItem, prevClothingModal, nextClothingModal, openClothingModal, isOpen }) {
+export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, swapCategory, editItem, deleteItem, prevClothingModal, nextClothingModal, openClothingModal, isOpen, fromSidebar }) {
     const [editOpen, setEditOpen] = useState(false);
     const [newItemName, setNewItemName] = useState(item.fileName);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -37,13 +37,13 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
 
     return (
         <>
-            <ClothingCardContainer className={onCanvas ? 'on-canvas' : ''}>
+            <ClothingCardContainer className={`${onCanvas ? 'on-canvas' : ''} ${fromSidebar ? 'from-sidebar' : ''}`}>
                 { onCanvas &&
                     <Tooltip title="On Canvas">
                         <span className="material-icons on-canvas-icon">swipe</span>
                     </Tooltip>
                 }
-                <p className="file-name">{item.fileName}</p>
+                { !fromSidebar && <p className="file-name">{item.fileName}</p> }
                 <div className="clothing-card-img">
                     <img
                         src={item.smallFileUrl}
@@ -56,7 +56,7 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
                         <Tooltip title="Send to Canvas">
                             <button 
                                 className="material-icons item-option important"
-                                onClick={() => sendToCanvas(item)}
+                                onClick={() => sendToCanvas(item, "image")}
                             >
                                 shortcut
                             </button>
@@ -101,13 +101,13 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
                 <>  
                     <button className="material-icons close-modal" onClick={handleCloseImageModal}>close</button>
                     <img src={item.fullFileUrl} alt={item.fileName} className="image-modal" />
-                    <button className="material-icons prev-card" onClick={prevClothingModal}>chevron_left</button>
-                    <button className="material-icons next-card" onClick={nextClothingModal}>chevron_right</button>
-                    { user?.isAdmin &&
+                    { !fromSidebar && <button className="material-icons prev-card" onClick={prevClothingModal}>chevron_left</button> }
+                    { !fromSidebar &&<button className="material-icons next-card" onClick={nextClothingModal}>chevron_right</button> }
+                    { !fromSidebar && user?.isAdmin &&
                         <Tooltip title="Send to Canvas">
                             <button 
                                 className="material-icons send-to-canvas"
-                                onClick={() => sendToCanvas(item)}
+                                onClick={() => sendToCanvas(item, "image")}
                             >
                                 shortcut
                             </button>

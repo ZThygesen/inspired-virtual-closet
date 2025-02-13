@@ -17,9 +17,9 @@ const logoCanvasItem = {
     canvasId: 0,
     type: 'image',
     src: 'https://storage.googleapis.com/edie-styles-virtual-closet/logo.png'
-}
+};
 
-export default function ClosetNavigation({ sidebarRef, client, category, getCategories }) {
+export default function ClosetNavigation({ sidebarRef, client, category, getCategories, setSendToCanvas, setCategoryCanvasItems }) {
     const { setError } = useError();
     
     const closetTitleRef = useRef();
@@ -85,7 +85,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
         if (category.name !== currCategory || currCategoryClicked) {
             setCurrCategory(category.name);
             scrollToRef(ref);
-            if (closetMode !== 0 && closetMode !== 4) {
+            if (closetMode !== 0 && closetMode !== 1 && closetMode !== 4) {
                 setClosetMode(0);
             }
             setCurrCategoryClicked(false);
@@ -97,7 +97,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
         setClosetMode(0);
     }
 
-    function addCanvasItem(item, type) {
+    const addCanvasItem = useCallback((item, type) => {
         let canvasItem;
 
         if (type === 'image') {
@@ -116,7 +116,15 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
         }  
 
         setCanvasItems([...canvasItems, canvasItem]);
-    }
+    }, [canvasItems]);
+
+    useEffect(() => {
+        setSendToCanvas(addCanvasItem);
+    }, [setSendToCanvas, addCanvasItem]);
+
+    useEffect(() => {
+        setCategoryCanvasItems(canvasItems);
+    }, [setCategoryCanvasItems, canvasItems]);
 
     function sendOutfitToCanvas(outfit) {
         setCanvasItems([]);

@@ -7,8 +7,9 @@ import Input from './Input';
 import { CategorySettings } from '../styles/CategoriesSidebar';
 import { useUser } from './UserContext';
 import { useSidebar } from './SidebarContext';
+import ClothingCard from './ClothingCard';
 
-export default function CategoriesSidebar({ sidebarRef, categories, activeCategory, setCategory, addCategory, editCategory, deleteCategory }) {
+export default function CategoriesSidebar({ sidebarRef, categories, activeCategory, setCategory, addCategory, editCategory, deleteCategory, sendToCanvas, canvasItems }) {
     const [addOpen, setAddOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [categoryToEdit, setCategoryToEdit] = useState({});
@@ -16,12 +17,27 @@ export default function CategoriesSidebar({ sidebarRef, categories, activeCatego
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState({});
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [stickyCategory, setStickyCategory] = useState({});
 
     const { sidebarOpen, setSidebarOpen, mobileMode, setCurrCategoryClicked } = useSidebar();
 
     const ref = useRef();
 
     const { user } = useUser();
+
+    function toggleStickyCategory(category) {
+        if (category === stickyCategory) {
+            setStickyCategory({});
+        } else {
+            setStickyCategory(category);
+        }
+    }
+
+    // useEffect(() => {
+    //     if (activeCategory !== stickyCategory) {
+    //         setStickyCategory({});
+    //     }
+    // }, [activeCategory, stickyCategory]);
 
     // set category to 'All' on first render
     useEffect(() => {
@@ -117,23 +133,56 @@ export default function CategoriesSidebar({ sidebarRef, categories, activeCatego
                 <div className="categories-container" ref={ref}>
                     {
                         categories.map(category => (
-                            <button
+                            <div className={
+                                `
+                                    category-container 
+                                    ${(category._id === stickyCategory._id && category._id === activeCategory?._id) ? 'expanded' : ''}
+                                    ${category._id === activeCategory?._id ? 'active' : ''}
+                                `
+                                } 
                                 key={cuid()}
-                                onClick={() => {
-                                    setCategory(category);
-                                    if (mobileMode) {
-                                        setSidebarOpen(false);
-                                    }
-
-                                    if (category._id === activeCategory?._id) {
-                                        setCurrCategoryClicked(true);
-                                    }
-                                }}
-                                className={category._id === activeCategory?._id ? 'active category-button' : 'category-button'}
                             >
-                                <p className="category-name">{category.name}</p>
-                                <p className="num-items">{category.items.length}</p>
-                            </button>
+                                <button
+                                    onClick={() => {
+                                        setCategory(category);
+                                        if (mobileMode) {
+                                            setSidebarOpen(false);
+                                        }
+
+                                        if (category._id === activeCategory?._id) {
+                                            setCurrCategoryClicked(true);
+                                        }
+                                    }}
+                                    className="category-button"
+                                >
+                                    <p className="category-name">{category.name}</p>
+                                    <p 
+                                        className="num-items" 
+                                        onClick={() => toggleStickyCategory(category)}
+                                    >
+                                        <span className="cat-count">{category.items.length}</span>
+                                        <span className="material-icons cat-expand">expand_more</span>
+                                        <span className="material-icons cat-collapse">expand_less</span>
+                                    </p>
+                                </button>
+                                <div className="category-items-container">
+                                {
+                                    category.items.map(item => (
+                                        <ClothingCard
+                                            className=""
+                                            item={item}
+                                            editable={false}
+                                            onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === item.gcsId)}
+                                            sendToCanvas={() => sendToCanvas.current(item, "image")}
+                                            openClothingModal={() => {}}
+                                            isOpen={false}
+                                            fromSidebar={true}
+                                            key={cuid()}
+                                        />
+                                    ))
+                                }
+                                </div>
+                            </div>
                         ))
                     }
                 </div>
