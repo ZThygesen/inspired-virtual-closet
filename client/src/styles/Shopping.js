@@ -15,19 +15,48 @@ export const ShoppingContainer = styled.div`
         margin-bottom: 16px;
     }
 
-    .shopping-guide {
+    .shopping-info {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-bottom: 12px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid var(--black);
+    }
+
+    .shopping-guide,
+    .shop-guide-emphasis,
+    .review-emphasis,
+    .scam-detector,
+    .scam-emphasis {
+        margin: 0 !important;
         font-size: 20px;
         text-align: center;
         margin-bottom: 20px;
 
-        & span {
+        & .shop-guide-emphasis,
+        & .scam-emphasis {
             color: var(--primary);
-            font-size: 20px;
             font-weight: 600;
         }
 
-        &:hover span {
+        &.shop-guide-emphasis:hover,
+        &.scam-emphasis:hover {
             text-decoration: underline;
+        }
+
+        & .review-emphasis {
+            color: var(--secondary);
+            font-weight: 600;
+        }
+    }
+
+    .review-notes,
+    .review-emphasis {
+        font-size: 20px;
+
+        & span {
+            color: var(--secondary);
         }
     }
 
@@ -166,6 +195,11 @@ export const ShoppingCardContainer = styled.div`
             font-size: 20px;
             padding: 8px;
             cursor: pointer;
+
+            &.no-notes {
+                cursor: auto;
+                color: var(--material-btn);
+            }
         }
 
         .shopping-item-notes-details {

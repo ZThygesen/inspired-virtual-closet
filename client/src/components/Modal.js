@@ -5,7 +5,14 @@ import { ModalContentContainer } from '../styles/Modal';
 export default function Modal({ open, closeFn, isForm, submitFn, isImage, isLoading=false, children }) {
     const handleClick = useCallback((e) => {
         const classList = Array.from(e.target.classList);
-        if (isImage && !isLoading && open && e.target.tagName !== 'IMG' && !classList.includes('send-to-canvas')) {
+        if (isImage && 
+            !isLoading && 
+            open && 
+            e.target.tagName !== 'IMG' && 
+            !classList.includes('send-to-canvas') &&
+            !classList.includes('prev-card') &&
+            !classList.includes('next-card')
+        ) {
             closeFn();
         }
         

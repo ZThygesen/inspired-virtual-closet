@@ -132,7 +132,7 @@ describe('shopping', () => {
 
         it('should create new shopping item (no notes)', async () => {
             // perform action to test
-            data.notes = '';
+            delete data.notes
 
             const response = await agent(app)
                 .post(`/shopping/${clientId.toString()}`)
@@ -150,7 +150,7 @@ describe('shopping', () => {
             expect(shoppingItem.itemName).toBe(data.itemName);
             expect(shoppingItem.itemLink).toBe(data.itemLink);
             expect(shoppingItem.imageLink).toBe(data.imageLink);
-            expect(shoppingItem.notes).toBe('None');
+            expect(shoppingItem.notes).toBe('');
             expect(shoppingItem.purchased).toBe(false);
         });
 
@@ -404,7 +404,7 @@ describe('shopping', () => {
             expect(shoppingItem.itemName).toBe(patchData.newItemName);
             expect(shoppingItem.itemLink).toBe(patchData.newItemLink);
             expect(shoppingItem.imageLink).toBe(patchData.newImageLink);
-            expect(shoppingItem.notes).toBe('None');
+            expect(shoppingItem.notes).toBe('');
             expect(shoppingItem.purchased).toBe(patchData.newPurchased);
         }); 
 

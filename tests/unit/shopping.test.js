@@ -82,7 +82,7 @@ describe('shopping', () => {
 
         it('should create new shopping item (no notes)', async () => {
             // perform action to test
-            data.notes = '';
+            delete data.notes;
             mockCollection.insertOne.mockResolvedValue({ insertedId: 'success_id' });
             const req = { body: data, params: { clientId: clientId }, locals: { db: mockDb } };
 
@@ -95,7 +95,7 @@ describe('shopping', () => {
                 itemName: data.itemName,
                 itemLink: data.itemLink,
                 imageLink: data.imageLink,
-                notes: 'None',
+                notes: '',
                 purchased: false 
             });
             expect(mockRes.status).toHaveBeenCalledWith(201);
