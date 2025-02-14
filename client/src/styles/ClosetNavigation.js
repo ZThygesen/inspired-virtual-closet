@@ -91,18 +91,20 @@ export const ClosetNavigationContainer = styled.div`
         }
     }
 
-    ul {
-        display: flex;
-        list-style: none;
-    }
+    .closet-options {
+        & ul {
+            display: flex;
+            list-style: none;
+        }
 
-    li {
-        padding: 15px;
-        transition: all 0.3s;
+        & li {
+            padding: 15px;
+            transition: all 0.3s;
 
-        &.active {
-            background-color: var(--white);
-            box-shadow: var(--tab-shadow);
+            &.active {
+                background-color: var(--white);
+                box-shadow: var(--tab-shadow);
+            }
         }
     }
 

@@ -9,6 +9,7 @@ import Canvas from './Canvas';
 import Outfits from './Outfits';
 import Shopping from './Shopping';
 import AddItems from './AddItems';
+import Profile from './Profile';
 import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
 import { useUser } from './UserContext';
 import { useSidebar } from './SidebarContext';
@@ -27,7 +28,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
 
     const [closetMode, setClosetMode] = useState(0);
     const [currCategory, setCurrCategory] = useState(category?.name);
-    const [showIcons, setShowIcons] = useState(window.innerWidth > 700 ? false : true);
+    const [showIcons, setShowIcons] = useState(window.innerWidth > 740 ? false : true);
     const [canvasItems, setCanvasItems] = useState([logoCanvasItem]);
 
     const [outfits, setOutfits] = useState([]);
@@ -53,13 +54,13 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
     useEffect(() => {
         function handleResize() {
             if (user?.isAdmin || user?.isSuperAdmin) {
-                if (window.innerWidth <= 700) {
+                if (window.innerWidth <= 740) {
                     setShowIcons(true);
                 } else {
                     setShowIcons(false);
                 }
             } else {
-                if (window.innerWidth <= 600) {
+                if (window.innerWidth <= 640) {
                     setShowIcons(true);
                 } else {
                     setShowIcons(false);
@@ -218,7 +219,8 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
         { name: `CANVAS (${canvasItems.length - 1})`, icon: 'swipe'},
         { name: `OUTFITS (${outfits.length})`, icon: 'dry_cleaning'},
         { name: `SHOPPING (${shoppingItems.length})`, icon: 'sell'},
-        { name: 'ADD ITEMS', icon: 'add_box'}
+        { name: 'ADD', icon: 'add_box'},
+        { name: 'PROFILE', icon: 'person'}
     ];
 
     return (
@@ -306,6 +308,9 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
                         display={closetMode === 4}
                         category={category}
                         updateItems={updateItems} 
+                    />
+                    <Profile 
+                        display={closetMode === 5}
                     />
                 </div>
             </ClosetNavigationContainer>
