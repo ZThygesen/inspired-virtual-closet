@@ -11,7 +11,24 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
 
     const { client } = useClient();
 
+    const [currOpenIndex, setCurrOpenIndex] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    function prevOutfitModal() {
+        if (currOpenIndex > 0) {
+            setCurrOpenIndex(current => current - 1);
+        }
+    }
+
+    function nextOutfitModal() {
+        if (currOpenIndex < outfits.length - 1) {
+            setCurrOpenIndex(current => current + 1);
+        }
+    }
+
+    function openOutfitModal(index) {
+        setCurrOpenIndex(index);
+    }
 
     function editOutfit(outfit) {
         sendOutfitToCanvas(outfit);
@@ -59,13 +76,17 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
                 <h2 className="outfits-title">Outfits</h2>
                 <div className="outfits">
                     {
-                        outfits?.map(outfit => (
+                        outfits?.map((outfit, index) => (
                             <OutfitCard
                                 outfit={outfit}
                                 editOutfit={editOutfit}
                                 editOutfitName={editOutfitName}
                                 deleteOutfit={deleteOutfit}
-                                key={outfit._id}
+                                prevOutfitModal={prevOutfitModal}
+                                nextOutfitModal={nextOutfitModal}
+                                openOutfitModal={() => openOutfitModal(index)}
+                                isOpen={currOpenIndex === index}
+                                key={index}
                             />
                         ))
                     }

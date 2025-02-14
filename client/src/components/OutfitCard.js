@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useError } from './ErrorContext';
 import { Tooltip } from '@mui/material';
 import Modal from './Modal';
@@ -6,16 +6,20 @@ import Input from './Input';
 import { OutfitCardContainer } from '../styles/Outfits';
 import { useUser } from './UserContext';
 
-export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteOutfit }) {
+export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteOutfit, prevOutfitModal, nextOutfitModal, openOutfitModal, isOpen }) {
     const { setError } = useError();
 
     const [editOpen, setEditOpen] = useState(false);
     const [editNameOpen, setEditNameOpen] = useState(false);
     const [newOutfitName, setNewOutfitName] = useState(outfit.outfitName);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-    const [imageModalOpen, setImageModalOpen] = useState(false);
+    const [imageModalOpen, setImageModalOpen] = useState(isOpen);
 
     const { user } = useUser();
+
+    useEffect(() => {
+        setImageModalOpen(isOpen);
+    }, [isOpen])
 
     function handleCloseImageModal() {
         setImageModalOpen(false);
@@ -67,7 +71,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                     <img
                         src={outfit.outfitUrl}
                         alt={outfit.outfitName}
-                        onClick={() => setImageModalOpen(true)}
+                        onClick={() => { openOutfitModal(); setImageModalOpen(true); }}
                     />
                 </div>
                 <div className="outfit-options">
@@ -117,6 +121,8 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                 <>  
                     <button className="material-icons close-modal" onClick={handleCloseImageModal}>close</button>
                     <img src={outfit.outfitUrl} alt={outfit.outfitName} className="image-modal" />
+                    <button className="material-icons prev-card" onClick={prevOutfitModal}>chevron_left</button>
+                    <button className="material-icons next-card" onClick={nextOutfitModal}>chevron_right</button>
                 </>
             </Modal>
             <Modal

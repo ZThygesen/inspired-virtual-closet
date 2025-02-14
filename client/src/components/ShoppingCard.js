@@ -43,24 +43,32 @@ export default function ShoppingCard({ shoppingItem, editShoppingItem, togglePur
     }
 
     useEffect(() => {
+        const notesCurr = notesRef.current;
+
         function handleAnimationStart() {
-            notesRef.current.style.position = 'unset';
+            if (notesCurr) {
+                notesCurr.style.position = 'unset';
+            }
         }
 
         function handleAnimationEnd() {
-            if (!notesExpanded) {
-                notesRef.current.style.position = 'absolute';
+            if (notesCurr && !notesExpanded) {
+                notesCurr.style.position = 'absolute';
             }
             
         }
 
-        notesRef.current.addEventListener('animationstart', handleAnimationStart);
-        notesRef.current.addEventListener('animationend', handleAnimationEnd);
-
-        const notesCurr = notesRef.current;
+        if (notesCurr) {
+            notesCurr.addEventListener('animationstart', handleAnimationStart);
+            notesCurr.addEventListener('animationend', handleAnimationEnd);
+        }
+        
         return () => {
-            notesCurr.removeEventListener('animationstart', handleAnimationStart);
-            notesCurr.removeEventListener('animationend', handleAnimationEnd);
+            if (notesCurr) {
+                notesCurr.removeEventListener('animationstart', handleAnimationStart);
+                notesCurr.removeEventListener('animationend', handleAnimationEnd);
+            }
+            
         }
     }, [notesExpanded]);
 
@@ -94,18 +102,28 @@ export default function ShoppingCard({ shoppingItem, editShoppingItem, togglePur
                     />
                 </a>
                 <div className={`shopping-item-notes-container ${firstExpand ? '' : notesExpanded ? 'expanded' : 'not-expanded'}`} ref={notesContainerRef}>
-                    <Tooltip title="Expand Notes" placement="top">
-                        <button 
-                            className="material-icons notes-dropdown-btn" 
-                            onClick={toggleNotes}
-                        >
-                            keyboard_arrow_down
-                        </button>
-                    </Tooltip>
-                    <div className="shopping-item-notes">
-                        <p className="shopping-item-notes-title" onClick={toggleNotes}>Notes</p>
-                        <p className="shopping-item-notes-details" ref={notesRef}>{shoppingItem.notes}</p>
-                    </div>
+                    { shoppingItem.notes ?
+                        <>
+                            <Tooltip title="Expand Notes" placement="top">
+                                <button 
+                                    className="material-icons notes-dropdown-btn" 
+                                    onClick={toggleNotes}
+                                >
+                                    keyboard_arrow_down
+                                </button>
+                            </Tooltip>
+                            <div className="shopping-item-notes">
+                                <p className="shopping-item-notes-title" onClick={toggleNotes}>Notes</p>
+                                <p className="shopping-item-notes-details" ref={notesRef}>{shoppingItem.notes}</p>
+                            </div>
+                        </>
+                        :
+                        <>
+                            <div className="shopping-item-notes">
+                                <p className="shopping-item-notes-title no-notes">No notes</p>
+                            </div>
+                        </>
+                    }
                 </div>
                 <div className="shopping-item-options">
                     { shoppingItem.purchased ?

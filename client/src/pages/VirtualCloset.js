@@ -24,6 +24,9 @@ export default function VirtualCloset() {
     const [loading, setLoading] = useState(false);
 
     const sidebarRef = useRef();
+
+    const sendToCanvas = useRef(null);
+    const [canvasItems, setCanvasItems] = useState([]);
     
     const getCategories = useCallback(async (updateCat = undefined, animateLoad = false) => {
         if (animateLoad) {
@@ -171,7 +174,6 @@ export default function VirtualCloset() {
         } finally {
             setLoading(false);
         }
-        
     }
 
     return (
@@ -188,18 +190,22 @@ export default function VirtualCloset() {
                             updateCategories={getCategories}
                             editCategory={editCategory}
                             deleteCategory={deleteCategory}
+                            sendToCanvas={sendToCanvas}
+                            canvasItems={canvasItems}
                         />
                         <ClosetNavigation
                             sidebarRef={sidebarRef}
                             client={client}
                             category={category}
                             getCategories={getCategories}
+                            setSendToCanvas={(fn) => (sendToCanvas.current = fn)}
+                            setCategoryCanvasItems={setCanvasItems}
                         />
                     </Container>
                     <Loading open={loading} />
                 </SidebarProvider>
             </ClientProvider>
-            <p className="copyright">© 2024 Edie Styles, LLC</p>
+            <p className="copyright">© 2025 Edie Styles, LLC</p>
         </>
     )
 }

@@ -34,7 +34,7 @@ const shopping = {
                 itemName: itemName,
                 itemLink: itemLink,
                 imageLink: imageLink,
-                notes: notes || 'None',
+                notes: notes || '',
                 purchased: false
             };
     
@@ -110,7 +110,7 @@ const shopping = {
                         itemName: itemName,
                         itemLink: itemLink,
                         imageLink: imageLink,
-                        notes: notes || 'None',
+                        notes: notes || '',
                         purchased: purchased
                     }
                 }

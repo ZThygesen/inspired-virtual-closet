@@ -1,13 +1,30 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import useImage from "use-image";
 import { Image } from "react-konva";
 
-export default function CanvasImage({ imageObj, handleSelectItems, canvasResized }) {
+export default function CanvasImage({ imageObj, scale, handleSelectItems, canvasResized }) {
     const [image] = useImage(imageObj.src, 'anonymous');
     const imageRef = useRef();
 
-    const initialWidth = imageObj.canvasId === 0 ? 125 : 150;
+    const [xPos, setXPos] = useState(null);
+
+    let initialWidth = 150;
+    let initialX = 20;
+    
+    if (imageObj.canvasId === 0) {
+        initialWidth = 125;
+        const scaleX = imageRef?.current?.attrs?.scaleX || 1;
+        initialX = Math.round((canvasResized.w / scale.x) - (initialWidth * scaleX) - 20);
+    }
+
     const initialHeight = (image?.height / image?.width) * initialWidth || initialWidth;
+    const initialY = 20;
+
+    useEffect(() => {
+        if (imageObj.canvasId === 0 && xPos === initialX) {
+            setXPos(initialX);
+        }
+    }, [imageObj, initialX, xPos]);
 
     useEffect(() => {
         handleDrag();
@@ -39,6 +56,12 @@ export default function CanvasImage({ imageObj, handleSelectItems, canvasResized
         }     
     }
 
+    function onDragEnd(e) {
+        if (imageObj.canvasId === 0) {
+            setXPos(e.target.attrs.x);
+        }
+    }
+
     function onMouseDown() {
         handleSelectItems(imageRef.current);
     }
@@ -60,6 +83,7 @@ export default function CanvasImage({ imageObj, handleSelectItems, canvasResized
                 ref={imageRef}
 
                 onDragMove={handleDrag}
+                onDragEnd={onDragEnd}
                 onMouseDown={onMouseDown}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
@@ -68,8 +92,8 @@ export default function CanvasImage({ imageObj, handleSelectItems, canvasResized
                 
                 // default attrs
                 name="image"
-                x={20}
-                y={20}
+                x={xPos || initialX}
+                y={initialY}
                 width={initialWidth}
                 height={initialHeight}
                 draggable

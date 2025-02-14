@@ -467,7 +467,9 @@ export default function Dropzone({ category, disabled, updateItems }) {
                         }
                     </>
                     }
-                    <p className="medium warning">You have {client?.credits} credits left.</p>
+                    { !client?.isSuperAdmin && 
+                        <p className="medium warning">You have {client?.credits} credits left.</p> 
+                    }
                 </div>
                 <div className="modal-options">
                     <button onClick={() => setConfirmModalOpen(false)}>Cancel</button>

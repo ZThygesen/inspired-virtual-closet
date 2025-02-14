@@ -29,8 +29,8 @@ export default function Shopping({ display, shoppingItems, updateShoppingItems }
     const { client } = useClient();
 
     useEffect(() => {
-        const notPurchased = shoppingItems.filter(item => item.purchased === false);
-        const purchased = shoppingItems.filter(item => item.purchased === true);
+        const notPurchased = shoppingItems.filter(item => item.purchased === false).reverse();
+        const purchased = shoppingItems.filter(item => item.purchased === true).reverse();
 
         setNotPurchased(notPurchased);
         setPurchased(purchased);
@@ -134,9 +134,26 @@ export default function Shopping({ display, shoppingItems, updateShoppingItems }
         <>
             <ShoppingContainer style={{ display: display ? 'flex' : 'none' }}>
                 <h2 className="shopping-title">Shopping</h2>
-                <a href="https://drive.google.com/file/d/1vjY20JfvfqLXqWkTbBorg3F0IvPnNdgw/view?usp=sharing" target="_blank" rel="noreferrer" className="shopping-guide">
-                    Be sure to review the <span className="shop-guide-emphasis">ONLINE SHOPPING GUIDE</span> prior to purchasing anything online!
-                </a>
+                <div className="shopping-info">
+                    <p className="shopping-guide">
+                        Be sure to look at the&nbsp;
+                        <a href="https://drive.google.com/file/d/1vjY20JfvfqLXqWkTbBorg3F0IvPnNdgw/view?usp=sharing" target="_blank" rel="noreferrer" className="shop-guide-emphasis">
+                            ONLINE SHOPPING GUIDE
+                        </a>
+                        &nbsp;and&nbsp;
+                        <span className="review-emphasis">
+                            REVIEW NOTES
+                        </span>
+                        &nbsp;prior to purchasing anything online!
+                    </p>
+                    <p className="scam-detector">
+                        Check product websites using this&nbsp;
+                        <a href="https://www.scam-detector.com/" target="_blank" rel="noreferrer" className="scam-emphasis">
+                            SCAM DETECTOR
+                        </a>
+                        &nbsp;to ensure a safe purchase!
+                    </p>
+                </div>
                 <div className="shopping-items-container">
                     { notPurchased.length > 0 &&
                         <>

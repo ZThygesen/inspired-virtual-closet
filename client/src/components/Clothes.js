@@ -4,7 +4,6 @@ import api from '../api';
 import ClothingCard from './ClothingCard';
 import Loading from './Loading';
 import { ClothesContainer, DropdownContainer, SwapCategoryDropdown } from '../styles/Clothes';
-import cuid from 'cuid';
 import Modal from './Modal';
 import { useClient } from './ClientContext';
 
@@ -15,6 +14,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
     const [currCategorySelected, setCurrCategorySelected] = useState({});
     const [categoryOptions, setCategoryOptions] = useState([]);
     const [swapCategoryOpen, setSwapCategoryOpen] = useState(false);
+    const [currOpenIndex, setCurrOpenIndex] = useState(null);
     const [loading, setLoading] = useState(false);
 
     const { client } = useClient();
@@ -56,6 +56,22 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
 
     function sendToCanvas(item) {
         addCanvasItem(item, 'image');
+    }
+
+    function prevClothingModal() {
+        if (currOpenIndex > 0) {
+            setCurrOpenIndex(current => current - 1);
+        }
+    }
+
+    function nextClothingModal() {
+        if (currOpenIndex < category.items.length - 1) {
+            setCurrOpenIndex(current => current + 1);
+        }
+    }
+
+    function openClothingModal(index) {
+        setCurrOpenIndex(index);
     }
 
     async function swapCategory(item) {
@@ -158,7 +174,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
                 <h2 className="category-title">{category.name}</h2>
                 <div className="items">
                     {
-                        category?.items?.map(item => (
+                        category?.items?.map((item, index) => (
                             <ClothingCard
                                 item={item}
                                 editable={category._id !== -1}
@@ -167,7 +183,11 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
                                 swapCategory={swapCategory}
                                 editItem={editItem}
                                 deleteItem={deleteItem}
-                                key={cuid()}
+                                prevClothingModal={prevClothingModal}
+                                nextClothingModal={nextClothingModal}
+                                openClothingModal={() => openClothingModal(index)}
+                                isOpen={currOpenIndex === index}
+                                key={index}
                             />
                         ))
                     }

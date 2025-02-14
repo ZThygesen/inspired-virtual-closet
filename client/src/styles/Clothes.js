@@ -108,6 +108,21 @@ export const ClothingCardContainer = styled.div`
     .item-option.sent-to-canvas {
         color: var(--primary);
     }
+
+    &.from-sidebar {
+        padding: 16px;
+        margin: 0;
+        gap: 0;
+        background-color: var(--white);
+
+        & .item-options {
+            margin: 0;
+        }
+
+        & .clothing-card-img {
+            height: unset;
+        }
+    }
 `;
 
 export const DropdownContainer = styled.div`

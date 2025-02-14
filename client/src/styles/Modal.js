@@ -15,7 +15,44 @@ export const ModalContentContainer = styled.div`
             max-height: 80%;
             width: auto;
             height: auto;
-            background-color: var(--white);
+            position: relative;
+        }
+
+        .on-canvas {
+            color: var(--white);
+            font-size: 32px;
+            position: absolute;
+            top: 36px;
+        }
+
+        .prev-card,
+        .next-card,
+        .send-to-canvas {
+            background: none;
+            border-radius: 50%;
+            font-size: 88px !important;
+            position: absolute;
+            color: var(--grey);
+            padding: 8px;
+            transition: 0.1s;
+
+            &:hover {
+                cursor: pointer;
+                background-color: var(--material-btn-bg);
+            }
+        }
+
+        .prev-card {
+            left: 12px;
+        }
+
+        .next-card {
+            right: 12px;
+        }
+
+        .send-to-canvas {
+            bottom: 12px;
+            color: var(--secondary);
         }
     }
 
