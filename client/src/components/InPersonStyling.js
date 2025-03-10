@@ -6,7 +6,7 @@ export default function InPersonStyling({ display }) {
         
         <InPersonStylingContainer style={{ display: display ? 'flex' : 'none' }}>
             In Person Styling
-            <a href="https://docs.google.com/presentation/d/1cRQsH6vrgGXfPXFUzHwc-IvhICHLKkW0kawJVveEtI4/edit?usp=sharing">
+            {/* <a href="https://docs.google.com/presentation/d/1cRQsH6vrgGXfPXFUzHwc-IvhICHLKkW0kawJVveEtI4/edit?usp=sharing">
                 <ReactGoogleSlides
                     width={640}
                     height={480}
@@ -16,7 +16,7 @@ export default function InPersonStyling({ display }) {
                     showControls
                     loop
                 />
-            </a>
+            </a> */}
         </InPersonStylingContainer>
         
     );

@@ -11,7 +11,7 @@ const ActionButton = styled.button`
     background-color: var(--secondary);
     border: 2px solid var(--black);
     border-radius: 56px;
-    padding: 20px 30px;
+    padding: 12px 20px;
     cursor: pointer;
     transition: all 0.1s;
 

@@ -146,6 +146,7 @@ const files = {
                     $project: {
                         _id: 1,
                         name: 1,
+                        group: 1,
                         items: { $filter: {
                             input: '$items',
                             as: 'item',

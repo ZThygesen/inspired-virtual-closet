@@ -17,9 +17,15 @@ const categories = {
             if ((await collection.find({ name: category }).toArray()).length > 0) {
                 throw helpers.createError(`a category with the name "${category}" already exists`, 400);
             }
+
+            const group = req?.body?.group;
+            if (!group) {
+                throw helpers.createError('a category group is required for category creation', 400);
+            }
     
             const categoryEntry = {
                 name: category,
+                group: group,
                 items: []
             }
     
@@ -82,15 +88,22 @@ const categories = {
                 throw helpers.createError('category name is required for category update', 400);
             }
 
-            if ((await collection.find({ name: name }).toArray()).length > 0) {
+            const currCategory = await collection.find({ _id: categoryId }).toArray();
+            if (currCategory.name === name && currCategory.group === group) {
                 throw helpers.createError(`a category with the name "${name}" already exists`, 400);
+            }
+
+            const group = req?.body?.newGroup;
+            if (!group) {
+                throw helpers.createError('a category group is required for category creation', 400);
             }
 
             const result = await collection.updateOne(
                 { _id: ObjectId(categoryId) },
                 {
                     $set: {
-                        name: name
+                        name: name,
+                        group: group,
                     }
                 }
             );

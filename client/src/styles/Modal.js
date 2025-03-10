@@ -105,6 +105,11 @@ export const ModalContentContainer = styled.div`
         align-items: center;
         gap: 20px;
         padding: 8px 0;
+
+        &.no-scroll {
+            height: 100vh;
+            overflow-y: hidden;
+        }
     }
 
     .modal-content p {
@@ -162,7 +167,7 @@ export const ModalContentContainer = styled.div`
         text-decoration: underline;
     }
 
-    button:not(.material-icons) {
+    & button:not(.material-icons, .settings-tab) {
         font-size: 24px;
         font-family: 'Fashion', sans-serif;
         letter-spacing: 2px;

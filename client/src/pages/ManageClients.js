@@ -8,7 +8,8 @@ import Loading from '../components/Loading';
 import ActionButton from '../components/ActionButton';
 import Modal from '../components/Modal';
 import Input from '../components/Input';
-import { CircularProgress } from '@mui/material';
+import ClosetSettings from '../components/ClosetSettings';
+import { CircularProgress, Tooltip } from '@mui/material';
 import { ManageClientsContainer } from '../styles/ManageClients';
 import { useUser } from '../components/UserContext';
 
@@ -52,6 +53,9 @@ export default function ManageClients() {
     const [newClientEmail, setNewClientEmail] = useState('');
     const [newClientRole, setNewClientRole] = useState(false);
     const [newClientCredits, setNewClientCredits] = useState(350);
+
+    const [settingsOpen, setSettingsOpen] = useState(false);
+
     const [loading, setLoading] = useState(false);
 
     const [deleteProgressOpen, setDeleteProgressOpen] = useState(false);
@@ -309,10 +313,23 @@ export default function ManageClients() {
         });
     }
 
+    function handleOpenSettings() {
+        setSettingsOpen(true);
+    }
+
+    function handleCloseSettings() {
+        setSettingsOpen(false);
+    }
+
     return (
         <>
             <ManageClientsContainer>
-                <h1 className="title">CLIENTS</h1>
+                <div className="clients-header">
+                    <h1 className="title">CLIENTS</h1>
+                    <Tooltip title="Closet Settings">
+                        <button className="material-icons closet-settings-button" onClick={handleOpenSettings}>settings</button>
+                    </Tooltip>
+                </div>
                 <div className="clients">
                     {
                         superAdmins.map(client => (
@@ -338,6 +355,7 @@ export default function ManageClients() {
             </ManageClientsContainer>
             <Loading open={loading} />
             { user?.isSuperAdmin &&
+            <>
                 <Modal
                     open={openModal}
                     closeFn={handleClose}
@@ -389,18 +407,34 @@ export default function ManageClients() {
                         </div>
                     </>
                 </Modal>
-            }
-            <Modal
-                open={deleteProgressOpen}
-            >
-                <div className="modal-title">DELETING CLIENT</div>
-                <div className="modal-content">
-                    <p className="large">{deleteProgressMessage}</p>
-                    <p className="medium">{deleteProgressNumerator}/{deleteProgressDenominator} deleted</p>
-                    <CircularProgressWithLabel value={(deleteProgressNumerator / deleteProgressDenominator) * 100} />
-                </div>
+                <Modal
+                    open={deleteProgressOpen}
+                >
+                    <div className="modal-title">DELETING CLIENT</div>
+                    <div className="modal-content">
+                        <p className="large">{deleteProgressMessage}</p>
+                        <p className="medium">{deleteProgressNumerator}/{deleteProgressDenominator} deleted</p>
+                        <CircularProgressWithLabel value={(deleteProgressNumerator / deleteProgressDenominator) * 100} />
+                    </div>
 
-            </Modal>
+                </Modal>
+                <Modal
+                    open={settingsOpen}
+                    closeFn={handleCloseSettings}
+                >
+                    <>
+                        <button className="material-icons close-modal" onClick={handleCloseSettings}>close</button>
+                        <h2 className="modal-title">CLOSET SETTINGS</h2>
+                        <div className="modal-content no-scroll">
+                            <ClosetSettings 
+                                handleOpenSettings={handleOpenSettings}
+                                handleCloseSettings={handleCloseSettings}
+                            />
+                        </div>
+                    </>
+                </Modal>
+            </>
+            }
         </>
     ); 
 }

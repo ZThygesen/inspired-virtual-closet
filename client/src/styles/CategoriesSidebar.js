@@ -63,8 +63,21 @@ export const CategoriesSidebarContainer = styled.div`
         text-align: center;
     }
 
-    &.admin .categories-container {
-        margin-bottom: var(--subheader-height);
+    .category-group {
+        width: 100%;
+
+        .group {
+            font-size: 28px;
+            font-weight: 700;
+            font-family: 'Fashion';
+            letter-spacing: 2px;
+            text-align: left;
+            padding: 12px 20px;
+        }
+
+        .categories {
+            padding-bottom: 8px;
+        }
     }
 
     .category-container {
@@ -74,7 +87,8 @@ export const CategoriesSidebarContainer = styled.div`
         .category-button {
             width: 100%;
             max-width: 100%;
-            padding: 12px 20px;
+            padding: 0 20px;
+            height: 50px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -90,15 +104,21 @@ export const CategoriesSidebarContainer = styled.div`
 
             & .category-name,
             & .num-items > .cat-count {
-                font-size: 28px;
-                font-weight: 600;
+                font-size: 24px;
                 font-family: 'Fashion';
                 letter-spacing: 2px;
                 text-align: left;
             }
 
             & .category-name {
+                margin-left: 20px;
                 word-break: break-word;
+
+                &.prominent {
+                    font-weight: 700;
+                    margin-left: 0;
+                    font-size: 28px;
+                }
             }
         }
 
@@ -165,98 +185,6 @@ export const CategoriesSidebarContainer = styled.div`
             & .cat-collapse {
                 display: block;
             }
-        }
-    }
-
-    .categories-footer {
-        height: var(--subheader-height);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        font-size: 32px;
-        font-weight: bold;
-        background-color: var(--grey);
-        min-height: var(--subheader-height);
-        color: var(--black);
-        box-shadow: var(--top-shadow);
-        cursor: pointer; 
-        overflow: hidden;
-    }
-
-    .footer-container {
-        position: relative;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-
-        & .footer-text{
-            font-family: 'Fashion';
-            font-size: 28px;
-            font-weight: 600;
-            letter-spacing: 4px;
-        }
-
-        & .add-category-icon {
-            font-size: 36px !important;
-        }
-
-        &:after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            transform: scaleX(0);
-            height: 2px;
-            bottom: 0;
-            left: 0;
-            background-color: var(--black);
-            transform-origin: bottom right;
-            transition: transform 0.15s ease-out;
-        }
-
-        &:hover:after {
-            transform: scaleX(1);
-            transform-origin: bottom left;
-        }
-    }
-`;
-
-export const CategorySettings = styled.div`
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-
-    .category-setting {
-        display: grid;
-        grid-template-columns: 1fr 50px 50px;
-        gap: 4px;
-        justify-items: start;
-        align-items: center;
-    }
-
-    .category {
-        font-family: 'Fashion';
-        font-size: 32px;
-        letter-spacing: 2px;
-        max-width: 100%;
-        word-break: break-word;
-    }
-
-    .category-option-btn {
-        justify-self: center;
-        padding: 5px;
-        cursor: pointer;
-        font-size: 32px !important;
-        background: none;
-        transition: all 0.1s;
-        color: var(--material-btn);
-
-        &:hover {
-            color: var(--black);
         }
     }
 `;
