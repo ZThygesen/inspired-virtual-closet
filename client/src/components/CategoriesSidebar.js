@@ -28,7 +28,7 @@ export default function CategoriesSidebar({ sidebarRef, categories, categoryGrou
             setCategory(categories[0])
         }
     }, [activeCategory, categories, setCategory]);
-    console.log(categoryGroups);
+
     return (
         <>
             <CategoriesSidebarContainer id="sidebar" className={`${sidebarOpen ? 'open' : ''}`} ref={sidebarRef}>

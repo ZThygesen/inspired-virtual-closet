@@ -47,3 +47,11 @@ export const TextInput = styled(TextField)`
 
 export const Checkbox = styled(CB)`
 `;
+
+export const Color = styled.input`
+    &.color-input {
+        &:hover {
+            cursor: pointer;
+        }
+    }
+`;

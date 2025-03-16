@@ -56,6 +56,9 @@ app.use('/profile', injectDb, auth.authenticateJWT, profileRouter);
 import { shoppingRouter } from './routes/shopping.js';
 app.use('/shopping', injectDb, auth.authenticateJWT, shoppingRouter);
 
+import { tagsRouter } from './routes/tags.js';
+app.use('/tags', injectDb, auth.authenticateJWT, tagsRouter);
+
 if (process.env.NODE_ENV === 'review' || process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production') {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);

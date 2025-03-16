@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useError } from '../components/ErrorContext';
 import api from '../api'
 import cuid from 'cuid';
@@ -7,6 +7,7 @@ import Modal from '../components/Modal';
 import Input from '../components/Input';
 import { Tooltip } from '@mui/material';
 import { ClosetSettingsContainer } from "../styles/ClosetSettings";
+import { DropdownContainer, SwapDropdown } from "../styles/Dropdown";
 
 export default function ClosetSettings() {
     const { setError } = useError();
@@ -18,6 +19,7 @@ export default function ClosetSettings() {
     ];
 
     const [categoryGroups, setCategoryGroups] = useState([]);
+    const [categoryTagGroups, setCategoryTagGroups] = useState([]);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [newCategoryGroup, setNewCategoryGroup] = useState('');
     const [addCategoryOpen, setAddCategoryOpen] = useState(false);
@@ -25,6 +27,30 @@ export default function ClosetSettings() {
     const [editCategoryOpen, setEditCategoryOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState({});
     const [deleteCategoryOpen, setDeleteCategoryOpen] = useState(false);
+
+    const [tagGroups, setTagGroups] = useState([]);
+    const [tagGroupOptions, setTagGroupOptions] = useState([]);
+
+    const [newTagGroupName, setNewTagGroupName] = useState('');
+    const [addTagGroupOpen, setAddTagGroupOpen] = useState(false);
+    const [tagGroupToEdit, setTagGroupToEdit] = useState({});
+    const [editTagGroupOpen, setEditTagGroupOpen] = useState(false);
+    const [tagGroupToDelete, setTagGroupToDelete] = useState({});
+    const [deleteTagGroupOpen, setDeleteTagGroupOpen] = useState(false);
+
+    const [newTagName, setNewTagName] = useState('');
+    const [newTagColor, setNewTagColor] = useState('#000000');
+    const newTagColorRef = useRef(newTagColor);
+    const [owningTagGroup, setOwningTagGroup] = useState({});
+    const [addTagOpen, setAddTagOpen] = useState(false);
+    const [tagToEdit, setTagToEdit] = useState({});
+    const [editTagOpen, setEditTagOpen] = useState(false);
+    const [tagToArchive, setTagToArchive] = useState({});
+    const [archiveTagOpen, setArchiveTagOpen] = useState(false);
+
+    const [tagToSwap, setTagToSwap] = useState({});
+    const [newTagGroup, setNewTagGroup] = useState({});
+    const [swapTagGroupOpen, setSwapTagGroupOpen] = useState(false);
 
     const [loading, setLoading] = useState(false);
 
@@ -101,7 +127,7 @@ export default function ClosetSettings() {
 
         setLoading(true);
         try {
-            await api.post('/categories', { category: newCategoryName, group: newCategoryGroup });
+            await api.post('/categories', { category: newCategoryName, group: newCategoryGroup, tagGroups: categoryTagGroups });
             await getCategories();
         } catch (err) {
             setError({
@@ -122,6 +148,7 @@ export default function ClosetSettings() {
     function handleCloseAddCategory() {
         setNewCategoryName('');
         setNewCategoryGroup('');
+        setCategoryTagGroups([]);
         setAddCategoryOpen(false);
     }
 
@@ -130,7 +157,8 @@ export default function ClosetSettings() {
 
         setLoading(true);
         if (categoryToEdit.name === newCategoryName &&
-            categoryToEdit.group === newCategoryGroup
+            categoryToEdit.group === newCategoryGroup &&
+            categoryToEdit?.tagGroups?.sort()?.toString() === categoryTagGroups.sort().toString()
         ) {
             setLoading(false);
             handleCloseEditCategory();
@@ -138,7 +166,7 @@ export default function ClosetSettings() {
         }
 
         try {
-            await api.patch(`/categories/${categoryToEdit._id}`, { newName: newCategoryName, newGroup: newCategoryGroup });
+            await api.patch(`/categories/${categoryToEdit._id}`, { newName: newCategoryName, newGroup: newCategoryGroup, newTagGroups: categoryTagGroups });
             await getCategories();
         } catch (err) {
             setError({
@@ -156,6 +184,7 @@ export default function ClosetSettings() {
         setCategoryToEdit(category)
         setNewCategoryName(category.name);
         setNewCategoryGroup(category.group);
+        setCategoryTagGroups(category.tagGroups || []);
         setEditCategoryOpen(true);
     }
 
@@ -163,6 +192,7 @@ export default function ClosetSettings() {
         setCategoryToEdit({});
         setNewCategoryName('');
         setNewCategoryGroup('');
+        setCategoryTagGroups([]);
         setEditCategoryOpen(false);
     }
 
@@ -193,8 +223,341 @@ export default function ClosetSettings() {
         setCategoryToDelete({});
         setDeleteCategoryOpen(false);
     }
-    
+
+    function handleCheckTagGroup(checkbox) {
+        const tagGroup = checkbox.id;
+        if (categoryTagGroups.includes(tagGroup)) {
+            setCategoryTagGroups(current => current.filter(group => group !== tagGroup));
+        }
+        else {
+            setCategoryTagGroups(current => [...current, tagGroup]);
+        }
+    }
+
+    // Tag group management
+    const getTagGroups = useCallback(async () => {
+        setLoading(true);
+
+        try {
+            const response = await api.get('/tags/active');
+            const tagData = response.data;
+
+            tagData.forEach(tagGroup => {
+                tagGroup.tags.sort(function(a, b) {
+                    if (a.tagName < b.tagName) {
+                        return -1;
+                    }
+                    else if (a.tagName > b.tagName) {
+                        return 1;
+                    }
+                    else {
+                        return 0;
+                    }
+                });
+            });
+
+            tagData.sort(function(a, b) {
+                if (a?.sortOrder === undefined) return 1;
+                if (b?.sortOrder === undefined) return -1;
+
+                return a.sortOrder - b.sortOrder;
+            });
+
+            const options = [];
+            for (const tagGroup of tagData) {
+                const option = {
+                    value: tagGroup._id,
+                    label: tagGroup.tagGroupName
+                };
+
+                options.push(option);
+            }
+
+            setTagGroups(tagData);
+            setTagGroupOptions(options);
+        } catch (err) {
+            setError({
+                message: 'There was an error fetching tags.',
+                status: err?.response?.status || 'N/A'
+            });
+            setLoading(false);
+        }
+
+        setLoading(false);
+    }, [setError]);
+
+    useEffect(() => {
+        getTagGroups();
+    }, [getTagGroups]);
+
+    async function addTagGroup(e) {
+        e.preventDefault();
+
+        setLoading(true);
+        try {
+            await api.post('/tags/group', { tagGroupName: newTagGroupName });
+            await getTagGroups();
+        } catch (err) {
+            setError({
+                message: 'There was an error adding the tag group.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
+
+        handleCloseAddTagGroup();
+    }
+
+    function handleOpenAddTagGroup() {
+        setAddTagGroupOpen(true);
+    }
+
+    function handleCloseAddTagGroup() {
+        setNewTagGroupName('');
+        setAddTagGroupOpen(false);
+    }
+
+    async function editTagGroup(e) {
+        e.preventDefault();
+
+        setLoading(true);
+        if (tagGroupToEdit.tagGroupName === newTagGroupName) {
+            setLoading(false);
+            handleCloseEditTagGroup();
+            return;
+        }
+
+        try {
+            await api.patch(`/tags/group/${tagGroupToEdit._id}`, { newTagGroupName: newTagGroupName });
+            await getTagGroups();
+        } catch (err) {
+            setError({
+                message: 'There was an error editing the tag group.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
+
+        handleCloseEditTagGroup();
+    }
+
+    function handleOpenEditTagGroup(tagGroup) {
+        setTagGroupToEdit(tagGroup);
+        setNewTagGroupName(tagGroup.tagGroupName);
+        setEditTagGroupOpen(true);
+    }
+
+    function handleCloseEditTagGroup() {
+        setTagGroupToEdit({});
+        setNewTagGroupName('');
+        setEditTagGroupOpen(false);
+    }
+
+    async function deleteTagGroup() {
+        setLoading(true);
+        
+        try {
+            await api.delete(`/tags/group/${tagGroupToDelete._id}`);
+            await getTagGroups();
+        } catch (err) {
+            setError({
+                message: 'There was an error deleting the tag group.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
+
+        handleCloseDeleteTagGroup();
+    }
+
+    function handleOpenDeleteTagGroup(tagGroup) {
+        setTagGroupToDelete(tagGroup);
+        setDeleteTagGroupOpen(true);
+    }
+
+    function handleCloseDeleteTagGroup() {
+        setTagGroupToDelete({});
+        setDeleteTagGroupOpen(false);
+    }
+
     // Tag management
+    async function addTag(e) {
+        e.preventDefault();
+
+        setLoading(true);
+        try {
+            await api.post(`/tags/tag/${owningTagGroup._id}`, { tagName: newTagName, tagColor: newTagColor });
+            await getTagGroups();
+        } catch (err) {
+            setError({
+                message: 'There was an error adding the tag.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
+
+        handleCloseAddTag();
+    }
+
+    function handleOpenAddTag(tagGroup) {
+        setOwningTagGroup(tagGroup);
+        setAddTagOpen(true);
+    }
+
+    function handleCloseAddTag() {
+        setNewTagName('');
+        setNewTagColor('#000000');
+        newTagColorRef.current = '#000000';
+        setOwningTagGroup({});
+        setAddTagOpen(false);
+    }
+
+    async function editTag(e) {
+        e.preventDefault();
+
+        setLoading(true);
+        if (tagToEdit.tagName === newTagName &&
+            tagToEdit.tagColor === newTagColor) {
+            setLoading(false);
+            handleCloseEditTag();
+            return;
+        }
+
+        try {
+            await api.patch(`/tags/tag/${owningTagGroup._id}/${tagToEdit.tagId}`, { newTagName: newTagName, newTagColor: newTagColor });
+            await getTagGroups();
+        } catch (err) {
+            setError({
+                message: 'There was an error editing the tag.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
+
+        handleCloseEditTag();
+    }
+
+    function handleOpenEditTag(tagGroup, tag) {
+        setOwningTagGroup(tagGroup);
+        setTagToEdit(tag);
+        setNewTagName(tag.tagName);
+        setNewTagColor(tag.tagColor);
+        newTagColorRef.current = tag.tagColor;
+        setEditTagOpen(true);
+    }
+
+    function handleCloseEditTag() {
+        setOwningTagGroup({});
+        setTagToEdit({});
+        setNewTagName('');
+        setNewTagColor('#000000');
+        newTagColorRef.current = '#000000';
+        setEditTagOpen(false);
+    }
+
+    async function archiveTag() {
+        setLoading(true);
+        
+        try {
+            await api.patch(`/tags/archive-tag/${owningTagGroup._id}/${tagToArchive.tagId}`);
+            await getTagGroups();
+        } catch (err) {
+            setError({
+                message: 'There was an error archiving the tag.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
+
+        handleCloseArchiveTag();
+    }
+
+    function handleOpenArchiveTag(tagGroup, tag) {
+        setOwningTagGroup(tagGroup);
+        setTagToArchive(tag);
+        setArchiveTagOpen(true);
+    }
+
+    function handleCloseArchiveTag() {
+        setOwningTagGroup({});
+        setTagToArchive({});
+        setArchiveTagOpen(false);
+    }
+
+    async function swapTagGroup() {
+        setLoading(true);
+        if (owningTagGroup._id === newTagGroup.value) {
+            setLoading(false);
+            handleCloseSwapTagGroup();
+            return;
+        }
+
+        try {
+            await api.patch(`/tags/tag-group/${owningTagGroup._id}/${tagToSwap.tagId}`, { newTagGroupId: newTagGroup.value });
+            await getTagGroups();
+        } catch (err) {
+            setError({
+                message: 'There was an error changing the tag\'s group.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
+
+        handleCloseSwapTagGroup();
+    }
+
+    function handleSelectTagGroup(selection) {
+        setNewTagGroup(selection);
+    }
+
+    function handleOpenSwapTagGroup(tagGroup, tag) {
+        setOwningTagGroup(tagGroup);
+        setTagToSwap(tag);
+        setNewTagGroup({ value: tagGroup._id, label: tagGroup.tagGroupName });
+        setSwapTagGroupOpen(true);
+    }
+
+    function handleCloseSwapTagGroup() {
+        setOwningTagGroup({});
+        setTagToEdit({});
+        setNewTagGroup({});
+        setSwapTagGroupOpen(false);
+    }
+
+    function handleColorChange(e) {
+        newTagColorRef.current = e.target.value;
+        requestAnimationFrame(() => setNewTagColor(newTagColorRef.current));
+    }
+
+    async function handleReorderGroup(tagGroup) {
+        const tagGroupsCopy = [...tagGroups];
+        const index = tagGroups.findIndex(group => group._id === tagGroup._id);
+        if (index === 0) {
+            return;
+        }
+
+        tagGroupsCopy.splice(index, 1);
+        tagGroupsCopy.splice(index - 1, 0, tagGroup);
+
+        try {
+            await api.patch('/tags/group-order', { newGroupOrder: tagGroupsCopy });
+            await getTagGroups();
+        } catch (err) {
+            setError({
+                message: 'There was an error reordering the tag groups.',
+                status: err.response.status
+            });
+        } finally {
+            setLoading(false);
+        }
+    }
 
     return (
         <>
@@ -229,11 +592,11 @@ export default function ClosetSettings() {
                                                         <div className="category-setting" key={cuid()}>
                                                             <p className="category">{category.name}</p>
                                                             <Tooltip title="Edit" placement="left">
-                                                            <button className="material-icons category-option-btn" onClick={() => handleOpenEditCategory(category)}>edit</button>
-                                                        </Tooltip>
-                                                        <Tooltip title="Delete" placement="right">
-                                                            <button className="material-icons category-option-btn" onClick={() => handleOpenDeleteCategory(category)}>delete</button>
-                                                        </Tooltip>
+                                                                <button className="material-icons category-option-btn" onClick={() => handleOpenEditCategory(category)}>edit</button>
+                                                            </Tooltip>
+                                                            <Tooltip title="Delete" placement="right">
+                                                                <button className="material-icons category-option-btn" onClick={() => handleOpenDeleteCategory(category)}>delete</button>
+                                                            </Tooltip>
                                                         </div>
                                                     )
                                                 ))
@@ -255,8 +618,70 @@ export default function ClosetSettings() {
                             </div>
                         </div>
                     </div>
-                    <div className="tag-settings">
-
+                    <div className="tag-settings" style={{ display: activeSettingsTab === 1 ? 'flex' : 'none' }}>
+                        <div className="tag-groups">
+                            {
+                                tagGroups.map((tagGroup, index) => (
+                                    <div className="tag-group-container" key={index}>
+                                        <div className="tag-group-setting">
+                                            <div className="tag-group-name">
+                                                <p className="tag-group">{tagGroup.tagGroupName}</p>
+                                                { index !== 0 &&
+                                                    <Tooltip title="Move Up" placement="right" className="reorder-group">
+                                                        <button className="material-icons tag-group-option-btn" onClick={() => handleReorderGroup(tagGroup)}>north</button>
+                                                    </Tooltip>
+                                                }
+                                            </div>
+                                            <Tooltip title="Add Tag" placement="left">
+                                                <button className="material-icons tag-group-option-btn" onClick={() => handleOpenAddTag(tagGroup)}>add</button>
+                                            </Tooltip>
+                                            { tagGroup._id !== 0 &&
+                                            <>
+                                                <Tooltip title="Edit" placement="right">
+                                                    <button className="material-icons tag-group-option-btn" onClick={() => handleOpenEditTagGroup(tagGroup)}>edit</button>
+                                                </Tooltip>
+                                                <Tooltip title="Delete" placement="right">
+                                                    <button className="material-icons tag-group-option-btn" onClick={() => handleOpenDeleteTagGroup(tagGroup)}>delete</button>
+                                                </Tooltip>
+                                            </>
+                                            }
+                                        </div>
+                                        <div className="tags">
+                                            {
+                                                tagGroup?.tags?.map(tag => (
+                                                    <div className="tag-setting" key={cuid()}>
+                                                        <div className="tag-display">
+                                                            <div className="tag-color" style={{ backgroundColor: `${tag.tagColor}` }}></div>
+                                                            <p className="tag">{tag.tagName}</p>
+                                                        </div>
+                                                        <Tooltip title="Change Group" placement="left">
+                                                            <button className="material-icons tag-option-btn" onClick={() => handleOpenSwapTagGroup(tagGroup, tag)}>swap_vert</button>
+                                                        </Tooltip>
+                                                        <Tooltip title="Edit" placement="right">
+                                                            <button className="material-icons tag-option-btn" onClick={() => handleOpenEditTag(tagGroup, tag)}>edit</button>
+                                                        </Tooltip>
+                                                        <Tooltip title="Archive" placement="right">
+                                                            <button className="material-icons tag-option-btn" onClick={() => handleOpenArchiveTag(tagGroup, tag)}>delete</button>
+                                                        </Tooltip>
+                                                    </div>
+                                                ))
+                                            }
+                                        </div>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                        <div
+                            className="tag-groups-footer"
+                            onClick={handleOpenAddTagGroup}
+                        >
+                            <div className="footer-container">
+                                <span className="material-icons add-tag-group-icon">add</span>
+                                <p className="footer-text">
+                                    ADD TAG GROUP
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </ClosetSettingsContainer>
@@ -273,17 +698,34 @@ export default function ClosetSettings() {
                         <Input
                             type="text"
                             id="category-name"
-                            label="Category Name"
+                            label="Name"
                             value={newCategoryName ?? ''}
                             onChange={e => setNewCategoryName(e.target.value)}
                         />
                         <Input
                             type="text"
                             id="category-group"
-                            label="Category Group"
+                            label="Group"
                             value={newCategoryGroup ?? ''}
                             onChange={e => setNewCategoryGroup(e.target.value)}
                         />
+                        <div className="checkboxes">
+                            <p className="checkboxes-field-name">Tag Groups</p>
+                            {
+                                tagGroupOptions?.map(tagGroup => (
+                                    (tagGroup.value !== 0 &&
+                                        <Input
+                                            type="checkbox"
+                                            id={`${tagGroup.value}`}
+                                            label={tagGroup.label}
+                                            value={categoryTagGroups.includes(String(tagGroup.value))}
+                                            onChange={e => handleCheckTagGroup(e.target)}
+                                            key={tagGroup.value}
+                                        />
+                                    )
+                                ))
+                            }
+                        </div>
                     </div>
                     <div className="modal-options">
                         <button type="button" onClick={handleCloseAddCategory}>Cancel</button>
@@ -304,17 +746,34 @@ export default function ClosetSettings() {
                         <Input
                             type="text"
                             id="category-name"
-                            label="Category Name"
+                            label="Name"
                             value={newCategoryName ?? ''}
                             onChange={e => setNewCategoryName(e.target.value)}
                         />
                         <Input
                             type="text"
                             id="category-group"
-                            label="Category Group"
+                            label="Group"
                             value={newCategoryGroup ?? ''}
                             onChange={e => setNewCategoryGroup(e.target.value)}
                         />
+                        <div className="checkboxes">
+                            <p className="checkboxes-field-name">Tag Groups</p>
+                            {
+                                tagGroupOptions?.map(tagGroup => (
+                                    (tagGroup.value !== 0 &&
+                                        <Input
+                                            type="checkbox"
+                                            id={`${tagGroup.value}`}
+                                            label={tagGroup.label}
+                                            value={categoryTagGroups.includes(String(tagGroup.value))}
+                                            onChange={e => handleCheckTagGroup(e.target)}
+                                            key={tagGroup.value}
+                                        />
+                                    )
+                                ))
+                            }
+                        </div>
                     </div>
                     <div className="modal-options">
                         <button type="button" onClick={handleCloseEditCategory}>Cancel</button>
@@ -338,6 +797,168 @@ export default function ClosetSettings() {
                         <button onClick={deleteCategory}>Delete</button>
                     </div>
                 </>
+            </Modal>
+            <Modal
+                open={addTagGroupOpen}
+                closeFn={handleCloseAddTagGroup}
+                isForm={true}
+                submitFn={addTagGroup}
+            >
+                <>
+                    <h2 className="modal-title">ADD TAG GROUP</h2>
+                    <div className="modal-content">
+                        <Input
+                            type="text"
+                            id="tag-group-name"
+                            label="Name"
+                            value={newTagGroupName ?? ''}
+                            onChange={e => setNewTagGroupName(e.target.value)}
+                        />
+                    </div>
+                    <div className="modal-options">
+                        <button type="button" onClick={handleCloseAddTagGroup}>Cancel</button>
+                        <button type="submit">Submit</button>
+                    </div>
+                </>
+            </Modal>
+            <Modal
+                open={editTagGroupOpen}
+                closeFn={handleCloseEditTagGroup}
+                isForm={true}
+                submitFn={editTagGroup}
+            >
+                <>
+                    <h2 className="modal-title">EDIT TAG GROUP</h2>
+                    <div className="modal-content">
+                        <p className="tag-group-to-edit" style={{fontFamily: 'Fashion', fontSize: '32px'}}>{tagGroupToEdit.tagGroupName}</p>
+                        <Input
+                            type="text"
+                            id="tag-group-name"
+                            label="Name"
+                            value={newTagGroupName ?? ''}
+                            onChange={e => setNewTagGroupName(e.target.value)}
+                        />
+                    </div>
+                    <div className="modal-options">
+                        <button type="button" onClick={handleCloseEditTagGroup}>Cancel</button>
+                        <button type="submit">Save</button>
+                    </div>
+                </>
+            </Modal>
+            <Modal
+                open={deleteTagGroupOpen}
+                closeFn={handleCloseDeleteTagGroup}
+            >
+                <>
+                    <h2 className="modal-title">DELETE TAG GROUP</h2>
+                    <div className="modal-content">
+                        <p className="medium">Are you sure you want to delete this tag group?</p>
+                        <p className="large bold underline">{tagGroupToDelete?.tagGroupName}</p>
+                        <p className="small bold warning">ALL TAGS in this group will remain active but will be moved to the Other tag group!</p>
+                    </div>
+                    <div className="modal-options">
+                        <button onClick={handleCloseDeleteTagGroup}>Cancel</button>
+                        <button onClick={deleteTagGroup}>Delete</button>
+                    </div>
+                </>
+            </Modal>
+            <Modal
+                open={addTagOpen}
+                closeFn={handleCloseAddTag}
+                isForm={true}
+                submitFn={addTag}
+            >
+                <>
+                    <h2 className="modal-title">ADD TAG</h2>
+                    <div className="modal-content">
+                        <Input
+                            type="text"
+                            id="tag-name"
+                            label="Name"
+                            value={newTagName ?? ''}
+                            onChange={e => setNewTagName(e.target.value)}
+                        />
+                        <Input
+                            type="color"
+                            id="tag-color"
+                            label="Color"
+                            value={newTagColorRef.current}
+                            onChange={handleColorChange}
+                            onBlur={() => setNewTagColor(newTagColorRef.current)}
+                        />
+                    </div>
+                    <div className="modal-options">
+                        <button type="button" onClick={handleCloseAddTag}>Cancel</button>
+                        <button type="submit">Submit</button>
+                    </div>
+                </>
+            </Modal>
+            <Modal
+                open={editTagOpen}
+                closeFn={handleCloseEditTag}
+                isForm={true}
+                submitFn={editTag}
+            >
+                <>
+                    <h2 className="modal-title">EDIT TAG</h2>
+                    <div className="modal-content">
+                        <p className="tag-to-edit" style={{fontFamily: 'Fashion', fontSize: '32px'}}>{tagToEdit.tagName}</p>
+                        <Input
+                            type="text"
+                            id="tag-name"
+                            label="Name"
+                            value={newTagName ?? ''}
+                            onChange={e => setNewTagName(e.target.value)}
+                        />
+                        <Input
+                            type="color"
+                            id="tag-color"
+                            label="Color"
+                            value={newTagColorRef.current}
+                            onChange={handleColorChange}
+                            onBlur={() => setNewTagColor(newTagColorRef.current)}
+                        />
+                    </div>
+                    <div className="modal-options">
+                        <button type="button" onClick={handleCloseEditTag}>Cancel</button>
+                        <button type="submit">Save</button>
+                    </div>
+                </>
+            </Modal>
+            <Modal
+                open={archiveTagOpen}
+                closeFn={handleCloseArchiveTag}
+            >
+                <>
+                    <h2 className="modal-title">ARCHIVE TAG</h2>
+                    <div className="modal-content">
+                        <p className="medium">Are you sure you want to archive this tag?</p>
+                        <p className="large bold underline">{tagToArchive?.tagName}</p>
+                        {/* <p className="small bold warning">The tags in this group will stay active in this group. You can change their group after archiving this group.</p> */}
+                    </div>
+                    <div className="modal-options">
+                        <button onClick={handleCloseArchiveTag}>Cancel</button>
+                        <button onClick={archiveTag}>Archive</button>
+                    </div>
+                </>
+            </Modal>
+            <Modal
+                open={swapTagGroupOpen}
+                closeFn={handleCloseSwapTagGroup}
+            >
+                <div className="modal-title">CHANGE TAG GROUP</div>
+                <div className="modal-content">
+                    <p className="medium bold underline">{tagToSwap.tagName}</p>
+                </div>
+                <DropdownContainer>
+                    <p className="curr-category">Current tag group: {owningTagGroup.tagGroupName}</p>
+                    <p className="new-category">New Tag Group</p>
+                    <SwapDropdown options={tagGroupOptions} onChange={handleSelectTagGroup} value={newTagGroup} />
+                </DropdownContainer>
+                <div className="modal-options">
+                    <button onClick={handleCloseSwapTagGroup}>Cancel</button>
+                    <button onClick={swapTagGroup}>Save</button>
+                </div>
             </Modal>
         </>
     );

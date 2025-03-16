@@ -22,15 +22,17 @@ const categories = {
             if (!group) {
                 throw helpers.createError('a category group is required for category creation', 400);
             }
+
+            const tagGroups = req?.body?.tagGroups;
     
             const categoryEntry = {
                 name: category,
                 group: group,
+                tagGroups: tagGroups || [],
                 items: []
             }
     
             const result = await collection.insertOne(categoryEntry);
-
             if (!result.insertedId) {
                 throw helpers.createError('category was not inserted into database', 500);
             }
@@ -88,6 +90,7 @@ const categories = {
                 throw helpers.createError('category name is required for category update', 400);
             }
 
+            // TODO: update logic to check for any category with the new name, not just the current category's name
             const currCategory = await collection.find({ _id: categoryId }).toArray();
             if (currCategory.name === name && currCategory.group === group) {
                 throw helpers.createError(`a category with the name "${name}" already exists`, 400);
@@ -98,12 +101,15 @@ const categories = {
                 throw helpers.createError('a category group is required for category creation', 400);
             }
 
+            const tagGroups = req?.body?.newTagGroups;
+
             const result = await collection.updateOne(
                 { _id: ObjectId(categoryId) },
                 {
                     $set: {
                         name: name,
                         group: group,
+                        tagGroups: tagGroups || []
                     }
                 }
             );

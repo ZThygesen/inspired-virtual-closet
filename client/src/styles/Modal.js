@@ -110,6 +110,21 @@ export const ModalContentContainer = styled.div`
             height: 100vh;
             overflow-y: hidden;
         }
+
+        & .checkboxes {
+            & .checkboxes-field-name {
+                text-align: left;
+                font-size: 20px;
+                margin-bottom: 4px;
+            }
+            display: flex;
+            flex-direction: column;
+            align-self: flex-start;
+
+            & label {
+                margin-left: 0px;
+            }
+        }
     }
 
     .modal-content p {

@@ -21,7 +21,7 @@ export const helpers = {
         return false;
     },
 
-    // checks if given category id is the Other category id
+    // checks if given category id is the Other category/tag group id
     isOtherCategory(id) {
         return id === 0 || id === '0';
     },
@@ -339,6 +339,70 @@ export const helpers = {
                 }
             }
         );
+    },
+
+    // move all tags from one group to the Other tag group
+    async moveTagsToOther(db, tagGroupId) {
+        if (!db) {
+            throw this.createError('database instance required to move tags to other tag group', 500);
+        }
+
+        if (this.isOtherCategory(tagGroupId)) {
+            throw this.createError('cannot move tags from Other to Other', 500);
+        }
+
+        if (!this.isValidId(tagGroupId)) {
+            throw this.createError('failed to move tags to other: invalid or missing tag group id', 400);
+        }
+
+        // get all files associated with category
+        const collection = db.collection('tags');
+        const tagGroup = await collection.findOne({ _id: ObjectId(tagGroupId) });
+        
+        if (!tagGroup) {
+            throw this.createError('tag group does not exist', 404);
+        }
+
+        const tags = tagGroup?.tags;
+        
+        // move all files to "Other" group
+        await collection.updateOne(
+            { _id: 0 },
+            {
+                $push: {
+                    tags: {
+                        $each: tags
+                    }
+                }
+            }
+        );
+    },
+
+    async removeTagGroupFromCategories(db, tagGroupId) {
+        if (!db) {
+            throw this.createError('database instance required to remove tag groups from category', 500);
+        }
+
+        if (!this.isValidId(tagGroupId)) {
+            throw this.createError('failed to remove tag groups from category: invalid or missing tag group id', 400);
+        }
+
+        const collection = db.collection('categories');
+        const categories = await collection.find({ }).toArray();
+        for (const category of categories) {
+            if (helpers.isOtherCategory(category._id)) {
+                continue;
+            }
+
+            await collection.updateOne(
+                { _id: ObjectId(category._id) },
+                {
+                    $pull: {
+                        tagGroups: tagGroupId
+                    }
+                }
+            );
+        }
     },
 
     // determines if given client is a super admin

@@ -80,13 +80,15 @@ export const ClosetSettingsContainer = styled.div`
         box-shadow: var(--top-shadow);
         overflow-y: hidden;
 
-        & .category-settings {
+        & .category-settings,
+        & .tag-settings {
             display: flex;
             width: 100%;
             height: 100%;
             position: relative;
 
-            & .groups {
+            & .groups,
+            & .tag-groups {
                 width: 100%;
                 height: 100%;
                 max-height: calc(100% - ${categoryFooterHeight}px);
@@ -96,60 +98,104 @@ export const ClosetSettingsContainer = styled.div`
                 overflow-y: auto;
                 padding: 6px 0;
 
-                & .category-group {
+                & .category-group,
+                & .tag-group-container {
                     display: flex;
                     flex-direction: column;
+                }
 
-                    & .group,
-                    & .category {
-                        font-family: 'Fashion';
-                        font-size: 28px;
-                        letter-spacing: 2px;
-                        max-width: 100%;
-                        word-break: break-word;
-                        text-align: left;
-                    }
+                & .group,
+                & .category,
+                & .tag-group,
+                & .tag {
+                    font-family: 'Fashion';
+                    font-size: 28px;
+                    letter-spacing: 2px;
+                    max-width: 100%;
+                    word-break: break-word;
+                    text-align: left;
+                }
 
-                    & .group {
-                        font-weight: 700;
-                        padding: 2px 12px;
-                        align-self: start;
-                    }
+                & .group,
+                & .tag-group {
+                    font-weight: 700;
+                    padding: 2px 12px;
+                    align-self: start;
+                }
 
-                    & .categories {
+                & .tag-group {
+                    padding: 0;
+                    align-self: center;
+                }
 
-                        & .category-setting {
-                            display: grid;
-                            grid-template-columns: 1fr 50px 50px;
-                            gap: 4px;
-                            padding: 2px 12px;
-                            margin-left: 20px;
-                            justify-items: start;
-                            align-items: center;
-                        }
+                & .category-setting,
+                & .tag-group-setting,
+                & .tag-setting {
+                    display: grid;
+                    grid-template-columns: 1fr 50px 50px;
+                    gap: 4px;
+                    padding: 2px 12px;
+                    margin-left: 20px;
+                    justify-items: start;
+                    align-items: center;
+                }
 
-                        & .category {
-                            font-size: 24px;
-                        }
+                & .tag-group-setting,
+                & .tag-setting {
+                    grid-template-columns: 1fr 35px 35px 35px;
+                }
 
-                        & .category-option-btn {
-                            justify-self: center;
-                            padding: 5px;
-                            cursor: pointer;
-                            font-size: 32px !important;
-                            background: none;
-                            transition: all 0.1s;
-                            color: var(--material-btn);
+                & .tag-group-setting {
+                    margin: 0;
+                }
 
-                            &:hover {
-                                color: var(--black);
-                            }
-                        }
+                & .category,
+                & .tag {
+                    font-size: 24px;
+                }
+
+                & .tag-display {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+
+                    & .tag-color {
+                        width: 16px;
+                        height: 16px;
+                        outline: 1px solid var(--black);
+                        border-radius: 50%;
                     }
                 }
+
+                & .category-option-btn,
+                & .tag-group-option-btn,
+                & .tag-option-btn {
+                    justify-self: center;
+                    padding: 5px;
+                    cursor: pointer;
+                    font-size: 32px !important;
+                    background: none;
+                    transition: all 0.1s;
+                    color: var(--material-btn);
+
+                    &:hover {
+                        color: var(--black);
+                    }
+                }
+
+                & .tag-group-name {
+                    display: flex;
+                    gap: 4px;
+
+                    & .tag-group-option-btn {
+                        font-size: 24px !important;
+                    }
+                }
+                
             }
 
-            & .categories-footer {
+            & .categories-footer,
+            & .tag-groups-footer {
                 width: 100%;
                 height: ${categoryFooterHeight}px;
                 display: flex;
@@ -179,7 +225,8 @@ export const ClosetSettingsContainer = styled.div`
                         letter-spacing: 4px;
                     }
 
-                    & .add-category-icon {
+                    & .add-category-icon,
+                    & .add-tag-group-icon {
                         font-size: 36px !important;
                     }
 
