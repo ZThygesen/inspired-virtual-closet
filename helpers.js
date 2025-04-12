@@ -390,7 +390,7 @@ export const helpers = {
         const collection = db.collection('categories');
         const categories = await collection.find({ }).toArray();
         for (const category of categories) {
-            if (helpers.isOtherCategory(category._id)) {
+            if (this.isOtherCategory(category._id)) {
                 continue;
             }
 

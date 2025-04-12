@@ -86,7 +86,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
         if (category.name !== currCategory || currCategoryClicked) {
             setCurrCategory(category.name);
             scrollToRef(ref);
-            if (closetMode !== 0 && closetMode !== 1 && closetMode !== 4) {
+            if (closetMode !== 0 && closetMode !== 1 && closetMode !== 5) {
                 setClosetMode(0);
             }
             setCurrCategoryClicked(false);
@@ -219,8 +219,8 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
         { name: `CANVAS (${canvasItems.length - 1})`, icon: 'swipe'},
         { name: `OUTFITS (${outfits.length})`, icon: 'dry_cleaning'},
         { name: `SHOPPING (${shoppingItems.length})`, icon: 'sell'},
-        { name: 'ADD', icon: 'add_box'},
-        { name: 'PROFILE', icon: 'person'}
+        { name: 'PROFILE', icon: 'person'},
+        { name: 'ADD', icon: 'add_box'}
     ];
 
     return (
@@ -304,13 +304,13 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
                         shoppingItems={shoppingItems}
                         updateShoppingItems={getShoppingItems}
                     />
-                    <AddItems   
+                    <Profile 
                         display={closetMode === 4}
+                    />
+                    <AddItems   
+                        display={closetMode === 5}
                         category={category}
                         updateItems={updateItems} 
-                    />
-                    <Profile 
-                        display={closetMode === 5}
                     />
                 </div>
             </ClosetNavigationContainer>
