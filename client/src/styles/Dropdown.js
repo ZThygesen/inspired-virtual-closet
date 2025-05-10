@@ -33,6 +33,8 @@ export const SwapDropdown = styled(Dropdown)`
         font-size: 20px;
         color: var(--black);
         border: 1px solid var(--black);
+        padding: 16.5px 14px;
+        border-radius: 4px;
         cursor: pointer;
 
         &:hover {
@@ -40,22 +42,32 @@ export const SwapDropdown = styled(Dropdown)`
         }
 
         & .Dropdown-placeholder {
-            font-size: 20px;
+            font-size: 16px;
             color: var(--black);
         }
 
         & .Dropdown-arrow {
             border-color: var(--black) transparent transparent;
+            top: unset;
         }
     }
 
     & .Dropdown-menu {
-        max-height: 200px;
+        max-height: 400px;
         border: 1.5px solid var(--secondary);
+        border-radius: 4px;
         overflow-y: auto;
 
-        & .Dropdown-option {
+        & .Dropdown-group {
+
+        }
+
+        & .Dropdown-title {
             font-size: 20px;
+        }
+
+        & .Dropdown-option {
+            font-size: 16px;
             color: var(--black);
             transition: all 0.1s;
         

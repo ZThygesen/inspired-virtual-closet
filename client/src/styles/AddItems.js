@@ -5,40 +5,82 @@ const AddItemsContainer = styled.div`
     align-items: center;
     width: 100%;
 
-    & .category-select {
-        max-width: 800px;
-        text-align: center;
+    & .add-items-title {
+        font-size: 36px;
+        font-family: 'Fashion';
+        font-weight: 600;
+        letter-spacing: 2px;
+        margin-bottom: 12px;
+    }
 
-        & .add-item-title,
-        & .add-item-title > * {
-            font-size: 36px;
-            font-family: 'Fashion';
-            font-weight: 600;
-            letter-spacing: 2px;
-        }
+    & .add-action-area {
+        width: 100%;
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 20px;
+    }
 
-        & .help-info {
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-
-        .category {
-            color: var(--secondary);
-            text-decoration: underline;
-            cursor: pointer;
-        }
-        
-        .error {
-            color: red;
+    @media (min-width: 769px) {
+        & .add-action-area {
+            flex-direction: row;
         }
     }
 `;
 
 const UploadOptionsContainer = styled.div`
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: 12px;
+    border-radius: 12px;
+    box-shadow: var(--box-shadow);
+    padding: 20px;
+
+    & .mass-options {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        & .mass-options-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        & .tab-selection,
+        & .category-selection,
+        & .rmbg-selection,
+        & .crop-selection {
+            display: grid;
+            grid-template-columns: 1fr 100px;
+            justify-items: start;
+            align-items: center;
+        }
+
+        & .apply-mass-option {
+            display: flex;
+            padding: 12px 16px;
+            justify-self: end;
+            background-color: var(--white);
+            box-shadow: var(--box-shadow);
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.1s;
+
+            &:hover {
+                background-color: var(--primary-light);
+            }
+        }
+    }
+
+    .separator {
+        width: 100%;
+        height: 1px;
+        background-color: var(--black);
+        margin: 20px 0;
+    }
 
     .upload-credits {
         font-size: 24px;
@@ -54,8 +96,8 @@ const FileContainer = styled.div`
     padding: 20px;
     margin-top: 20px;
     width: 100%;
-    border: 2px solid var(--black);
     border-radius: 20px;
+    box-shadow: var(--box-shadow);
 
     h2 {
         font-family: 'Fashion';
@@ -84,59 +126,24 @@ const FileContainer = styled.div`
 `;
 
 const FileCardContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 48px 20px 20px 20px;
+    width: 100%;
+    max-width: 500px;
     border-radius: 25px;
-    position: relative;
-    width: 250px;
-    max-width: 250px;
     margin: 12px;
     box-shadow: var(--file-card-shadow);
-    
-    .file-card-img {
+
+    &.error {
+        box-shadow: var(--file-card-shadow-error);
+    }
+
+    & form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 12px 12px 12px;
+        position: relative;
         width: 100%;
-        height: 200px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .file-img {
-        background: transparent;
-        max-width: 200px;
-        max-height: 200px;
-        height: auto;
-        width: auto;
-        cursor: pointer;
-        transition: all 0.1s;
-
-        &:not(.invalid):hover {
-            border-color: var(--primary);
-        }
-    }
-
-    .file-img.invalid {
-        border: none;
-    }
-
-    .file-name {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        font-weight: 600;
-        word-wrap: break-word;
-        text-align: center;
-        flex-grow: 1;
-    }
-
-    .file-size {
-        font-size: 16px;
-        text-align: center;
     }
 
     .file-remove {
@@ -150,6 +157,123 @@ const FileCardContainer = styled.div`
         &:hover {
             transform: scale(1.075);
         }
+    }
+
+    & .feedback {
+
+    }
+
+    & .file-action-area {
+        width: 100%;
+        display: flex;
+        gap: 12px;
+    }
+
+    & .file-options {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        & .options-prompt {
+            font-size: 20px;
+            font-weight: 600;
+        }
+    }
+
+    & .file-info {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+
+        & .info-prompt {
+            font-size: 20px;
+            font-weight: 600;
+        }
+    }
+
+    & .tags-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+    }
+
+    & .tags-prompt {
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    & .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        width: 100%;
+    }
+
+    & .tag {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: var(--box-shadow);
+        padding: 12px 16px;
+        border-radius: 20px;
+    }
+
+    & .tag-name {
+
+    }
+                    
+    & .tag-color {
+        width: 16px;
+        height: 16px;
+        outline: 1px solid var(--black);
+        border-radius: 50%;
+    }
+
+    & .add-tags-button {
+        width: 100%;
+        background-color: var(--grey);
+        padding: 4px 8px;
+        border-radius: 6px;
+        transition: 0.1s;
+        cursor: pointer;
+
+        &:hover {
+            background-color: var(--primary-light);
+        }
+    }
+    
+    & .file-card-img {
+        width: 100%;
+        height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    & .file-img {
+        background: transparent;
+        max-width: 200px;
+        max-height: 200px;
+        height: auto;
+        width: auto;
+        cursor: pointer;
+        transition: all 0.1s;
+
+        &:not(.invalid):hover {
+            border-color: var(--primary);
+        }
+    }
+
+    & .file-img.invalid {
+        border: none;
+    }
+
+    & .file-size {
+        font-size: 16px;
+        text-align: center;
     }
 
     & .file-error-message {

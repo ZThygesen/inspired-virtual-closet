@@ -6,8 +6,8 @@ import Loading from '../components/Loading';
 import Modal from '../components/Modal';
 import Input from '../components/Input';
 import { Tooltip } from '@mui/material';
-import { ClosetSettingsContainer } from "../styles/ClosetSettings";
-import { DropdownContainer, SwapDropdown } from "../styles/Dropdown";
+import { ClosetSettingsContainer } from '../styles/ClosetSettings';
+import { DropdownContainer, SwapDropdown } from '../styles/Dropdown';
 
 export default function ClosetSettings() {
     const { setError } = useError();

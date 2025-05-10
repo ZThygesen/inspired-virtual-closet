@@ -8,7 +8,7 @@ export default function ActionButton({ variant, isLink, linkPath, onClick, child
                 {children}
             </Link>
             :
-            <Button className={variant} onClick={onClick}>
+            <Button className={variant} onClick={onClick} type="button">
                 {children}
             </Button>
         

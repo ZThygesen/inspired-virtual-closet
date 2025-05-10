@@ -8,6 +8,7 @@ import ClosetNavigation from '../components/ClosetNavigation';
 import CategoriesSidebar from '../components/CategoriesSidebar';
 import Loading from '../components/Loading';
 import { SidebarProvider } from '../components/SidebarContext';
+import { DataProvider } from '../components/DataContext';
 
 const Container = styled.div`
     flex: 1;
@@ -137,25 +138,27 @@ export default function VirtualCloset() {
         <>
             <ClientProvider clientId={client._id}>
                 <SidebarProvider>
-                    <Container>
-                        <CategoriesSidebar
-                            sidebarRef={sidebarRef}
-                            categories={categories}
-                            categoryGroups={categoryGroups}
-                            activeCategory={category}
-                            setCategory={setCategory}
-                            sendToCanvas={sendToCanvas}
-                            canvasItems={canvasItems}
-                        />
-                        <ClosetNavigation
-                            sidebarRef={sidebarRef}
-                            client={client}
-                            category={category}
-                            getCategories={getCategories}
-                            setSendToCanvas={(fn) => (sendToCanvas.current = fn)}
-                            setCategoryCanvasItems={setCanvasItems}
-                        />
-                    </Container>
+                    <DataProvider>
+                        <Container>
+                            <CategoriesSidebar
+                                sidebarRef={sidebarRef}
+                                categories={categories}
+                                categoryGroups={categoryGroups}
+                                activeCategory={category}
+                                setCategory={setCategory}
+                                sendToCanvas={sendToCanvas}
+                                canvasItems={canvasItems}
+                            />
+                            <ClosetNavigation
+                                sidebarRef={sidebarRef}
+                                client={client}
+                                category={category}
+                                getCategories={getCategories}
+                                setSendToCanvas={(fn) => (sendToCanvas.current = fn)}
+                                setCategoryCanvasItems={setCanvasItems}
+                            />
+                        </Container>
+                    </DataProvider>
                     <Loading open={loading} />
                 </SidebarProvider>
             </ClientProvider>

@@ -32,8 +32,7 @@ export const SidebarProvider = ({ children }) => {
                     } else {
                         setMobileMode(false);
                     }
-                }
-                
+                }  
             }
         }
 

@@ -309,7 +309,6 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
                     />
                     <AddItems   
                         display={closetMode === 5}
-                        category={category}
                         updateItems={updateItems} 
                     />
                 </div>

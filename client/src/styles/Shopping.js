@@ -12,7 +12,7 @@ export const ShoppingContainer = styled.div`
         font-size: 36px;
         font-weight: 600;
         letter-spacing: 2px;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
     }
 
     .shopping-info {

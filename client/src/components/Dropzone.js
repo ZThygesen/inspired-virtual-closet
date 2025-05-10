@@ -73,13 +73,11 @@ export default function Dropzone({ setFiles }) {
 
         const allFiles = [];
         for (let i = 0; i < files.length; i++) {
-            files[i]['id'] = cuid();
-            files[i]['fileSize'] = getFileSize(files[i].size);
-
-            if (validateFile(files[i])) {
+            let file = files[i];
+            let invalid = false;
+            if (validateFile(file)) {
                 try {
-                   const file = await convertToImage(files[i]);
-                   allFiles.push(file); 
+                   file = await convertToImage(file);
                 } catch (err) {
                     setError({
                         message: 'There was an error processing the files.',
@@ -87,9 +85,21 @@ export default function Dropzone({ setFiles }) {
                     });
                 }
             } else {
-                files[i]['invalid'] = true;
-                allFiles.push(files[i]);
+                invalid = true;
             }
+
+            allFiles.push({
+                id: cuid(),
+                tab: 'clothes',
+                category: '',
+                tags: [],
+                name: file.name,
+                src: file.src,
+                type: file.type,
+                fileSize: getFileSize(file.size),
+                invalid: invalid,
+                incomplete: true
+            });
 
             setNumFilesProcessed(i + 1);
         }
