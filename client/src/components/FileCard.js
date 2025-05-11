@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useUser } from './UserContext';
+import { useClient } from './ClientContext';
 import { FileCardContainer } from '../styles/AddItems';
 import Modal from './Modal';
 import Input from './Input';
@@ -8,18 +9,20 @@ import invalidImg from '../images/invalid.png';
 
 export default function FileCard({ file, uploadFile, removeFile, profileCategories, clothesCategories, allTags, massOption, activateMassOption, setActivateMassOption, updateFiles }) {
     const { user } = useUser();
+    const { client } = useClient();
 
     const [tab, setTab] = useState('clothes');
     const [category, setCategory] = useState('');
     const [name, setName] = useState(file.name);
     const [tags, setTags] = useState([]);
     const [activeTagObjects, setActiveTagObjects] = useState([]);
-    const [rmbg, setRmbg] = useState(true);
-    const [crop, setCrop] = useState(true);
+    const [rmbg, setRmbg] = useState(file.rmbg);
+    const [crop, setCrop] = useState(file.crop);
 
     const [incompleteMessage, setIncompleteMessage] = useState('');
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [tagModalOpen, setTagModalOpen] = useState(false);
+    const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 
     useEffect(() => {
         if (activateMassOption) {
@@ -48,13 +51,11 @@ export default function FileCard({ file, uploadFile, removeFile, profileCategori
     }, [massOption, activateMassOption, setActivateMassOption, file]);
 
     function changeTab(tab) {
-        console.log(tab)
         setTab(tab);
         file.tab = tab;
     }
 
     function changeCategory(category) {
-        console.log(category)
         setCategory(category);
         file.category = category;
     }
@@ -79,6 +80,7 @@ export default function FileCard({ file, uploadFile, removeFile, profileCategori
     }
 
     function toggleRmbg() {
+        console.log(file);
         const checked = rmbg;
         setRmbg(!checked);
         file.rmbg = !checked;
@@ -119,11 +121,8 @@ export default function FileCard({ file, uploadFile, removeFile, profileCategori
 
     function handleUploadFile(e) {
         e.preventDefault();
-        if (file.invalid || file.incomplete) {
-            alert('invalid/incomplete file');
-        }
-        else {
-            // uploadFile(file);
+        if (!file.invalid && !file.incomplete) {
+            setConfirmModalOpen(true);
         }
     }
 
@@ -228,6 +227,13 @@ export default function FileCard({ file, uploadFile, removeFile, profileCategori
                         </div>
                         <button className="add-tags-button" type="button" onClick={openTagModal}>Edit Tags</button>
                     </div>
+                    <button 
+                        type="submit" 
+                        className="upload-file-button"
+                        disabled={file.invalid || file.incomplete}
+                    >
+                        Upload File
+                    </button>
                 </form>
             </FileCardContainer>
             <Modal
@@ -291,6 +297,21 @@ export default function FileCard({ file, uploadFile, removeFile, profileCategori
                         <button onClick={closeTagModal}>Done</button>
                     </div>
                 </>
+            </Modal>
+            <Modal
+                open={confirmModalOpen}
+                closeFn={() => setConfirmModalOpen(false)}
+            >
+                <div className="modal-content">
+                    <p className="large bold">Are you sure you want to upload this file?</p>
+                    { !client?.isSuperAdmin && 
+                        <p className="medium warning">You have {client?.credits} credits left.</p> 
+                    }
+                </div>
+                <div className="modal-options">
+                    <button onClick={() => setConfirmModalOpen(false)}>Cancel</button>
+                    <button onClick={() => { setConfirmModalOpen(false); uploadFile(file); }}>Upload</button>
+                </div>
             </Modal>
         </>
     );

@@ -10,8 +10,8 @@ const files = {
     async post(req, res, next) {
         try {
             // read in file fields
-            const { fileSrc, fullFileName, categoryId, rmbg, crop } = req?.fields;
-
+            const { fileSrc, fullFileName, categoryId, tags, rmbg, crop } = req?.fields;
+            
             if (!fileSrc) {
                 throw helpers.createError('file source is required to create file', 400);
             }
@@ -35,6 +35,8 @@ const files = {
             else {
                 throw helpers.createError('failed to add file: invalid or missing category id', 400);
             }
+
+            const fileTags = JSON.parse(tags);
 
             if (rmbg === null || rmbg === undefined) {
                 throw helpers.createError('background removal option is required to create file', 400);
@@ -104,7 +106,8 @@ const files = {
                 smallFileUrl: smallFileUrl,
                 fullGcsDest: fullGcsDest,
                 smallGcsDest: smallGcsDest,
-                gcsId: gcsId
+                gcsId: gcsId,
+                tags: fileTags,
             };
     
             // insert file object into db

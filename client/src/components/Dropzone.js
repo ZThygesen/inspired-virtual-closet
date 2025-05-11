@@ -93,6 +93,8 @@ export default function Dropzone({ setFiles }) {
                 tab: 'clothes',
                 category: '',
                 tags: [],
+                rmbg: true,
+                crop: true,
                 name: file.name,
                 src: file.src,
                 type: file.type,

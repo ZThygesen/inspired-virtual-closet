@@ -83,7 +83,7 @@ const UploadOptionsContainer = styled.div`
     }
 
     .upload-credits {
-        font-size: 24px;
+        font-size: 20px;
         font-weight: 600;
         margin-bottom: 24px;
     }
@@ -137,6 +137,7 @@ const FileCardContainer = styled.div`
     }
 
     & form {
+        height: 100%;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -198,6 +199,7 @@ const FileCardContainer = styled.div`
         flex-direction: column;
         gap: 12px;
         width: 100%;
+        margin-bottom: 12px;
     }
 
     & .tags-prompt {
@@ -242,6 +244,29 @@ const FileCardContainer = styled.div`
 
         &:hover {
             background-color: var(--primary-light);
+        }
+    }
+
+    & .upload-file-button {
+        max-height: 40px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 20px;
+        font-weight: 600;
+        border: 1px solid var(--black);
+        background-color: var(--primary-light);
+        margin-top: auto;
+        flex: 1;
+        transition: 0.1s;
+        cursor: pointer;
+
+        &:disabled {
+            background-color: var(--light-grey);
+            cursor: default;
+        }
+
+        &:hover:not(:disabled) {
+            background-color: var(--primary);
         }
     }
     

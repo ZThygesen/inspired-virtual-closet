@@ -159,25 +159,34 @@ export default function AddItems({ display, updateItems }) {
     }
 
     async function uploadFile(file) {
-        const formData = new FormData();
-        formData.append('fileSrc', file.src);
-        formData.append('fullFileName', file.name);
-        formData.append('categoryId', category._id);
-        formData.append('rmbg', rmbg);
-        formData.append('crop', crop && rmbg);
+        if (file.tab === 'clothes') {
+            const formData = new FormData();
+            formData.append('fileSrc', file.src);
+            formData.append('fullFileName', file.name);
+            formData.append('categoryId', file.category.value);
+            formData.append('tags', JSON.stringify(file.tags));
+            formData.append('rmbg', file.rmbg);
+            formData.append('crop', file.crop && file.rmbg);
 
-        return new Promise(async (resolve, reject) => {
-            try {
-                await api.post(`/files/${client._id}`, formData, {
-                    headers: { 'Content-Type': 'multipart/form-data'}
-                }); 
-            } catch (err) {
-                reject(err);
-            }
+            return new Promise(async (resolve, reject) => {
+                try {
+                    await api.post(`/files/${client._id}`, formData, {
+                        headers: { 'Content-Type': 'multipart/form-data'}
+                    }); 
+                } catch (err) {
+                    reject(err);
+                }
 
-            await updateClient();
-            resolve();
-        });
+                await updateClient();
+                resolve();
+            });
+        }
+        else if (file.tab === 'profile') {
+
+        }
+        else {
+
+        }
     }
 
     useEffect(() => {
@@ -310,8 +319,9 @@ export default function AddItems({ display, updateItems }) {
                                 className="tertiary small"
                                 onClick={() => setConfirmModalOpen(true)}
                                 disabled={!(invalidFiles.length === 0 && incompleteFiles.length === 0 && allFiles.length && hasCredits)}
+                                style={{ fontFamily: 'unset', letterSpacing: 'unset', fontSize: '20px', fontWeight: 600 }}
                             >
-                                Submit File(s)
+                                Upload All Files
                         </ActionButton>
                     </UploadOptionsContainer>
                     <Dropzone 
@@ -368,39 +378,14 @@ export default function AddItems({ display, updateItems }) {
                 closeFn={() => setConfirmModalOpen(false)}
             >
                 <div className="modal-content">
-                    <p className="large bold">Are you sure you want to add these {allFiles.length} items to <span className="category-name large bold">{category.name}</span>?</p>
-                    { (user?.isSuperAdmin || user?.isAdmin) &&
-                    <>
-                        <p className="medium">The background WILL {rmbg ? '' : 'NOT'} be removed.</p>
-                        { rmbg &&
-                            <p className="medium">The image WILL {crop ? '' : 'NOT'} be cropped.</p>
-
-                        }
-                        <Input 
-                            type="checkbox" 
-                            id="remove-background"
-                            label="Remove Background" 
-                            onChange={toggleRmbg}
-                            value={rmbg}
-                        />
-                        { (rmbg) &&
-                            <Input 
-                                type="checkbox" 
-                                id="crop-image"
-                                label="Crop Image" 
-                                onChange={toggleCrop}
-                                value={crop}
-                            />
-                        }
-                    </>
-                    }
+                    <p className="large bold">Are you sure you want to upload {allFiles.length === 1 ? "this file" : `all of these ${allFiles.length} files`}?</p>
                     { !client?.isSuperAdmin && 
                         <p className="medium warning">You have {client?.credits} credits left.</p> 
                     }
                 </div>
                 <div className="modal-options">
                     <button onClick={() => setConfirmModalOpen(false)}>Cancel</button>
-                    <button onClick={() => { setConfirmModalOpen(false); handleSubmit(); }}>Submit</button>
+                    <button onClick={() => { setConfirmModalOpen(false); handleSubmit(); }}>Upload</button>
                 </div>
             </Modal>
             <Modal
@@ -420,7 +405,7 @@ export default function AddItems({ display, updateItems }) {
                 closeFn={() => setResultModalOpen(false)}
             >
                 <div className="modal-content">
-                    <p className="large bold">Items added successfully to <span className="category-name large bold">{category.name}</span>!</p>
+                    <p className="large bold">Items added successfully!</p>
                 </div>
                 <div className="modal-options">
                         <button onClick={() => setResultModalOpen(false)}>OK</button>

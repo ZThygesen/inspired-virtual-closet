@@ -86,7 +86,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
         if (category.name !== currCategory || currCategoryClicked) {
             setCurrCategory(category.name);
             scrollToRef(ref);
-            if (closetMode !== 0 && closetMode !== 1 && closetMode !== 5) {
+            if (closetMode !== 0 && closetMode !== 1) {
                 setClosetMode(0);
             }
             setCurrCategoryClicked(false);
