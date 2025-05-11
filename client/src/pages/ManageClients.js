@@ -65,6 +65,32 @@ export default function ManageClients() {
 
     const { user } = useUser();
 
+    const [searchResultsSuperAdmin, setSearchResultsSuperAdmin] = useState(superAdmins || []);
+    const [searchResultsAdmin, setSearchResultsAdmin] = useState(admins || []);
+    const [searchResultsClients, setSearchResultsClients] = useState(clients || []);
+    const [searchString, setSearchString] = useState('');
+    
+    const filter = useCallback((clients, searchString) => {
+        const words = searchString.toLowerCase().split(/\s+/).filter(Boolean);
+        const results = clients.filter(client =>
+            words.every(word => 
+                client?.firstName?.toLowerCase()?.includes(word) ||
+                client?.lastName?.toLowerCase()?.includes(word)
+            )
+        );
+        return results;
+    }, []);
+
+    useEffect(() => {
+        const superAdminResults = filter(superAdmins, searchString);
+        const adminResults = filter(admins, searchString);
+        const clientResults = filter(clients, searchString);
+
+        setSearchResultsSuperAdmin(superAdminResults);
+        setSearchResultsAdmin(adminResults);
+        setSearchResultsClients(clientResults);
+    }, [filter, searchString, superAdmins, admins, clients]);
+
     const getClients = useCallback(async () => {
         setLoading(true);
         try {
@@ -330,19 +356,29 @@ export default function ManageClients() {
                         <button className="material-icons closet-settings-button" onClick={handleOpenSettings}>settings</button>
                     </Tooltip>
                 </div>
+                <div className="title-search">
+                    <Input 
+                        type="text"
+                        id="fuzzy-search"
+                        label="Search"
+                        value={searchString}
+                        onChange={e => setSearchString(e.target.value)}
+                    />
+                </div>
+                
                 <div className="clients">
                     {
-                        superAdmins.map(client => (
+                        searchResultsSuperAdmin?.map(client => (
                             <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
                         ))
                     }
                     {
-                        admins.map(client => (
+                        searchResultsAdmin?.map(client => (
                             <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
                         ))
                     }
                     { 
-                        clients.map(client => (
+                        searchResultsClients?.map(client => (
                             <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
                         ))
                     }

@@ -8,6 +8,21 @@ export const ClothesContainer = styled.div`
     justify-content: center;
     width: 100%;
 
+    & .title-search {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        /* align-items: flex-start; */
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 12px;
+
+        & .MuiFormControl-root {
+            max-width: 500px;
+        }
+    }
+
     .category-title {
         font-family: 'Fashion';
         font-size: 36px;
@@ -16,10 +31,11 @@ export const ClothesContainer = styled.div`
     }
 
     .items {
+        /* width: 100%; */
         display: flex;
         flex-wrap: wrap;
         align-items: stretch;
-        justify-content: center;
+        /* justify-content: flex-start; */
     }
 `;
 

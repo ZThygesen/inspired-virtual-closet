@@ -25,7 +25,7 @@ export default function CategoriesSidebar({ sidebarRef, categories, categoryGrou
     // set category to 'All' on first render
     useEffect(() => {
         if (JSON.stringify(activeCategory) === '{}' && categories.length > 0) {
-            setCategory(categories[0])
+            setCategory(categories[0]);
         }
     }, [activeCategory, categories, setCategory]);
 

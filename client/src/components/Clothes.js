@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useError } from './ErrorContext';
 import api from '../api';
 import ClothingCard from './ClothingCard';
@@ -8,6 +8,8 @@ import { DropdownContainer, SwapDropdown } from '../styles/Dropdown';
 import Modal from './Modal';
 import { useClient } from './ClientContext';
 import { useData } from './DataContext';
+import Input from './Input';
+import cuid from 'cuid';
 
 export default function Clothes({ display, category, updateItems, addCanvasItem, canvasItems }) {
     const { setError } = useError();
@@ -21,6 +23,25 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
 
     const { client } = useClient();
     const { clothesCategories } = useData();
+
+    const [items, setItems] = useState(category?.items || []);
+    const [searchResults, setSearchResults] = useState(category?.items || []);
+    const [searchString, setSearchString] = useState('');
+
+    useEffect(() => {
+        setItems(category?.items || []);
+    }, [category]);
+
+    useEffect(() => {
+        const words = searchString.toLowerCase().split(/\s+/).filter(Boolean);
+        const results = items.filter(item =>
+            words.every(word =>
+                item?.fileName?.toLowerCase()?.includes(word) || 
+                item?.tagNames?.some(tag => tag.toLowerCase().includes(word))
+            )
+        );
+        setSearchResults(results);
+    }, [searchString, items]);
 
     function handleSwapCategoryClose() {
         setSwapCategoryOpen(false);
@@ -140,10 +161,19 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
     return (
         <>
             <ClothesContainer style={{ display: display ? 'flex' : 'none' }}>
-                <h2 className="category-title">{category.name}</h2>
+                <div className="title-search">
+                    <h2 className="category-title">{category.name} ({searchResults.length})</h2>
+                    <Input 
+                        type="text"
+                        id="fuzzy-search"
+                        label="Search"
+                        value={searchString}
+                        onChange={e => setSearchString(e.target.value)}
+                    />
+                </div>
                 <div className="items">
                     {
-                        category?.items?.map((item, index) => (
+                        searchResults?.map((item, index) => (
                             <ClothingCard
                                 item={item}
                                 editable={category._id !== -1}
@@ -156,7 +186,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
                                 nextClothingModal={nextClothingModal}
                                 openClothingModal={() => openClothingModal(index)}
                                 isOpen={currOpenIndex === index}
-                                key={index}
+                                key={cuid()}
                             />
                         ))
                     }

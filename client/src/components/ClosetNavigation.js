@@ -12,6 +12,7 @@ import AddItems from './AddItems';
 import Profile from './Profile';
 import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
 import { useUser } from './UserContext';
+import { useData } from './DataContext';
 import { useSidebar } from './SidebarContext';
 
 const logoCanvasItem = {
@@ -41,6 +42,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
 
     const { sidebarOpen, setSidebarOpen, mobileMode, currCategoryClicked, setCurrCategoryClicked } = useSidebar();
     const { user } = useUser();
+    const { updateData, resolveTagIds } = useData();
 
     const ref = useRef();
 
@@ -94,9 +96,18 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
     }, [category, currCategory, closetMode, currCategoryClicked, setCurrCategoryClicked]);
 
     async function updateItems(animateLoad = false) {
+        await updateData();
         await getCategories(category, animateLoad);
         setClosetMode(0);
     }
+
+    useEffect(() => {
+        category?.items?.forEach(item => {
+            const resolvedTags = resolveTagIds(item?.tags || []);
+            const tagNames = resolvedTags.map(tag => tag.tagName);
+            item.tagNames = tagNames;
+        });
+    }, [category, resolveTagIds]);
 
     const addCanvasItem = useCallback((item, type) => {
         let canvasItem;
@@ -177,6 +188,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
     }
 
     const getOutfits = useCallback(async (changeMode = false) => {
+        await updateData();
         try {
             const response = await api.get(`/outfits/${client._id}`);
             
@@ -192,13 +204,14 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
                 status: err.response.status
             });
         }
-    }, [client, setError]);
+    }, [client, setError, updateData]);
 
     useEffect(() => {
         getOutfits();
     }, [getOutfits]);
 
     const getShoppingItems = useCallback(async () => {
+        await updateData();
         try {
             const response = await api.get(`/shopping/${client._id}`);
             setShoppingItems(response.data);
@@ -208,7 +221,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
                 status: err.response.status
             });
         }
-    }, [client, setError]);
+    }, [client, setError, updateData]);
 
     useEffect(() => {
         getShoppingItems();

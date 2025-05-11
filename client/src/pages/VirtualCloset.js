@@ -78,7 +78,7 @@ export default function VirtualCloset() {
 
             // extract items from each group
             groupCategories.forEach(category => {
-                items.push([...category.items]);
+                items.push(...category.items);
             });
 
             // sort group's categories alphabetically

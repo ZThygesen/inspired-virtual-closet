@@ -149,8 +149,14 @@ export const DataProvider = ({ children, clientId }) => {
         updateTags();
     }, [updateProfileCategories, updateClothesCategories, updateTags]);
 
+    const updateData = useCallback(async () => {
+        await updateProfileCategories();
+        await updateClothesCategories();
+        await updateTags();
+    }, [updateProfileCategories, updateClothesCategories, updateTags]);
+
     return (
-        <DataContext.Provider value={{ profileCategories, updateProfileCategories, clothesCategories, updateClothesCategories, tags, updateTags, resolveTagIds, loading }}>
+        <DataContext.Provider value={{ updateData, profileCategories, updateProfileCategories, clothesCategories, updateClothesCategories, tags, updateTags, resolveTagIds, loading }}>
             {children}
         </DataContext.Provider>
     );

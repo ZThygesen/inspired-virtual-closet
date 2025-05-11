@@ -205,55 +205,55 @@ export const ModalContentContainer = styled.div`
         display: flex;
         width: 100%;
         padding: 4px;
-    }
 
-    & .tag-groups {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        width: 100%;
-    }
-
-    & .tag-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        width: 100%;
-        padding: 12px;
-        border-radius: 12px;
-        box-shadow: var(--box-shadow);
-    }
-
-    & .tag-group-name {
-        text-align: left !important;
-        font-size: 20px !important;
-        font-weight: 600 !important;
-    }
-
-    & .tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        width: 100%;
-    }
-
-    & .tag {
-        display: flex;
-        align-items: center;
-        box-shadow: var(--box-shadow);
-        padding: 0 8px;
-        border-radius: 20px;
-
-        &.checked {
-            box-shadow: var(--box-shadow-orange);
+        & .tag-groups {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
         }
-    }
-                    
-    & .tag-color {
-        width: 16px;
-        height: 16px;
-        outline: 1px solid var(--black);
-        border-radius: 50%;
+
+        & .tag-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: var(--box-shadow);
+        }
+
+        & .tag-group-name {
+            text-align: left !important;
+            font-size: 20px !important;
+            font-weight: 600 !important;
+        }
+
+        & .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            width: 100%;
+        }
+
+        & .tag {
+            display: flex;
+            align-items: center;
+            box-shadow: var(--box-shadow);
+            padding: 0 8px;
+            border-radius: 20px;
+
+            &.checked {
+                box-shadow: var(--box-shadow-orange);
+            }
+        }
+                        
+        & .tag-color {
+            width: 16px;
+            height: 16px;
+            outline: 1px solid var(--black);
+            border-radius: 50%;
+        }
     }
 
     // For viewing tags in modal

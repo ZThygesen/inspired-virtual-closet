@@ -48,6 +48,18 @@ export const ManageClientsContainer = styled(PageContainer)`
         }
     }
 
+    & .title-search {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+        background: transparent;
+
+        & .MuiFormControl-root {
+            max-width: 500px;
+        }
+    }
+
     .clients {
         width: 100%;
         max-width: 1400px;
