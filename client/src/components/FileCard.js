@@ -80,7 +80,6 @@ export default function FileCard({ file, uploadFile, removeFile, profileCategori
     }
 
     function toggleRmbg() {
-        console.log(file);
         const checked = rmbg;
         setRmbg(!checked);
         file.rmbg = !checked;

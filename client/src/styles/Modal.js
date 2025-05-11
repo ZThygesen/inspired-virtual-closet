@@ -256,6 +256,66 @@ export const ModalContentContainer = styled.div`
         border-radius: 50%;
     }
 
+    // For viewing tags in modal
+    & .tags-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+        padding: 0 2px;
+
+        & .tags-prompt {
+            text-align: left !important;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        & .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            width: 100%;
+        }
+
+        & .tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--box-shadow);
+            padding: 12px 16px;
+            border-radius: 20px;
+        }
+
+        & .tag-name {
+
+        }
+                        
+        & .tag-color {
+            width: 16px;
+            height: 16px;
+            outline: 1px solid var(--black);
+            border-radius: 50%;
+        }
+
+        & .add-tags-button {
+            width: 100%;
+            background-color: var(--grey);
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: 0.1s;
+            border: none;
+            font-family: unset;
+            letter-spacing: unset;
+            font-size: 16px;
+            cursor: pointer;
+
+            &:hover {
+                background-color: var(--primary-light);
+                color: unset;
+            }
+        }
+    }
+
     & .file-card-img {
         width: 100%;
         height: 200px;

@@ -172,6 +172,8 @@ const files = {
                 throw helpers.createError('file name is required to update file name', 400);
             }
 
+            const tags = JSON.parse(req?.body?.newTags);
+
             let id = req?.params?.categoryId;
             if (helpers.isOtherCategory(id)) {
                 id = 0;
@@ -194,7 +196,8 @@ const files = {
                 { _id: id, 'items.gcsId': gcsId },
                 {
                     $set: {
-                        'items.$.fileName': name
+                        'items.$.fileName': name,
+                        'items.$.tags' : tags
                     }
                 }
             );

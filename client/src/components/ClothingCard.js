@@ -4,13 +4,41 @@ import Modal from './Modal';
 import Input from './Input';
 import { ClothingCardContainer } from '../styles/Clothes';
 import { useUser } from './UserContext';
+import { useData } from './DataContext';
 
 export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, swapCategory, editItem, deleteItem, prevClothingModal, nextClothingModal, openClothingModal, isOpen, fromSidebar }) {
     const [editOpen, setEditOpen] = useState(false);
+    const [tagModalOpen, setTagModalOpen] = useState(false);
+    const [itemTags, setItemTags] = useState([]);
+    const [itemTagObjects, setItemTagObjects] = useState([]);
+
     const [newItemName, setNewItemName] = useState(item.fileName);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const [imageModalOpen, setImageModalOpen] = useState(isOpen);
+    const [resolvedTags, setResolvedTags] = useState('');
     const { user } = useUser();
+
+    const { tags, resolveTagIds } = useData();
+
+    useEffect(() => {
+        setItemTags(item.tags || []);
+    }, [item])
+
+    useEffect(() => {
+        const itemTagsResolved = resolveTagIds(itemTags) || [];
+        setResolvedTags(itemTagsResolved?.map(tag => tag.tagName)?.join(' | ') || '');
+    }, [itemTags, item, resolveTagIds]);
+
+    useEffect(() => {
+        const itemTagObjects = [];
+        tags.forEach(tagGroup => {
+            const activeTags = tagGroup.tags.filter(tag => itemTags?.includes(tag.tagId));
+            if (activeTags.length > 0) {
+                itemTagObjects.push(...activeTags);
+            }
+        });
+        setItemTagObjects(itemTagObjects);
+    }, [tags, itemTags]);
 
     useEffect(() => {
         setImageModalOpen(isOpen);
@@ -23,16 +51,37 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
     function handleSubmitEdit(e) {
         e.preventDefault();
         setEditOpen(false);
-        editItem(item, newItemName); 
+        editItem(item, newItemName, itemTags); 
     }
 
     function handleCloseEdit() {
         setEditOpen(false);
         setNewItemName(item.fileName);
+        setItemTags(item.tags);
     }
 
     function handleConfirmDeleteClose() {
         setConfirmDeleteOpen(false);
+    }
+
+    function openTagModal() {
+        setTagModalOpen(true);
+    }
+
+    function closeTagModal() {
+        setTagModalOpen(false);
+    }
+
+    function changeItemTags(checkbox) {
+        let updatedTags = [];
+        const tagId = checkbox.id;
+        if (itemTags.includes(tagId)) {
+            updatedTags = itemTags.filter(tag => tag !== tagId);
+        }
+        else {
+            updatedTags = [...itemTags, tagId];
+        }
+        setItemTags(updatedTags);
     }
 
     return (
@@ -43,7 +92,7 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
                         <span className="material-icons on-canvas-icon">swipe</span>
                     </Tooltip>
                 }
-                { !fromSidebar && <p className="file-name">{item.fileName}</p> }
+                { !fromSidebar && <p className="file-name">{resolvedTags !== '' ? `${resolvedTags} | ` : ''}{item.fileName}</p> }
                 <div className="clothing-card-img">
                     <img
                         src={item.smallFileUrl}
@@ -160,10 +209,74 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
                             alt={item.fileName}
                             className="edit-img"
                         />
+                        <div className="tags-container">
+                            <p className="tags-prompt">Tags</p>
+                            <div className="tags">
+                                {
+                                    itemTagObjects.map(tag => (
+                                        <div className="tag" key={tag.tagId}>
+                                            <p className="tag-name">{tag.tagName}</p>
+                                            <div className="tag-color" style={{ backgroundColor: tag.tagColor }}></div>
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                            <button className="add-tags-button" type="button" onClick={openTagModal}>Edit Tags</button>
+                        </div>
                     </div>
                     <div className="modal-options">
                         <button type="button" onClick={handleCloseEdit}>Cancel</button>
                         <button type="submit">Save</button>
+                    </div>
+                </>
+            </Modal>
+            <Modal
+                open={tagModalOpen}
+                closeFn={closeTagModal}
+            >
+                <>
+                    <h2 className="modal-title">ADD TAGS</h2>
+                    <div className="modal-content">
+                        <div className="file-card-img">
+                            <img
+                                src={item.smallFileUrl}
+                                alt={item.fileName}
+                                className="file-img"
+                            />
+                        </div>
+                        <div className="tag-checkboxes">
+                            <div className="tag-groups">
+                                {
+                                    tags.map(group => (
+                                        (
+                                            group.tags.length > 0 && 
+                                            <div className="tag-group" key={group._id}>
+                                                <p className="tag-group-name">{group.tagGroupName}</p>
+                                                <div className="tags">
+                                                    {
+                                                        group.tags.map(tag => (
+                                                            <div className={`tag ${tags.includes(String(tag.tagId)) ? 'checked' : ''}`} key={tag.tagId}>
+                                                                <Input
+                                                                    type="checkbox"
+                                                                    id={`${tag.tagId}`}
+                                                                    label={tag.tagName}
+                                                                    value={itemTags?.includes(String(tag.tagId))}
+                                                                    onChange={e => changeItemTags(e.target)}
+                                                                />
+                                                                <div className="tag-color" style={{ backgroundColor: tag.tagColor }}></div>
+                                                            </div>
+                                                        ))
+                                                    }
+                                                </div>
+                                            </div>
+                                        )
+                                    ))
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div className="modal-options">
+                        <button onClick={closeTagModal}>Done</button>
                     </div>
                 </>
             </Modal>

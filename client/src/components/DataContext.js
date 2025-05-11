@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useError } from './ErrorContext';
-import axios from 'axios';
 import api from '../api';
 
 const DataContext = createContext();
@@ -131,6 +130,19 @@ export const DataProvider = ({ children, clientId }) => {
         setLoading(false);
     }, [setError]);
 
+    const resolveTagIds = useCallback((tagIds) => {
+        const tagsUsed = [];
+        tags.forEach(group => {
+            group.tags.forEach(tag => {
+                if (tagIds?.includes(tag.tagId)) {
+                    tagsUsed.push(tag);
+                }
+            });
+        });
+        return tagsUsed;
+
+    }, [tags]);
+
     useEffect(() => {
         updateProfileCategories();
         updateClothesCategories();
@@ -138,7 +150,7 @@ export const DataProvider = ({ children, clientId }) => {
     }, [updateProfileCategories, updateClothesCategories, updateTags]);
 
     return (
-        <DataContext.Provider value={{ profileCategories, updateProfileCategories, clothesCategories, updateClothesCategories, tags, updateTags, loading }}>
+        <DataContext.Provider value={{ profileCategories, updateProfileCategories, clothesCategories, updateClothesCategories, tags, updateTags, resolveTagIds, loading }}>
             {children}
         </DataContext.Provider>
     );
