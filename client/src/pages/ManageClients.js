@@ -351,7 +351,7 @@ export default function ManageClients() {
         <>
             <ManageClientsContainer>
                 <div className="clients-header">
-                    <h1 className="title">CLIENTS</h1>
+                    <h1 className="title">Clients</h1>
                     <Tooltip title="Closet Settings">
                         <button className="material-icons closet-settings-button" onClick={handleOpenSettings}>settings</button>
                     </Tooltip>
@@ -385,7 +385,7 @@ export default function ManageClients() {
                 </div>
                 { user?.isSuperAdmin &&
                     <div className="footer">
-                        <ActionButton variant={'secondary'} onClick={() => setOpenModal(true)}>ADD CLIENT</ActionButton>
+                        <ActionButton variant={'secondary'} onClick={() => setOpenModal(true)}>Add Client</ActionButton>
                     </div>
                 }
             </ManageClientsContainer>
@@ -399,7 +399,7 @@ export default function ManageClients() {
                     submitFn={addClient}
                 >
                     <>
-                        <h2 className="modal-title">ADD CLIENT</h2>
+                        <h2 className="modal-title">Add Client</h2>
                         <div className="modal-content">
                             <Input
                                 type="text"
@@ -446,13 +446,12 @@ export default function ManageClients() {
                 <Modal
                     open={deleteProgressOpen}
                 >
-                    <div className="modal-title">DELETING CLIENT</div>
+                    <div className="modal-title">Deleting Client</div>
                     <div className="modal-content">
                         <p className="large">{deleteProgressMessage}</p>
                         <p className="medium">{deleteProgressNumerator}/{deleteProgressDenominator} deleted</p>
                         <CircularProgressWithLabel value={(deleteProgressNumerator / deleteProgressDenominator) * 100} />
                     </div>
-
                 </Modal>
                 <Modal
                     open={settingsOpen}
@@ -460,7 +459,7 @@ export default function ManageClients() {
                 >
                     <>
                         <button className="material-icons close-modal" onClick={handleCloseSettings}>close</button>
-                        <h2 className="modal-title">CLOSET SETTINGS</h2>
+                        <h2 className="modal-title">Closet Settings</h2>
                         <div className="modal-content no-scroll">
                             <ClosetSettings 
                                 handleOpenSettings={handleOpenSettings}

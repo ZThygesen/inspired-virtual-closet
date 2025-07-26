@@ -9,7 +9,7 @@ export default function ErrorModal() {
             open={error !== null}
             closeFn={closeError}
         >
-            <div className="modal-title">ERROR</div>
+            <div className="modal-title">Error</div>
             <div className="modal-content">
                 <p className="medium warning bold">{error?.message}</p>
                 <p 

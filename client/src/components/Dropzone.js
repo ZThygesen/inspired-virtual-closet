@@ -200,7 +200,7 @@ export default function Dropzone({ setFiles }) {
             <Modal
                 open={processModalOpen}
             >
-                <h2 className="modal-title">PROCESSING FILES</h2>
+                <h2 className="modal-title">Processing Files</h2>
                 <div className="modal-content">
                     <p className="medium">{numFilesProcessed}/{numProcessFiles} files processed...</p>
                     <CircularProgressWithLabel value={(numFilesProcessed / numProcessFiles) * 100} />

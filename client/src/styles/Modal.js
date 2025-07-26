@@ -54,7 +54,7 @@ export const ModalContentContainer = styled.div`
 
         .send-to-canvas {
             bottom: 12px;
-            color: var(--secondary);
+            color: var(--primary);
         }
     }
 
@@ -88,10 +88,8 @@ export const ModalContentContainer = styled.div`
     }
 
     .modal-title {
-        font-size: 40px;
-        font-weight: 600;
-        font-family: 'Fashion', sans-serif;
-        letter-spacing: 4px;
+        font-size: 36px;
+        font-family: 'Prata';
         text-align: center;
 
         &.warning {
@@ -180,14 +178,13 @@ export const ModalContentContainer = styled.div`
     }
 
     .modal-content .category-name {
-        color: var(--secondary);
+        color: var(--primary);
         text-decoration: underline;
     }
 
     & button:not(.material-icons, .settings-tab) {
-        font-size: 24px;
-        font-family: 'Fashion', sans-serif;
-        letter-spacing: 2px;
+        font-size: 20px;
+        font-family: 'Prata';
         background: none;
         border: 1px solid var(--black);
         border-radius: 56px;
@@ -196,8 +193,8 @@ export const ModalContentContainer = styled.div`
         cursor: pointer;
 
         &:hover {
-            background-color: var(--secondary);
-            border-color: var(--secondary);
+            background-color: var(--primary);
+            border-color: var(--primary);
             color: var(--white);
         }
     }

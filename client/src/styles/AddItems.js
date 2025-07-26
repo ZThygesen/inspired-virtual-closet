@@ -6,10 +6,8 @@ const AddItemsContainer = styled.div`
     width: 100%;
 
     & .add-items-title {
-        font-size: 36px;
-        font-family: 'Fashion';
-        font-weight: 600;
-        letter-spacing: 2px;
+        font-size: 32px;
+        font-family: 'Prata';
         margin-bottom: 12px;
     }
 

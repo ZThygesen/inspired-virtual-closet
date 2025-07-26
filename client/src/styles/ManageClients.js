@@ -19,17 +19,19 @@ export const ManageClientsContainer = styled(PageContainer)`
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: var(--primary-light);
+        font-size: 32px;
+        font-family: 'Prata';
+        color: var(--black);
+        white-space: nowrap;
+        background-color: var(--grey);
         padding: 0 20px;
         z-index: 500;
         box-shadow: var(--box-shadow);
 
         & .title {
-            font-size: 36px;
-            font-weight: 600;
-            font-family: 'Fashion';
+            font-size: 32px;
+            font-family: 'Prata';
             color: var(--black);
-            letter-spacing: 4px;
             white-space: nowrap;
         }
 
@@ -80,7 +82,7 @@ export const ManageClientsContainer = styled(PageContainer)`
         align-items: center;
         justify-content: center;
         gap: 20px;
-        background-color: var(--primary-light);
+        background-color: var(--grey);
         padding: 20px;
         box-shadow: var(--top-shadow);
         z-index: 500;
@@ -89,7 +91,7 @@ export const ManageClientsContainer = styled(PageContainer)`
     @media (min-width: 480px) {
         .clients-header {
             & .title {
-                font-size: 44px;
+                font-size: 40px;
             }
         }
         
@@ -98,7 +100,7 @@ export const ManageClientsContainer = styled(PageContainer)`
     @media (min-width: 768px) {
         .clients-header {
             & .title {
-                font-size: 56px;
+                font-size: 48px;
             }
         }
         

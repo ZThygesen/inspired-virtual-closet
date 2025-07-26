@@ -12,7 +12,7 @@ import { DataProvider } from '../components/DataContext';
 
 const Container = styled.div`
     flex: 1;
-    font-family: 'Fashion';
+    font-family: 'Prata';
     display: flex;
 `;
 

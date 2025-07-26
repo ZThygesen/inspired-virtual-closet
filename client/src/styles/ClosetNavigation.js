@@ -17,7 +17,7 @@ export const ClosetNavigationContainer = styled.div`
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: var(--primary-light);
+        background-color: var(--grey);
         position: sticky;
         z-index: 250;
     }
@@ -66,10 +66,8 @@ export const ClosetNavigationContainer = styled.div`
         display: flex;
         align-items: center;
         gap: 4px;
-        font-family: 'Fashion';
-        font-size: 30px;
-        letter-spacing: 2px;
-        font-weight: 600;
+        font-family: 'Prata';
+        font-size: 26px;
         position: relative;
 
         & .expand-closet-options {
@@ -139,9 +137,9 @@ export const ClosetNavigationContainer = styled.div`
         }
 
         & .closet-mode-text {
-            font-family: 'Fashion';
+            font-family: 'Prata';
             color: var(--black);
-            font-size: 28px;
+            font-size: 24px;
         }
 
         & .closet-mode-icon {
@@ -184,7 +182,7 @@ export const ClosetNavigationContainer = styled.div`
 
     @media (min-width: 481px) {
         .client-closet {
-            font-size: 40px;
+            font-size: 36px;
         }
     }
 

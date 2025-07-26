@@ -33,7 +33,7 @@ export default function CategoriesSidebar({ sidebarRef, categories, categoryGrou
         <>
             <CategoriesSidebarContainer id="sidebar" className={`${sidebarOpen ? 'open' : ''}`} ref={sidebarRef}>
                 <div className="categories-header">
-                    <h2 className="header-title">CATEGORIES</h2>
+                    <h2 className="header-title">Categories</h2>
                     <Tooltip title="Close Sidebar">
                         <button className="material-icons close-sidebar-icon" onClick={() => setSidebarOpen(false)}>chevron_left</button>
                     </Tooltip>
