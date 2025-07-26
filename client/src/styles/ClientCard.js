@@ -71,7 +71,7 @@ export const ClientCardContainer = styled.div`
 
     .closet-icon {
         font-size: 60px !important;
-        color: var(--secondary) !important;
+        color: var(--primary) !important;
     }
 
     .client-credits {

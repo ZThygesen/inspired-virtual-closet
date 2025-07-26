@@ -21,7 +21,7 @@ export const AddItemsContainer = styled.div`
         }
 
         .category {
-            color: var(--secondary);
+            color: var(--primary);
             text-decoration: underline;
             cursor: pointer;
         }

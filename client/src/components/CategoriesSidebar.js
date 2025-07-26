@@ -262,7 +262,7 @@ export default function CategoriesSidebar({ sidebarRef, categories, activeCatego
                     <>
                         <h2 className="modal-title">Edit Category</h2>
                         <div className="modal-content">
-                            <p className="cat-to-edit" style={{fontFamily: 'Fashion', fontSize: '32px'}}>{categoryToEdit.name}</p>
+                            <p className="cat-to-edit" style={{fontFamily: 'Prata', fontSize: '28px'}}>{categoryToEdit.name}</p>
                             <Input
                                 type="text"
                                 id="category-name"
