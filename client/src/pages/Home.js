@@ -5,7 +5,7 @@ import { useUser } from '../components/UserContext';
 import axios from 'axios';
 import { HomeContainer } from '../styles/Home';
 import ActionButton from '../components/ActionButton'
-import logo from '../images/logo.png';
+import homeLogo from '../images/home-logo.png';
 import Loading from '../components/Loading';
 import { GoogleLogin } from '@react-oauth/google';
 
@@ -57,30 +57,27 @@ export default function Home() {
     return (
         <>
             <HomeContainer>
-                <img src={logo} alt="Edie Styles" className="big-logo" />
-                <div className="home-options">
-                    <h1>Inspired<br />Virtual Closet</h1>
-                    { isAuthenticated ? 
-                        ( isAdmin ?
-                            <ActionButton variant={'primary'} onClick={() => navigate('clients')}>Manage Clients</ActionButton>
-                            :
-                            <ActionButton 
-                                variant={'primary'}
-                                onClick={() => navigate(`${user.firstName.toLowerCase()}-${user.lastName.toLowerCase()}`, { state: { client: user } })}
-                            >
-                                My Closet
-                            </ActionButton>
-                        )
+                <img src={homeLogo} alt="Inspired Virtual Closet" className="big-logo" />
+                { isAuthenticated ? 
+                    ( isAdmin ?
+                        <ActionButton variant={'primary'} onClick={() => navigate('clients')}>Manage Clients</ActionButton>
                         :
-                        <GoogleLogin
-                            onSuccess={handleGoogleLogin}
-                            onError={() => {
-                                console.log('login failed');
-                            }}
-                            shape='pill'
-                        />
-                    }
-                </div>
+                        <ActionButton 
+                            variant={'primary'}
+                            onClick={() => navigate(`${user.firstName.toLowerCase()}-${user.lastName.toLowerCase()}`, { state: { client: user } })}
+                        >
+                            My Closet
+                        </ActionButton>
+                    )
+                    :
+                    <GoogleLogin
+                        onSuccess={handleGoogleLogin}
+                        onError={() => {
+                            console.log('login failed');
+                        }}
+                        shape='pill'
+                    />
+                }
             </HomeContainer>
             <p className="copyright">© 2025 Edie Styles, LLC</p>
             <Loading open={loading} />

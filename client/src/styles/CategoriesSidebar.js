@@ -6,14 +6,14 @@ export const CategoriesSidebarContainer = styled.div`
     flex-direction: column;
     align-items: center;
     position: fixed;
-    top: var(--header-height);
+    top: calc(var(--header-height));
     bottom: 0;
     left: 0;
-    background-color: var(--secondary-light);
+    background-color: var(--white);
     z-index: 501;
     transition: 0.5s;
     transform: translateX(-100%);
-    box-shadow: var(--sidebar-shadow);
+    /* box-shadow: var(--sidebar-shadow); */
 
     &.open {
         transform: translateX(0%);
@@ -27,14 +27,14 @@ export const CategoriesSidebarContainer = styled.div`
         justify-content: space-between;
         gap: 12px;
         padding: 0 12px;
-        background-color: var(--secondary);
-        box-shadow: var(--box-shadow);
+        background-color: var(--black);
+        /* box-shadow: var(--box-shadow); */
         z-index: 49;
     }
 
     .categories-header button {
         font-size: 32px;
-        color: var(--white);
+        color: var(--grey);
         border-radius: 50%;
         background: transparent;
         padding: 4px;
@@ -47,11 +47,9 @@ export const CategoriesSidebarContainer = styled.div`
     }
 
     .header-title {
-        font-size: 36px;
-        font-weight: 600;
-        color: var(--white);
-        font-family: 'Fashion', sans-serif;
-        letter-spacing: 4px;
+        font-size: 32px;
+        color: var(--grey);
+        font-family: 'Prata';
     }
 
     .categories-container {
@@ -84,16 +82,14 @@ export const CategoriesSidebarContainer = styled.div`
             cursor: pointer;
 
             &:hover {
-                background-color: var(--secondary);
+                background-color: var(--primary);
                 color: var(--white);
             }
 
             & .category-name,
             & .num-items > .cat-count {
-                font-size: 28px;
-                font-weight: 600;
-                font-family: 'Fashion';
-                letter-spacing: 2px;
+                font-size: 24px;
+                font-family: 'Prata';
                 text-align: left;
             }
 
@@ -136,8 +132,7 @@ export const CategoriesSidebarContainer = styled.div`
         &:hover,
         &.active {
             & .category-button {
-                background-color: var(--secondary);
-                color: var(--white);
+                background-color: var(--grey);
             }
 
             & .cat-count {
@@ -177,12 +172,12 @@ export const CategoriesSidebarContainer = styled.div`
         bottom: 0;
         left: 0;
         right: 0;
-        font-size: 32px;
+        font-size: 28px;
         font-weight: bold;
         background-color: var(--grey);
         min-height: var(--subheader-height);
         color: var(--black);
-        box-shadow: var(--top-shadow);
+        /* box-shadow: var(--top-shadow); */
         cursor: pointer; 
         overflow: hidden;
     }
@@ -194,10 +189,8 @@ export const CategoriesSidebarContainer = styled.div`
         gap: 10px;
 
         & .footer-text{
-            font-family: 'Fashion';
-            font-size: 28px;
-            font-weight: 600;
-            letter-spacing: 4px;
+            font-family: 'Prata';
+            font-size: 24px;
         }
 
         & .add-category-icon {
@@ -239,9 +232,8 @@ export const CategorySettings = styled.div`
     }
 
     .category {
-        font-family: 'Fashion';
-        font-size: 32px;
-        letter-spacing: 2px;
+        font-family: 'Prata';
+        font-size: 28px;
         max-width: 100%;
         word-break: break-word;
     }

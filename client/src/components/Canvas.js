@@ -561,7 +561,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
                 submitFn={handleSaveOutfit}
             >
                 <>
-                    <h2 className="modal-title">{editMode ? "SAVE OUTFIT" : "ADD OUTFIT"}</h2>
+                    <h2 className="modal-title">{editMode ? "Save Outfit" : "Add Outfit"}</h2>
                     <div className="modal-content">
                         <p className="medium">Provide a name for this outfit:</p>
                         <Input
@@ -589,7 +589,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
                 closeFn={handleCancelEdit}
             >
                 <>
-                    <h2 className="modal-title">CANCEL EDIT</h2>
+                    <h2 className="modal-title">Cancel Edit</h2>
                     <div className="modal-content">
                         <p className="medium">Are you sure you want to cancel editing this outfit?</p>
                         <p className="warning small">You will lose all progress since the last save!</p>

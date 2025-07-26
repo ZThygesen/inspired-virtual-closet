@@ -16,7 +16,7 @@ import { useSidebar } from './SidebarContext';
 const logoCanvasItem = {
     canvasId: 0,
     type: 'image',
-    src: 'https://storage.googleapis.com/edie-styles-virtual-closet/logo.png'
+    src: 'https://storage.googleapis.com/edie-styles-virtual-closet/canvas-logo.png'
 };
 
 export default function ClosetNavigation({ sidebarRef, client, category, getCategories, setSendToCanvas, setCategoryCanvasItems }) {
@@ -214,11 +214,11 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
     }, [getShoppingItems]);
 
     const closetModes = [
-        { name: 'CLOTHES', icon: 'checkroom'},
-        { name: `CANVAS (${canvasItems.length - 1})`, icon: 'swipe'},
-        { name: `OUTFITS (${outfits.length})`, icon: 'dry_cleaning'},
-        { name: `SHOPPING (${shoppingItems.length})`, icon: 'sell'},
-        { name: 'ADD ITEMS', icon: 'add_box'}
+        { name: 'Clothes', icon: 'checkroom'},
+        { name: `Canvas (${canvasItems.length - 1})`, icon: 'swipe'},
+        { name: `Outfits (${outfits.length})`, icon: 'dry_cleaning'},
+        { name: `Shopping (${shoppingItems.length})`, icon: 'sell'},
+        { name: 'Add Items', icon: 'add_box'}
     ];
 
     return (
@@ -231,7 +231,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
                         </Tooltip>
                     }
                     <h1 className="client-closet">
-                        {`${client.firstName.toUpperCase()} ${client.lastName.toUpperCase()}`}
+                        {`${client.firstName} ${client.lastName}`}
                         { closetMode === 1 &&
                             <Tooltip title="Expand Options" placement="top">
                                 <button className="material-icons expand-closet-options" onClick={handleExpandOptions}>expand_more</button>

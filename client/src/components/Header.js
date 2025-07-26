@@ -7,6 +7,7 @@ import { useUser } from './UserContext';
 import { googleLogout } from '@react-oauth/google';
 import Loading from './Loading';
 import api from '../api';
+import headerLogo from '../images/header-logo.png';
 
 const AppHeader = styled.header`
     width: 100%;
@@ -16,17 +17,21 @@ const AppHeader = styled.header`
     justify-content: space-between;
     gap: 20px;
     padding: 0 24px;
-    background-color: var(--primary);
-    box-shadow: var(--box-shadow);
+    background-color: var(--grey);
+    /* box-shadow: var(--box-shadow); */
     z-index: 1000;
 
-    .logo {
+    .header-logo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
         text-decoration: none;
-        font-family: 'Mallows';
-        color: var(--white);
-        font-size: 60px;
         white-space: nowrap;
         cursor: pointer;
+
+        & img {
+            height: calc(var(--header-height) - 20px);
+        }
     }
 
     .links {
@@ -43,11 +48,9 @@ const AppHeader = styled.header`
     .logout,
     .main-site,
     .help {
-        font-size: 24px;
-        font-weight: 600;
-        font-family: 'Fashion';
-        color: var(--white);
-        letter-spacing: 2px;
+        font-size: 20px;
+        font-family: 'Prata';
+        color: var(--black);
         white-space: nowrap;
         background: none;
         cursor: pointer;
@@ -55,7 +58,7 @@ const AppHeader = styled.header`
         border-radius: 56px;
 
         &:hover {
-            color: var(--black);
+            color: var(--primary);
         }
     }
 
@@ -106,7 +109,7 @@ export default function Header() {
     return (
         <>
             <AppHeader>
-                <Link to="/" className="logo">Edie styles</Link>
+                <Link to="/" className="header-logo"><img src={headerLogo} alt="Edie Styles Inspired Virtual Closet" className="big-logo" /></Link>
                 <div className="links">
                     <div className="main-links">
                         <a className="main-site" href="https://ediestyles.com/" target="_blank" rel="noreferrer">

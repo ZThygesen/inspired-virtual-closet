@@ -11,10 +11,8 @@ export const AddItemsContainer = styled.div`
 
         & .add-item-title,
         & .add-item-title > * {
-            font-size: 36px;
-            font-family: 'Fashion';
-            font-weight: 600;
-            letter-spacing: 2px;
+            font-size: 32px;
+            font-family: 'Prata';
         }
 
         & .help-info {

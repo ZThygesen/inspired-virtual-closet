@@ -213,7 +213,7 @@ export default function Shopping({ display, shoppingItems, updateShoppingItems }
                 submitFn={addShoppingItem}
             >
                 <>
-                    <h2 className="modal-title">ADD SHOPPING ITEM</h2>
+                    <h2 className="modal-title">Add Shopping Item</h2>
                     <div className="modal-content">
                         <Input 
                             type="text"

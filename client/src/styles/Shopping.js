@@ -8,10 +8,8 @@ export const ShoppingContainer = styled.div`
     position: relative;
 
     .shopping-title {
-        font-family: 'Fashion';
-        font-size: 36px;
-        font-weight: 600;
-        letter-spacing: 2px;
+        font-family: 'Prata';
+        font-size: 32px;
         margin-bottom: 16px;
     }
 
@@ -46,7 +44,7 @@ export const ShoppingContainer = styled.div`
         }
 
         & .review-emphasis {
-            color: var(--secondary);
+            color: var(--primary);
             font-weight: 600;
         }
     }
@@ -56,7 +54,7 @@ export const ShoppingContainer = styled.div`
         font-size: 20px;
 
         & span {
-            color: var(--secondary);
+            color: var(--primary);
         }
     }
 
@@ -82,7 +80,7 @@ export const ShoppingContainer = styled.div`
         }
 
         &.not-purchased {
-            color: var(--secondary);
+            color: var(--primary);
         }
 
         .purchased-icon {
@@ -118,7 +116,7 @@ export const ShoppingContainer = styled.div`
         transition: 0.1s;
 
         &:hover {
-            background-color: var(--secondary);
+            background-color: var(--primary);
         }
     }
 `;
@@ -141,11 +139,9 @@ export const ShoppingCardContainer = styled.div`
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 28px;
+        font-size: 24px;
         color: var(--black);
-        font-family: 'Fashion';
-        font-weight: 600;
-        letter-spacing: 2px;
+        font-family: 'Prata';
         text-align: center;
         word-break: break-word;
         flex-grow: 1;
@@ -264,7 +260,7 @@ export const ShoppingCardContainer = styled.div`
     }
 
     .shopping-item-option.important {
-        color: var(--secondary);
+        color: var(--primary);
     }
 
     @keyframes showDropdown {

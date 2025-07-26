@@ -27,10 +27,8 @@ export const CanvasContainer = styled.div`
         align-items: center;
 
         & .main-title {
-            font-size: 28px;
-            font-family: 'Fashion';
-            font-weight: 600;
-            letter-spacing: 2px;
+            font-size: 24px;
+            font-family: 'Prata';
         }
 
         & .sub-title,
