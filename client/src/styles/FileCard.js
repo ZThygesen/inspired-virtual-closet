@@ -21,7 +21,7 @@ export const FileCardContainer = styled.div`
     .you-icon,
     .admin-icon {
         font-size: 38px !important;
-        color: var(--secondary) !important;
+        color: var(--primary) !important;
         position: absolute;
         top: 6px;
     }
@@ -35,10 +35,8 @@ export const FileCardContainer = styled.div`
     }
 
     .client-name {
-        font-family: 'Fashion';
-        font-size: 28px;
-        font-weight: 600;
-        letter-spacing: 2px;
+        font-family: 'Prata';
+        font-size: 24px;
         word-break: break-word;
         text-align: center;
     }
@@ -73,7 +71,7 @@ export const FileCardContainer = styled.div`
 
     .closet-icon {
         font-size: 60px !important;
-        color: var(--secondary) !important;
+        color: var(--primary) !important;
     }
 
     .client-credits {

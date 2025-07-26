@@ -67,9 +67,9 @@ export const ClosetSettingsContainer = styled.div`
         }
 
         & .settings-tab-text {
-            font-family: 'Fashion';
+            font-family: 'Prata';
             color: var(--black);
-            font-size: 32px;
+            font-size: 28px;
         }
     }
 
@@ -108,9 +108,8 @@ export const ClosetSettingsContainer = styled.div`
                 & .category,
                 & .tag-group,
                 & .tag {
-                    font-family: 'Fashion';
-                    font-size: 28px;
-                    letter-spacing: 2px;
+                    font-family: 'Prata';
+                    font-size: 24px;
                     max-width: 100%;
                     word-break: break-word;
                     text-align: left;
@@ -118,7 +117,7 @@ export const ClosetSettingsContainer = styled.div`
 
                 & .group,
                 & .tag-group {
-                    font-weight: 700;
+                    font-weight: 600;
                     padding: 2px 12px;
                     align-self: start;
                 }
@@ -219,10 +218,8 @@ export const ClosetSettingsContainer = styled.div`
                     gap: 10px;
 
                     & .footer-text{
-                        font-family: 'Fashion';
+                        font-family: 'Prata';
                         font-size: 24px;
-                        font-weight: 600;
-                        letter-spacing: 4px;
                     }
 
                     & .add-category-icon,

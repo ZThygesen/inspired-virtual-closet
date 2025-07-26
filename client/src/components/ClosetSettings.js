@@ -14,8 +14,8 @@ export default function ClosetSettings() {
 
     const [activeSettingsTab, setActiveSettingsTab] = useState(0);
     const settingsTabs = [
-        { name: 'CATEGORIES' },
-        { name: 'TAGS' },
+        { name: 'Categories' },
+        { name: 'Tags' },
     ];
 
     const [categoryGroups, setCategoryGroups] = useState([]);
@@ -613,7 +613,7 @@ export default function ClosetSettings() {
                             <div className="footer-container">
                                 <span className="material-icons add-category-icon">add</span>
                                 <p className="footer-text">
-                                    ADD CATEGORY
+                                    Add Category
                                 </p>
                             </div>
                         </div>
@@ -678,7 +678,7 @@ export default function ClosetSettings() {
                             <div className="footer-container">
                                 <span className="material-icons add-tag-group-icon">add</span>
                                 <p className="footer-text">
-                                    ADD TAG GROUP
+                                    Add Tag Group
                                 </p>
                             </div>
                         </div>
@@ -693,7 +693,7 @@ export default function ClosetSettings() {
                 submitFn={addCategory}
             >
                 <>
-                    <h2 className="modal-title">ADD CATEGORY</h2>
+                    <h2 className="modal-title">Add Category</h2>
                     <div className="modal-content">
                         <Input
                             type="text"
@@ -740,9 +740,9 @@ export default function ClosetSettings() {
                 submitFn={editCategory}
             >
                 <>
-                    <h2 className="modal-title">EDIT CATEGORY</h2>
+                    <h2 className="modal-title">Edit Category</h2>
                     <div className="modal-content">
-                        <p className="cat-to-edit" style={{fontFamily: 'Fashion', fontSize: '32px'}}>{categoryToEdit.name}</p>
+                        <p className="cat-to-edit" style={{fontFamily: 'Prata', fontSize: '28px'}}>{categoryToEdit.name}</p>
                         <Input
                             type="text"
                             id="category-name"
@@ -786,7 +786,7 @@ export default function ClosetSettings() {
                 closeFn={handleCloseDeleteCategory}
             >
                 <>
-                    <h2 className="modal-title">DELETE CATEGORY</h2>
+                    <h2 className="modal-title">Delete Category</h2>
                     <div className="modal-content">
                         <p className="medium">Are you sure you want to delete this category?</p>
                         <p className="large bold underline">{categoryToDelete?.name}</p>
@@ -805,7 +805,7 @@ export default function ClosetSettings() {
                 submitFn={addTagGroup}
             >
                 <>
-                    <h2 className="modal-title">ADD TAG GROUP</h2>
+                    <h2 className="modal-title">Add Tag Group</h2>
                     <div className="modal-content">
                         <Input
                             type="text"
@@ -828,9 +828,9 @@ export default function ClosetSettings() {
                 submitFn={editTagGroup}
             >
                 <>
-                    <h2 className="modal-title">EDIT TAG GROUP</h2>
+                    <h2 className="modal-title">Edit Tag Group</h2>
                     <div className="modal-content">
-                        <p className="tag-group-to-edit" style={{fontFamily: 'Fashion', fontSize: '32px'}}>{tagGroupToEdit.tagGroupName}</p>
+                        <p className="tag-group-to-edit" style={{fontFamily: 'Prata', fontSize: '28px'}}>{tagGroupToEdit.tagGroupName}</p>
                         <Input
                             type="text"
                             id="tag-group-name"
@@ -850,7 +850,7 @@ export default function ClosetSettings() {
                 closeFn={handleCloseDeleteTagGroup}
             >
                 <>
-                    <h2 className="modal-title">DELETE TAG GROUP</h2>
+                    <h2 className="modal-title">Delete Tag Group</h2>
                     <div className="modal-content">
                         <p className="medium">Are you sure you want to delete this tag group?</p>
                         <p className="large bold underline">{tagGroupToDelete?.tagGroupName}</p>
@@ -869,7 +869,7 @@ export default function ClosetSettings() {
                 submitFn={addTag}
             >
                 <>
-                    <h2 className="modal-title">ADD TAG</h2>
+                    <h2 className="modal-title">Add Tag</h2>
                     <div className="modal-content">
                         <Input
                             type="text"
@@ -900,9 +900,9 @@ export default function ClosetSettings() {
                 submitFn={editTag}
             >
                 <>
-                    <h2 className="modal-title">EDIT TAG</h2>
+                    <h2 className="modal-title">Edit Tag</h2>
                     <div className="modal-content">
-                        <p className="tag-to-edit" style={{fontFamily: 'Fashion', fontSize: '32px'}}>{tagToEdit.tagName}</p>
+                        <p className="tag-to-edit" style={{fontFamily: 'Prata', fontSize: '28px'}}>{tagToEdit.tagName}</p>
                         <Input
                             type="text"
                             id="tag-name"
@@ -930,7 +930,7 @@ export default function ClosetSettings() {
                 closeFn={handleCloseArchiveTag}
             >
                 <>
-                    <h2 className="modal-title">ARCHIVE TAG</h2>
+                    <h2 className="modal-title">Archive Tag</h2>
                     <div className="modal-content">
                         <p className="medium">Are you sure you want to archive this tag?</p>
                         <p className="large bold underline">{tagToArchive?.tagName}</p>
@@ -946,7 +946,7 @@ export default function ClosetSettings() {
                 open={swapTagGroupOpen}
                 closeFn={handleCloseSwapTagGroup}
             >
-                <div className="modal-title">CHANGE TAG GROUP</div>
+                <div className="modal-title">Change Tag Group</div>
                 <div className="modal-content">
                     <p className="medium bold underline">{tagToSwap.tagName}</p>
                 </div>

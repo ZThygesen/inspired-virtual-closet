@@ -8,10 +8,8 @@ export const ProfileContainer = styled.div`
     position: relative;
 
     .profile-title {
-        font-family: 'Fashion';
-        font-size: 36px;
-        font-weight: 600;
-        letter-spacing: 2px;
+        font-family: 'Prata';
+        font-size: 32px;
         margin-bottom: 12px;
     }
 
@@ -71,7 +69,7 @@ export const ProfileContainer = styled.div`
         }
 
         & .profile-mode-text {
-            font-family: 'Fashion';
+            font-family: 'Prata';
             color: var(--black);
             font-size: 24px;
         }

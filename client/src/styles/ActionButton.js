@@ -8,7 +8,6 @@ const ActionButton = styled.button`
     white-space: nowrap;
     background-color: var(--grey);
     border: 2px solid var(--black);
-    border-radius: 56px;
     border-radius: 20px;
     padding: 20px 30px;
     cursor: pointer;
@@ -16,6 +15,10 @@ const ActionButton = styled.button`
 
     &.small {
         font-size: 20px;
+    }
+
+    &.less-vertical-padding {
+        padding: 10px 30px;
     }
 
     &:hover {
@@ -38,6 +41,7 @@ const ActionButton = styled.button`
         background-color: var(--primary-light);
 
         &:hover {
+            color: var(--white);
             background-color: var(--primary);
         }
     }

@@ -34,11 +34,11 @@ export default function Profile({ display }) {
     }
 
     const profileModes = [
-        { name: 'STYLE', icon: '' },
-        { name: 'INSPO', icon: '' },
-        { name: 'IN PERSON STYLING', icon: '' },
-        { name: 'TIPS', icon: '' },
-        { name: 'OUTFITS WORN', icon: '' },
+        { name: 'Style', icon: '' },
+        { name: 'Inspo', icon: '' },
+        { name: 'In Person Styling', icon: '' },
+        { name: 'Tips', icon: '' },
+        { name: 'Outfits Worn', icon: '' },
     ];
 
     return (

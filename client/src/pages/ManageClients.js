@@ -385,7 +385,7 @@ export default function ManageClients() {
                 </div>
                 { user?.isSuperAdmin &&
                     <div className="footer">
-                        <ActionButton variant={'secondary'} onClick={() => setOpenModal(true)}>Add Client</ActionButton>
+                        <ActionButton variant={'secondary less-vertical-padding'} onClick={() => setOpenModal(true)}>Add Client</ActionButton>
                     </div>
                 }
             </ManageClientsContainer>

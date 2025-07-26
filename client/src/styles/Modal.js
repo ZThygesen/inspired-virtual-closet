@@ -33,13 +33,13 @@ export const ModalContentContainer = styled.div`
             border-radius: 50%;
             font-size: 88px !important;
             position: absolute;
-            color: var(--secondary-light);
+            color: var(--primary-light);
             padding: 8px;
             transition: 0.1s;
 
             &:hover {
                 cursor: pointer;
-                color: var(--secondary);
+                color: var(--primary);
                 background-color: var(--material-btn-bg);
             }
         }
@@ -152,7 +152,7 @@ export const ModalContentContainer = styled.div`
     }
 
     .modal-content .bold {
-        font-weight: 700;
+        font-weight: 600;
     }
 
     .modal-content .underline {

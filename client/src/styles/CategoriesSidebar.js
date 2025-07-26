@@ -65,10 +65,9 @@ export const CategoriesSidebarContainer = styled.div`
         width: 100%;
 
         .group {
-            font-size: 28px;
-            font-weight: 700;
-            font-family: 'Fashion';
-            letter-spacing: 2px;
+            font-size: 24px;
+            font-weight: 600;
+            font-family: 'Prata';
             text-align: left;
             padding: 12px 20px;
         }
@@ -112,9 +111,9 @@ export const CategoriesSidebarContainer = styled.div`
                 word-break: break-word;
 
                 &.prominent {
-                    font-weight: 700;
+                    font-weight: 600;
                     margin-left: 0;
-                    font-size: 28px;
+                    font-size: 24px;
                 }
             }
         }

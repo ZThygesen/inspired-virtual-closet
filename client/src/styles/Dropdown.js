@@ -14,7 +14,7 @@ export const DropdownContainer = styled.div`
 
         & .category-name {
             font-size: 24px;
-            color: var(--secondary);
+            color: var(--primary);
             text-decoration: underline;
         }
     }
@@ -38,7 +38,7 @@ export const SwapDropdown = styled(Dropdown)`
         cursor: pointer;
 
         &:hover {
-            border-color: var(--secondary)
+            border-color: var(--primary)
         }
 
         & .Dropdown-placeholder {
@@ -54,7 +54,7 @@ export const SwapDropdown = styled(Dropdown)`
 
     & .Dropdown-menu {
         max-height: 400px;
-        border: 1.5px solid var(--secondary);
+        border: 1.5px solid var(--black);
         border-radius: 4px;
         overflow-y: auto;
 
@@ -74,14 +74,14 @@ export const SwapDropdown = styled(Dropdown)`
 
             &.is-selected,
             &:hover {
-                background-color: var(--secondary-light);
+                background-color: var(--grey);
             }
         }
     }
 
     &.is-open {
         & .Dropdown-control {
-            border-color: var(--secondary);
+            border-color: var(--black);
 
             & .Dropdown-arrow {
                 border-color: transparent transparent var(--black);
