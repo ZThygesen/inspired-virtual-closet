@@ -35,7 +35,7 @@ export const ClothesContainer = styled.div`
         display: flex;
         flex-wrap: wrap;
         align-items: stretch;
-        /* justify-content: flex-start; */
+        justify-content: center;
     }
 `;
 

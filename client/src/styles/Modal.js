@@ -16,6 +16,7 @@ export const ModalContentContainer = styled.div`
             width: auto;
             height: auto;
             position: relative;
+            background-color: var(--white);
         }
 
         .on-canvas {
@@ -32,12 +33,13 @@ export const ModalContentContainer = styled.div`
             border-radius: 50%;
             font-size: 88px !important;
             position: absolute;
-            color: var(--grey);
+            color: var(--secondary-light);
             padding: 8px;
             transition: 0.1s;
 
             &:hover {
                 cursor: pointer;
+                color: var(--secondary);
                 background-color: var(--material-btn-bg);
             }
         }
