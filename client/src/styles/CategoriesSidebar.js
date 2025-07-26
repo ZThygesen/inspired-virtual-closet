@@ -13,7 +13,7 @@ export const CategoriesSidebarContainer = styled.div`
     z-index: 501;
     transition: 0.5s;
     transform: translateX(-100%);
-    /* box-shadow: var(--sidebar-shadow); */
+    box-shadow: var(--sidebar-shadow);
 
     &.open {
         transform: translateX(0%);
