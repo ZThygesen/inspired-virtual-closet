@@ -123,7 +123,7 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
                 closeFn={handleConfirmDeleteClose}
             >
                 <>
-                    <h2 className="modal-title">DELETE ITEM</h2>
+                    <h2 className="modal-title">Delete Item</h2>
                     <div className="modal-content">
                         <p className="medium">Are you sure you want to delete this item?</p>
                         <p className="large bold underline">{item.fileName}</p>
@@ -146,7 +146,7 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
                 submitFn={handleSubmitEdit}
             >
                 <>
-                    <h2 className="modal-title">EDIT ITEM</h2>
+                    <h2 className="modal-title">Edit Item</h2>
                     <div className="modal-content">
                         <Input
                             type="text"

@@ -9,10 +9,8 @@ export const ClothesContainer = styled.div`
     width: 100%;
 
     .category-title {
-        font-family: 'Fashion';
-        font-size: 36px;
-        font-weight: 600;
-        letter-spacing: 2px;
+        font-family: 'Prata';
+        font-size: 32px;
     }
 
     .items {
@@ -43,7 +41,7 @@ export const ClothingCardContainer = styled.div`
 
     .on-canvas-icon {
         font-size: 36px !important;
-        color: var(--secondary) !important;
+        color: var(--primary) !important;
         position: absolute;
         top: 6px;
         right: 12px;
@@ -53,11 +51,9 @@ export const ClothingCardContainer = styled.div`
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 28px;
+        font-size: 24px;
         color: var(--black);
-        font-family: 'Fashion';
-        font-weight: 600;
-        letter-spacing: 2px;
+        font-family: 'Prata';
         text-align: center;
         word-break: break-word;
         flex-grow: 1;
@@ -102,7 +98,7 @@ export const ClothingCardContainer = styled.div`
     }
 
     .item-option.important {
-        color: var(--secondary);
+        color: var(--primary);
     }
 
     .item-option.sent-to-canvas {
@@ -137,7 +133,7 @@ export const DropdownContainer = styled.div`
 
         & .category-name {
             font-size: 24px;
-            color: var(--secondary);
+            color: var(--primary);
             text-decoration: underline;
         }
     }
@@ -159,7 +155,7 @@ export const SwapCategoryDropdown = styled(Dropdown)`
         cursor: pointer;
 
         &:hover {
-            border-color: var(--secondary)
+            border-color: var(--primary)
         }
 
         & .Dropdown-placeholder {
@@ -174,7 +170,7 @@ export const SwapCategoryDropdown = styled(Dropdown)`
 
     & .Dropdown-menu {
         max-height: 200px;
-        border: 1.5px solid var(--secondary);
+        border: 1.5px solid var(--primary);
         overflow-y: auto;
 
         & .Dropdown-option {
@@ -185,14 +181,14 @@ export const SwapCategoryDropdown = styled(Dropdown)`
 
             &.is-selected,
             &:hover {
-                background-color: var(--secondary-light);
+                background-color: var(--primary-light);
             }
         }
     }
 
     &.is-open {
         & .Dropdown-control {
-            border-color: var(--secondary);
+            border-color: var(--primary);
 
             & .Dropdown-arrow {
                 border-color: transparent transparent var(--black);

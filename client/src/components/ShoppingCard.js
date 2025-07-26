@@ -184,7 +184,7 @@ export default function ShoppingCard({ shoppingItem, editShoppingItem, togglePur
                 submitFn={handleSubmitEdit}
             >
                 <>
-                    <h2 className="modal-title">EDIT SHOPPING ITEM</h2>
+                    <h2 className="modal-title">Edit Shopping Item</h2>
                     <div className="modal-content">
                         <Input 
                             type="text"
@@ -234,7 +234,7 @@ export default function ShoppingCard({ shoppingItem, editShoppingItem, togglePur
                 closeFn={() => setConfirmDeleteOpen(false)}
             >
                 <>
-                    <h2 className="modal-title">DELETE SHOPPING ITEM</h2>
+                    <h2 className="modal-title">Delete Shopping Item</h2>
                     <div className="modal-content">
                         <p className="medium">Are you sure you want to delete this shopping item?</p>
                         <p className="large bold underline">{shoppingItem.itemName}</p>

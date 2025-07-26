@@ -95,7 +95,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                     isForm={true}
                     submitFn={handleSubmitEdit}
                 >
-                    <h2 className="modal-title">EDIT CLIENT</h2>
+                    <h2 className="modal-title">Edit Client</h2>
                     <Input
                         type="text"
                         id="first-name"
@@ -142,7 +142,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                 closeFn={() => setConfirmDeleteOpen(false)}
             >
                 <>
-                    <h2 className="modal-title">DELETE CLIENT</h2>
+                    <h2 className="modal-title">Delete Client</h2>
                     <div className="modal-content">
                         <p className="medium">Are you sure you want to delete this client?</p>
                         <p className="large bold underline">{client.firstName} {client.lastName}</p>

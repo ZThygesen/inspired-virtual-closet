@@ -19,13 +19,11 @@ export const ManageClientsContainer = styled(PageContainer)`
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 36px;
-        font-weight: 600;
-        font-family: 'Fashion';
+        font-size: 32px;
+        font-family: 'Prata';
         color: var(--black);
-        letter-spacing: 4px;
         white-space: nowrap;
-        background-color: var(--primary-light);
+        background-color: var(--grey);
         padding: 0 20px;
         z-index: 500;
         box-shadow: var(--box-shadow);
@@ -52,7 +50,7 @@ export const ManageClientsContainer = styled(PageContainer)`
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: var(--primary-light);
+        background-color: var(--grey);
         padding: 20px;
         box-shadow: var(--top-shadow);
         z-index: 500;
@@ -60,13 +58,13 @@ export const ManageClientsContainer = styled(PageContainer)`
 
     @media (min-width: 480px) {
         .title {
-            font-size: 44px;
+            font-size: 40px;
         }
     }
 
     @media (min-width: 768px) {
         .title {
-            font-size: 56px;
+            font-size: 48px;
         }
     }
 `;

@@ -490,7 +490,7 @@ export default function Dropzone({ category, disabled, updateItems }) {
             <Modal
                 open={processModalOpen}
             >
-                <h2 className="modal-title">PROCESSING FILES</h2>
+                <h2 className="modal-title">Processing Files</h2>
                 <div className="modal-content">
                     <p className="medium">{numFilesProcessed}/{numProcessFiles} files processed...</p>
                     <CircularProgressWithLabel value={(numFilesProcessed / numProcessFiles) * 100} />
@@ -499,7 +499,7 @@ export default function Dropzone({ category, disabled, updateItems }) {
             <Modal
                 open={uploadModalOpen}
             >
-                <h2 className="modal-title">UPLOADING FILES</h2>
+                <h2 className="modal-title">Uploading Files</h2>
                 <div className="modal-content">
                     <p className="medium">{numFilesUploaded}/{filteredFiles.length} files uploaded...</p>
                     <CircularProgressWithLabel value={(numFilesUploaded / filteredFiles.length) * 100} />

@@ -130,7 +130,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                 closeFn={handleConfirmDeleteClose}
             >
                 <>
-                    <h2 className="modal-title">DELETE OUTFIT</h2>
+                    <h2 className="modal-title">Delete Outfit</h2>
                     <div className="modal-content">
                         <p className="medium">Are you sure you want to delete this outfit?</p>
                         <p className="large bold underline">{outfit.outfitName}</p>
@@ -153,7 +153,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                 submitFn={handleSubmitEditName}
             >
                 <>
-                    <h2 className="modal-title">EDIT OUTFIT NAME</h2>
+                    <h2 className="modal-title">Edit Outfit Name</h2>
                     <div className="modal-content">
                         <Input
                             type="text"
@@ -179,7 +179,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                 closeFn={() => setEditOpen(false)}
             >
                 <>
-                    <h2 className="modal-title">EDIT OUTFIT ON CANVAS</h2>
+                    <h2 className="modal-title">Edit Outfit On Canvas</h2>
                     <div className="modal-content">
                     <p className="medium">Are you sure you want to edit this outfit?</p>
                         {/* <p className="large bold underline">{categoryToDelete.name}</p> */}

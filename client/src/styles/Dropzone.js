@@ -33,7 +33,7 @@ const DropContainer = styled.div`
     }
 
     .click-upload {
-        color: var(--secondary);
+        color: var(--primary);
         font-weight: 600;
         background: none;
         border: none;
@@ -49,7 +49,7 @@ const DropContainer = styled.div`
             height: 2px;
             bottom: 0;
             left: 0;
-            background-color: var(--secondary);
+            background-color: var(--primary);
             transform-origin: bottom right;
             transition: transform 0.15s ease-out;
         }
@@ -93,10 +93,8 @@ const FileContainer = styled.div`
     border-radius: 20px;
 
     h2 {
-        font-family: 'Fashion';
-        font-size: 36px;
-        font-weight: 600;
-        letter-spacing: 2px;
+        font-family: 'Prata';
+        font-size: 32px;
         margin-bottom: 20px;
     }
 
