@@ -18,6 +18,7 @@ const AppHeader = styled.header`
     gap: 20px;
     padding: 0 24px;
     background-color: var(--grey);
+    border-bottom: 2px solid var(--black);
     /* box-shadow: var(--box-shadow); */
     z-index: 1000;
 
