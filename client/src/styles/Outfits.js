@@ -7,10 +7,8 @@ export const OutfitsContainer = styled.div`
     width: 100%;
 
     .outfits-title {
-        font-family: 'Fashion';
-        font-size: 36px;
-        font-weight: 600;
-        letter-spacing: 2px;
+        font-family: 'Prata';
+        font-size: 32px;
     }
 
     .outfits {
@@ -37,11 +35,9 @@ export const OutfitCardContainer = styled.div`
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 28px;
+        font-size: 24px;
         color: var(--black);
-        font-family: 'Fashion';
-        font-weight: 600;
-        letter-spacing: 2px;
+        font-family: 'Prata';
         text-align: center;
         word-break: break-word;
         flex-grow: 1;
@@ -86,7 +82,7 @@ export const OutfitCardContainer = styled.div`
     }
 
     .outfit-option.important {
-        color: var(--secondary);
+        color: var(--primary);
         transform: scaleX(-1);
     }
 `;

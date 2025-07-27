@@ -121,7 +121,7 @@ export default function CategoriesSidebar({ sidebarRef, categories, activeCatego
                             <button className="material-icons settings-icon" onClick={() => setSettingsOpen(true)}>settings</button>
                         </Tooltip>
                     }
-                    <h2 className="header-title">CATEGORIES</h2>
+                    <h2 className="header-title">Categories</h2>
                     <Tooltip title="Close Sidebar">
                         <button className="material-icons close-sidebar-icon" onClick={() => setSidebarOpen(false)}>chevron_left</button>
                     </Tooltip>
@@ -195,7 +195,7 @@ export default function CategoriesSidebar({ sidebarRef, categories, activeCatego
                         <div className="footer-container">
                             <span className="material-icons add-category-icon">add</span>
                             <p className="footer-text">
-                                ADD CATEGORY
+                                Add Category
                             </p>
                         </div>
                     </div>
@@ -209,7 +209,7 @@ export default function CategoriesSidebar({ sidebarRef, categories, activeCatego
                 >
                     <>
                         <button className="material-icons close-modal" onClick={handleSettingsClose}>close</button>
-                        <h2 className="modal-title">MANAGE CATEGORIES</h2>
+                        <h2 className="modal-title">Manage Categories</h2>
                         <div className="modal-content">
                             <CategorySettings>
                                 {
@@ -237,7 +237,7 @@ export default function CategoriesSidebar({ sidebarRef, categories, activeCatego
                     submitFn={handleAdd}
                 >
                     <>
-                        <h2 className="modal-title">ADD CATEGORY</h2>
+                        <h2 className="modal-title">Add Category</h2>
                         <div className="modal-content">
                             <Input
                                 type="text"
@@ -260,9 +260,9 @@ export default function CategoriesSidebar({ sidebarRef, categories, activeCatego
                     submitFn={handleEdit}
                 >
                     <>
-                        <h2 className="modal-title">EDIT CATEGORY</h2>
+                        <h2 className="modal-title">Edit Category</h2>
                         <div className="modal-content">
-                            <p className="cat-to-edit" style={{fontFamily: 'Fashion', fontSize: '32px'}}>{categoryToEdit.name}</p>
+                            <p className="cat-to-edit" style={{fontFamily: 'Prata', fontSize: '28px'}}>{categoryToEdit.name}</p>
                             <Input
                                 type="text"
                                 id="category-name"
@@ -282,7 +282,7 @@ export default function CategoriesSidebar({ sidebarRef, categories, activeCatego
                     closeFn={handleCloseDelete}
                 >
                     <>
-                        <h2 className="modal-title">DELETE CATEGORY</h2>
+                        <h2 className="modal-title">Delete Category</h2>
                         <div className="modal-content">
                             <p className="medium">Are you sure you want to delete this category?</p>
                             <p className="large bold underline">{categoryToDelete.name}</p>

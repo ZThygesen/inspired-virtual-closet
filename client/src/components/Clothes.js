@@ -197,7 +197,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
                 open={swapCategoryOpen}
                 closeFn={handleSwapCategoryClose}
             >
-                <div className="modal-title">CHANGE CATEGORY</div>
+                <div className="modal-title">Change Category</div>
                 <DropdownContainer>
                     <p className="curr-category">Current category: <span className="large category-name">{category.name}</span></p>
                     <p className="new-category">New Category</p>

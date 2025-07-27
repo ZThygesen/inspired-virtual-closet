@@ -19,15 +19,15 @@ export const TextInput = styled(TextField)`
     }
 
     .MuiInput-underline:hover:before {
-        border-bottom: 2px solid var(--secondary);
+        border-bottom: 2px solid var(--primary);
     }
 
     label.Mui-focused {
-        color: var(--secondary);
+        color: var(--primary);
     }
 
     .MuiInput-underline:after {
-        border-bottom-color: var(--secondary);
+        border-bottom-color: var(--primary);
     }
 
     .MuiOutlinedInput-root {
@@ -36,11 +36,11 @@ export const TextInput = styled(TextField)`
         }
 
         &:hover fieldset {
-            border-color: var(--secondary);
+            border-color: var(--primary);
         }
 
         &.Mui-focused fieldset {
-            border-color: var(--secondary);
+            border-color: var(--primary);
         }
     }
 `;

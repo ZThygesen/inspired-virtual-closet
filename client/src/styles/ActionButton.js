@@ -3,14 +3,13 @@ import { Link } from "react-router-dom";
 
 const ActionButton = styled.button`
     font-size: 24px;
-    font-weight: 600;
-    font-family: 'Fashion';
-    color: var(--white);
-    letter-spacing: 4px;
+    font-family: 'Prata';
+    color: var(--black);
     white-space: nowrap;
-    background-color: var(--secondary);
+    background-color: var(--grey);
     border: 2px solid var(--black);
     border-radius: 56px;
+    border-radius: 20px;
     padding: 20px 30px;
     cursor: pointer;
     transition: all 0.1s;
@@ -20,8 +19,8 @@ const ActionButton = styled.button`
     }
 
     &:hover {
-            color: var(--black);
-            background-color: var(--secondary-light);
+            color: var(--white);
+            background-color: var(--primary);
         }
 
     &.secondary {
@@ -30,7 +29,7 @@ const ActionButton = styled.button`
 
         &:hover {
             color: var(--white);
-            background-color: var(--secondary); 
+            background-color: var(--primary); 
         }
     }
 

@@ -11,7 +11,7 @@ import { SidebarProvider } from '../components/SidebarContext';
 
 const Container = styled.div`
     flex: 1;
-    font-family: 'Fashion';
+    font-family: 'Prata';
     display: flex;
 `;
 

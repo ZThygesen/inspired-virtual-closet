@@ -312,7 +312,7 @@ export default function ManageClients() {
     return (
         <>
             <ManageClientsContainer>
-                <h1 className="title">CLIENTS</h1>
+                <h1 className="title">Clients</h1>
                 <div className="clients">
                     {
                         superAdmins.map(client => (
@@ -332,7 +332,7 @@ export default function ManageClients() {
                 </div>
                 { user?.isSuperAdmin &&
                     <div className="footer">
-                        <ActionButton variant={'secondary'} onClick={() => setOpenModal(true)}>ADD CLIENT</ActionButton>
+                        <ActionButton variant={'secondary'} onClick={() => setOpenModal(true)}>Add Client</ActionButton>
                     </div>
                 }
             </ManageClientsContainer>
@@ -345,7 +345,7 @@ export default function ManageClients() {
                     submitFn={addClient}
                 >
                     <>
-                        <h2 className="modal-title">ADD CLIENT</h2>
+                        <h2 className="modal-title">Add Client</h2>
                         <div className="modal-content">
                             <Input
                                 type="text"
@@ -393,7 +393,7 @@ export default function ManageClients() {
             <Modal
                 open={deleteProgressOpen}
             >
-                <div className="modal-title">DELETING CLIENT</div>
+                <div className="modal-title">Deleting Client</div>
                 <div className="modal-content">
                     <p className="large">{deleteProgressMessage}</p>
                     <p className="medium">{deleteProgressNumerator}/{deleteProgressDenominator} deleted</p>
