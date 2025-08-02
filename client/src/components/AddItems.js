@@ -74,11 +74,13 @@ export default function AddItems({ display, updateItems }) {
     const [invalidFiles, setInvalidFiles] = useState([]);
     const [incompleteFiles, setIncompleteFiles] = useState([]);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+    const [uploadOneModalOpen, setUploadOneModalOpen] = useState(false);
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [numFilesUploaded, setNumFilesUploaded] = useState(0);
     const [resultModalOpen, setResultModalOpen] = useState(false);
     const [hasCredits, setHasCredits] = useState(false);
     const [updateFiles, setUpdateFiles] = useState(false);
+    const [activateMassOption, setActivateMassOption] = useState(0);
 
     useEffect(() => {
         let badFiles = allFiles.filter(file => file.invalid);
@@ -86,7 +88,7 @@ export default function AddItems({ display, updateItems }) {
 
         badFiles = allFiles.filter(file => file.incomplete && !file.invalid);
         setIncompleteFiles([...badFiles]);
-    }, [allFiles, updateFiles]);
+    }, [allFiles, updateFiles, activateMassOption]);
 
     function removeFile(file) {
         // remove image from DOM immediately to prevent delay
@@ -132,7 +134,7 @@ export default function AddItems({ display, updateItems }) {
     }
 
     async function uploadOneFile(file) {
-        setUploadModalOpen(true);
+        setUploadOneModalOpen(true);
         try {
             await uploadFile(file);
         } catch (err) {
@@ -140,7 +142,7 @@ export default function AddItems({ display, updateItems }) {
                 message: 'There was an error uploading the file.',
                 status: err.response.status
             });
-            setUploadModalOpen(false);
+            setUploadOneModalOpen(false);
             setNumFilesUploaded(0);
             updateItems(true);
             removeFile(file);
@@ -150,7 +152,7 @@ export default function AddItems({ display, updateItems }) {
         setNumFilesUploaded(current => current + 1);
 
         setTimeout(() => {
-            setUploadModalOpen(false);
+            setUploadOneModalOpen(false);
             setNumFilesUploaded(0);
             setResultModalOpen(true);
             updateItems(true);
@@ -219,7 +221,6 @@ export default function AddItems({ display, updateItems }) {
     const [rmbg, setRmbg] = useState(true);
     const [crop, setCrop] = useState(true);
     const [massOption, setMassOption] = useState({});
-    const [activateMassOption, setActivateMassOption] = useState(0);
 
     function changeTab(tab) {
         setTab(tab);
@@ -378,7 +379,7 @@ export default function AddItems({ display, updateItems }) {
                 closeFn={() => setConfirmModalOpen(false)}
             >
                 <div className="modal-content">
-                    <p className="large bold">Are you sure you want to upload {allFiles.length === 1 ? "this file" : `all of these ${allFiles.length} files`}?</p>
+                    <p className="large bold">Are you sure you want to upload {allFiles.length === 1 ? "this file" : `these ${allFiles.length} files`}?</p>
                     { !client?.isSuperAdmin && 
                         <p className="medium warning">You have {client?.credits} credits left.</p> 
                     }
@@ -389,9 +390,21 @@ export default function AddItems({ display, updateItems }) {
                 </div>
             </Modal>
             <Modal
+                open={uploadOneModalOpen}
+            >
+                <h2 className="modal-title">Uploading File</h2>
+                <div className="modal-content">
+                    <p className="medium">{numFilesUploaded}/1 file uploaded...</p>
+                    <CircularProgressWithLabel value={(numFilesUploaded / 1) * 100} />
+                    { !client?.isSuperAdmin &&
+                        <p className="medium">{client?.credits} Credits Left</p>
+                    }
+                </div>
+            </Modal>
+            <Modal
                 open={uploadModalOpen}
             >
-                <h2 className="modal-title">UPLOADING FILES</h2>
+                <h2 className="modal-title">Uploading Files</h2>
                 <div className="modal-content">
                     <p className="medium">{numFilesUploaded}/{allFiles.length} files uploaded...</p>
                     <CircularProgressWithLabel value={(numFilesUploaded / allFiles.length) * 100} />

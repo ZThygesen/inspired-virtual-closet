@@ -98,7 +98,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
     async function updateItems(animateLoad = false) {
         await updateData();
         await getCategories(category, animateLoad);
-        setClosetMode(0);
+        // setClosetMode(0);
     }
 
     useEffect(() => {
