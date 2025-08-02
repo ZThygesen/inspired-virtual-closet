@@ -35,18 +35,24 @@ export const ManageClientsContainer = styled(PageContainer)`
             white-space: nowrap;
         }
 
+        & .the-archive-button,
         & .closet-settings-button {
             background: none;
             font-size: 36px;
-            padding: 4px;
+            padding: 8px;
             border-radius: 50%;
             position: absolute;
-            right: 20px;
+            left: 20px;
             cursor: pointer;
 
             &:hover {
                 background-color: var(--material-btn-bg);
             }
+        }
+
+        & .closet-settings-button {
+            left: unset;
+            right: 20px;
         }
     }
 

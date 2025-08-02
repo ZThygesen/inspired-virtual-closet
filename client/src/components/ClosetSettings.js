@@ -19,7 +19,6 @@ export default function ClosetSettings() {
     ];
 
     const [categoryGroups, setCategoryGroups] = useState([]);
-    const [categoryTagGroups, setCategoryTagGroups] = useState([]);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [newCategoryGroup, setNewCategoryGroup] = useState('');
     const [addCategoryOpen, setAddCategoryOpen] = useState(false);
@@ -127,7 +126,7 @@ export default function ClosetSettings() {
 
         setLoading(true);
         try {
-            await api.post('/categories', { category: newCategoryName, group: newCategoryGroup, tagGroups: categoryTagGroups });
+            await api.post('/categories', { category: newCategoryName, group: newCategoryGroup });
             await getCategories();
         } catch (err) {
             setError({
@@ -148,7 +147,6 @@ export default function ClosetSettings() {
     function handleCloseAddCategory() {
         setNewCategoryName('');
         setNewCategoryGroup('');
-        setCategoryTagGroups([]);
         setAddCategoryOpen(false);
     }
 
@@ -157,8 +155,7 @@ export default function ClosetSettings() {
 
         setLoading(true);
         if (categoryToEdit.name === newCategoryName &&
-            categoryToEdit.group === newCategoryGroup &&
-            categoryToEdit?.tagGroups?.sort()?.toString() === categoryTagGroups.sort().toString()
+            categoryToEdit.group === newCategoryGroup
         ) {
             setLoading(false);
             handleCloseEditCategory();
@@ -166,7 +163,7 @@ export default function ClosetSettings() {
         }
 
         try {
-            await api.patch(`/categories/${categoryToEdit._id}`, { newName: newCategoryName, newGroup: newCategoryGroup, newTagGroups: categoryTagGroups });
+            await api.patch(`/categories/${categoryToEdit._id}`, { newName: newCategoryName, newGroup: newCategoryGroup });
             await getCategories();
         } catch (err) {
             setError({
@@ -184,7 +181,6 @@ export default function ClosetSettings() {
         setCategoryToEdit(category)
         setNewCategoryName(category.name);
         setNewCategoryGroup(category.group);
-        setCategoryTagGroups(category.tagGroups || []);
         setEditCategoryOpen(true);
     }
 
@@ -192,7 +188,6 @@ export default function ClosetSettings() {
         setCategoryToEdit({});
         setNewCategoryName('');
         setNewCategoryGroup('');
-        setCategoryTagGroups([]);
         setEditCategoryOpen(false);
     }
 
@@ -222,16 +217,6 @@ export default function ClosetSettings() {
     function handleCloseDeleteCategory() {
         setCategoryToDelete({});
         setDeleteCategoryOpen(false);
-    }
-
-    function handleCheckTagGroup(checkbox) {
-        const tagGroup = checkbox.id;
-        if (categoryTagGroups.includes(tagGroup)) {
-            setCategoryTagGroups(current => current.filter(group => group !== tagGroup));
-        }
-        else {
-            setCategoryTagGroups(current => [...current, tagGroup]);
-        }
     }
 
     // Tag group management
@@ -661,7 +646,7 @@ export default function ClosetSettings() {
                                                             <button className="material-icons tag-option-btn" onClick={() => handleOpenEditTag(tagGroup, tag)}>edit</button>
                                                         </Tooltip>
                                                         <Tooltip title="Archive" placement="right">
-                                                            <button className="material-icons tag-option-btn" onClick={() => handleOpenArchiveTag(tagGroup, tag)}>delete</button>
+                                                            <button className="material-icons tag-option-btn" onClick={() => handleOpenArchiveTag(tagGroup, tag)}>archive</button>
                                                         </Tooltip>
                                                     </div>
                                                 ))
@@ -709,23 +694,6 @@ export default function ClosetSettings() {
                             value={newCategoryGroup ?? ''}
                             onChange={e => setNewCategoryGroup(e.target.value)}
                         />
-                        <div className="checkboxes">
-                            <p className="checkboxes-field-name">Tag Groups</p>
-                            {
-                                tagGroupOptions?.map(tagGroup => (
-                                    (tagGroup.value !== 0 &&
-                                        <Input
-                                            type="checkbox"
-                                            id={`${tagGroup.value}`}
-                                            label={tagGroup.label}
-                                            value={categoryTagGroups.includes(String(tagGroup.value))}
-                                            onChange={e => handleCheckTagGroup(e.target)}
-                                            key={tagGroup.value}
-                                        />
-                                    )
-                                ))
-                            }
-                        </div>
                     </div>
                     <div className="modal-options">
                         <button type="button" onClick={handleCloseAddCategory}>Cancel</button>
@@ -757,23 +725,6 @@ export default function ClosetSettings() {
                             value={newCategoryGroup ?? ''}
                             onChange={e => setNewCategoryGroup(e.target.value)}
                         />
-                        <div className="checkboxes">
-                            <p className="checkboxes-field-name">Tag Groups</p>
-                            {
-                                tagGroupOptions?.map(tagGroup => (
-                                    (tagGroup.value !== 0 &&
-                                        <Input
-                                            type="checkbox"
-                                            id={`${tagGroup.value}`}
-                                            label={tagGroup.label}
-                                            value={categoryTagGroups.includes(String(tagGroup.value))}
-                                            onChange={e => handleCheckTagGroup(e.target)}
-                                            key={tagGroup.value}
-                                        />
-                                    )
-                                ))
-                            }
-                        </div>
                     </div>
                     <div className="modal-options">
                         <button type="button" onClick={handleCloseEditCategory}>Cancel</button>

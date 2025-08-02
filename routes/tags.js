@@ -114,9 +114,9 @@ const tags = {
         try {
             const { db } = req.locals;
             const collection = db.collection('tags');
-            const tagGroups = await collection.find({ state: 'archived' }).toArray();
+            const tagGroups = await collection.find({ state: 'active' }).toArray();
             tagGroups.forEach(tagGroup => {
-                const archivedTags = tagGroups.tags.filter(tag => tag.state === "archived");
+                const archivedTags = tagGroup.tags.filter(tag => tag.state === "archived");
                 tagGroup.tags = archivedTags;
             });
             res.status(200).json(tagGroups);

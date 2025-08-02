@@ -22,13 +22,10 @@ const categories = {
             if (!group) {
                 throw helpers.createError('a category group is required for category creation', 400);
             }
-
-            const tagGroups = req?.body?.tagGroups;
     
             const categoryEntry = {
                 name: category,
                 group: group,
-                tagGroups: tagGroups || [],
                 items: []
             }
     
@@ -47,7 +44,7 @@ const categories = {
         try {
             const { db } = req.locals;
             const collection = db.collection('categories');
-            const categories = await collection.find({ }, { projection: {items: 0 } }).toArray();
+            const categories = await collection.find({ }, { projection: { items: 0 } }).toArray();
             
             if (categories.length === 0) {
                 throw helpers.createError('no categories were found on retrieval', 500);
@@ -101,15 +98,12 @@ const categories = {
                 throw helpers.createError('a category group is required for category creation', 400);
             }
 
-            const tagGroups = req?.body?.newTagGroups;
-
             const result = await collection.updateOne(
                 { _id: ObjectId(categoryId) },
                 {
                     $set: {
                         name: name,
-                        group: group,
-                        tagGroups: tagGroups || []
+                        group: group
                     }
                 }
             );

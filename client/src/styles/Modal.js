@@ -182,7 +182,7 @@ export const ModalContentContainer = styled.div`
         text-decoration: underline;
     }
 
-    & button:not(.material-icons, .settings-tab) {
+    & button:not(.material-icons, .settings-tab, .archive-tab) {
         font-size: 20px;
         font-family: 'Prata';
         background: none;

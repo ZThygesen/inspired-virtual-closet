@@ -128,7 +128,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
     async function editItem(item, newName, itemTags) {
         setLoading(true);
         const itemTagsStr = JSON.stringify(itemTags);
-        if (item.fileName === newName && JSON.stringify(item.tags) === item.tags) {
+        if (item.fileName === newName && JSON.stringify(item.tags) === itemTagsStr) {
             setLoading(false);
             return;
         }

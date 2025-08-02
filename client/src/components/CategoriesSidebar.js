@@ -14,7 +14,7 @@ export default function CategoriesSidebar({ sidebarRef, categories, categoryGrou
     const ref = useRef();
     const expandRef = useRef();
     const collapseRef = useRef();
-    console.log(stickyCategory)
+
     function toggleStickyCategory(category) {
         if (category === stickyCategory) {
             setStickyCategory(null);

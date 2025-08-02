@@ -8,6 +8,7 @@ import Loading from '../components/Loading';
 import ActionButton from '../components/ActionButton';
 import Modal from '../components/Modal';
 import Input from '../components/Input';
+import TheArchive from '../components/TheArchive';
 import ClosetSettings from '../components/ClosetSettings';
 import { CircularProgress, Tooltip } from '@mui/material';
 import { ManageClientsContainer } from '../styles/ManageClients';
@@ -54,6 +55,7 @@ export default function ManageClients() {
     const [newClientRole, setNewClientRole] = useState(false);
     const [newClientCredits, setNewClientCredits] = useState(350);
 
+    const [archiveOpen, setArchiveOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
 
     const [loading, setLoading] = useState(false);
@@ -339,6 +341,14 @@ export default function ManageClients() {
         });
     }
 
+    function handleOpenArchive() {
+        setArchiveOpen(true);
+    }
+
+    function handleCloseArchive() {
+        setArchiveOpen(false);
+    }
+
     function handleOpenSettings() {
         setSettingsOpen(true);
     }
@@ -352,6 +362,9 @@ export default function ManageClients() {
             <ManageClientsContainer>
                 <div className="clients-header">
                     <h1 className="title">Clients</h1>
+                    <Tooltip title="The Archive">
+                        <button className="material-icons the-archive-button" onClick={handleOpenArchive}>inventory_2</button>
+                    </Tooltip>
                     <Tooltip title="Closet Settings">
                         <button className="material-icons closet-settings-button" onClick={handleOpenSettings}>settings</button>
                     </Tooltip>
@@ -452,6 +465,21 @@ export default function ManageClients() {
                         <p className="medium">{deleteProgressNumerator}/{deleteProgressDenominator} deleted</p>
                         <CircularProgressWithLabel value={(deleteProgressNumerator / deleteProgressDenominator) * 100} />
                     </div>
+                </Modal>
+                <Modal
+                    open={archiveOpen}
+                    closeFn={handleCloseArchive}
+                >
+                    <>
+                        <button className="material-icons close-modal" onClick={handleCloseArchive}>close</button>
+                        <h2 className="modal-title">The Archive</h2>
+                        <div className="modal-content no-scroll">
+                            <TheArchive 
+                                handleOpenArchive={handleOpenArchive}
+                                handleCloseArchive={handleCloseArchive}
+                            />
+                        </div>
+                    </>
                 </Modal>
                 <Modal
                     open={settingsOpen}

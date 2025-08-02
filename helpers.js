@@ -378,6 +378,50 @@ export const helpers = {
         );
     },
 
+    // TODO: NEEDS TESTING BEFORE USE
+    async removeTagFromItems(db, tagId) {
+        if (!db) {
+            throw this.createError('database instance required to remove tag from items', 500);
+        }
+
+        if (!this.isValidId(tagId)) {
+            throw this.createError('failed to remove tag from items: invalid or missing tag id', 400);
+        }
+
+        const collection = db.collection('categories');
+        const categories = await collection.find({ }).toArray();
+        for (const category of categories) {
+            let hasTag = 0;
+            let categoryId = category._id;
+            if (this.isOtherCategory(categoryId)) {
+                categoryId = 0;
+            }
+            else {
+                categoryId = ObjectId(categoryId);
+            }
+
+            const items = category.items;
+            for (const item of items) {
+                if (item?.tags?.some(tag => tag?.tagId === tagId)) {
+                    const filteredTags = item.tags.filter(tag => tag?.tagId !== tagId);
+                    item.tags = filteredTags;
+                    hasTag = 1;
+                }
+            }
+
+            if (hasTag) {
+                await collection.updateOne(
+                    { _id: categoryId },
+                    {
+                        $set: {
+                            items: items
+                        } 
+                    }
+                );
+            }
+        }
+    },
+
     async removeTagGroupFromCategories(db, tagGroupId) {
         if (!db) {
             throw this.createError('database instance required to remove tag groups from category', 500);
