@@ -143,6 +143,7 @@ export const CategoriesSidebarContainer = styled.div`
             border-radius: 50%;
             display: none;
             transition: 0.1s;
+            padding-left: -4px;
 
             &:hover {
                 background-color: var(--material-btn-bg);

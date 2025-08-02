@@ -6,7 +6,7 @@ import { ClothingCardContainer } from '../styles/Clothes';
 import { useUser } from './UserContext';
 import { useData } from './DataContext';
 
-export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, swapCategory, editItem, deleteItem, prevClothingModal, nextClothingModal, openClothingModal, isOpen, fromSidebar }) {
+export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, swapCategory, editItem, deleteItem, prevClothingModal, nextClothingModal, openClothingModal, closeClothingModal, isOpen, fromSidebar }) {
     const [editOpen, setEditOpen] = useState(false);
     const [tagModalOpen, setTagModalOpen] = useState(false);
     const [itemTags, setItemTags] = useState([]);
@@ -46,6 +46,7 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
 
     function handleCloseImageModal() {
         setImageModalOpen(false);
+        closeClothingModal();
     }
 
     function handleSubmitEdit(e) {
@@ -92,7 +93,7 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
                         <span className="material-icons on-canvas-icon">swipe</span>
                     </Tooltip>
                 }
-                { !fromSidebar && <p className="file-name">{resolvedTags !== '' ? `${resolvedTags} | ` : ''}{item.fileName}</p> }
+                <p className="file-name">{resolvedTags !== '' ? `${resolvedTags} | ` : ''}{item.fileName}</p>
                 <div className="clothing-card-img">
                     <img
                         src={item.smallFileUrl}
@@ -149,22 +150,48 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
             >
                 <>  
                     <button className="material-icons close-modal" onClick={handleCloseImageModal}>close</button>
-                    <img src={item.fullFileUrl} alt={item.fileName} className="image-modal" />
-                    { !fromSidebar && <button className="material-icons prev-card" onClick={prevClothingModal}>chevron_left</button> }
-                    { !fromSidebar &&<button className="material-icons next-card" onClick={nextClothingModal}>chevron_right</button> }
-                    { !fromSidebar && user?.isAdmin &&
-                        <Tooltip title="Send to Canvas">
-                            <button 
-                                className="material-icons send-to-canvas"
-                                onClick={() => sendToCanvas(item, "image")}
-                            >
-                                shortcut
-                            </button>
-                        </Tooltip>
-                    }
-                    { onCanvas &&
-                        <p className="on-canvas">Item on canvas!</p>
-                    }
+                    <ClothingCardContainer className={`${onCanvas ? 'on-canvas on-modal' : 'on-modal'}`}>
+                        { onCanvas &&
+                            <Tooltip title="On Canvas">
+                                <span className="material-icons on-canvas-icon">swipe</span>
+                            </Tooltip>
+                        }
+                        <p className="file-name">{resolvedTags !== '' ? `${resolvedTags} | ` : ''}{item.fileName}</p>
+                        <div className="clothing-card-img">
+                            <img
+                                src={item.fullFileUrl}
+                                alt={item.fileName}
+                            />
+                        </div>
+                        <div className="item-options">
+                            <Tooltip title="Previous Item">
+                                <button
+                                    className='material-icons item-option prev-card'
+                                    onClick={prevClothingModal}
+                                >
+                                    chevron_left
+                                </button>
+                            </Tooltip>
+                            { user?.isAdmin &&
+                                <Tooltip title="Send to Canvas">
+                                    <button 
+                                        className="material-icons item-option important send-to-canvas"
+                                        onClick={() => sendToCanvas(item, "image")}
+                                    >
+                                        shortcut
+                                    </button>
+                                </Tooltip>
+                            }
+                            <Tooltip title="Next Item">
+                                <button
+                                    className='material-icons item-option next-card'
+                                    onClick={nextClothingModal}
+                                >
+                                    chevron_right
+                                </button>
+                            </Tooltip>
+                        </div>
+                    </ClothingCardContainer>
                 </>
             </Modal>
             <Modal
@@ -235,7 +262,7 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
                 closeFn={closeTagModal}
             >
                 <>
-                    <h2 className="modal-title">ADD TAGS</h2>
+                    <h2 className="modal-title">Add Tags</h2>
                     <div className="modal-content">
                         <div className="file-card-img">
                             <img

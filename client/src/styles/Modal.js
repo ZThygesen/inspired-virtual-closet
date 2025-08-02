@@ -19,7 +19,7 @@ export const ModalContentContainer = styled.div`
             background-color: var(--white);
         }
 
-        .on-canvas {
+        /* .on-canvas {
             color: var(--white);
             font-size: 32px;
             position: absolute;
@@ -55,7 +55,7 @@ export const ModalContentContainer = styled.div`
         .send-to-canvas {
             bottom: 12px;
             color: var(--primary);
-        }
+        } */
     }
 
     &:not(.image-modal) {

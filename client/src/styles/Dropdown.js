@@ -54,7 +54,7 @@ export const SwapDropdown = styled(Dropdown)`
 
     & .Dropdown-menu {
         max-height: 400px;
-        border: 1.5px solid var(--black);
+        border: 1.5px solid var(--primary);
         border-radius: 4px;
         overflow-y: auto;
 
@@ -81,7 +81,7 @@ export const SwapDropdown = styled(Dropdown)`
 
     &.is-open {
         & .Dropdown-control {
-            border-color: var(--black);
+            border-color: var(--primary);
 
             & .Dropdown-arrow {
                 border-color: transparent transparent var(--black);

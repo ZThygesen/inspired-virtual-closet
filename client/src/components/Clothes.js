@@ -98,6 +98,10 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
         setCurrOpenIndex(index);
     }
 
+    function closeClothingModal() {
+        setCurrOpenIndex(null);
+    }
+
     async function swapCategory(item) {
         setItemToSwapCategory(item);
 
@@ -185,6 +189,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
                                 prevClothingModal={prevClothingModal}
                                 nextClothingModal={nextClothingModal}
                                 openClothingModal={() => openClothingModal(index)}
+                                closeClothingModal={closeClothingModal}
                                 isOpen={currOpenIndex === index}
                                 key={cuid()}
                             />

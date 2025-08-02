@@ -7,13 +7,14 @@ import ClothingCard from './ClothingCard';
 
 export default function CategoriesSidebar({ sidebarRef, categories, categoryGroups, activeCategory, setCategory, sendToCanvas, canvasItems }) {
     const [stickyCategory, setStickyCategory] = useState(null);
+    const [currOpenIndex, setCurrOpenIndex] = useState(null);
 
     const { sidebarOpen, setSidebarOpen, mobileMode, setCurrCategoryClicked } = useSidebar();
 
     const ref = useRef();
     const expandRef = useRef();
     const collapseRef = useRef();
-
+    console.log(stickyCategory)
     function toggleStickyCategory(category) {
         if (category === stickyCategory) {
             setStickyCategory(null);
@@ -28,6 +29,27 @@ export default function CategoriesSidebar({ sidebarRef, categories, categoryGrou
             setCategory(categories[0]);
         }
     }, [activeCategory, categories, setCategory]);
+
+    // clothing modal functionality
+    function prevClothingModal() {
+        if (currOpenIndex > 0) {
+            setCurrOpenIndex(current => current - 1);
+        }
+    }
+
+    function nextClothingModal() {
+        if (stickyCategory && (currOpenIndex < stickyCategory?.items?.length - 1)) {
+            setCurrOpenIndex(current => current + 1);
+        }
+    }
+
+    function openClothingModal(index) {
+        setCurrOpenIndex(index);
+    }
+
+    function closeClothingModal() {
+        setCurrOpenIndex(null);
+    }
 
     return (
         <>
@@ -84,22 +106,29 @@ export default function CategoriesSidebar({ sidebarRef, categories, categoryGrou
                                                         <span className="material-icons cat-collapse" ref={collapseRef}>expand_less</span>
                                                     </p>
                                                 </button>
-                                                <div className="category-items-container">
-                                                {
-                                                    category.items.map(item => (
-                                                        <ClothingCard
-                                                            item={item}
-                                                            editable={false}
-                                                            onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === item.gcsId)}
-                                                            sendToCanvas={() => sendToCanvas.current(item, "image")}
-                                                            openClothingModal={() => {}}
-                                                            isOpen={false}
-                                                            fromSidebar={true}
-                                                            key={cuid()}
-                                                        />
-                                                    ))
+                                                { stickyCategory === category &&
+                                                <>
+                                                    <div className="category-items-container">
+                                                    {
+                                                        category.items.map((item, index) => (
+                                                            <ClothingCard
+                                                                item={item}
+                                                                editable={false}
+                                                                onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === item.gcsId)}
+                                                                sendToCanvas={() => sendToCanvas.current(item, "image")}
+                                                                prevClothingModal={prevClothingModal}
+                                                                nextClothingModal={nextClothingModal}
+                                                                openClothingModal={() => openClothingModal(index)}
+                                                                closeClothingModal={closeClothingModal}
+                                                                isOpen={currOpenIndex === index}
+                                                                fromSidebar={true}
+                                                                key={cuid()}
+                                                            />
+                                                        ))
+                                                    }
+                                                    </div>
+                                                </>
                                                 }
-                                                </div>
                                             </div>
                                         ))
                                     }

@@ -135,6 +135,42 @@ export const ClothingCardContainer = styled.div`
             height: unset;
         }
     }
+
+    &.on-modal {
+        width: unset;
+        height: 100%;
+        max-width: 90%;
+        max-height: 90%;
+        margin: 0;
+        padding: 4px 48px;
+        background-color: var(--white);
+
+        .file-name {
+            padding: 4px;
+        }
+
+        .clothing-card-img {
+            height: 100%;
+            min-height: 0;
+            /* max-height: 80%; */
+        }
+
+        img {
+            max-height: 90%;
+            max-width: 90%;
+            cursor: default;
+        }
+
+        .item-options {
+            gap: 24px;
+            margin: 0;
+            padding: 4px;
+
+            .item-option {
+                font-size: 54px !important;
+            }
+        }
+    }
 `;
 
 export const DropdownContainer = styled.div`
