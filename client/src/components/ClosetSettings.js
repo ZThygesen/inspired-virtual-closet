@@ -532,7 +532,7 @@ export default function ClosetSettings() {
         tagGroupsCopy.splice(index - 1, 0, tagGroup);
 
         try {
-            await api.patch('/tags/group-order', { newGroupOrder: tagGroupsCopy });
+            await api.patch('/tags/group-order', { tagGroups: tagGroupsCopy });
             await getTagGroups();
         } catch (err) {
             setError({

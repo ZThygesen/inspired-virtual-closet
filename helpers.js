@@ -422,33 +422,6 @@ export const helpers = {
         }
     },
 
-    async removeTagGroupFromCategories(db, tagGroupId) {
-        if (!db) {
-            throw this.createError('database instance required to remove tag groups from category', 500);
-        }
-
-        if (!this.isValidId(tagGroupId)) {
-            throw this.createError('failed to remove tag groups from category: invalid or missing tag group id', 400);
-        }
-
-        const collection = db.collection('categories');
-        const categories = await collection.find({ }).toArray();
-        for (const category of categories) {
-            if (this.isOtherCategory(category._id)) {
-                continue;
-            }
-
-            await collection.updateOne(
-                { _id: ObjectId(category._id) },
-                {
-                    $pull: {
-                        tagGroups: tagGroupId
-                    }
-                }
-            );
-        }
-    },
-
     // determines if given client is a super admin
     async isSuperAdmin(db, clientId) {
         if (!db) {

@@ -1,46 +1,165 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
 import { helpers } from '../helpers.js';
+import { schemaHelpers } from '../schema/helpers.js';
+import { schema } from '../schema/tags.schema.js';
 import { auth } from './auth.js';
 
 const tags = {
+    // tag groups
     async postGroup(req, res, next) {
         try {
             const { db } = req.locals;
             const collection = db.collection('tags');
+            const { tagGroupName } = req.body;
 
-            const tagGroupName = req?.body?.tagGroupName;
-            if (!tagGroupName) {
-                throw helpers.createError('tag group name is required to create tag group', 400);
-            } 
-
-            if (await collection.find({ tagGroupName: tagGroupName }).toArray().length > 0) {
-                throw helpers.createError(`a tag group with the name "${tagGroupName}" already exists`, 400);
+            if (await collection.findOne({ tagGroupName })) {
+                throw helpers.createError(`a tag group named "${tagGroupName}" already exists`, 400);
             };
 
-            const groupCount = await collection.countDocuments();
-    
-            // create tag group object
-            const tagGroup = {
+            const sortOrder = await collection.countDocuments();
+            const result = await collection.insertOne({
                 tagGroupName: tagGroupName,
-                sortOrder: groupCount,
+                sortOrder: sortOrder,
                 state: 'active',
-                tags: []
-            };
-    
-            // insert tag group into db
-            const result = await collection.insertOne(tagGroup);
-
-            if (!result.insertedId) {
-                throw helpers.createError('tag group was not inserted into database', 500);
-            }
+                tags: [],
+            });
+            if (!result.insertedId) throw helpers.createError('failed to create tag group', 500);
     
             res.status(201).json({ message: 'Success!' });
-    
         } catch (err) {
             next(err);
         }
     },
+
+    async patchGroup(req, res, next) {
+        try {
+            const { db } = req.locals;
+            const collection = db.collection('tags');
+            const { tagGroupId } = req.params;
+            const { tagGroupName } = req.body;
+
+            if (await collection.findOne({ tagGroupName })) {
+                throw helpers.createError(`a tag group named "${tagGroupName}" already exists`, 400);
+            }
+
+            const result = await collection.updateOne(
+                { _id: tagGroupId },
+                {
+                    $set: {
+                        tagGroupName: tagGroupName
+                    }
+                }
+            );
+            if (!result.modifiedCount) {
+                throw helpers.createError('failed to update tag group', 500);
+            }
+    
+            res.status(200).json({ message: 'Success!' });
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    async patchGroupOrder(req, res, next) {
+        try {
+            const { db } = req.locals;
+            const collection = db.collection('tags');
+            const { tagGroups } = req.body;
+
+            let index = 0;
+            for (const tagGroup of tagGroups) {
+                const tagGroupId = tagGroup._id;
+                await collection.updateOne(
+                    { _id: tagGroupId },
+                    {
+                        $set: {
+                            sortOrder: index
+                        }
+                    }
+                );
+                index++;
+            }
+    
+            res.status(200).json({ message: 'Success!' });
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    async deleteGroup(req, res, next) {
+        try {
+            const { db } = req.locals;
+            const collection = db.collection('tags');
+            const { tagGroupId } = req.params;
+
+            await helpers.moveTagsToOther(db, tagGroupId);
+
+            const result = await collection.deleteOne({ _id: ObjectId(tagGroupId)});
+            if (!result.deletedCount) {
+                throw helpers.createError('failed to delete tag group', 500);
+            }
+    
+            res.status(200).json({ message: 'Success!' });
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    // tags
+
+    // async postTag(req, res, next) {
+    //     try {
+    //         let tagGroupId = req?.params?.tagGroupId;
+    //         if (helpers.isOtherCategory(tagGroupId)) {
+    //             tagGroupId = 0;
+    //         }
+    //         else if (helpers.isValidId(tagGroupId)) {
+    //             tagGroupId = ObjectId(tagGroupId);
+    //         }
+    //         else {
+    //             throw helpers.createError('failed to create tag: invalid or missing tag group id', 400);
+    //         }
+
+    //         const tagName = req?.body?.tagName;
+    //         if (!tagName) {
+    //             throw helpers.createError('tag name is required to create tag', 400);
+    //         }
+
+    //         const tagColor = req?.body?.tagColor;
+    //         if (!tagColor) {
+    //             throw helpers.createError('tag color is required to create tag', 400);
+    //         }
+
+    //         const tag = {
+    //             tagId: new ObjectId(),
+    //             tagName: tagName,
+    //             tagColor: tagColor,
+    //             state: 'active'
+    //         };
+    
+    //         // insert tag group into db
+    //         const { db } = req.locals;
+    //         const collection = db.collection('tags');
+    //         const result = await collection.updateOne(
+    //             { _id: tagGroupId },
+    //             {
+    //                 $push: {
+    //                     tags: tag
+    //                 }
+    //             }   
+    //         );
+
+    //         if (result.modifiedCount === 0) {
+    //             throw helpers.createError('tag was not inserted into database', 500);
+    //         }
+    
+    //         res.status(201).json({ message: 'Success!' });
+    
+    //     } catch (err) {
+    //         next(err);
+    //     }
+    // },
 
     async postTag(req, res, next) {
         try {
@@ -120,48 +239,6 @@ const tags = {
                 tagGroup.tags = archivedTags;
             });
             res.status(200).json(tagGroups);
-        } catch (err) {
-            next(err);
-        }
-    },
-
-    async patchGroup(req, res, next) {
-        try {
-            const tagGroupId = req?.params?.tagGroupId;
-            if (helpers.isOtherCategory(tagGroupId)) {
-                throw helpers.createError('invalid tag group id: cannot edit Other tag group', 400);
-            }
-            if (!helpers.isValidId(tagGroupId)) {
-                throw helpers.createError('failed to update tag group: invalid or missing tag group id', 400);
-            }
-
-            const tagGroupName = req?.body?.newTagGroupName;
-            if (!tagGroupName) {
-                throw helpers.createError('tag group name is required to update tag group', 400);
-            }
-            
-            const { db } = req.locals;
-            const collection = db.collection('tags');
-
-            if (await collection.find({ tagGroupName: tagGroupName }).toArray().length > 0) {
-                throw helpers.createError(`a tag group with the name ${tagGroupName} already exists`, 400);
-            }
-    
-            // update tag group in db            
-            const result = await collection.updateOne(
-                { _id: ObjectId(tagGroupId) },
-                {
-                    $set: {
-                        tagGroupName: tagGroupName
-                    }
-                }
-            );
-
-            if (result.modifiedCount === 0) {
-                throw helpers.createError('update failed: tag group not updated', 500);
-            }
-    
-            res.status(200).json({ message: 'Success!' });
         } catch (err) {
             next(err);
         }
@@ -298,77 +375,6 @@ const tags = {
             next(err);
         }
     },
-    async patchGroupOrder(req, res, next) {
-        try {
-            const { db } = req.locals;
-            const collection = db.collection('tags');
-
-            const tagGroups = req?.body?.newGroupOrder;
-            if (!tagGroups) {
-                throw helpers.createError('tag groups are required to re-order groups', 400);
-            }
-
-            tagGroups.forEach(async (tagGroup, index) => {
-                let tagGroupId = tagGroup._id;
-                if (helpers.isOtherCategory(tagGroupId)) {
-                    tagGroupId = 0;
-                }
-                else if (helpers.isValidId(tagGroupId)) {
-                    tagGroupId = ObjectId(tagGroupId);
-                }
-                else {
-                    throw helpers.createError('failed to reorder tag groups: invalid or missing tag group id', 400);
-                }
-                
-                await collection.updateOne(
-                    { _id: tagGroupId },
-                    {
-                        $set: {
-                            sortOrder: index
-                        }
-                    }
-                );
-            });
-    
-            res.status(200).json({ message: 'Success!' });
-    
-        } catch (err) {
-            next(err);
-        }
-    },
-
-    // async archiveGroup(req, res, next) {
-    //     try {
-    //         const tagGroupId = req?.params?.tagGroupId;
-    //         if (helpers.isOtherCategory(tagGroupId)) {
-    //             throw helpers.createError('invalid tag group id: cannot archive Other tag group', 400);
-    //         }
-    //         if (!helpers.isValidId(tagGroupId)) {
-    //             throw helpers.createError('failed to archive tag group: invalid or missing tag group id', 400);
-    //         }
-            
-    //         const { db } = req.locals;
-    //         const collection = db.collection('tags');
-    
-    //         // update tag group in db            
-    //         const result = await collection.updateOne(
-    //             { _id: ObjectId(tagGroupId) },
-    //             {
-    //                 $set: {
-    //                     state: 'archived'
-    //                 }
-    //             }
-    //         );
-
-    //         if (result.modifiedCount === 0) {
-    //             throw helpers.createError('archive failed: tag group not archived', 500);
-    //         }
-    
-    //         res.status(200).json({ message: 'Success!' });
-    //     } catch (err) {
-    //         next(err);
-    //     }
-    // },
 
     async archiveTag(req, res, next) {
         try {
@@ -414,39 +420,6 @@ const tags = {
         }
     },
 
-    // async recoverGroup(req, res, next) {
-    //     try {
-    //         const tagGroupId = req?.params?.tagGroupId;
-    //         if (helpers.isOtherCategory(tagGroupId)) {
-    //             throw helpers.createError('invalid tag group id: cannot recover Other tag group', 400);
-    //         }
-    //         if (!helpers.isValidId(tagGroupId)) {
-    //             throw helpers.createError('failed to recover tag group: invalid or missing tag group id', 400);
-    //         }
-            
-    //         const { db } = req.locals;
-    //         const collection = db.collection('tags');
-    
-    //         // update tag group in db            
-    //         const result = await collection.updateOne(
-    //             { _id: ObjectId(tagGroupId) },
-    //             {
-    //                 $set: {
-    //                     state: 'active'
-    //                 }
-    //             }
-    //         );
-
-    //         if (result.modifiedCount === 0) {
-    //             throw helpers.createError('recover failed: tag group not recovered', 500);
-    //         }
-    
-    //         res.status(200).json({ message: 'Success!' });
-    //     } catch (err) {
-    //         next(err);
-    //     }
-    // },
-
     async recoverTag(req, res, next) {
         try {
             let tagGroupId = req?.params?.tagGroupId;
@@ -483,34 +456,6 @@ const tags = {
 
             if (result.modifiedCount === 0) {
                 throw helpers.createError('recover failed: tag not recovered', 500);
-            }
-    
-            res.status(200).json({ message: 'Success!' });
-        } catch (err) {
-            next(err);
-        }
-    },
-
-    async deleteGroup(req, res, next) {
-        try {
-            const tagGroupId = req?.params?.tagGroupId;
-            if (helpers.isOtherCategory(tagGroupId)) {
-                throw helpers.createError('failed to delete tag group: can\'t delete other tag group');
-            }
-            if (!helpers.isValidId(tagGroupId)) {
-                throw helpers.createError('failed to delete tag group: invalid or missing tag group id', 400);
-            }
-
-            // delete from db
-            const { db } = req.locals;
-            await helpers.moveTagsToOther(db, tagGroupId);
-            await helpers.removeTagGroupFromCategories(db, tagGroupId);
-
-            const collection = db.collection('tags');
-            const result = await collection.deleteOne({ _id: ObjectId(tagGroupId)});
-
-            if (result.deletedCount === 0) {
-                throw helpers.createError('deletion failed: tag group not deleted', 500);
             }
     
             res.status(200).json({ message: 'Success!' });
@@ -565,19 +510,47 @@ const tags = {
 
 const router = express.Router();
 
-router.post('/group', auth.requireSuperAdmin, tags.postGroup);
-router.post('/tag/:tagGroupId', auth.requireSuperAdmin, tags.postTag);
+// tag groups
+router.post(
+    '/group', 
+    auth.requireSuperAdmin,
+    schemaHelpers.validateBody(schema.postGroupBody), 
+    tags.postGroup,
+);
+router.patch(
+    '/group/:tagGroupId', 
+    auth.requireSuperAdmin,
+    schemaHelpers.validateParams(schema.patchGroupParams),
+    schemaHelpers.validateBody(schema.patchGroupBody), 
+    tags.patchGroup
+);
+router.patch(
+    '/group-order', 
+    auth.requireSuperAdmin,
+    schemaHelpers.validateBody(schema.patchGroupOrderBody),
+    tags.patchGroupOrder
+);
+router.delete(
+    '/group/:tagGroupId', 
+    auth.requireSuperAdmin, 
+    schemaHelpers.validateParams(schema.deleteGroupParams),
+    tags.deleteGroup
+);
+
+// tags
+router.post(
+    '/tag/:tagGroupId', 
+    auth.requireSuperAdmin,
+    schemaHelpers.validateParams(),
+    schemaHelpers.validateBody(schema.postTagBody),
+    tags.postTag,
+);
 router.get('/active', tags.getActive);
 router.get('/archived', tags.getArchived);
-router.patch('/group/:tagGroupId', auth.requireSuperAdmin, tags.patchGroup);
 router.patch('/tag/:tagGroupId/:tagId', auth.requireSuperAdmin, tags.patchTag);
 router.patch('/tag-group/:tagGroupId/:tagId', auth.requireSuperAdmin, tags.patchTagGroup);
-router.patch('/group-order', auth.requireSuperAdmin, tags.patchGroupOrder);
-// router.patch('/archive-group/:tagGroupId', auth.requireSuperAdmin, tags.archiveGroup);
 router.patch('/archive-tag/:tagGroupId/:tagId', auth.requireSuperAdmin, tags.archiveTag);
-// router.patch('/recover-group/:tagGroupId', auth.requireSuperAdmin, tags.recoverGroup);
 router.patch('/recover-tag/:tagGroupId/:tagId', auth.requireSuperAdmin, tags.recoverTag);
-router.delete('/group/:tagGroupId', auth.requireSuperAdmin, tags.deleteGroup);
 router.delete('/tag/:tagGroupId/:tagId', auth.requireSuperAdmin, tags.deleteTag);
 
 export { tags, router as tagsRouter };

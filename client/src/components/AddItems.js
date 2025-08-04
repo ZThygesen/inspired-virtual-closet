@@ -161,7 +161,7 @@ export default function AddItems({ display, updateItems }) {
     }
 
     async function uploadFile(file) {
-        if (file.tab === 'clothes') {
+        if (file.tab === 'clothes' || file.tab === 'profile') {
             const formData = new FormData();
             formData.append('fileSrc', file.src);
             formData.append('fullFileName', file.name);
