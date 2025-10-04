@@ -179,6 +179,7 @@ export const ShoppingCardContainer = styled.div`
             padding: 8px 0;
             transition: 0.3s;
             position: relative;
+            z-index: 1;
         }
 
         &.expanded .shopping-item-notes {
