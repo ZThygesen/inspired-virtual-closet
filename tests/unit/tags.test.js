@@ -1,50 +1,40 @@
-import { expect, jest } from '@jest/globals';
-import { tags } from '../../routes/tags.js';
+import { tags } from '../../routes/tags';
 import { ObjectId } from 'mongodb';
-import { helpers } from '../../helpers.js';
+import { unitHelpers } from './helpers';
 
 describe('tags', () => {
-    let mockRes, mockNext, err, mockCollection, mockDb, mockCreateError, locals, mockMoveTagsToOther;
+    let err, mockRes, mockNext, mockCollection, mockDb, locals, mockCreateError, mockMoveTagsToOther;
     beforeEach(() => {
-        expect(process.env.NODE_ENV).toBe('test');
-        mockRes = { status: jest.fn().mockReturnThis(), json: jest.fn()};
-        err = null;
-        mockNext = jest.fn((nextErr) => { if (nextErr) err = nextErr; });
-        mockCollection = {
-            findOne: jest.fn().mockResolvedValue(null),
-            countDocuments: jest.fn().mockResolvedValue(3),
-            insertOne: jest.fn().mockResolvedValue({ insertedId: 'success_id' }),
-            find: jest.fn().mockReturnThis(),
-            updateOne: jest.fn().mockResolvedValue({ modifiedCount: 1 }),
-            deleteOne: jest.fn().mockResolvedValue({ deletedCount: 1 }),
-        };
-        mockDb = { collection: jest.fn(() => mockCollection) };
-        mockCreateError = jest.spyOn(helpers, 'createError').mockImplementation((message, status) => {
-            const error = new Error(message);
-            error.status = status;
-            return error;
-        });
-        locals = { db: mockDb };
-        mockMoveTagsToOther = jest.spyOn(helpers, 'moveTagsToOther').mockResolvedValue();
+        unitHelpers.beforeEach();
+        ({
+            mockRes,
+            mockNext,
+            mockCollection,
+            mockDb,
+            locals,
+            mockCreateError,
+            mockMoveTagsToOther,
+        } = unitHelpers);
     });
 
     afterEach(() => {
-        jest.resetAllMocks();
-        jest.restoreAllMocks();
+        unitHelpers.afterEach();
     });
 
     describe('postGroup', () => {
-        let body;
+        let body, req;
         beforeEach(() => {
             body = { tagGroupName: 'Cool new tag group' };
+            req = { body, locals };
         });
 
-        it('should create new tag group', async () => {
-            // perform action to test
-            const req = { body, locals };
+        async function makeFunctionCall() {
             await tags.postGroup(req, mockRes, mockNext);
+        }
 
-            // perform checks
+        it('should create new tag group', async () => {
+            await makeFunctionCall();
+
             expect(mockCollection.findOne).toHaveBeenCalledWith({ tagGroupName: body.tagGroupName });
             expect(mockCollection.countDocuments).toHaveBeenCalled();
             expect(mockCollection.insertOne).toHaveBeenCalledWith({ ...body, sortOrder: 3, state: 'active', tags: [] });
@@ -56,14 +46,11 @@ describe('tags', () => {
             // simulate existing tag group
             mockCollection.findOne.mockResolvedValueOnce({ existing: 'tag group' });
 
-            // perform action to test
-            const req = { body, locals };
-            await tags.postGroup(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
             expect(mockCollection.findOne).toHaveBeenCalledWith({ tagGroupName: body.tagGroupName });
             expect(mockCreateError).toHaveBeenCalledWith(`a tag group named "${body.tagGroupName}" already exists`, 400);
-            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
         it('should handle findOne error', async () => {
@@ -71,11 +58,8 @@ describe('tags', () => {
             err = new Error('Find error');
             mockCollection.findOne.mockRejectedValueOnce(err);
 
-            // perform action to test
-            const req = { body, locals };
-            await tags.postGroup(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
             expect(mockCollection.findOne).toHaveBeenCalledWith({ tagGroupName: body.tagGroupName });
             expect(mockNext).toHaveBeenCalledWith(err);
         });
@@ -85,11 +69,8 @@ describe('tags', () => {
             err = new Error('Database error');
             mockCollection.countDocuments.mockRejectedValueOnce(err);
 
-            // perform action to test
-            const req = { body, locals };
-            await tags.postGroup(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
             expect(mockCollection.countDocuments).toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalledWith(err);
         });
@@ -99,11 +80,8 @@ describe('tags', () => {
             err = new Error('Insert error');
             mockCollection.insertOne.mockRejectedValueOnce(err);
 
-            // perform action to test
-            const req = { body, locals };
-            await tags.postGroup(req, mockRes, mockNext);
+           await makeFunctionCall();
 
-            // perform checks
             expect(mockCollection.insertOne).toHaveBeenCalledWith({ ...body, sortOrder: 3, state: 'active', tags: [] });
             expect(mockNext).toHaveBeenCalledWith(err);
         });
@@ -112,29 +90,28 @@ describe('tags', () => {
             // simulate no insertion
             mockCollection.insertOne.mockResolvedValueOnce({ insertedId: null });
 
-            // perform action to test
-            const req = { body, locals };
-            await tags.postGroup(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
             expect(mockCreateError).toHaveBeenCalledWith('failed to create tag group', 500);
-            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
     });
 
     describe('patchGroup', () => {
-        let params, body;
+        let params, body, req;
         beforeEach(() => {
             params = { tagGroupId: ObjectId().toString() };
             body = { tagGroupName: 'Cool new tag group' };
+            req = { params, body, locals };
         });
 
-        it('should update tag group', async () => {
-            // perform action to test
-            const req = { params, body, locals };
+        async function makeFunctionCall() {
             await tags.patchGroup(req, mockRes, mockNext);
+        }
 
-            // perform checks
+        it('should update tag group', async () => {
+            await makeFunctionCall();
+
             expect(mockCollection.findOne).toHaveBeenCalledWith({ tagGroupName: body.tagGroupName });
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
@@ -145,14 +122,11 @@ describe('tags', () => {
             // simulate existing tag group
             mockCollection.findOne.mockResolvedValueOnce({ existing: 'tag group' });
 
-            // perform action to test
-            const req = { params, body, locals };
-            await tags.patchGroup(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
             expect(mockCollection.findOne).toHaveBeenCalledWith({ tagGroupName: body.tagGroupName });
             expect(mockCreateError).toHaveBeenCalledWith(`a tag group named "${body.tagGroupName}" already exists`, 400);
-            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
         it('should handle findOne error', async () => {
@@ -160,11 +134,8 @@ describe('tags', () => {
             err = new Error('Find error');
             mockCollection.findOne.mockRejectedValueOnce(err);
 
-            // perform action to test
-            const req = { params, body, locals };
-            await tags.patchGroup(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
             expect(mockCollection.findOne).toHaveBeenCalledWith({ tagGroupName: body.tagGroupName });
             expect(mockNext).toHaveBeenCalledWith(err);
         });
@@ -174,11 +145,8 @@ describe('tags', () => {
             err = new Error('Update error');
             mockCollection.updateOne.mockRejectedValueOnce(err);
 
-            // perform action to test
-            const req = { params, body, locals };
-            await tags.patchGroup(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalledWith(err);
         });
@@ -187,35 +155,34 @@ describe('tags', () => {
             // simulate no update
             mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
 
-            // perform action to test
-            const req = { params, body, locals };
-            await tags.patchGroup(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
             expect(mockCreateError).toHaveBeenCalledWith('failed to update tag group', 500);
-            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
     });
 
     describe('patchGroupOrder', () => {
-        let body;
+        let body, req;
         beforeEach(() => {
             body = { 
                 tagGroups: [
-                    { _id: ObjectId().toString() },
-                    { _id: '0' },
-                    { _id: ObjectId().toString() },
-                    { _id: ObjectId().toString() },
-                ]
+                    ObjectId().toString(),
+                    '0',
+                    ObjectId().toString(),
+                    ObjectId().toString(),
+                ],
             };
+            req = { body, locals };
         });
 
-        it('should update tag group order', async () => {
-            // perform action to test
-            const req = { body, locals };
+        async function makeFunctionCall() {
             await tags.patchGroupOrder(req, mockRes, mockNext);
+        }
 
-            // perform checks
+        it('should update tag group order', async () => {
+            await makeFunctionCall();
+
             expect(mockCollection.updateOne).toHaveBeenCalledTimes(body.tagGroups.length);
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
@@ -226,28 +193,27 @@ describe('tags', () => {
             err = new Error('Update error');
             mockCollection.updateOne.mockRejectedValueOnce(err);
 
-            // perform action to test
-            const req = { body, locals };
-            await tags.patchGroupOrder(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalledWith(err);
         });
     });
 
     describe('deleteGroup', () => {
-        let params;
+        let params, req;
         beforeEach(() => {
             params = { tagGroupId: ObjectId().toString() };
+            req = { params, locals };
         });
 
-        it('should delete tag group', async () => {
-            // perform action to test
-            const req = { params, locals };
+        async function makeFunctionCall() {
             await tags.deleteGroup(req, mockRes, mockNext);
+        }
 
-            // perform checks
+        it('should delete tag group', async () => {
+            await makeFunctionCall();
+
             expect(mockMoveTagsToOther).toHaveBeenCalledWith(mockDb, params.tagGroupId);
             expect(mockCollection.deleteOne).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
@@ -259,11 +225,8 @@ describe('tags', () => {
             err = new Error('Move error');
             mockMoveTagsToOther.mockRejectedValueOnce(err);
 
-            // perform action to test
-            const req = { params, locals };
-            await tags.deleteGroup(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
             expect(mockMoveTagsToOther).toHaveBeenCalledWith(mockDb, params.tagGroupId);
             expect(mockNext).toHaveBeenCalledWith(err);
         });
@@ -273,11 +236,8 @@ describe('tags', () => {
             err = new Error('Delete error');
             mockCollection.deleteOne.mockRejectedValueOnce(err);
 
-            // perform action to test
-            const req = { params, locals };
-            await tags.deleteGroup(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
             expect(mockCollection.deleteOne).toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalledWith(err);
         });
@@ -286,14 +246,561 @@ describe('tags', () => {
             // simulate no deletion
             mockCollection.deleteOne.mockResolvedValueOnce({ deletedCount: 0 });
 
-            // perform action to test
-            const req = { params, locals };
-            await tags.deleteGroup(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
             expect(mockCollection.deleteOne).toHaveBeenCalled();
             expect(mockCreateError).toHaveBeenCalledWith('failed to delete tag group', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
+        });
+    });
+
+    describe('postTag', () => {
+        let params, body, req;
+        beforeEach(() => {
+            params = { tagGroupId: ObjectId().toString() };
+            body = { 
+                tagName: 'Cool new tag',
+                tagColor: '#FFFFFF',
+            };
+            req = { params, body, locals };
+        });
+
+        async function makeFunctionCall() {
+            await tags.postTag(req, mockRes, mockNext);
+        }
+
+        it('should create new tag', async () => {
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockRes.status).toHaveBeenCalledWith(201);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
+
+        it('should handle updateOne error', async () => {
+            // simulate error in updateOne
+            err = new Error('Update error');
+            mockCollection.updateOne.mockRejectedValueOnce(err);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalledWith(err);
+        });
+
+        it('should handle no update', async () => {
+            // simulate no update
+            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
+
+            await makeFunctionCall();
+
+            expect(mockCreateError).toHaveBeenCalledWith('tag was not inserted into database', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
+        });
+    });
+
+    describe('getActive', () => {
+        let req;
+        let tagGroups;
+        beforeEach(() => {
+            req = { locals };
+
+            tagGroups = [
+                { 
+                    _id: ObjectId(), 
+                    state: 'active', 
+                    tags: [
+                        { state: 'active' },
+                    ],
+                },
+                {
+                    _id: ObjectId(), 
+                    state: 'active', 
+                    tags: [
+                        { state: 'active' },
+                    ],
+                },
+            ];
+            mockCollection.toArray.mockResolvedValue(tagGroups);
+        });
+
+        async function makeFunctionCall() {
+            await tags.getActive(req, mockRes, mockNext);
+        }
+
+        it('should get active tag groups', async () => {
+            await makeFunctionCall();
+
+            expect(mockCollection.find).toHaveBeenCalledWith({ state: 'active' });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith(tagGroups);
+        });
+
+        it('should work with no active tag groups', async () => {
+            // simulate no active tag groups
+            mockCollection.toArray.mockResolvedValueOnce([]);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.find).toHaveBeenCalledWith({ state: 'active' });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith([]);
+        });
+
+        it('should work with no active tags in tag groups', async () => {
+            // simulate no active tags in tag groups
+            const tagGroupsWithNoActiveTags = [
+                { 
+                    _id: ObjectId(), 
+                    state: 'active',
+                    tags: [
+                        { state: 'archived' },
+                    ],
+                },
+                {
+                    _id: ObjectId(),
+                    state: 'active',
+                    tags: [],
+                },
+            ];
+            mockCollection.toArray.mockResolvedValueOnce(tagGroupsWithNoActiveTags);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.find).toHaveBeenCalledWith({ state: 'active' });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith([
+                { 
+                    _id: tagGroupsWithNoActiveTags[0]._id,
+                    state: 'active',
+                    tags: [],
+                },
+                {
+                    _id: tagGroupsWithNoActiveTags[1]._id,
+                    state: 'active',
+                    tags: [],
+                },
+            ]);
+        });
+
+        it('should handle find error', async () => {
+            // simulate error in find
+            err = new Error('Find error');
+            mockCollection.find().toArray.mockRejectedValueOnce(err);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.find).toHaveBeenCalledWith({ state: 'active' });
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+
+        it('should handle toArray error', async () => {
+            // simulate error in toArray
+            err = new Error('Database error');
+            mockCollection.toArray.mockRejectedValueOnce(err);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+    });
+
+    describe('getArchived', () => {
+        let req;
+        let tagGroups;
+        beforeEach(() => {
+            req = { locals };
+
+            tagGroups = [
+                {
+                    _id: ObjectId(),
+                    state: 'active',
+                    tags: [
+                        { state: 'archived' },
+                    ],
+                },
+                {
+                    _id: ObjectId(),
+                    state: 'active',
+                    tags: [
+                        { state: 'archived' },
+                    ],
+                },
+            ];
+            mockCollection.toArray.mockResolvedValue(tagGroups);
+        });
+
+        async function makeFunctionCall() {
+            await tags.getArchived(req, mockRes, mockNext);
+        }
+
+        it('should get archived tag groups', async () => {
+            await makeFunctionCall();
+
+            expect(mockCollection.find).toHaveBeenCalledWith({ state: 'active' });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith(tagGroups);
+        });
+
+        it('should work with no archived tag groups', async () => {
+            // simulate no archived tag groups
+            mockCollection.toArray.mockResolvedValueOnce([]);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.find).toHaveBeenCalledWith({ state: 'active' });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith([]);
+        });
+
+        it('should work with no archived tags in tag groups', async () => {
+            // simulate no archived tags in tag groups
+            const tagGroupsWithNoArchivedTags = [
+                {
+                    _id: ObjectId(),
+                    state: 'active',
+                    tags: [
+                        { state: 'active' },
+                    ],
+                },
+                {
+                    _id: ObjectId(),
+                    state: 'active',
+                    tags: [],
+                },
+            ];
+            mockCollection.toArray.mockResolvedValueOnce(tagGroupsWithNoArchivedTags);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.find).toHaveBeenCalledWith({ state: 'active' });
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith([
+                {
+                    _id: tagGroupsWithNoArchivedTags[0]._id,
+                    state: 'active',
+                    tags: [],
+                },
+                {
+                    _id: tagGroupsWithNoArchivedTags[1]._id,
+                    state: 'active',
+                    tags: [],
+                },
+            ]);
+        });
+
+        it('should handle find error', async () => {
+            // simulate error in find
+            err = new Error('Find error');
+            mockCollection.find().toArray.mockRejectedValueOnce(err);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.find).toHaveBeenCalledWith({ state: 'active' });
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+
+        it('should handle toArray error', async () => {
+            // simulate error in toArray
+            err = new Error('Database error');
+            mockCollection.toArray.mockRejectedValueOnce(err);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+    });
+
+    describe('patchTag', () => {
+        let params, body, req;
+        beforeEach(() => {
+            params = { 
+                tagGroupId: ObjectId().toString(),
+                tagId: ObjectId().toString(),
+            };
+            body = { 
+                tagName: 'Cool updated tag',
+                tagColor: '#000000',
+            };
+            req = { params, body, locals };
+        });
+
+        async function makeFunctionCall() {
+            await tags.patchTag(req, mockRes, mockNext);
+        }
+
+        it('should update tag', async () => {
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
+
+        it('should handle updateOne error', async () => {
+            // simulate error in updateOne
+            err = new Error('Update error');
+            mockCollection.updateOne.mockRejectedValueOnce(err);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+
+        it('should handle no update', async () => {
+            // simulate no update
+            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
+
+            await makeFunctionCall();
+
+            expect(mockCreateError).toHaveBeenCalledWith('failed to update tag', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
+        });
+    });
+
+    describe('patchTagGroup', () => {
+        let params, body, req;
+        beforeEach(() => {
+            params = { 
+                tagGroupId: ObjectId().toString(),
+                tagId: ObjectId().toString(),
+            };
+            body = { 
+                newTagGroupId: ObjectId().toString(),
+            };
+            req = { params, body, locals };
+
+            mockCollection.findOne.mockResolvedValue({
+                _id: ObjectId(params.tagGroupId),
+                tags: [
+                    { tagId: ObjectId(params.tagId) },
+                ],
+            });
+        });
+
+        async function makeFunctionCall() {
+            await tags.patchTagGroup(req, mockRes, mockNext);
+        }
+
+        it('should move tag to new tag group', async () => {
+            await makeFunctionCall();
+
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.tagGroupId });
+            expect(mockCollection.updateOne).toHaveBeenCalledTimes(2);
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
+
+        it('should handle findOne error', async () => {
+            // simulate error in findOne
+            err = new Error('Find error');
+            mockCollection.findOne.mockRejectedValueOnce(err);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.tagGroupId });
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+
+        it('should handle no tag found', async () => {
+            // simulate no tag found
+            mockCollection.findOne.mockResolvedValueOnce();
+
+            await makeFunctionCall();
+
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.tagGroupId });
+            expect(mockCreateError).toHaveBeenCalledWith('failed to retrieve tag from database', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
+        });
+
+        it('should handle first updateOne error', async () => {
+            // simulate error in updateOne
+            err = new Error('Update error');
+            mockCollection.updateOne.mockRejectedValueOnce(err);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalledTimes(1);
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+
+        it ('should handle no first update', async () => {
+            // simulate no update
+            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
+
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalledTimes(1);
+            expect(mockCreateError).toHaveBeenCalledWith('update of tag group failed: tag not added to new tag group', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
+        });
+
+        it('should handle second updateOne error', async () => {
+            // simulate error in second updateOne
+            err = new Error('Update error');
+            mockCollection.updateOne
+                .mockResolvedValueOnce({ modifiedCount: 1 }) // first updateOne succeeds
+                .mockRejectedValueOnce(err); // second updateOne fails
+
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalledTimes(2);
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+
+        it ('should handle no second update', async () => {
+            // simulate no update
+            mockCollection.updateOne
+                .mockResolvedValueOnce({ modifiedCount: 1 }) // first updateOne succeeds
+                .mockResolvedValueOnce({ modifiedCount: 0 }); // second updateOne fails
+
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalledTimes(2);
+            expect(mockCreateError).toHaveBeenCalledWith('update of tag group failed: tag not removed from current tag group', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
+        });
+    });
+
+    describe('archiveTag', () => {
+        let params, req;
+        beforeEach(() => {
+            params = { 
+                tagGroupId: ObjectId().toString(),
+                tagId: ObjectId().toString(),
+            };
+            req = { params, locals };
+        });
+
+        async function makeFunctionCall() {
+            await tags.archiveTag(req, mockRes, mockNext);
+        }
+
+        it('should archive tag', async () => {
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
+
+        it('should handle updateOne error', async () => {
+            // simulate error in updateOne
+            err = new Error('Update error');
+            mockCollection.updateOne.mockRejectedValueOnce(err);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+
+        it('should handle no update', async () => {
+            // simulate no update
+            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
+
+            await makeFunctionCall();
+
+            expect(mockCreateError).toHaveBeenCalledWith('archive failed: tag not archived', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
+        });
+    });
+
+    describe('recoverTag', () => {
+        let params, req;
+        beforeEach(() => {
+            params = { 
+                tagGroupId: ObjectId().toString(),
+                tagId: ObjectId().toString(),
+            };
+            req = { params, locals };
+        });
+
+        async function makeFunctionCall() {
+            await tags.recoverTag(req, mockRes, mockNext);
+        }
+
+        it('should recover tag', async () => {
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
+
+        it('should handle updateOne error', async () => {
+            // simulate error in updateOne
+            err = new Error('Update error');
+            mockCollection.updateOne.mockRejectedValueOnce(err);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+
+        it('should handle no update', async () => {
+            // simulate no update
+            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
+
+            await makeFunctionCall();
+
+            expect(mockCreateError).toHaveBeenCalledWith('recover failed: tag not recovered', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
+        });
+    });
+
+    describe('deleteTag', () => {
+        let params, req;
+        beforeEach(() => {
+            params = { 
+                tagGroupId: ObjectId().toString(),
+                tagId: ObjectId().toString(),
+            };
+            req = { params, locals };
+        });
+
+        async function makeFunctionCall() {
+            await tags.deleteTag(req, mockRes, mockNext);
+        }
+
+        it('should delete tag', async () => {
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
+
+        it('should handle updateOne error', async () => {
+            // simulate error in updateOne
+            err = new Error('Update error');
+            mockCollection.updateOne.mockRejectedValueOnce(err);
+
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+
+        it('should handle no update', async () => {
+            // simulate no update
+            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
+
+            await makeFunctionCall();
+
+            expect(mockCreateError).toHaveBeenCalledWith('deletion failed: tag not deleted', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
     });
 });

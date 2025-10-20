@@ -1,96 +1,131 @@
-import { jest } from '@jest/globals';
-import { app } from '../server';
-import { agent as supertest } from 'supertest';
-import { MongoClient, ObjectId } from 'mongodb';
-import jwt from 'jsonwebtoken';
+import { ObjectId } from 'mongodb';
+import { helpers } from '../helpers';
 
 export const testHelpers = {
-    user: null,
-    client: null,
-    cookie: null,
-    mongoClient: null,
-    db: null,
-    collection: null,
-    clientCollection: null,
+    generateGoodData(fieldData) {
+        const goodData = [];
+        const type = fieldData.type;
+        const optional = fieldData.optional || false;
+        if (type === 'string') {
+            if (optional) {
+                goodData.push('', ' ', null, undefined);
+            }
+            goodData.push('valid string');
+        }
+        else if (type === 'number') {
+            if (optional) {
+                goodData.push('', ' ', null, undefined);
+            }
+            goodData.push(0, 1, 123);
+        }
+        else if (type === 'boolean') {
+            if (optional) {
+                goodData.push('', ' ', null, undefined);
+            }
+            goodData.push(true, false, 1, 0);
+        }
+        else if (type === 'objectID') {
+            if (fieldData.otherAllowed) {
+                goodData.push('0', 0);
+            }
+            goodData.push(ObjectId().toString());
+        }
+        else if (type === 'object') {
 
-    async createUser() {
-        this.user = {
-            _id: ObjectId(),
-            firstName: 'Jane',
-            lastName: 'Deer',
-            email: 'janedeer11@gmail.com',
-            credits: 350,
-            isAdmin: true,
-            isSuperAdmin: true,
-        };
-
-        const collection = this.db.collection('clients');
-        await collection.insertOne(this.user);
-        const token = jwt.sign({ 
-            id: this.user._id, 
-            isAdmin: this.user.isAdmin, 
-            isSuperAdmin: this.user.isSuperAdmin 
-        }, process.env.JWT_SECRET);
-        
-        this.cookie = `token=${token}`;
+        }
+        else if (type === 'array') {
+            if (optional) {
+                goodData.push([], null, undefined);
+            }
+            const itemsGoodData = this.generateGoodData(fieldData.items);
+            itemsGoodData.forEach((item) => {
+                goodData.push([item]);
+            });
+        }
+        return goodData;
     },
 
-    async removeUser() {
-        const collection = this.db.collection('clients');
-        await collection.deleteOne({ _id: this.user._id });
+    generateBadData(fieldData, isIntegrationParams = false) {
+        let badData = [];
+        const type = fieldData.type;
+        const optional = fieldData.optional || false;
+        if (type === 'string') {
+            if (!optional) {
+                badData.push('', ' ', null, undefined);
+            }
+            badData.push(0, 123, true, false, [], {});
+        }
+        else if (type === 'number') {
+            if (!optional) {
+                badData.push('', ' ', null, undefined);
+            }
+            badData.push('123', true, false, [], {});
+        }
+        else if (type === 'boolean') {
+            if (!optional) {
+                badData.push('', ' ', null, undefined);
+            }
+            badData.push('not a boolean', [], {});
+        }
+        else if (type === 'objectID') {
+            if (!fieldData.otherAllowed) {
+                badData.push('0', 0);
+            }
+            badData.push('invalid_id', {}, '', ' ', null, undefined, 123, true, false, []);
+        }
+        else if (type === 'object') {
+
+        }
+        else if (type === 'array') {
+            if (!optional) {
+                badData.push([], null, undefined);
+            }
+            const itemsBadData = this.generateBadData(fieldData.items, isIntegrationParams);
+            itemsBadData.forEach((item) => {
+                badData.push([item]);
+            });
+        }
+
+        // when params are passed into a request they are treated differently
+        // we need to remove the "empty" cases as they cause 404s
+        if (isIntegrationParams) {
+            badData = badData.filter(value => (
+                value !== '' &&
+                value !== ' ' &&
+                JSON.stringify(value) !== JSON.stringify([]) &&
+                value !== null &&
+                value !== undefined
+            ));
+        }
+        return badData;
     },
 
-    async createClient() {
-        this.client = {
-            _id: ObjectId(),
-            firstName: 'Jane',
-            lastName: 'Deer',
-            email: 'janedeer11@gmail.com',
-            credits: 350,
-            isAdmin: false,
-            isSuperAdmin: false
-        };
-
-        const collection = this.db.collection('clients');
-        await collection.insertOne(this.client);
-    },
-
-    async removeClient() {
-        const collection = this.db.collection('clients');
-        await collection.deleteOne({ _id: this.client._id });
-    },
-
-    async clearCollection(collectionToClear) {
-        await collectionToClear.deleteMany({});
-    },
-
-    async beforeAll(collectionToUse) {
-        this.mongoClient = new MongoClient(process.env.DB_URI);
-        await this.mongoClient.connect();
-        this.db = this.mongoClient.db(process.env.DB_NAME_TEST);
-        this.collection = this.db.collection(collectionToUse);
-        this.clientCollection = this.db.collection('clients');
-    },
-
-    async afterAll() {
-        await this.mongoClient.close();
-    },
-
-    async beforeEach() {
-        expect(process.env.NODE_ENV).toBe('test');
-        await this.createUser();
-        await this.createClient();
-    },
-
-    async afterEach() {
-        await this.clearCollection(this.collection);
-        await this.removeUser();
-        await this.removeClient();
-        jest.resetAllMocks();
-        jest.restoreAllMocks();
-    },
-
-    agent() {
-        return supertest(app).set('Cookie', this.cookie);
+    getErrorMessage(field, fieldData, badValue, isIntegrationParams = false) {
+        if (fieldData.type === 'array' && Array.isArray(badValue)) {
+            return this.getErrorMessage(field, fieldData.items, badValue[0], isIntegrationParams);
+        }
+        else if (fieldData.type === 'objectID') {
+            // when params are passed into a request they are converted into strings (so all pass the string requirement)
+            // we need to handle the data slightly different in this case
+            if (isIntegrationParams) {
+                if (helpers.isOtherCategory(badValue) && !fieldData.otherAllowed) {
+                    return new RegExp(/cannot be "Other" category/);
+                }
+                if (!helpers.isValidId(badValue)) {
+                    return new RegExp(/invalid mongodb object id/);
+                }
+            }
+            else {
+                if (badValue === 'invalid_id' 
+                    || (fieldData.otherAllowed && typeof badValue === 'number' && badValue !== 0)
+                ) {
+                    return new RegExp(/invalid mongodb object id/);
+                }
+                else if (!fieldData.otherAllowed && badValue === '0') {
+                    return new RegExp(/cannot be "Other" category/);
+                }
+            }
+        }
+        return new RegExp(field);
     },
 };

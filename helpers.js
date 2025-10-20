@@ -355,7 +355,7 @@ export const helpers = {
             throw this.createError('failed to move tags to other: invalid or missing tag group id', 400);
         }
 
-        // get all files associated with category
+        // get all tags associated with group
         const collection = db.collection('tags');
         const tagGroup = await collection.findOne({ _id: ObjectId(tagGroupId) });
         
@@ -365,7 +365,7 @@ export const helpers = {
 
         const tags = tagGroup?.tags;
         
-        // move all files to "Other" group
+        // move all tags to "Other" group
         await collection.updateOne(
             { _id: 0 },
             {
