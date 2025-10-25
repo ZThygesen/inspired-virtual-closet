@@ -4,37 +4,40 @@ import ExpressFormidable from 'express-formidable';
 import cuid2 from '@paralleldrive/cuid2';
 import path from 'path';
 import { helpers } from '../helpers.js';
+import { schemaHelpers } from '../schema/helpers.js';
+import { schema } from '../schema/files.schema.js';
 import { auth } from './auth.js';
 
 const files = {
     async post(req, res, next) {
         try {
             // read in file fields
-            const { fileSrc, fullFileName, categoryId, tags, rmbg, crop } = req?.fields;
+            const { fileSrc, fullFileName, categoryId, tags, rmbg, crop } = req.body;
+            const { clientId } = req.params;
             
-            if (!fileSrc) {
-                throw helpers.createError('file source is required to create file', 400);
-            }
+            // if (!fileSrc) {
+            //     throw helpers.createError('file source is required to create file', 400);
+            // }
 
-            if (!fullFileName) {
-                throw helpers.createError('file name is required to create file', 400);
-            }
+            // if (!fullFileName) {
+            //     throw helpers.createError('file name is required to create file', 400);
+            // }
 
-            const clientId = req?.params?.clientId;
-            if (!helpers.isValidId(clientId)) {
-                throw helpers.createError('failed to add file: invalid or missing client id', 400);
-            }
+            // const clientId = req?.params?.clientId;
+            // if (!helpers.isValidId(clientId)) {
+            //     throw helpers.createError('failed to add file: invalid or missing client id', 400);
+            // }
 
-            let id;
-            if (helpers.isOtherCategory(categoryId)) {
-                id = 0;
-            }
-            else if (helpers.isValidId(categoryId)) {
-                id = ObjectId(categoryId);
-            }
-            else {
-                throw helpers.createError('failed to add file: invalid or missing category id', 400);
-            }
+            // let id;
+            // if (helpers.isOtherCategory(categoryId)) {
+            //     id = 0;
+            // }
+            // else if (helpers.isValidId(categoryId)) {
+            //     id = ObjectId(categoryId);
+            // }
+            // else {
+            //     throw helpers.createError('failed to add file: invalid or missing category id', 400);
+            // }
 
             const fileTags = JSON.parse(tags);
 
@@ -345,7 +348,13 @@ const files = {
 
 const router = express.Router();
 
-router.post('/:clientId', auth.checkPermissions, ExpressFormidable(), files.post);
+router.post('/:clientId', 
+    auth.checkPermissions, 
+    ExpressFormidable(),
+    schemaHelpers.validateParams(schema.post.params.fields),
+    schemaHelpers.validateFields(schema.post.body.fields),
+    files.post,
+);
 router.get('/:clientId', auth.checkPermissions, files.get);
 router.patch('/:clientId/:categoryId/:gcsId', auth.checkPermissions, files.patchName);
 router.patch('/category/:clientId/:categoryId/:gcsId', auth.checkPermissions, files.patchCategory);

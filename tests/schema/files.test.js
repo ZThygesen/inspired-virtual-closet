@@ -1,7 +1,7 @@
-import { schema } from '../../schema/tags.schema';
+import { schema } from '../../schema/files.schema';
 import { schemaTestHelpers } from './helpers';
 
-describe('tags', () => {
+describe('files', () => {
     Object.keys(schema).forEach(method => {
         describe(method, () => {
             Object.keys(schema[method]).forEach(type => {

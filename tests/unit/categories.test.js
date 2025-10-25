@@ -1,665 +1,313 @@
-import { jest } from '@jest/globals';
 import { categories } from '../../routes/categories';
-import { helpers } from '../../helpers.js';
 import { ObjectId } from 'mongodb';
+import { unitHelpers } from './helpers';
 
 describe('categories', () => {
-    let mockRes;
-    let mockNext;
-    let err;
-
-    let mockCollection;
-    let mockDb;
-    let mockCreateError;
+    let err, mockRes, mockNext, mockCollection, mockDb, locals, mockCreateError, mockMoveFilesToOther;
     beforeEach(() => {
-        expect(process.env.NODE_ENV).toBe('test');
-
-        mockRes = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn()
-        };
-
-        err = null;
-        mockNext = jest.fn((nextErr) => {
-            if (nextErr) {
-                err = nextErr;
-            }
-        });
-
-        mockCollection = {
-            insertOne: jest.fn().mockResolvedValue(),
-            find: jest.fn().mockReturnThis(),
-            toArray: jest.fn().mockResolvedValue(),
-            updateOne: jest.fn().mockResolvedValue(),
-            deleteOne: jest.fn().mockResolvedValue()
-        };
-        
-        mockDb = {
-            collection: jest.fn(() => mockCollection)
-        };
-
-        mockCreateError = jest.spyOn(helpers, 'createError');
-        mockCreateError.mockImplementation((message, status) => {
-            const error = new Error(message);
-            error.status = status;
-            return error;
-        });
+        unitHelpers.beforeEach();
+        ({
+            mockRes,
+            mockNext,
+            mockCollection,
+            mockDb,
+            locals,
+            mockCreateError,
+            mockMoveFilesToOther,
+        } = unitHelpers);
     });
 
     afterEach(() => {
-        jest.resetAllMocks();
-        jest.restoreAllMocks();
+        unitHelpers.afterEach();
     });
 
-    describe('create', () => {
-        let data;
+    describe('post', () => {
+        let body, req;
         beforeEach(() => {
-            data = { category: 'T-Shirts' };
+            body = { 
+                name: 'Blazers',
+                group: 'Formal',
+            };
+            req = { body, locals };
 
             mockCollection.toArray.mockResolvedValue([]);
         });
 
-        it('should create new category', async () => {
-            // perform action to test
-            mockCollection.insertOne.mockResolvedValue({ insertedId: 'success_id' });
-            const req = { body: data, locals: { db: mockDb } };
-
+        async function makeFunctionCall() {
             await categories.post(req, mockRes, mockNext);
+        }
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ name: data.category });
+        it('should create new category', async () => {
+            await makeFunctionCall();
+
+            expect(mockCollection.find).toHaveBeenCalledWith({ name: body.name });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.insertOne).toHaveBeenCalledWith({ name: data.category, items: [] });
+            expect(mockCollection.insertOne).toHaveBeenCalledWith({ ...body, items: [] });
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should handle find failure', async () => {
-            // perform action to test
-            const findError = new Error('retrieval of categories failed');
-            findError.status = 500;
-            mockCollection.find.mockImplementation(() => { throw findError });
+        it('should fail if category name already exists', async () => {
+            // simulate category already existing
+            mockCollection.toArray.mockResolvedValueOnce([body.name]);
 
-            const req = { body: data, locals: { db: mockDb } };
+            await makeFunctionCall();
 
-            await categories.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ name: data.category });
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockCollection.insertOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('retrieval of categories failed');
+            expect(mockCreateError).toHaveBeenCalledWith(`a category with the name "${body.name}" already exists`, 400);
         });
 
-        it('should handle toArray failure', async () => {
-            // perform action to test
-            const toArrayError = new Error('array transformation of categories failed');
-            toArrayError.status = 500;
-            mockCollection.toArray.mockRejectedValue(toArrayError);
+        it('should handle find error', async () => {
+            // simulate error in find
+            err = new Error('Find error');
+            mockCollection.find.mockImplementation(() => { throw err });
 
-            const req = { body: data, locals: { db: mockDb } };
+            await makeFunctionCall();
 
-            await categories.post(req, mockRes, mockNext);
+            expect(mockCollection.find).toHaveBeenCalledWith({ name: body.name });
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ name: data.category });
+        it('should handle toArray error', async () => {
+            // simulate error in toArray
+            err = new Error('ToArray error')
+            mockCollection.toArray.mockRejectedValueOnce(err);
+
+            await makeFunctionCall();
+
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.insertOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('array transformation of categories failed');
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle insertion failure', async () => {
-            // perform action to test
-            const insertError = new Error('insertion of new category failed');
-            insertError.status = 500;
-            mockCollection.insertOne.mockRejectedValue(insertError);
+        it('should handle insertOne error', async () => {
+            // simulate insertOne error
+            err = new Error('InsertOne error');
+            mockCollection.insertOne.mockRejectedValueOnce(err);
 
-            const req = { body: data, locals: { db: mockDb } };
+            await makeFunctionCall();
 
-            await categories.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ name: data.category });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.insertOne).toHaveBeenCalledWith({ name: data.category, items: [] });
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('insertion of new category failed');
+            expect(mockCollection.insertOne).toHaveBeenCalledWith({ ...body, items: [] });
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
         it('should fail if nothing inserted into database', async () => {
-            // perform action to test
-            mockCollection.insertOne.mockResolvedValue({ insertedId: '' });
+            // simulate no insertion
+            mockCollection.insertOne.mockResolvedValueOnce({ insertedId: '' });
 
-            const req = { body: data, locals: { db: mockDb } };
+            await makeFunctionCall();
 
-            await categories.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ name: data.category });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.insertOne).toHaveBeenCalledWith({ name: data.category, items: [] });
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('category was not inserted into database');
-        });
-
-        it('should fail if category already exists', async () => {
-            // perform action to test
-            mockCollection.toArray.mockResolvedValue([data.category]);
-
-            const req = { body: data, locals: { db: mockDb } };
-
-            await categories.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ name: data.category });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.insertOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe(`a category with the name "${data.category}" already exists`);
-        });
-        
-        it('should fail with missing category name', async () => {
-            // perform action to test
-            data.category = '';
-            const req = { body: data, locals: { db: mockDb } };
-
-            await categories.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockCollection.insertOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('a category name is required for category creation');
+            expect(mockCreateError).toHaveBeenCalledWith('category was not inserted into database', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
     });
 
-    describe('read', () => {
-        let data;
+    describe('get', () => {
+        let req;
+        let cats;
         beforeEach(() => {
-            data = [
-                { _id: 0, name: 'Other' },
-                { _id: '1', name: 'T-Shirts' },
-                { _id: '2', name: 'Jeans' }
+            req = { locals };
+            
+            cats = [
+                { _id: 0, name: 'Other', group: '1' },
+                { _id: '1', name: 'T-Shirts', group: '2' },
+                { _id: '2', name: 'Jeans', group: '1' }
             ];
 
-            mockCollection.toArray.mockResolvedValue([{ _id: 0, name: 'Other' }]);
+            mockCollection.toArray.mockResolvedValue(cats);
         });
 
-        it('should get clients', async () => {
-            // perform action to test
-            const mockCategories = data;
-            mockCollection.toArray.mockResolvedValue(mockCategories);
-            const req = { locals: { db: mockDb } };
-
+        async function makeFunctionCall() {
             await categories.get(req, mockRes, mockNext);
+        }
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
+        it('should get categories', async () => {
+            await makeFunctionCall();
+
             expect(mockCollection.find).toHaveBeenCalled();
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.json).toHaveBeenCalledWith(mockCategories);
-            expect(mockNext).not.toHaveBeenCalled();
+            expect(mockRes.json).toHaveBeenCalledWith(cats);
         });
 
-        it('should handle find failure', async () => {
-            // perform action to test
-            const findError = new Error('retrieval of categories failed');
-            findError.status = 500;
-            mockCollection.find.mockImplementation(() => { throw findError });
-            const req = { locals: { db: mockDb } };
+        it('should handle find error', async () => {
+            // simulate find error
+            err = new Error('Find error');
+            mockCollection.find.mockImplementation(() => { throw err });
+            
+            await makeFunctionCall();
 
-            await categories.get(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.find).toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('retrieval of categories failed');
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle toArray failure', async () => {
+        it('should handle toArray error', async () => {
             // perform action to test
-            const toArrayError = new Error('array transformation of categories failed');
-            toArrayError.status = 500;
-            mockCollection.toArray.mockRejectedValue(toArrayError);
-            const req = { locals: { db: mockDb } };
+            err = new Error('array transformation of categories failed');
+            mockCollection.toArray.mockRejectedValueOnce(err);
+            
+            await makeFunctionCall();
 
-            await categories.get(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalled();
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('array transformation of categories failed');
-        });
-
-        it('should fail if no categories were found', async () => {
-            // perform action to test
-            mockCollection.toArray.mockResolvedValue([]);
-            const req = { locals: { db: mockDb } };
-
-            await categories.get(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalled();
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('no categories were found on retrieval');
-        });
-
-        it('should fail if Other category missing', async () => {
-            // perform action to test
-            mockCollection.toArray.mockResolvedValue([{ _id: '1', name: 'T-Shirts' }]);
-            const req = { locals: { db: mockDb } };
-
-            await categories.get(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalled();
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('the Other category is missing in categories retrieval');
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
     });
     
-    describe('update', () => {
-        let data;
-        let categoryId;
+    describe('patch', () => {
+        let params, body, req;
         beforeEach(async () => {
-            data = { newName: 'T-Shirts' };
+            params = {
+                categoryId: ObjectId().toString(),
+            }
+            body = {
+                name: 'Blazers',
+                group: 'Formal',
+            };
+            req = { params, body, locals };
 
-            categoryId = (new ObjectId()).toString();
-
+            mockCollection.findOne.mockResolvedValue({
+                name: 'T-Shirts',
+                group: 'Formal',
+            });
             mockCollection.toArray.mockResolvedValue([]);
         });
 
-        it('should update client', async () => {
-            // perform action to test
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { body: data, params: { categoryId: categoryId }, locals: { db: mockDb } };
-
+        async function makeFunctionCall() {
             await categories.patch(req, mockRes, mockNext);
+        }
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
+        it('should update category', async () => {
+            await makeFunctionCall();
+
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.categoryId });
+            expect(mockCollection.find).toHaveBeenCalledWith({ name: body.name });
+            expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should handle find failure', async () => {
-            // perform action to test
-            const findError = new Error('retrieval of categories failed');
-            findError.status = 500;
-            mockCollection.find.mockImplementation(() => { throw findError });
+        it('should update group only', async () => {
+            mockCollection.findOne.mockResolvedValueOnce({
+                name: 'Blazers',
+                group: 'Casual',
+            });
+            await makeFunctionCall();
 
-            const req = { body: data, params: { categoryId: categoryId }, locals: { db: mockDb } };
-
-            await categories.patch(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ name: data.newName });
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.categoryId });
+            expect(mockCollection.find).not.toHaveBeenCalled();
             expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockCollection.insertOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('retrieval of categories failed');
-        });
-
-        it('should handle toArray failure', async () => {
-            // perform action to test
-            const toArrayError = new Error('retrieval of categories failed');
-            toArrayError.status = 500;
-            mockCollection.toArray.mockRejectedValue(toArrayError);
-
-            const req = { body: data, params: { categoryId: categoryId }, locals: { db: mockDb } };
-
-            await categories.patch(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ name: data.newName });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.insertOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('retrieval of categories failed');
-        });
-
-        it('should handle update failure', async () => {
-            // perform action to test
-            const updateError = new Error('update of category failed');
-            updateError.status = 500;
-            mockCollection.updateOne.mockRejectedValue(updateError);
-
-            const req = { body: data, params: { categoryId: categoryId }, locals: { db: mockDb } };
-
-            await categories.patch(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('update of category failed');
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
         });
 
-        it('should fail if category not found', async () => {
-            // perform action to test
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 0 });
-            
-            const req = { body: data, params: { categoryId: categoryId }, locals: { db: mockDb } };
+        it('should handle findOne error', async () => {
+            // simulate findOne error
+            err = new Error('FindOne error');
+            mockCollection.findOne.mockRejectedValueOnce(err);
 
-            await categories.patch(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(404);
-            expect(err.message).toBe('update failed: category not found with given category id');
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.categoryId });
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should fail if category already exists', async () => {
-            // perform action to test
-            mockCollection.toArray.mockResolvedValue([data.newName]);
+        it('should handle find error', async () => {
+            // simulate find error
+            err = new Error('Find error');
+            mockCollection.find.mockImplementation(() => { throw err });
 
-            const req = { body: data, params: { categoryId: categoryId }, locals: { db: mockDb } };
+            await makeFunctionCall();
 
-            await categories.patch(req, mockRes, mockNext);
+            expect(mockCollection.find).toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ name: data.newName });
+        it('should handle toArray error', async () => {
+            // simulate toArray error
+            err = new Error('ToArray error');
+            mockCollection.toArray.mockRejectedValueOnce(err);
+
+            await makeFunctionCall();
+
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.insertOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe(`a category with the name "${data.newName}" already exists`);
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should fail if Other category id given', async () => {
-            // perform action to test
-            categoryId = 0;      
-            const req = { body: data, params: { categoryId: categoryId }, locals: { db: mockDb } };
+        it('should handle updateOne error', async () => {
+            // simulate updateOne error
+            err = new Error('UpdateOne error');
+            mockCollection.updateOne.mockRejectedValueOnce(err);
 
-            await categories.patch(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('invalid category id: cannot edit Other category');
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should fail with missing category id', async () => {
-            // perform action to test
-            const req = { body: data, locals: { db: mockDb } };
+        it('should fail if category not updated', async () => {
+            // simulate no category updated
+            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
 
-            await categories.patch(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to update category: invalid or missing category id');
-        });
-
-        it('should fail with invalid category id', async () => {
-            // perform action to test
-            categoryId = 'not-valid-id';      
-            const req = { body: data, params: { categoryId: categoryId }, locals: { db: mockDb } };
-
-            await categories.patch(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to update category: invalid or missing category id');
-        });
-        
-        it('should fail with missing category name', async () => {
-            // perform action to test
-            data.newName = '';
-            const req = { body: data, params: { categoryId: categoryId }, locals: { db: mockDb } };
-
-            await categories.patch(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('category name is required for category update');
+            expect(mockCreateError).toHaveBeenCalledWith('update failed: category not found with given category id', 404);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
     });
 
     describe('delete', () => {
-        let categoryId;
-        let mockMoveFilesToOther;
+        let params, req;
         beforeEach(async () => {
-            categoryId = (new ObjectId()).toString();
-
-            mockMoveFilesToOther = jest.spyOn(helpers, 'moveFilesToOther');
-            mockMoveFilesToOther.mockResolvedValue();
+            params = {
+                categoryId: ObjectId().toString(),
+            };
+            req = { params, locals };
         });
 
-        it('should delete client', async () => {
-            // perform action to test
-            mockCollection.deleteOne.mockResolvedValue({ deletedCount: 1 });
-            const req = { params: { categoryId: categoryId }, locals: { db: mockDb } };
-
+        async function makeFunctionCall() {
             await categories.delete(req, mockRes, mockNext);
+        }
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
+        it('should delete category', async () => {
+            await makeFunctionCall();
+
+            expect(mockMoveFilesToOther).toHaveBeenCalledWith(mockDb, params.categoryId);
+            expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: params.categoryId });
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!'});
-            expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should handle delete failure', async () => {
-            // perform action to test
-            const deleteError = new Error('deletion of category failed');
-            deleteError.status = 500;
-            mockCollection.deleteOne.mockRejectedValue(deleteError);
+        it('should handle moveFilesToOther error', async () => {
+            // simulate error in moveFilesToOther
+            err = new Error('Move error');
+            mockMoveFilesToOther.mockRejectedValueOnce(err);
 
-            const req = { params: { categoryId: categoryId }, locals: { db: mockDb } };
+            await makeFunctionCall();
 
-            await categories.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('deletion of category failed');
+            expect(mockMoveFilesToOther).toHaveBeenCalledWith(mockDb, params.categoryId);
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle moveFilesToOther failure', async () => {
-            // perform action to test
-            const moveError = new Error('failed to move files to other');
-            moveError.status = 500;
-            mockMoveFilesToOther.mockRejectedValue(moveError);
+        it('should handle deleteOne error', async () => {
+            // simulate error in deleteOne
+            err = new Error('DeleteOne error');
+            mockCollection.deleteOne.mockRejectedValueOnce(err);
 
-            const req = { params: { categoryId: categoryId }, locals: { db: mockDb } };
+            await makeFunctionCall();
 
-            await categories.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.deleteOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('failed to move files to other');
+            expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: params.categoryId });
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should fail if category not found', async () => {
-            // perform action to test
-            mockCollection.deleteOne.mockResolvedValue({ deletedCount: 0 });
-            const req = { params: { categoryId: categoryId }, locals: { db: mockDb } };
+        it('should handle no deletion', async () => {
+            // simulate no deletion
+            mockCollection.deleteOne.mockResolvedValueOnce({ deletedCount: 0 });
 
-            await categories.delete(req, mockRes, mockNext);
+            await makeFunctionCall();
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(404);
-            expect(err.message).toBe('deletion failed: category not found with given category id');
-        });
-
-        it('should fail if Other category id given', async () => {
-            // perform action to test
-            categoryId = 0;      
-            const req = { params: { categoryId: categoryId }, locals: { db: mockDb } };
-
-            await categories.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.deleteOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('invalid category id: cannot delete Other category');
-        });
-
-        it('should fail with missing category id', async () => {
-            // perform action to test
-            categoryId = ''
-            const req = { params: { categoryId: categoryId }, locals: { db: mockDb } };
-
-            await categories.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.deleteOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to delete category: invalid or missing category id');
-        });
-
-        it('should fail with invalid category id', async () => {
-            // perform action to test
-            categoryId = 'not-valid-id'
-            const req = { params: { categoryId: categoryId }, locals: { db: mockDb } };
-
-            await categories.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.deleteOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to delete category: invalid or missing category id');
+            expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: params.categoryId });
+            expect(mockCreateError).toHaveBeenCalledWith('deletion failed: category not found with given category id', 404)
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
     });
 });

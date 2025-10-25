@@ -20,9 +20,9 @@ export const testHelpers = {
         }
         else if (type === 'boolean') {
             if (optional) {
-                goodData.push('', ' ', null, undefined);
+                goodData.push(undefined);
             }
-            goodData.push(true, false, 1, 0);
+            goodData.push(true, false);
         }
         else if (type === 'objectID') {
             if (fieldData.otherAllowed) {

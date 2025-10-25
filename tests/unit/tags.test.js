@@ -215,7 +215,7 @@ describe('tags', () => {
             await makeFunctionCall();
 
             expect(mockMoveTagsToOther).toHaveBeenCalledWith(mockDb, params.tagGroupId);
-            expect(mockCollection.deleteOne).toHaveBeenCalled();
+            expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: params.tagGroupId });
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
         });
@@ -248,7 +248,7 @@ describe('tags', () => {
 
             await makeFunctionCall();
 
-            expect(mockCollection.deleteOne).toHaveBeenCalled();
+            expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: params.tagGroupId });
             expect(mockCreateError).toHaveBeenCalledWith('failed to delete tag group', 500);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
@@ -389,7 +389,7 @@ describe('tags', () => {
         it('should handle find error', async () => {
             // simulate error in find
             err = new Error('Find error');
-            mockCollection.find().toArray.mockRejectedValueOnce(err);
+            mockCollection.find.mockImplementation(() => { throw err });
 
             await makeFunctionCall();
 
@@ -499,7 +499,7 @@ describe('tags', () => {
         it('should handle find error', async () => {
             // simulate error in find
             err = new Error('Find error');
-            mockCollection.find().toArray.mockRejectedValueOnce(err);
+            mockCollection.find.mockImplementation(() => { throw err });
 
             await makeFunctionCall();
 

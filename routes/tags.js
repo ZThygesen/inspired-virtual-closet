@@ -94,7 +94,7 @@ const tags = {
 
             await helpers.moveTagsToOther(db, tagGroupId.toString());
 
-            const result = await collection.deleteOne({ _id: ObjectId(tagGroupId)});
+            const result = await collection.deleteOne({ _id: tagGroupId});
             if (!result.deletedCount) {
                 throw helpers.createError('failed to delete tag group', 500);
             }

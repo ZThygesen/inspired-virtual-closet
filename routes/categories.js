@@ -1,6 +1,7 @@
 import express from 'express';
-import { ObjectId } from 'mongodb';
 import { helpers } from '../helpers.js';
+import { schemaHelpers } from '../schema/helpers.js';
+import { schema } from '../schema/categories.schema.js';
 import { auth } from './auth.js';
 
 const categories = {
@@ -8,31 +9,20 @@ const categories = {
         try {
             const { db } = req.locals;
             const collection = db.collection('categories');
-
-            const category = req?.body?.category;
-            if (!category) {
-                throw helpers.createError('a category name is required for category creation', 400);
-            }
+            const { name, group } = req.body;
     
-            if ((await collection.find({ name: category }).toArray()).length > 0) {
-                throw helpers.createError(`a category with the name "${category}" already exists`, 400);
-            }
-
-            const group = req?.body?.group;
-            if (!group) {
-                throw helpers.createError('a category group is required for category creation', 400);
+            if ((await collection.find({ name: name }).toArray()).length > 0) {
+                throw helpers.createError(`a category with the name "${name}" already exists`, 400);
             }
     
             const categoryEntry = {
-                name: category,
+                name: name,
                 group: group,
                 items: []
-            }
+            };
     
             const result = await collection.insertOne(categoryEntry);
-            if (!result.insertedId) {
-                throw helpers.createError('category was not inserted into database', 500);
-            }
+            if (!result.insertedId) throw helpers.createError('category was not inserted into database', 500);
     
             res.status(201).json({ message: 'Success!' });
         } catch (err) {
@@ -45,22 +35,6 @@ const categories = {
             const { db } = req.locals;
             const collection = db.collection('categories');
             const categories = await collection.find({ }, { projection: { items: 0 } }).toArray();
-            
-            if (categories.length === 0) {
-                throw helpers.createError('no categories were found on retrieval', 500);
-            }
-
-            let otherMissing = true;
-            for (let i = 0; i < categories.length; i++) {
-                if (categories[i].name === 'Other' && categories[i]._id === 0) {
-                    otherMissing = false;
-                    break;
-                }
-            }
-
-            if (otherMissing) {
-                throw helpers.createError('the Other category is missing in categories retrieval', 500);
-            }
 
             res.status(200).json(categories)
         } catch (err) {
@@ -72,38 +46,23 @@ const categories = {
         try {
             const { db } = req.locals;
             const collection = db.collection('categories');
+            const { categoryId } = req.params;
+            const { name, group } = req.body;
 
-            const categoryId = req?.params?.categoryId;
-            if (helpers.isOtherCategory(categoryId)) {
-                throw helpers.createError('invalid category id: cannot edit Other category', 400);
-            }
-
-            if (!helpers.isValidId(categoryId)) {
-                throw helpers.createError('failed to update category: invalid or missing category id', 400);
-            }
-
-            const name = req?.body?.newName;
-            if (!name) {
-                throw helpers.createError('category name is required for category update', 400);
-            }
-
-            // TODO: update logic to check for any category with the new name, not just the current category's name
-            const currCategory = await collection.find({ _id: categoryId }).toArray();
-            if (currCategory.name === name && currCategory.group === group) {
-                throw helpers.createError(`a category with the name "${name}" already exists`, 400);
-            }
-
-            const group = req?.body?.newGroup;
-            if (!group) {
-                throw helpers.createError('a category group is required for category creation', 400);
+            // if the new category name already exists, throw error
+            const currCategory = await collection.findOne({ _id: categoryId });
+            if (currCategory.name !== name
+                && (await collection.find({ name: name }).toArray()).length > 0
+            ) {
+                throw helpers.createError(`a category with the name "${name}" already exists`, 400)
             }
 
             const result = await collection.updateOne(
-                { _id: ObjectId(categoryId) },
+                { _id: categoryId },
                 {
                     $set: {
                         name: name,
-                        group: group
+                        group: group,
                     }
                 }
             );
@@ -121,14 +80,7 @@ const categories = {
 
     async delete(req, res, next) {
         try {
-            const categoryId = req?.params?.categoryId;
-            if (helpers.isOtherCategory(categoryId)) {
-                throw helpers.createError('invalid category id: cannot delete Other category', 400);
-            }
-
-            if (!helpers.isValidId(categoryId)) {
-                throw helpers.createError('failed to delete category: invalid or missing category id', 400);
-            }
+            const { categoryId } = req.params;
 
             // move files to Other
             const { db } = req.locals;
@@ -136,7 +88,7 @@ const categories = {
             
             // delete category
             const collection = db.collection('categories');
-            const result = await collection.deleteOne({ _id: ObjectId(categoryId )});
+            const result = await collection.deleteOne({ _id: categoryId });
 
             if (result.deletedCount === 0) {
                 throw helpers.createError('deletion failed: category not found with given category id', 404);
@@ -151,9 +103,24 @@ const categories = {
 
 const router = express.Router();
 
-router.post('/', auth.requireSuperAdmin, categories.post);
-router.get('/', categories.get);
-router.patch('/:categoryId', auth.requireSuperAdmin, categories.patch);
-router.delete('/:categoryId', auth.requireSuperAdmin, categories.delete);
+router.post('/', 
+    auth.requireSuperAdmin,
+    schemaHelpers.validateBody(schema.post.body.schema),
+    categories.post,
+);
+router.get('/', 
+    categories.get,
+);
+router.patch('/:categoryId', 
+    auth.requireSuperAdmin, 
+    schemaHelpers.validateParams(schema.patch.params.schema),
+    schemaHelpers.validateBody(schema.patch.body.schema),
+    categories.patch,
+);
+router.delete('/:categoryId', 
+    auth.requireSuperAdmin,
+    schemaHelpers.validateParams(schema.delete.params.schema),
+    categories.delete,
+);
 
 export { categories, router as categoriesRouter }; 

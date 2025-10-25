@@ -31,6 +31,16 @@ export const schemaHelpers = {
         };
     },
 
+    validateFields(schema) {
+        return async (req, res, next) => {
+            try {
+                req.body = await this.validate(schema, req.fields);
+            } catch (err) {
+                next(err);
+            }
+        }
+    },
+
     isValidId(value, utils) {
         if (helpers.isOtherCategory(value)) {
             return utils.error('any.invalid', { message: 'cannot be "Other" category' });
@@ -87,6 +97,7 @@ export const schemaHelpers = {
                 const items = this.createSchema({ items: fieldData.items });
                 joiFragment = Joi.array().items(items.extract('items'));
             }
+
             if (!fieldData.optional) {
                 joiFragment = joiFragment.required();
             }

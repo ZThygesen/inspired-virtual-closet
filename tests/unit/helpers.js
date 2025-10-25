@@ -10,7 +10,20 @@ export const unitHelpers = {
     locals: null,
     mockCreateError: null,
 
-    // route specific functions
+    // route specifics
+    // categories
+    mockMoveFilesToOther: null,
+
+    // files
+    mockBucket: null,
+    mockCreateId: null,
+    mockRemoveBackground: null,
+    mockb64ToBuffer: null,
+    mockCreateImageThumbnail: null,
+    mockUploadToGCS: null,
+    mockParse: null,
+    mockDeleteFromGCS: null,
+
     // tags
     mockMoveTagsToOther: null,
 
@@ -42,6 +55,12 @@ export const unitHelpers = {
         });
 
         // route specific functions
+        // categories
+        this.mockMoveFilesToOther = jest.spyOn(helpers, 'moveFilesToOther').mockResolvedValue();
+        
+        // files
+        
+
         // tags
         this.mockMoveTagsToOther = jest.spyOn(helpers, 'moveTagsToOther').mockResolvedValue();
     },
