@@ -259,6 +259,9 @@ describe('tags', () => {
 
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('tag group does not exist');
+
+            const tagGroups = await collection.find({ }).toArray();
+            expect(tagGroups).toHaveLength(2);
         });
 
         integrationHelpers.testParams(schema.deleteGroup.params.fields, request, () => body, ['tagGroupId']);

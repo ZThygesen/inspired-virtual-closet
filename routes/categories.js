@@ -51,7 +51,8 @@ const categories = {
 
             // if the new category name already exists, throw error
             const currCategory = await collection.findOne({ _id: categoryId });
-            if (currCategory.name !== name
+            if (currCategory
+                && currCategory.name !== name
                 && (await collection.find({ name: name }).toArray()).length > 0
             ) {
                 throw helpers.createError(`a category with the name "${name}" already exists`, 400)
@@ -84,7 +85,7 @@ const categories = {
 
             // move files to Other
             const { db } = req.locals;
-            await helpers.moveFilesToOther(db, categoryId);
+            await helpers.moveFilesToOther(db, categoryId.toString());
             
             // delete category
             const collection = db.collection('categories');
