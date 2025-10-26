@@ -31,14 +31,85 @@ const schema = {
                 },
                 crop: {
                     type: 'boolean',
-                    optional: true,
+                },
+            },
+        },
+    },
+    get: {
+        params: {
+            fields: {
+                clientId: {
+                    type: 'objectID',
+                },
+            },
+        },
+    },
+    patchName: {
+        params: {
+            fields: {
+                categoryId: {
+                    type: 'objectID',
+                    otherAllowed: true,
+                },
+                gcsId: {
+                    type: 'string',
+                },
+            },
+        },
+        body: {
+            fields: {
+                name: {
+                    type: 'string',
+                },
+                tags: {
+                    type: 'array',
+                    items: {
+                        type: 'objectID',
+                    },
+                },
+            },
+        },
+    },
+    patchCategory: {
+        params: {
+            fields: {
+                categoryId: {
+                    type: 'objectID',
+                    otherAllowed: true,
+                },
+                gcsId: {
+                    type: 'string',
+                },
+            },
+        },
+        body: {
+            fields: {
+                newCategoryId: {
+                    type: 'objectID',
+                    otherAllowed: true,
+                },
+            },
+        },
+    },
+    delete: {
+        params: {
+            fields: {
+                categoryId: {
+                    type: 'objectID',
+                    otherAllowed: true,
+                },
+                gcsId: {
+                    type: 'string',
                 },
             },
         },
     },
 };
 
-schema.post.params.schema = schemaHelpers.createSchema(schema.post.params.fields);
-schema.post.body.schema = schemaHelpers.createSchema(schema.post.body.fields);
+Object.keys(schema).forEach(method => {
+    Object.keys(schema[method]).forEach(type => {
+        schema[method][type].schema = schemaHelpers.createSchema(schema[method][type].fields);
+    });
+});
 
 export { schema };

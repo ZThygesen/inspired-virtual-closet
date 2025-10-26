@@ -3,7 +3,8 @@ import { ObjectId } from 'mongodb';
 import { unitHelpers } from './helpers';
 
 describe('categories', () => {
-    let err, mockRes, mockNext, mockCollection, mockDb, locals, mockCreateError, mockMoveFilesToOther;
+    let err, mockRes, mockNext, mockCollection, mockDb, locals, mockCreateError
+    let mockMoveFilesToOther;
     beforeEach(() => {
         unitHelpers.beforeEach();
         ({
@@ -59,7 +60,7 @@ describe('categories', () => {
         it('should handle find error', async () => {
             // simulate error in find
             err = new Error('Find error');
-            mockCollection.find.mockImplementation(() => { throw err });
+            mockCollection.find.mockImplementationOnce(() => { throw err });
 
             await makeFunctionCall();
 
@@ -131,7 +132,7 @@ describe('categories', () => {
         it('should handle find error', async () => {
             // simulate find error
             err = new Error('Find error');
-            mockCollection.find.mockImplementation(() => { throw err });
+            mockCollection.find.mockImplementationOnce(() => { throw err });
             
             await makeFunctionCall();
 
@@ -214,7 +215,7 @@ describe('categories', () => {
         it('should handle find error', async () => {
             // simulate find error
             err = new Error('Find error');
-            mockCollection.find.mockImplementation(() => { throw err });
+            mockCollection.find.mockImplementationOnce(() => { throw err });
 
             await makeFunctionCall();
 

@@ -3,7 +3,8 @@ import { ObjectId } from 'mongodb';
 import { unitHelpers } from './helpers';
 
 describe('tags', () => {
-    let err, mockRes, mockNext, mockCollection, mockDb, locals, mockCreateError, mockMoveTagsToOther;
+    let err, mockRes, mockNext, mockCollection, mockDb, locals, mockCreateError;
+    let mockMoveTagsToOther;
     beforeEach(() => {
         unitHelpers.beforeEach();
         ({
@@ -389,7 +390,7 @@ describe('tags', () => {
         it('should handle find error', async () => {
             // simulate error in find
             err = new Error('Find error');
-            mockCollection.find.mockImplementation(() => { throw err });
+            mockCollection.find.mockImplementationOnce(() => { throw err });
 
             await makeFunctionCall();
 
@@ -499,7 +500,7 @@ describe('tags', () => {
         it('should handle find error', async () => {
             // simulate error in find
             err = new Error('Find error');
-            mockCollection.find.mockImplementation(() => { throw err });
+            mockCollection.find.mockImplementationOnce(() => { throw err });
 
             await makeFunctionCall();
 
