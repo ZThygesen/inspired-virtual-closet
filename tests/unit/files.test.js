@@ -46,11 +46,11 @@ describe('files', () => {
         beforeEach(() => {
             params = {
                 clientId: ObjectId().toString(),
+                categoryId: ObjectId().toString(),
             };
             body = {
                 fileSrc: 'file source string',
                 fullFileName: 'blaze-tastic.png',
-                categoryId: ObjectId().toString(),
                 tags: [ObjectId().toString(), ObjectId().toString()],
                 rmbg: true,
                 crop: true,
@@ -76,7 +76,7 @@ describe('files', () => {
         it('should create new file', async () => {
             await makeFunctionCall();
 
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: body.categoryId });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: params.categoryId });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, params.clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, params.clientId);
@@ -229,7 +229,7 @@ describe('files', () => {
             mockCollection.find.mockImplementationOnce(() => { throw err });
             await makeFunctionCall();
 
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: body.categoryId });
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: params.categoryId });
             expect(mockNext).toHaveBeenCalledWith(err);
         });
 
@@ -246,7 +246,7 @@ describe('files', () => {
             mockCollection.toArray.mockResolvedValueOnce([]);
             await makeFunctionCall();
 
-            expect(mockCreateError).toHaveBeenCalledWith(`cannot add file: no category or multiple categories with the id "${body.categoryId.toString()}" exist`, 404);
+            expect(mockCreateError).toHaveBeenCalledWith(`cannot add file: no category or multiple categories with the id "${params.categoryId.toString()}" exist`, 404);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
@@ -254,7 +254,7 @@ describe('files', () => {
             mockCollection.toArray.mockResolvedValueOnce([{ category: '1' }, { category: '2' }]);
             await makeFunctionCall();
 
-            expect(mockCreateError).toHaveBeenCalledWith(`cannot add file: no category or multiple categories with the id "${body.categoryId.toString()}" exist`, 404);
+            expect(mockCreateError).toHaveBeenCalledWith(`cannot add file: no category or multiple categories with the id "${params.categoryId.toString()}" exist`, 404);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 

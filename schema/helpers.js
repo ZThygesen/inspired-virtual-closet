@@ -31,17 +31,8 @@ export const schemaHelpers = {
         };
     },
 
-    validateFields(schema) {
-        return async (req, res, next) => {
-            try {
-                req.body = await this.validate(schema, req.fields);
-            } catch (err) {
-                next(err);
-            }
-        }
-    },
-
-    isValidId(value, utils) {
+    isValidId(value, utils, options) {
+        const { keepAsString } = options;
         if (helpers.isOtherCategory(value)) {
             return utils.error('any.invalid', { message: 'cannot be "Other" category' });
         }
@@ -49,14 +40,21 @@ export const schemaHelpers = {
             return utils.error('any.invalid', { message: 'invalid mongodb object id' });
         }
 
+        if (keepAsString) {
+            return value;
+        }
         return ObjectId(value);
     },
 
-    isValidIdOtherAllowed(value, utils) {
+    isValidIdOtherAllowed(value, utils, options) {
+        const { keepAsString } = options;
         if (helpers.isOtherCategory(value)) {
             return 0;
         }
         if (helpers.isValidId(value)) {
+            if (keepAsString) {
+                return value;
+            }
             return ObjectId(value);
         }
     
@@ -78,15 +76,16 @@ export const schemaHelpers = {
                 joiFragment = Joi.boolean();
             }
             else if (type === 'objectID') {
+                const keepAsString = fieldData.keepAsString;
                 if (fieldData.otherAllowed) {
                     joiFragment = Joi.alternatives()
                         .try(Joi.string().trim(), Joi.number())
-                        .custom(schemaHelpers.isValidIdOtherAllowed)
+                        .custom((value, utils) => this.isValidIdOtherAllowed(value, utils, { keepAsString }))
                         .messages({ 'any.invalid': '{{#message}}' })
                 }
                 else {
                     joiFragment = Joi.string().trim()
-                        .custom(this.isValidId)
+                        .custom((value, utils) => this.isValidId(value, utils, { keepAsString }))
                         .messages({ 'any.invalid': '{{#message}}' });
                 }
             }

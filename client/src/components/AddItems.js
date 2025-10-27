@@ -162,19 +162,15 @@ export default function AddItems({ display, updateItems }) {
 
     async function uploadFile(file) {
         if (file.tab === 'clothes' || file.tab === 'profile') {
-            const formData = new FormData();
-            formData.append('fileSrc', file.src);
-            formData.append('fullFileName', file.name);
-            formData.append('categoryId', file.category.value);
-            formData.append('tags', JSON.stringify(file.tags));
-            formData.append('rmbg', file.rmbg);
-            formData.append('crop', file.crop && file.rmbg);
-
             return new Promise(async (resolve, reject) => {
                 try {
-                    await api.post(`/files/${client._id}`, formData, {
-                        headers: { 'Content-Type': 'multipart/form-data'}
-                    }); 
+                    await api.post(`/files/${client._id}/${file.category.value}`, {
+                        fileSrc: file.src,
+                        fullFileName: file.name,
+                        tags: file.tags,
+                        rmbg: file.rmbg,
+                        crop: file.crop && file.rmbg,
+                    });
                 } catch (err) {
                     reject(err);
                 }

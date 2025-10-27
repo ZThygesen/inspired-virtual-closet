@@ -13,7 +13,7 @@ describe('categories', () => {
             client,
             db,
             collection,
-            clientCollection
+            clientCollection,
         } = integrationHelpers);
         await insertOther();
     })

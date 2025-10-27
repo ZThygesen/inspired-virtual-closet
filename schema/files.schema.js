@@ -7,6 +7,9 @@ const schema = {
                 clientId: {
                     type: 'objectID',
                 },
+                categoryId: {
+                    type: 'objectID',
+                },
             },
         },
         body: {
@@ -17,13 +20,13 @@ const schema = {
                 fullFileName: {
                     type: 'string',
                 },
-                categoryId: {
-                    type: 'objectID',
-                },
                 tags: {
                     type: 'array',
+                    optional: true,
                     items: {
                         type: 'objectID',
+                        optional: true,
+                        keepAsString: true,
                     },
                 },
                 rmbg: {
@@ -40,6 +43,7 @@ const schema = {
             fields: {
                 clientId: {
                     type: 'objectID',
+                    keepAsString: true,
                 },
             },
         },
@@ -47,6 +51,9 @@ const schema = {
     patchName: {
         params: {
             fields: {
+                clientId: {
+                    type: 'objectID',
+                },
                 categoryId: {
                     type: 'objectID',
                     otherAllowed: true,
@@ -63,8 +70,11 @@ const schema = {
                 },
                 tags: {
                     type: 'array',
+                    optional: true,
                     items: {
                         type: 'objectID',
+                        optional: true,
+                        keepAsString: true,
                     },
                 },
             },
@@ -73,6 +83,9 @@ const schema = {
     patchCategory: {
         params: {
             fields: {
+                clientId: {
+                    type: 'objectID',
+                },
                 categoryId: {
                     type: 'objectID',
                     otherAllowed: true,
@@ -94,6 +107,9 @@ const schema = {
     delete: {
         params: {
             fields: {
+                clientId: {
+                    type: 'objectID',
+                },
                 categoryId: {
                     type: 'objectID',
                     otherAllowed: true,

@@ -576,6 +576,22 @@ describe('tags', () => {
             });
         });
 
+        it('should update tag in other group', async () => {
+            params = [0];
+            const response = await request(params, body);
+
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Success!');
+
+            const updatedGroup = await collection.findOne({ _id: 0 });
+            const updatedTag = updatedGroup.tags[0];
+            expect(updatedTag).toMatchObject({
+                tagId: tag.tagId,
+                tagName: body.tagName,
+                tagColor: body.tagColor,
+            });
+        });
+
         it('should fail with non-existent tag group id', async () => {
             params = [ObjectId().toString(), tag.tagId.toString()];
             const response = await request(params, body);
@@ -680,9 +696,7 @@ describe('tags', () => {
             expect(oldGroup.tags).toHaveLength(1);
             expect(newGroup.tags).toHaveLength(0);
 
-            body = {
-                newTagGroupId: 0,
-            };
+            body.newTagGroupId = 0;
             const response = await request(params, body);
 
             expect(response.status).toBe(200);
@@ -710,9 +724,7 @@ describe('tags', () => {
             expect(newGroup.tags).toHaveLength(0);
 
             params = [0, tag.tagId.toString()];
-            body = {
-                newTagGroupId: group1._id.toString(),
-            };
+            body.newTagGroupId = group1._id.toString();
             const response = await request(params, body);
 
             expect(response.status).toBe(200);
@@ -742,9 +754,7 @@ describe('tags', () => {
         });
 
         it('should fail with non-existent new tag group id', async () => {
-            body = {
-                newTagGroupId: ObjectId().toString(),
-            };
+            body.newTagGroupId = ObjectId().toString();
             const response = await request(params, body);
 
             expect(response.status).toBe(500);
@@ -998,7 +1008,7 @@ describe('tags', () => {
             expect(response.body.message).toBe('Success!');
 
             const tagGroup = await collection.findOne({ _id: group._id });
-            expect(tagGroup.tags).toHaveLength(2);
+            expect(tagGroup.tags).toBeFalsy();
 
             const deletedTag = tagGroup.tags.filter(tagToCheck => JSON.stringify(tagToCheck.tagId) === JSON.stringify(tag.tagId));
             expect(deletedTag).toHaveLength(0);

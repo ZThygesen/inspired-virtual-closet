@@ -1,6 +1,4 @@
 import express from 'express';
-import { ObjectId } from 'mongodb';
-import ExpressFormidable from 'express-formidable';
 import cuid2 from '@paralleldrive/cuid2';
 import path from 'path';
 import { helpers } from '../helpers.js';
@@ -13,8 +11,8 @@ const files = {
         try {
             const { db, bucket } = req.locals;
             const collection = db.collection('categories');
-            const { clientId } = req.params;
-            const { fileSrc, fullFileName, categoryId, tags, rmbg, crop } = req.body;
+            const { clientId, categoryId } = req.params;
+            const { fileSrc, fullFileName, tags, rmbg, crop } = req.body;
 
             if ((await collection.find({ _id: categoryId }).toArray()).length !== 1) {
                 throw helpers.createError(`cannot add file: no category or multiple categories with the id "${categoryId.toString()}" exist`, 404);
@@ -27,9 +25,9 @@ const files = {
             }
 
             let clientCredits;
-            const isSuperAdmin = await helpers.isSuperAdmin(db, clientId);
+            const isSuperAdmin = await helpers.isSuperAdmin(db, clientId.toString());
             if (!isSuperAdmin) {
-                clientCredits = await helpers.getCredits(db, clientId);
+                clientCredits = await helpers.getCredits(db, clientId.toString());
                 if (clientCredits <= 0) {
                     throw helpers.createError('client does not have any credits', 403);
                 }
@@ -93,7 +91,7 @@ const files = {
             }
 
             if (!isSuperAdmin) {
-                await helpers.deductCredits(db, clientId, clientCredits);
+                await helpers.deductCredits(db, clientId.toString(), clientCredits);
             }
 
             res.status(201).json({ message: 'Success!'});
@@ -250,16 +248,33 @@ const files = {
 
 const router = express.Router();
 
-router.post('/:clientId', 
-    auth.checkPermissions, 
-    ExpressFormidable(),
-    schemaHelpers.validateParams(schema.post.params.fields),
-    schemaHelpers.validateFields(schema.post.body.fields),
+router.post('/:clientId/:categoryId', 
+    auth.checkPermissions,
+    schemaHelpers.validateParams(schema.post.params.schema),
+    schemaHelpers.validateBody(schema.post.body.schema),
     files.post,
 );
-router.get('/:clientId', auth.checkPermissions, files.get);
-router.patch('/:clientId/:categoryId/:gcsId', auth.checkPermissions, files.patchName);
-router.patch('/category/:clientId/:categoryId/:gcsId', auth.checkPermissions, files.patchCategory);
-router.delete('/:clientId/:categoryId/:gcsId', auth.checkPermissions, files.delete);
+router.get('/:clientId',
+    auth.checkPermissions,
+    schemaHelpers.validateParams(schema.get.params.schema),
+    files.get,
+);
+router.patch('/:clientId/:categoryId/:gcsId', 
+    auth.checkPermissions, 
+    schemaHelpers.validateParams(schema.patchName.params.schema),
+    schemaHelpers.validateBody(schema.patchName.body.schema),
+    files.patchName,
+);
+router.patch('/category/:clientId/:categoryId/:gcsId', 
+    auth.checkPermissions, 
+    schemaHelpers.validateParams(schema.patchCategory.params.schema),
+    schemaHelpers.validateBody(schema.patchCategory.body.schema),
+    files.patchCategory,
+);
+router.delete('/:clientId/:categoryId/:gcsId', 
+    auth.checkPermissions,
+    schemaHelpers.validateParams(schema.delete.params.schema),
+    files.delete,
+);
 
 export { files, router as filesRouter };

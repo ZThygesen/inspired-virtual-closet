@@ -24,7 +24,6 @@ export const integrationHelpers = {
             isAdmin: true,
             isSuperAdmin: true,
         };
-
         const collection = this.db.collection('clients');
         await collection.insertOne(this.user);
         const token = jwt.sign({ 
@@ -41,15 +40,36 @@ export const integrationHelpers = {
         await collection.deleteOne({ _id: this.user._id });
     },
 
-    async createClient() {
+    async setUserSuper() {
+        const collection = this.db.collection('clients');
+        await collection.updateOne({ _id: this.user._id }, { $set: { isAdmin: true, isSuperAdmin: true } });
+        const token = jwt.sign({ id: this.user._id, isAdmin: true, isSuperAdmin: true }, process.env.JWT_SECRET);
+        this.cookie = `token=${token}`;
+    },
+
+    async setUserAdmin() {
+        const collection = this.db.collection('clients');
+        await collection.updateOne({ _id: this.user._id }, { $set: { isAdmin: true, isSuperAdmin: false } });
+        const token = jwt.sign({ id: this.user._id, isAdmin: true, isSuperAdmin: false }, process.env.JWT_SECRET);
+        this.cookie = `token=${token}`;
+    },
+
+    async setUserNormal() {
+        const collection = this.db.collection('clients');
+        await collection.updateOne({ _id: this.user._id }, { $set: { isAdmin: false, isSuperAdmin: false } });
+        const token = jwt.sign({ id: this.user._id, isAdmin: false, isSuperAdmin: false }, process.env.JWT_SECRET);
+        this.cookie = `token=${token}`;
+    },
+
+    async createClient(isAdmin = false, isSuperAdmin = false) {
         this.client = {
             _id: ObjectId(),
             firstName: 'Jane',
             lastName: 'Deer',
             email: 'janedeer11@gmail.com',
             credits: 350,
-            isAdmin: false,
-            isSuperAdmin: false
+            isAdmin: isAdmin,
+            isSuperAdmin: isAdmin
         };
 
         const collection = this.db.collection('clients');
@@ -65,12 +85,18 @@ export const integrationHelpers = {
         await this.collection.deleteMany({});
     },
 
+    async clearClientCollection() {
+        await this.clientCollection.deleteMany({});
+    },
+
     async beforeAll(collectionToUse) {
         this.mongoClient = new MongoClient(process.env.DB_URI);
         await this.mongoClient.connect();
         this.db = this.mongoClient.db(process.env.DB_NAME_TEST);
         this.collection = this.db.collection(collectionToUse);
         this.clientCollection = this.db.collection('clients');
+        await this.clearCollection();
+        await this.clearClientCollection();
     },
 
     async afterAll() {
@@ -85,8 +111,7 @@ export const integrationHelpers = {
 
     async afterEach() {
         await this.clearCollection();
-        await this.removeUser();
-        await this.removeClient();
+        await this.clearClientCollection();
         jest.resetAllMocks();
         jest.restoreAllMocks();
     },
@@ -102,11 +127,20 @@ export const integrationHelpers = {
         return this.agent()[method](path).send(body);
     },
 
-    testParams(fields, request, body, paramsOrder) {
+    testParams(fields, request, body, paramsOrder, options = {}) {
+        const { checksPermissions } = options;
         const resolveBody = typeof body === 'function' ? body : () => body;
         for (const [field, fieldData] of Object.entries(fields)) {
-            const badValues = testHelpers.generateBadData(fieldData, true);
-            badValues.forEach((value) => {
+            // everything passed as a param gets interpolated as a string
+            // this means all the "bad string data" passes, rendering testing it useless
+            if (fieldData.type === 'string') {
+                continue;
+            }
+
+            const badValues = testHelpers.generateBadData(fieldData, {
+                isIntegrationParams: true,
+            });
+            badValues.forEach(async (value) => {
                 const params = {};
                 for (const [otherField, otherFieldData] of Object.entries(fields)) {
                     if (otherField !== field) {
@@ -114,13 +148,24 @@ export const integrationHelpers = {
                         params[otherField] = otherValue;
                     }
                 }
+                
                 params[field] = value;
-                const orderedParams = [];
-                paramsOrder.forEach(param => {
-                    orderedParams.push(params[param]);
+                const message = testHelpers.getErrorMessage(field, fieldData, value, {
+                    isIntegrationParams: true, 
+                    checksPermissions: checksPermissions,
                 });
-                const message = testHelpers.getErrorMessage(field, fieldData, value, true);
-                it(`params: should fail with invalid ${field}: ${JSON.stringify(orderedParams)}: ${message}`, async () => {
+                it(`params: should fail with invalid ${field}: ${JSON.stringify(params)}: ${message}`, async () => {
+                    const orderedParams = [];
+                    paramsOrder.forEach(param => {
+                        // typically a clientId in params gets passed through checkPermissions
+                        // which needs a valid, existing client instead of a random id
+                        if (param === 'clientId' && field !== 'clientId') {
+                            orderedParams.push(this.client._id.toString());
+                        }
+                        else {
+                            orderedParams.push(params[param]);
+                        }
+                    });
                     const response = await request(orderedParams, resolveBody());
                     expect(response.status).toBe(400);
                     expect(response.body.message).toMatch(message);
@@ -142,7 +187,7 @@ export const integrationHelpers = {
                     }
                 }
                 body[field] = value;
-                const message = testHelpers.getErrorMessage(field, fieldData, value);
+                const message = testHelpers.getErrorMessage(field, fieldData, value, {});
                 it(`body: should fail with invalid ${field}: ${JSON.stringify(body)}: ${message}`, async () => {
                     const response = await request(resolveParams(), body);
                     expect(response.status).toBe(400);

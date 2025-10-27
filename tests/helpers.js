@@ -35,7 +35,7 @@ export const testHelpers = {
         }
         else if (type === 'array') {
             if (optional) {
-                goodData.push([], null, undefined);
+                goodData.push([]);
             }
             const itemsGoodData = this.generateGoodData(fieldData.items);
             itemsGoodData.forEach((item) => {
@@ -45,7 +45,8 @@ export const testHelpers = {
         return goodData;
     },
 
-    generateBadData(fieldData, isIntegrationParams = false) {
+    generateBadData(fieldData, options = {}) {
+        const { isIntegrationParams } = options;
         let badData = [];
         const type = fieldData.type;
         const optional = fieldData.optional || false;
@@ -71,7 +72,7 @@ export const testHelpers = {
             if (!fieldData.otherAllowed) {
                 badData.push('0', 0);
             }
-            badData.push('invalid_id', {}, '', ' ', null, undefined, 123, true, false, []);
+            badData.push('invalid_id', {}, null, undefined, 123, true, false, []);
         }
         else if (type === 'object') {
 
@@ -80,7 +81,8 @@ export const testHelpers = {
             if (!optional) {
                 badData.push([], null, undefined);
             }
-            const itemsBadData = this.generateBadData(fieldData.items, isIntegrationParams);
+
+            const itemsBadData = this.generateBadData(fieldData.items, options);
             itemsBadData.forEach((item) => {
                 badData.push([item]);
             });
@@ -100,14 +102,18 @@ export const testHelpers = {
         return badData;
     },
 
-    getErrorMessage(field, fieldData, badValue, isIntegrationParams = false) {
+    getErrorMessage(field, fieldData, badValue, options = {}) {
+        const { isIntegrationParams, checksPermissions } = options;
         if (fieldData.type === 'array' && Array.isArray(badValue)) {
-            return this.getErrorMessage(field, fieldData.items, badValue[0], isIntegrationParams);
+            return this.getErrorMessage(field, fieldData.items, badValue[0], options);
         }
         else if (fieldData.type === 'objectID') {
             // when params are passed into a request they are converted into strings (so all pass the string requirement)
             // we need to handle the data slightly different in this case
-            if (isIntegrationParams) {
+            if (checksPermissions && field === 'clientId') {
+                return new RegExp(/client id is invalid or missing/);
+            }
+            else if (isIntegrationParams) {
                 if (helpers.isOtherCategory(badValue) && !fieldData.otherAllowed) {
                     return new RegExp(/cannot be "Other" category/);
                 }

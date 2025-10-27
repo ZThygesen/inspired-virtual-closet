@@ -102,7 +102,6 @@ const auth = {
             if (!helpers.isValidId(clientId)) {
                 return next(helpers.createError('client id is invalid or missing', 400));
             }
-
             const { db } = req.locals;
             const collection = db.collection('clients');
             const client = await collection.findOne({ _id: ObjectId(clientId )});

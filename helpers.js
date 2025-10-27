@@ -209,7 +209,8 @@ export const helpers = {
             } 
             else if (process.env.NODE_ENV === 'test') {
                 bucket = storage.bucket('edie-styles-virtual-closet-test');
-            } else {
+            } 
+            else {
                 bucket = storage.bucket('edie-styles-virtual-closet-dev');
             }
             
