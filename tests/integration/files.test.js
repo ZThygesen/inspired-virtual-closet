@@ -316,9 +316,10 @@ describe('files', () => {
         });
 
         integrationHelpers.testParams(schema.post.params.fields, request, () => body, ['clientId', 'categoryId'], {
-            checksPermissions: true,
+            checkPermissions: true,
         });
         integrationHelpers.testBody(schema.post.body.fields, request, () => params);
+        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body, 201);
     });
     
     describe('get', () => {
@@ -420,8 +421,9 @@ describe('files', () => {
         });
 
         integrationHelpers.testParams(schema.get.params.fields, request, () => body, ['clientId'], {
-            checksPermissions: true,
+            checkPermissions: true,
         });
+        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body);
     });
 
     describe('patchName', () => {
@@ -571,9 +573,10 @@ describe('files', () => {
         });
         
         integrationHelpers.testParams(schema.patchName.params.fields, request, () => body, ['clientId', 'categoryId', 'gcsId'], {
-            checksPermissions: true,
+            checkPermissions: true,
         });
         integrationHelpers.testBody(schema.patchName.body.fields, request, () => params);
+        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body);
     });
 
     describe('patchCategory', () => {
@@ -727,9 +730,10 @@ describe('files', () => {
         });
 
         integrationHelpers.testParams(schema.patchCategory.params.fields, request, () => body, ['clientId', 'categoryId', 'gcsId'], {
-            checksPermissions: true,
+            checkPermissions: true,
         });
         integrationHelpers.testBody(schema.patchCategory.body.fields, request, () => params);
+        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body);
     });
 
     describe('delete', () => {
@@ -937,7 +941,8 @@ describe('files', () => {
         });
 
         integrationHelpers.testParams(schema.delete.params.fields, request, () => body, ['clientId', 'categoryId', 'gcsId'], {
-            checksPermissions: true,
+            checkPermissions: true,
         });
+        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body);
     });
 });

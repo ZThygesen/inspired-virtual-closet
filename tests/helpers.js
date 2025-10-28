@@ -103,14 +103,14 @@ export const testHelpers = {
     },
 
     getErrorMessage(field, fieldData, badValue, options = {}) {
-        const { isIntegrationParams, checksPermissions } = options;
+        const { isIntegrationParams, checkPermissions } = options;
         if (fieldData.type === 'array' && Array.isArray(badValue)) {
             return this.getErrorMessage(field, fieldData.items, badValue[0], options);
         }
         else if (fieldData.type === 'objectID') {
             // when params are passed into a request they are converted into strings (so all pass the string requirement)
             // we need to handle the data slightly different in this case
-            if (checksPermissions && field === 'clientId') {
+            if (checkPermissions && field === 'clientId') {
                 return new RegExp(/client id is invalid or missing/);
             }
             else if (isIntegrationParams) {

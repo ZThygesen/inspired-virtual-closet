@@ -68,6 +68,7 @@ describe('tags', () => {
         });
 
         integrationHelpers.testBody(schema.postGroup.body.fields, request, () => params);
+        integrationHelpers.testAuth({ superAdmin: true }, request, () => params, () => body, 201);
     });
 
     describe('patchGroup', () => {
@@ -127,6 +128,7 @@ describe('tags', () => {
 
         integrationHelpers.testParams(schema.patchGroup.params.fields, request, () => body, ['tagGroupId']);
         integrationHelpers.testBody(schema.patchGroup.body.fields, request, () => params);
+        integrationHelpers.testAuth({ superAdmin: true }, request, () => params, () => body);
     });
 
     describe('patchGroupOrder', () => {
@@ -190,6 +192,7 @@ describe('tags', () => {
         });
 
         integrationHelpers.testBody(schema.patchGroupOrder.body.fields, request, () => params);
+        integrationHelpers.testAuth({ superAdmin: true }, request, () => params, () => body);
     });
 
     describe('deleteGroup', () => {
@@ -265,6 +268,7 @@ describe('tags', () => {
         });
 
         integrationHelpers.testParams(schema.deleteGroup.params.fields, request, () => body, ['tagGroupId']);
+        integrationHelpers.testAuth({ superAdmin: true }, request, () => params, () => body);
     });
 
     describe('postTag', () => {
@@ -345,6 +349,7 @@ describe('tags', () => {
 
         integrationHelpers.testParams(schema.postTag.params.fields, request, () => body, ['tagGroupId']);
         integrationHelpers.testBody(schema.postTag.body.fields, request, () => params);
+        integrationHelpers.testAuth({ superAdmin: true }, request, () => params, () => body, 201);
     });
 
     describe('getActive', () => {
@@ -438,6 +443,8 @@ describe('tags', () => {
             expect(tagGroup1.tags).toHaveLength(0);
             expect(tagGroup2.tags).toHaveLength(0);
         });
+
+        integrationHelpers.testAuth({ noRequirements: true }, request, () => params, () => body);
     });
 
     describe('getArchived', () => {
@@ -531,6 +538,8 @@ describe('tags', () => {
             expect(tagGroup1.tags).toHaveLength(0);
             expect(tagGroup2.tags).toHaveLength(0);
         });
+
+        integrationHelpers.testAuth({ superAdmin: true }, request, () => params, () => body);
     });
 
     describe('patchTag', () => {
@@ -577,7 +586,9 @@ describe('tags', () => {
         });
 
         it('should update tag in other group', async () => {
-            params = [0];
+            await integrationHelpers.clearCollection();
+            await collection.insertOne({ _id: 0, tagGroupName: 'Other', tags: [tag] });
+            params = [0, tag.tagId.toString()];
             const response = await request(params, body);
 
             expect(response.status).toBe(200);
@@ -616,6 +627,7 @@ describe('tags', () => {
 
         integrationHelpers.testParams(schema.patchTag.params.fields, request, () => body, ['tagGroupId', 'tagId']);
         integrationHelpers.testBody(schema.patchTag.body.fields, request, () => params);
+        integrationHelpers.testAuth({ superAdmin: true }, request, () => params, () => body);
     });
 
     describe('patchTagGroup', () => {
@@ -763,6 +775,7 @@ describe('tags', () => {
 
         integrationHelpers.testParams(schema.patchTagGroup.params.fields, request, () => body, ['tagGroupId', 'tagId']);
         integrationHelpers.testBody(schema.patchTagGroup.body.fields, request, () => params);
+        integrationHelpers.testAuth({ superAdmin: true }, request, () => params, () => body);
     });
 
     describe('archiveTag', () => {
@@ -854,6 +867,7 @@ describe('tags', () => {
         });
 
         integrationHelpers.testParams(schema.archiveTag.params.fields, request, () => body, ['tagGroupId', 'tagId']);
+        integrationHelpers.testAuth({ superAdmin: true }, request, () => params, () => body);
     });
 
     describe('recoverTag', () => {
@@ -945,6 +959,7 @@ describe('tags', () => {
         });
 
         integrationHelpers.testParams(schema.recoverTag.params.fields, request, () => body, ['tagGroupId', 'tagId']);
+        integrationHelpers.testAuth({ superAdmin: true }, request, () => params, () => body);
     });
 
     describe('deleteTag', () => {
@@ -1008,7 +1023,7 @@ describe('tags', () => {
             expect(response.body.message).toBe('Success!');
 
             const tagGroup = await collection.findOne({ _id: group._id });
-            expect(tagGroup.tags).toBeFalsy();
+            expect(tagGroup.tags).toHaveLength(2);
 
             const deletedTag = tagGroup.tags.filter(tagToCheck => JSON.stringify(tagToCheck.tagId) === JSON.stringify(tag.tagId));
             expect(deletedTag).toHaveLength(0);
@@ -1031,5 +1046,6 @@ describe('tags', () => {
         });
 
         integrationHelpers.testParams(schema.deleteTag.params.fields, request, () => body, ['tagGroupId', 'tagId']);
+        integrationHelpers.testAuth({ superAdmin: true }, request, () => params, () => body);
     });
 });

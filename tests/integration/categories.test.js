@@ -63,6 +63,7 @@ describe('categories', () => {
         });
 
         integrationHelpers.testBody(schema.post.body.fields, request, () => params);
+        integrationHelpers.testAuth({ superAdmin: true }, request, () => params, () => body, 201);
     });
     
     describe('get', () => {
@@ -103,6 +104,8 @@ describe('categories', () => {
             const categories = response.body;
             expect(categories).toHaveLength(0);
         });
+
+        integrationHelpers.testAuth({ noRequirements: true }, request, () => params, () => body);
     });
     
     describe('patch', () => {
@@ -180,6 +183,7 @@ describe('categories', () => {
 
         integrationHelpers.testParams(schema.patch.params.fields, request, () => body, ['categoryId']);
         integrationHelpers.testBody(schema.patch.body.fields, request, () => params);
+        integrationHelpers.testAuth({ superAdmin: true }, request, () => params, () => body);
     });
 
     describe('delete', () => {
@@ -256,5 +260,6 @@ describe('categories', () => {
         });
 
         integrationHelpers.testParams(schema.delete.params.fields, request, () => body, ['categoryId']);
+        integrationHelpers.testAuth({ superAdmin: true }, request, () => params, () => body);
     });
 });

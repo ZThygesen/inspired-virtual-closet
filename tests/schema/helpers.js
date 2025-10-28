@@ -13,7 +13,7 @@ export const schemaTestHelpers = {
                     }
                 }
                 entry[field] = value;
-                it (`should validate: ${JSON.stringify(entry)}`, () => {
+                it(`should validate: ${JSON.stringify(entry)}`, () => {
                     const { error } = schema.validate(entry);
                     expect(error).toBeUndefined();
                 });
@@ -30,12 +30,33 @@ export const schemaTestHelpers = {
                 }
                 entry[field] = value;
                 const message = testHelpers.getErrorMessage(field, fieldData, value);
-                it (`should fail with invalid ${field}: ${JSON.stringify(entry)}: ${message}`, () => {
+                it(`should fail with invalid ${field}: ${JSON.stringify(entry)}: ${message}`, () => {
                     const { error } = schema.validate(entry);
                     expect(error).toBeDefined();
                     expect(error.message).toMatch(message);
                 });
             });
+
+            const entry = {};
+            for (const [otherField, otherFieldData] of Object.entries(fields)) {
+                if (otherField !== field) {
+                    const otherValue = testHelpers.generateGoodData(otherFieldData)[0];
+                    entry[otherField] = otherValue;
+                }
+            }
+            if (fieldData.optional) {
+                it(`should validate with missing ${field}: ${JSON.stringify(entry)}`, () => {
+                    const { error } = schema.validate(entry);
+                    expect(error).toBeUndefined();
+                });
+            }
+            else {
+                it(`should fail with missing ${field}: ${JSON.stringify(entry)}`, () => {
+                    const { error } = schema.validate(entry);
+                    expect(error).toBeDefined();
+                    expect(error.message).toBe(`"${field}" is required`);
+                });
+            }
         }
     },
 };
