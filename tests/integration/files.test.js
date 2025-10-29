@@ -78,7 +78,7 @@ describe('files', () => {
         it('should add new file', async () => {
             body.rmbg = true;
             const response = await request(params, body);
-
+            console.log(response.body.message);
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
             expect(mockRemoveBackground).toHaveBeenCalledWith(body.fileSrc, body.crop);
@@ -154,7 +154,7 @@ describe('files', () => {
             body.rmbg = true;
             body.crop = false;
             const response = await request(params, body);
-
+            console.log(response.body.message);
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
 
@@ -203,7 +203,7 @@ describe('files', () => {
             body.rmbg = true;
             body.crop = false;
             const response = await request(params, body);
-
+            console.log(response.body.message);
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
 
