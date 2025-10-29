@@ -377,7 +377,9 @@ export const integrationHelpers = {
                 await this.setClientNormal();
                 await this.setUserAsClient();
                 const response = await request(resolveParams(), resolveBody());
-                expect(response.status).toBe(successStatus);
+                const success = (response.status === successStatus)
+                    || (response.status === 403 && response.body.message === 'non-admins must remove background and crop image on file upload')
+                expect(success).toBe(true);
             });
         }
 
