@@ -84,7 +84,6 @@ export default function ClothingCard({ item, editable, onCanvas, sendToCanvas, s
         }
         setItemTags(updatedTags);
     }
-    console.log(item)
     return (
         <>
             <ClothingCardContainer className={`${onCanvas ? 'on-canvas' : ''} ${fromSidebar ? 'from-sidebar' : ''}`}>
