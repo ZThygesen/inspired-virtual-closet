@@ -1,16 +1,24 @@
 import { ObjectId } from 'mongodb';
 import { helpers } from '../helpers';
+import RandExp from 'randexp';
 
 export const testHelpers = {
-    generateGoodData(fieldData) {
-        const goodData = [];
+    generateGoodData(fieldData, options = {}) {
+        let goodData = [];
         const type = fieldData.type;
         const optional = fieldData.optional || false;
         if (type === 'string') {
             if (optional) {
                 goodData.push('', ' ', null, undefined);
             }
-            goodData.push('valid string');
+            if (fieldData.pattern) {
+                const randexp = new RandExp(new RegExp(fieldData.pattern));
+                goodData.push(randexp.gen());
+            }
+            else {
+                goodData.push('valid string'); 
+            }
+            
         }
         else if (type === 'number') {
             if (optional) {
@@ -35,18 +43,19 @@ export const testHelpers = {
         }
         else if (type === 'array') {
             if (optional) {
-                goodData.push([]);
+                goodData.push([], '[]');
             }
             const itemsGoodData = this.generateGoodData(fieldData.items);
             itemsGoodData.forEach((item) => {
-                goodData.push([item]);
+                goodData.push([item], JSON.stringify([item]));
             });
         }
+
         return goodData;
     },
 
     generateBadData(fieldData, options = {}) {
-        const { isIntegrationParams } = options;
+        const { isIntegrationParams, isFormData } = options;
         let badData = [];
         const type = fieldData.type;
         const optional = fieldData.optional || false;
@@ -54,7 +63,11 @@ export const testHelpers = {
             if (!optional) {
                 badData.push('', ' ', null, undefined);
             }
-            badData.push(0, 123, true, false, [], {});
+            // numbers and booleans are interpreted as strings in form data
+            if (!isFormData) {
+                badData.push(0, 123, true, false);
+            }
+            badData.push([], {});
         }
         else if (type === 'number') {
             if (!optional) {
@@ -79,12 +92,18 @@ export const testHelpers = {
         }
         else if (type === 'array') {
             if (!optional) {
-                badData.push([], null, undefined);
+                badData.push([], '[]', null, undefined, 'invalid array', '["invalid", "array]');
             }
 
             const itemsBadData = this.generateBadData(fieldData.items, options);
             itemsBadData.forEach((item) => {
-                badData.push([item]);
+                // form data requires arrays be stringified
+                if (isFormData) {
+                    badData.push(JSON.stringify([item]));
+                }
+                else {
+                    badData.push([item], JSON.stringify([item]));
+                }
             });
         }
 
@@ -99,6 +118,7 @@ export const testHelpers = {
                 value !== undefined
             ));
         }
+
         return badData;
     },
 

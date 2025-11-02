@@ -5,6 +5,7 @@ import { helpers } from '../helpers.js';
 import { schemaHelpers } from '../schema/helpers.js';
 import { schema } from '../schema/files.schema.js';
 import { auth } from './auth.js';
+import ExpressFormidable from 'express-formidable';
 
 const files = {
     async post(req, res, next) {
@@ -13,7 +14,6 @@ const files = {
             const collection = db.collection('categories');
             const { clientId, categoryId } = req.params;
             const { fileSrc, fullFileName, tags, rmbg, crop } = req.body;
-
             if ((await collection.find({ _id: categoryId }).toArray()).length !== 1) {
                 throw helpers.createError(`cannot add file: no category or multiple categories with the id "${categoryId.toString()}" exist`, 404);
             }
@@ -25,9 +25,9 @@ const files = {
             }
 
             let clientCredits;
-            const isSuperAdmin = await helpers.isSuperAdmin(db, clientId.toString());
+            const isSuperAdmin = await helpers.isSuperAdmin(db, clientId);
             if (!isSuperAdmin) {
-                clientCredits = await helpers.getCredits(db, clientId.toString());
+                clientCredits = await helpers.getCredits(db, clientId);
                 if (clientCredits <= 0) {
                     throw helpers.createError('client does not have any credits', 403);
                 }
@@ -91,7 +91,7 @@ const files = {
             }
 
             if (!isSuperAdmin) {
-                await helpers.deductCredits(db, clientId.toString(), clientCredits);
+                await helpers.deductCredits(db, clientId, clientCredits);
             }
 
             res.status(201).json({ message: 'Success!'});
@@ -250,8 +250,9 @@ const router = express.Router();
 
 router.post('/:clientId/:categoryId', 
     auth.checkPermissions,
+    ExpressFormidable(),
     schemaHelpers.validateParams(schema.post.params.schema),
-    schemaHelpers.validateBody(schema.post.body.schema),
+    schemaHelpers.validateFields(schema.post.body.schema),
     files.post,
 );
 router.get('/:clientId',

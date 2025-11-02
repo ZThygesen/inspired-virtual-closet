@@ -134,7 +134,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
         }
 
         try {
-            await api.patch(`/files/${client._id}/${category._id}/${item.gcsId}`, { newName: newName, newTags: itemTagsStr });
+            await api.patch(`/files/${client._id}/${category._id}/${item.gcsId}`, { name: newName, tags: itemTags });
             await updateItems();
         } catch (err) {
             setError({

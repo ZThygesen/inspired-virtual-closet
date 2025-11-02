@@ -126,7 +126,7 @@ export default function ClosetSettings() {
 
         setLoading(true);
         try {
-            await api.post('/categories', { category: newCategoryName, group: newCategoryGroup });
+            await api.post('/categories', { name: newCategoryName, group: newCategoryGroup });
             await getCategories();
         } catch (err) {
             setError({
@@ -163,7 +163,7 @@ export default function ClosetSettings() {
         }
 
         try {
-            await api.patch(`/categories/${categoryToEdit._id}`, { newName: newCategoryName, newGroup: newCategoryGroup });
+            await api.patch(`/categories/${categoryToEdit._id}`, { name: newCategoryName, group: newCategoryGroup });
             await getCategories();
         } catch (err) {
             setError({
@@ -314,7 +314,7 @@ export default function ClosetSettings() {
         }
 
         try {
-            await api.patch(`/tags/group/${tagGroupToEdit._id}`, { newTagGroupName: newTagGroupName });
+            await api.patch(`/tags/group/${tagGroupToEdit._id}`, { tagGroupName: newTagGroupName });
             await getTagGroups();
         } catch (err) {
             setError({
@@ -413,7 +413,7 @@ export default function ClosetSettings() {
         }
 
         try {
-            await api.patch(`/tags/tag/${owningTagGroup._id}/${tagToEdit.tagId}`, { newTagName: newTagName, newTagColor: newTagColor });
+            await api.patch(`/tags/tag/${owningTagGroup._id}/${tagToEdit.tagId}`, { tagName: newTagName, tagColor: newTagColor });
             await getTagGroups();
         } catch (err) {
             setError({
@@ -527,12 +527,12 @@ export default function ClosetSettings() {
         if (index === 0) {
             return;
         }
-
         tagGroupsCopy.splice(index, 1);
         tagGroupsCopy.splice(index - 1, 0, tagGroup);
+        const tagGroupIds = tagGroupsCopy.map(group => group._id);
 
         try {
-            await api.patch('/tags/group-order', { tagGroups: tagGroupsCopy });
+            await api.patch('/tags/group-order', { tagGroups: tagGroupIds });
             await getTagGroups();
         } catch (err) {
             setError({

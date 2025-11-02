@@ -164,11 +164,20 @@ export const integrationHelpers = {
         return supertest(app).set('Cookie', this.cookie);
     },
 
-    executeRequest(method, path, params, body) {
+    executeRequest(method, path, params, body, options = {}) {
+        const { isFormData } = options;
         if (params.length) {
             path += '/' + params.join('/');
         }
-        return this.agent()[method](path).send(body);
+        const request = this.agent()[method](path);
+        if (isFormData) {
+            request.type('form').send(body);
+        }
+        else {
+            request.send(body);
+
+        }
+        return request;
     },
 
     testParams(fields, request, body, paramsOrder, options = {}) {
@@ -211,22 +220,22 @@ export const integrationHelpers = {
                         }
                     });
                     const response = await request(orderedParams, resolveBody());
-                    expect(response.status).toBe(400);
                     expect(response.body.message).toMatch(message);
+                    expect(response.status).toBe(400);
                 });
             });
         }
     },
 
-    testBody(fields, request, params) {
+    testBody(fields, request, params, options = {}) {
         const resolveParams = typeof params === 'function' ? params : () => params;
         for (const [field, fieldData] of Object.entries(fields)) {
-            const badValues = testHelpers.generateBadData(fieldData);
+            const badValues = testHelpers.generateBadData(fieldData, options);
             badValues.forEach((value) => {
                 const body = {};
                 for (const [otherField, otherFieldData] of Object.entries(fields)) {
                     if (otherField !== field) {
-                        const otherValue = testHelpers.generateGoodData(otherFieldData)[0];
+                        const otherValue = testHelpers.generateGoodData(otherFieldData, options)[0];
                         body[otherField] = otherValue;
                     }
                 }
@@ -234,15 +243,15 @@ export const integrationHelpers = {
                 const message = testHelpers.getErrorMessage(field, fieldData, value, {});
                 it(`body: should fail with invalid ${field}: ${JSON.stringify(body)}: ${message}`, async () => {
                     const response = await request(resolveParams(), body);
-                    expect(response.status).toBe(400);
                     expect(response.body.message).toMatch(message);
+                    expect(response.status).toBe(400);
                 });
             });
 
             const body = {};
             for (const [otherField, otherFieldData] of Object.entries(fields)) {
                 if (otherField !== field) {
-                    const otherValue = testHelpers.generateGoodData(otherFieldData)[0];
+                    const otherValue = testHelpers.generateGoodData(otherFieldData, options)[0];
                     body[otherField] = otherValue;
                 }
             }
@@ -255,8 +264,8 @@ export const integrationHelpers = {
             else {
                 it(`body: should fail with missing ${field}: ${JSON.stringify(body)}`, async () => {
                     const response = await request(resolveParams(), body);
-                    expect(response.status).toBe(400);
                     expect(response.body.message).toBe(`"${field}" is required`);
+                    expect(response.status).toBe(400);
                 });
             }
             

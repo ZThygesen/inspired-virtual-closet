@@ -65,7 +65,7 @@ describe('files', () => {
             body = {
                 fileSrc: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==',
                 fullFileName: 'Blazin Blazer.png',
-                tags: [ObjectId().toString(), ObjectId().toString()],
+                tags: JSON.stringify([ObjectId().toString(), ObjectId().toString()]),
                 rmbg: false, // keep false by default to keep 429s from happening with Photoroom
                 crop: true,
             };
@@ -73,7 +73,9 @@ describe('files', () => {
             mockRemoveBackground = jest.spyOn(helpers, 'removeBackground');
         });
 
-        const request = (params, body) => integrationHelpers.executeRequest('post', '/files', params, body);
+        const request = (params, body) => integrationHelpers.executeRequest('post', '/files', params, body, {
+            isFormData: true,
+        });
 
         it('should add new file', async () => {
             body.rmbg = true;
@@ -90,13 +92,13 @@ describe('files', () => {
             expect(file).toHaveProperty('gcsId');
             const gcsId = file.gcsId;
             expect(file).toMatchObject({
-                clientId: client._id,
+                clientId: client._id.toString(),
                 fileName: body.fullFileName.split('.')[0],
                 fullFileUrl: `https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`,
                 smallFileUrl: `https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`,
                 fullGcsDest: `test/items/${gcsId}/full.png`,
                 smallGcsDest: `test/items/${gcsId}/small.png`,
-                tags: body.tags,
+                tags: JSON.parse(body.tags),
                 gcsId: gcsId,
             });
 
@@ -108,7 +110,7 @@ describe('files', () => {
         });
 
         it('should add new file with no tags', async () => {
-            body.tags = [];
+            body.tags = JSON.stringify([]);
             const response = await request(params, body);
 
             expect(response.status).toBe(201);
@@ -319,7 +321,9 @@ describe('files', () => {
         integrationHelpers.testParams(schema.post.params.fields, request, () => body, ['clientId', 'categoryId'], {
             checkPermissions: true,
         });
-        integrationHelpers.testBody(schema.post.body.fields, request, () => params);
+        integrationHelpers.testBody(schema.post.body.fields, request, () => params, {
+            isFormData: true,
+        });
         integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body, 201);
     });
     

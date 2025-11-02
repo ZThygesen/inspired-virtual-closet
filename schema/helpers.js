@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { helpers } from '../helpers';
+import { helpers } from '../helpers.js';
 import { ObjectId } from 'mongodb';
 
 export const schemaHelpers = {
@@ -24,6 +24,17 @@ export const schemaHelpers = {
         return async (req, res, next) => {
             try {
                 req.body = await this.validate(schema, req.body);
+                next();
+            } catch (err) {
+                next(err);
+            }
+        };
+    },
+
+    validateFields(schema) {
+        return async (req, res, next) => {
+            try {
+                req.body = await this.validate(schema, req.fields);
                 next();
             } catch (err) {
                 next(err);
@@ -68,6 +79,9 @@ export const schemaHelpers = {
             const type = fieldData.type;
             if (type === 'string') {
                 joiFragment = Joi.string().trim();
+                if (fieldData.pattern) {
+                    joiFragment.pattern(new RegExp(fieldData.pattern));
+                }
             }
             else if (type === 'number') {
                 joiFragment = Joi.number();
@@ -94,7 +108,24 @@ export const schemaHelpers = {
             }
             else if (type === 'array') {
                 const items = this.createSchema({ items: fieldData.items });
-                joiFragment = Joi.array().items(items.extract('items'));
+                joiFragment = Joi.alternatives().try(
+                        Joi.array().items(items.extract('items')),
+                        Joi.string().trim().custom((value, utils) => {
+                            try {
+                                const parsedArray = JSON.parse(value);
+                                if (Array.isArray(parsedArray)) {
+                                    return Joi.attempt(parsedArray, Joi.array().items(items.extract('items')));
+                                }
+                                else {
+                                    return utils.error('any.invalid', { message: `${field} is not an array or a JSON array` });
+                                }
+                            }
+                            catch (err) {
+                                return utils.error('any.invalid', { message: `${field} is not an array or a JSON array (failed JSON.parse)`});
+                            }
+                        })
+                    )
+                    .messages({ 'any.invalid': '{{#message}}' });
             }
 
             if (!fieldData.optional) {

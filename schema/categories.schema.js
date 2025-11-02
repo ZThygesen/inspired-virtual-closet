@@ -1,4 +1,4 @@
-import { schemaHelpers } from './helpers';
+import { schemaHelpers } from './helpers.js';
 
 const schema = {
     post: {

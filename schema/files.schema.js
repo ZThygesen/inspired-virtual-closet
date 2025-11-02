@@ -1,4 +1,4 @@
-import { schemaHelpers } from './helpers';
+import { schemaHelpers } from './helpers.js';
 
 const schema = {
     post: {
@@ -6,6 +6,7 @@ const schema = {
             fields: {
                 clientId: {
                     type: 'objectID',
+                    keepAsString: true,
                 },
                 categoryId: {
                     type: 'objectID',
@@ -16,6 +17,7 @@ const schema = {
             fields: {
                 fileSrc: {
                     type: 'string',
+                    pattern: 'data:image/(png|jpg|jpeg);base64',
                 },
                 fullFileName: {
                     type: 'string',

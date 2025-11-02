@@ -164,12 +164,14 @@ export default function AddItems({ display, updateItems }) {
         if (file.tab === 'clothes' || file.tab === 'profile') {
             return new Promise(async (resolve, reject) => {
                 try {
-                    await api.post(`/files/${client._id}/${file.category.value}`, {
-                        fileSrc: file.src,
-                        fullFileName: file.name,
-                        tags: file.tags,
-                        rmbg: file.rmbg,
-                        crop: file.crop && file.rmbg,
+                    const formData = new FormData();
+                    formData.append('fileSrc', file.src);
+                    formData.append('fullFileName', file.name);
+                    formData.append('tags', JSON.stringify(file.tags));
+                    formData.append('rmbg', file.rmbg);
+                    formData.append('crop', file.crop && file.rmbg);
+                    await api.post(`/files/${client._id}/${file.category.value}`, formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
                     });
                 } catch (err) {
                     reject(err);
