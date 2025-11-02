@@ -171,11 +171,11 @@ describe('moveFilesToOther', () => {
             items: [1, 2, 3, 4, 5]
         };
         await collection.insertOne(data);
+        await insertOther(collection);
     });
 
     afterEach(async () => {
         await clearCollection(collection);
-        await insertOther(collection);
         jest.resetAllMocks();
         jest.restoreAllMocks();
     });

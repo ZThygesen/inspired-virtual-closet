@@ -1,63 +1,31 @@
 import express from 'express';
-import { ObjectId } from 'mongodb';
-import ExpressFormidable from 'express-formidable';
 import cuid2 from '@paralleldrive/cuid2';
 import path from 'path';
 import { helpers } from '../helpers.js';
+import { schemaHelpers } from '../schema/helpers.js';
+import { schema } from '../schema/files.schema.js';
 import { auth } from './auth.js';
+import ExpressFormidable from 'express-formidable';
 
 const files = {
     async post(req, res, next) {
         try {
-            // read in file fields
-            const { fileSrc, fullFileName, categoryId, rmbg, crop } = req?.fields;
-
-            if (!fileSrc) {
-                throw helpers.createError('file source is required to create file', 400);
-            }
-
-            if (!fullFileName) {
-                throw helpers.createError('file name is required to create file', 400);
-            }
-
-            const clientId = req?.params?.clientId;
-            if (!helpers.isValidId(clientId)) {
-                throw helpers.createError('failed to add file: invalid or missing client id', 400);
-            }
-
-            let id;
-            if (helpers.isOtherCategory(categoryId)) {
-                id = 0;
-            }
-            else if (helpers.isValidId(categoryId)) {
-                id = ObjectId(categoryId);
-            }
-            else {
-                throw helpers.createError('failed to add file: invalid or missing category id', 400);
-            }
-
-            if (rmbg === null || rmbg === undefined) {
-                throw helpers.createError('background removal option is required to create file', 400);
-            }
-            const parsedRmbg = rmbg === "true";
-            
-            if (crop === null || crop === undefined) {
-                throw helpers.createError('crop image option is required to create file', 400);
-            }
-            const parsedCrop = crop === "true";
-
             const { db, bucket } = req.locals;
             const collection = db.collection('categories');
-            if ((await collection.find({ _id: id }).toArray()).length !== 1) {
-                throw helpers.createError(`cannot add file: no category or multiple categories with the id "${id.toString()}" exist`, 404);
+            const { clientId, categoryId } = req.params;
+            const { fileSrc, fullFileName, tags, rmbg, crop } = req.body;
+            if ((await collection.find({ _id: categoryId }).toArray()).length !== 1) {
+                throw helpers.createError(`cannot add file: no category or multiple categories with the id "${categoryId.toString()}" exist`, 404);
             }
 
-            if (!req?.user?.isSuperAdmin && !req?.user?.isAdmin && (!parsedRmbg || !parsedCrop)) {
-                throw helpers.createError('non-admins must remove background and crop image on file upload', 403);
+            if (!req?.user?.isSuperAdmin && !req?.user?.isAdmin) {
+                if (!rmbg || !crop) {
+                    throw helpers.createError('non-admins must remove background and crop image on file upload', 403);
+                }
             }
 
-            const isSuperAdmin = await helpers.isSuperAdmin(db, clientId);
             let clientCredits;
+            const isSuperAdmin = await helpers.isSuperAdmin(db, clientId);
             if (!isSuperAdmin) {
                 clientCredits = await helpers.getCredits(db, clientId);
                 if (clientCredits <= 0) {
@@ -80,8 +48,8 @@ const files = {
             }
             
             let fullImgBuffer;
-            if (parsedRmbg) {
-                fullImgBuffer = await helpers.removeBackground(fileSrc, parsedCrop);
+            if (rmbg) {
+                fullImgBuffer = await helpers.removeBackground(fileSrc, crop);
             } else {
                 fullImgBuffer = await helpers.b64ToBuffer(fileSrc);
             }
@@ -104,12 +72,13 @@ const files = {
                 smallFileUrl: smallFileUrl,
                 fullGcsDest: fullGcsDest,
                 smallGcsDest: smallGcsDest,
-                gcsId: gcsId
+                gcsId: gcsId,
+                tags: tags,
             };
     
             // insert file object into db
             const result = await collection.updateOne(
-                { _id: id },
+                { _id: categoryId },
                 {
                     $push: {
                         items: file
@@ -134,18 +103,16 @@ const files = {
 
     async get(req, res, next) {
         try {
-            const clientId = req?.params?.clientId;
-            if (!helpers.isValidId(clientId)) {
-                throw helpers.createError('failed to get files: invalid or missing client id', 400);
-            }
-
             const { db } = req.locals;
             const collection = db.collection('categories');
+            const { clientId } = req.params;
+
             const files = await collection.aggregate([
                 {
                     $project: {
                         _id: 1,
                         name: 1,
+                        group: 1,
                         items: { $filter: {
                             input: '$items',
                             as: 'item',
@@ -163,34 +130,17 @@ const files = {
 
     async patchName(req, res, next) {
         try {
-            const name = req?.body?.newName;
-            if (!name) {
-                throw helpers.createError('file name is required to update file name', 400);
-            }
-
-            let id = req?.params?.categoryId;
-            if (helpers.isOtherCategory(id)) {
-                id = 0;
-            }
-            else if (helpers.isValidId(id)) {
-                id = ObjectId(id);
-            }
-            else {
-                throw helpers.createError('failed to update file name: invalid or missing category id', 400);
-            }
-
-            const gcsId = req?.params?.gcsId;
-            if (!gcsId) {
-                throw helpers.createError('gcs id is required to update file name', 400);
-            }
-
             const { db } = req.locals;
             const collection = db.collection('categories');
+            const { categoryId, gcsId } = req.params;
+            const { name, tags } = req.body;
+
             const result = await collection.updateOne(
-                { _id: id, 'items.gcsId': gcsId },
+                { _id: categoryId, 'items.gcsId': gcsId },
                 {
                     $set: {
-                        'items.$.fileName': name
+                        'items.$.fileName': name,
+                        'items.$.tags' : tags
                     }
                 }
             );
@@ -207,41 +157,12 @@ const files = {
 
     async patchCategory(req, res, next) {
         try {
-            let newCategoryId = req?.body?.newCategoryId;
-            if (helpers.isOtherCategory(newCategoryId)) {
-                newCategoryId = 0;
-            }
-            else if (helpers.isValidId(newCategoryId)) {
-                newCategoryId = ObjectId(newCategoryId);
-            }
-            else {
-                throw helpers.createError('failed to update file category: invalid or missing new category id', 400);
-            }
-
-            let categoryId = req?.params?.categoryId;
-            if (helpers.isOtherCategory(categoryId)) {
-                categoryId = 0;
-            }
-            else if (helpers.isValidId(categoryId)) {
-                categoryId = ObjectId(categoryId);
-            }
-            else {
-                throw helpers.createError('failed to update file category: invalid or missing category id', 400);
-            }
-            
-            const gcsId = req?.params?.gcsId;
-            if (!req?.params?.gcsId) {
-                throw helpers.createError('gcs id is required to update file category', 400);
-            }
-
             const { db } = req.locals;
             const collection = db.collection('categories');
-
-            if ((await collection.find({ _id: newCategoryId }).toArray()).length !== 1) {
-                throw helpers.createError('cannot change file category: no category or multiple categories exist', 404);
-            }
+            const { categoryId, gcsId } = req.params;
+            const { newCategoryId } = req.body;
     
-            // get file from current category and remove it
+            // get file from current category
             const category = await collection.findOne({ _id: categoryId });
             const file = category?.items?.find(item => item?.gcsId === gcsId);
 
@@ -249,7 +170,22 @@ const files = {
                 throw helpers.createError('failed to retrieve file from database', 500);
             }
 
+            // insert into new category
             let result = await collection.updateOne(
+                { _id: newCategoryId },
+                {
+                    $push: {
+                        items: file
+                    }
+                }
+            );
+
+            if (result.modifiedCount === 0) {
+                throw helpers.createError('update of file category failed: file not added to new category', 404);
+            }
+
+            // remove from old category
+            result = await collection.updateOne(
                 { _id: categoryId },
                 {
                     $pull: {
@@ -262,20 +198,6 @@ const files = {
                 throw helpers.createError('update of file category failed: file not removed from current category', 404);
             }
     
-            // now insert to new category
-            result = await collection.updateOne(
-                { _id: newCategoryId },
-                {
-                    $push: {
-                        items: file
-                    }
-                }
-            );
-
-            if (result.modifiedCount === 0) {
-                throw helpers.createError('update of file category failed: file not added to new category', 404);
-            }
-    
             res.status(200).json({ message: 'Success!' });
         } catch (err) {
             next(err);
@@ -284,31 +206,19 @@ const files = {
 
     async delete(req, res, next) {
         try {
-            let categoryId = req?.params?.categoryId;
-            if (helpers.isOtherCategory(categoryId)) {
-                categoryId = 0;
-            } 
-            else if (helpers.isValidId(categoryId)) {
-                categoryId = ObjectId(categoryId);
-            }
-            else {
-                throw helpers.createError('failed to delete file: invalid or missing category id', 400)
-            }
-            
-            const gcsId = req?.params?.gcsId;
-            if (!gcsId) {
-                throw helpers.createError('gcs id is required to delete file', 400);
-            }
-
-            // get file from db
             const { db, bucket } = req.locals;
             const collection = db.collection('categories');
+            const { categoryId, gcsId } = req.params;
 
+            // get file from db
             const category = await collection.findOne({ _id: categoryId });
             const file = category?.items?.find(item => item?.gcsId === gcsId);
 
-            if (!file?.fullGcsDest || !file?.smallGcsDest) {
+            if (!file) {
                 throw helpers.createError('failed to retrieve file from database', 500);
+            }
+            if (!file?.fullGcsDest || !file?.smallGcsDest) {
+                throw helpers.createError('file does not have both a full and small gcs path', 500);
             }
     
             // delete files from GCS
@@ -338,10 +248,34 @@ const files = {
 
 const router = express.Router();
 
-router.post('/:clientId', auth.checkPermissions, ExpressFormidable(), files.post);
-router.get('/:clientId', auth.checkPermissions, files.get);
-router.patch('/:clientId/:categoryId/:gcsId', auth.checkPermissions, files.patchName);
-router.patch('/category/:clientId/:categoryId/:gcsId', auth.checkPermissions, files.patchCategory);
-router.delete('/:clientId/:categoryId/:gcsId', auth.checkPermissions, files.delete);
+router.post('/:clientId/:categoryId', 
+    auth.checkPermissions,
+    ExpressFormidable(),
+    schemaHelpers.validateParams(schema.post.params.schema),
+    schemaHelpers.validateFields(schema.post.body.schema),
+    files.post,
+);
+router.get('/:clientId',
+    auth.checkPermissions,
+    schemaHelpers.validateParams(schema.get.params.schema),
+    files.get,
+);
+router.patch('/:clientId/:categoryId/:gcsId', 
+    auth.checkPermissions, 
+    schemaHelpers.validateParams(schema.patchName.params.schema),
+    schemaHelpers.validateBody(schema.patchName.body.schema),
+    files.patchName,
+);
+router.patch('/category/:clientId/:categoryId/:gcsId', 
+    auth.checkPermissions, 
+    schemaHelpers.validateParams(schema.patchCategory.params.schema),
+    schemaHelpers.validateBody(schema.patchCategory.body.schema),
+    files.patchCategory,
+);
+router.delete('/:clientId/:categoryId/:gcsId', 
+    auth.checkPermissions,
+    schemaHelpers.validateParams(schema.delete.params.schema),
+    files.delete,
+);
 
 export { files, router as filesRouter };

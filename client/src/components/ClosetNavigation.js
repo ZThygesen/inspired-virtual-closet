@@ -9,8 +9,10 @@ import Canvas from './Canvas';
 import Outfits from './Outfits';
 import Shopping from './Shopping';
 import AddItems from './AddItems';
+import Profile from './Profile';
 import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
 import { useUser } from './UserContext';
+import { useData } from './DataContext';
 import { useSidebar } from './SidebarContext';
 
 const logoCanvasItem = {
@@ -27,7 +29,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
 
     const [closetMode, setClosetMode] = useState(0);
     const [currCategory, setCurrCategory] = useState(category?.name);
-    const [showIcons, setShowIcons] = useState(window.innerWidth > 700 ? false : true);
+    const [showIcons, setShowIcons] = useState(window.innerWidth > 740 ? false : true);
     const [canvasItems, setCanvasItems] = useState([logoCanvasItem]);
 
     const [outfits, setOutfits] = useState([]);
@@ -40,6 +42,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
 
     const { sidebarOpen, setSidebarOpen, mobileMode, currCategoryClicked, setCurrCategoryClicked } = useSidebar();
     const { user } = useUser();
+    const { updateData, resolveTagIds } = useData();
 
     const ref = useRef();
 
@@ -53,13 +56,13 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
     useEffect(() => {
         function handleResize() {
             if (user?.isAdmin || user?.isSuperAdmin) {
-                if (window.innerWidth <= 700) {
+                if (window.innerWidth <= 740) {
                     setShowIcons(true);
                 } else {
                     setShowIcons(false);
                 }
             } else {
-                if (window.innerWidth <= 600) {
+                if (window.innerWidth <= 640) {
                     setShowIcons(true);
                 } else {
                     setShowIcons(false);
@@ -85,7 +88,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
         if (category.name !== currCategory || currCategoryClicked) {
             setCurrCategory(category.name);
             scrollToRef(ref);
-            if (closetMode !== 0 && closetMode !== 1 && closetMode !== 4) {
+            if (closetMode !== 0 && closetMode !== 1) {
                 setClosetMode(0);
             }
             setCurrCategoryClicked(false);
@@ -93,9 +96,18 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
     }, [category, currCategory, closetMode, currCategoryClicked, setCurrCategoryClicked]);
 
     async function updateItems(animateLoad = false) {
+        await updateData();
         await getCategories(category, animateLoad);
-        setClosetMode(0);
+        // setClosetMode(0);
     }
+
+    useEffect(() => {
+        category?.items?.forEach(item => {
+            const resolvedTags = resolveTagIds(item?.tags || []);
+            const tagNames = resolvedTags.map(tag => tag.tagName);
+            item.tagNames = tagNames;
+        });
+    }, [category, resolveTagIds]);
 
     const addCanvasItem = useCallback((item, type) => {
         let canvasItem;
@@ -176,6 +188,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
     }
 
     const getOutfits = useCallback(async (changeMode = false) => {
+        await updateData();
         try {
             const response = await api.get(`/outfits/${client._id}`);
             
@@ -191,13 +204,14 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
                 status: err.response.status
             });
         }
-    }, [client, setError]);
+    }, [client, setError, updateData]);
 
     useEffect(() => {
         getOutfits();
     }, [getOutfits]);
 
     const getShoppingItems = useCallback(async () => {
+        await updateData();
         try {
             const response = await api.get(`/shopping/${client._id}`);
             setShoppingItems(response.data);
@@ -207,7 +221,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
                 status: err.response.status
             });
         }
-    }, [client, setError]);
+    }, [client, setError, updateData]);
 
     useEffect(() => {
         getShoppingItems();
@@ -218,7 +232,8 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
         { name: `Canvas (${canvasItems.length - 1})`, icon: 'swipe'},
         { name: `Outfits (${outfits.length})`, icon: 'dry_cleaning'},
         { name: `Shopping (${shoppingItems.length})`, icon: 'sell'},
-        { name: 'Add Items', icon: 'add_box'}
+        { name: 'Profile', icon: 'person'},
+        { name: 'Add', icon: 'add_box'}
     ];
 
     return (
@@ -302,9 +317,11 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
                         shoppingItems={shoppingItems}
                         updateShoppingItems={getShoppingItems}
                     />
-                    <AddItems   
+                    <Profile 
                         display={closetMode === 4}
-                        category={category}
+                    />
+                    <AddItems   
+                        display={closetMode === 5}
                         updateItems={updateItems} 
                     />
                 </div>

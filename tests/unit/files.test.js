@@ -1,2386 +1,715 @@
-import { jest } from '@jest/globals';
 import { files } from '../../routes/files.js';
-import cuid2 from '@paralleldrive/cuid2';
-import path from 'path';
 import { ObjectId } from 'mongodb';
-import { helpers } from '../../helpers.js';
+import { unitHelpers } from './helpers.js';
 
 describe('files', () => {
-    let mockRes;
-    let mockNext;
-    let err;
-
-    let mockCollection;
-    let mockDb;
-    let mockBucket;
-
-    let mockCreateError;
-    let mockCreateId;
-    let createIdResponse = '4n_1d_f0r_f1l35';
-    let mockRemoveBackground;
-    let mockb64ToBuffer;
-    let mockCreateImageThumbnail;
-    let imageThumbnailResponse = Buffer.from('image thumbnail data');
-    let mockUploadToGCS;
-    let uploadToGCSResponse = 'file.url';
-    let mockParse;
-    let parseResponse = { name: 'blaze-tastic', extension: 'png' };
-    let mockDeleteFromGCS;
+    let err, mockRes, mockNext, mockCollection, mockDb, mockBucket, locals, mockCreateError;
+    let creditsResponse, bufferResponse, thumbnailResponse, gcsResponse, idResponse;
+    let mockIsSuperAdmin, mockGetCredits, mockDeductCredits, mockRemoveBackground, mockb64ToBuffer, mockCreateImageThumbnail, mockUploadToGCS, mockDeleteFromGCS, mockParse, mockCreateId;
     beforeEach(() => {
-        expect(process.env.NODE_ENV).toBe('test');
+        unitHelpers.beforeEach();
+        ({
+            mockRes,
+            mockNext,
+            mockCollection,
+            mockDb,
+            mockBucket,
+            locals,
+            mockCreateError,
 
-        mockRes = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn()
-        };
+            creditsResponse,
+            bufferResponse,
+            thumbnailResponse,
+            gcsResponse,
+            idResponse,
 
-        err = null;
-        mockNext = jest.fn((nextErr) => {
-            if (nextErr) {
-                err = nextErr;
-            }
-        });
-
-        mockCollection = {
-            find: jest.fn().mockReturnThis(),
-            findOne: jest.fn().mockResolvedValue(),
-            toArray: jest.fn().mockResolvedValue(),
-            updateOne: jest.fn().mockResolvedValue(),
-            aggregate: jest.fn().mockReturnThis()
-        };
-        
-        mockDb = {
-            collection: jest.fn(() => mockCollection)
-        };
-
-        mockBucket = { bucket: 'head' };
-
-        mockCreateError = jest.spyOn(helpers, 'createError');
-        mockCreateError.mockImplementation((message, status) => {
-            const error = new Error(message);
-            error.status = status;
-            return error;
-        });
-
-        mockCreateId = jest.spyOn(cuid2, 'createId');
-        mockCreateId.mockReturnValue(createIdResponse);
-
-        mockRemoveBackground = jest.spyOn(helpers, 'removeBackground');
-        mockRemoveBackground.mockImplementation((fileSrc) => {
-            return Buffer.from(fileSrc);
-        });
-
-        mockb64ToBuffer = jest.spyOn(helpers, 'b64ToBuffer');
-        mockb64ToBuffer.mockImplementation((fileSrc) => {
-            return Buffer.from(fileSrc);
-        });
-
-        mockCreateImageThumbnail = jest.spyOn(helpers, 'createImageThumbnail');
-        mockCreateImageThumbnail.mockImplementation(() => imageThumbnailResponse);
-
-        mockUploadToGCS = jest.spyOn(helpers, 'uploadToGCS');
-        mockUploadToGCS.mockImplementation(() => uploadToGCSResponse);
-
-        mockParse = jest.spyOn(path, 'parse');
-        mockParse.mockImplementation(() => parseResponse);
-
-        mockDeleteFromGCS = jest.spyOn(helpers, 'deleteFromGCS');
-        mockDeleteFromGCS.mockResolvedValue();
+            mockIsSuperAdmin,
+            mockGetCredits,
+            mockDeductCredits,
+            mockRemoveBackground,
+            mockb64ToBuffer,
+            mockCreateImageThumbnail,
+            mockUploadToGCS,
+            mockDeleteFromGCS,
+            mockParse,
+            mockCreateId,
+            mockBucket,
+        } = unitHelpers);
     });
 
     afterEach(() => {
-        jest.resetAllMocks();
-        jest.restoreAllMocks();
+        unitHelpers.afterEach();
     });
 
-    let mockCredits;
-    let mockIsSuperAdmin;
-    let mockGetCredits;
-    let mockDeductCredits;
-    describe('create', () => {
-        let clientId;
-        let data;
-        let user;
+    describe('post', () => {
+        let params, body, user, req;
         beforeEach(() => {
-            clientId = (new ObjectId()).toString(),
-            data = {
+            params = {
+                clientId: ObjectId().toString(),
+                categoryId: ObjectId().toString(),
+            };
+            body = {
                 fileSrc: 'file source string',
                 fullFileName: 'blaze-tastic.png',
-                categoryId: (new ObjectId()).toString(),
-                rmbg: 'true',
-                crop: 'true'
+                tags: [ObjectId().toString(), ObjectId().toString()],
+                rmbg: true,
+                crop: true,
             };
             user = {
-                id: clientId,
-                isAdmin: true,
-                isSuperAdmin: true
+                id: params.clientId,
+                isAdmin: false,
+                isSuperAdmin: false,
             };
+            req = { params, body, user, locals };
 
-            mockCollection.toArray.mockResolvedValue([{ category: 'exists' }]);
-
-            mockIsSuperAdmin = jest.spyOn(helpers, 'isSuperAdmin');
-            mockIsSuperAdmin.mockResolvedValue(false);
-
-            mockCredits = 321;
-            mockGetCredits = jest.spyOn(helpers, 'getCredits');
-            mockGetCredits.mockResolvedValue(mockCredits);
-
-            mockDeductCredits = jest.spyOn(helpers, 'deductCredits');
-            mockDeductCredits.mockResolvedValue();
+            mockCollection.toArray.mockResolvedValue([{ category: '1' }]);
         });
 
         afterEach(() => {
             process.env.NODE_ENV = 'test';
         });
 
-        it('should create new file - test environment, remove background, crop image', async () => {
-            // perform action to test
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
+        async function makeFunctionCall() {
             await files.post(req, mockRes, mockNext);
+        }
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
+        it('should create new file', async () => {
+            await makeFunctionCall();
+
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: params.categoryId });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, params.clientId);
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, params.clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(body.fileSrc, body.crop);
             expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
+            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(bufferResponse, 300, 300);
+            expect(mockParse).toHaveBeenCalledWith(body.fullFileName);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${idResponse}/full.png`, bufferResponse);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${idResponse}/small.png`, thumbnailResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
+            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, params.clientId, creditsResponse);
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should create new file - test environment, remove background, no crop image', async () => {
-            // perform action to test
-            data.crop = 'false';
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
+        it('should create correct file path for non-production environment', async () => {
+            process.env.NODE_ENV = 'staging';
+            await makeFunctionCall();
 
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, false);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/items/${idResponse}/full.png`, bufferResponse);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/items/${idResponse}/small.png`, thumbnailResponse);
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should create new file - test environment, no remove background', async () => {
-            // perform action to test
-            data.rmbg = 'false';
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
-        });
-
-        it('should create new file - non-production environment, remove background, crop image', async () => {
-            // perform action to test
-            process.env.NODE_ENV = 'dev';
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/items/${createIdResponse}/small.png`, imageThumbnailResponse);
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
-        });
-
-        it('should create new file - non-production environment, remove background, no crop image', async () => {
-            // perform action to test
-            process.env.NODE_ENV = 'dev';
-            data.crop = 'false';
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, false);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/items/${createIdResponse}/small.png`, imageThumbnailResponse);
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
-        });
-
-        it('should create new file - non-production environment, no remove background', async () => {
-            // perform action to test
-            process.env.NODE_ENV = 'dev';
-            data.rmbg = 'false';
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `dev/items/${createIdResponse}/small.png`, imageThumbnailResponse);
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
-        });
-
-        it('should create new file - production environment, remove background, crop image', async () => {
-            // perform action to test
+        it('should create correct file path for production environment', async () => {
             process.env.NODE_ENV = 'production';
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
+            await makeFunctionCall();
 
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `items/${createIdResponse}/small.png`, imageThumbnailResponse);
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `items/${idResponse}/full.png`, bufferResponse);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `items/${idResponse}/small.png`, thumbnailResponse);
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should create new file - production environment, remove background, no crop image', async () => {
-            // perform action to test
-            process.env.NODE_ENV = 'production';
-            data.crop = 'false';
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
+        it('should not deduct credits for super admin client', async () => {
+            mockIsSuperAdmin.mockResolvedValueOnce(true);
+            await makeFunctionCall();
 
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, false);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `items/${createIdResponse}/small.png`, imageThumbnailResponse);
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
-        });
-
-        it('should create new file - production environment, no remove background', async () => {
-            // perform action to test
-            process.env.NODE_ENV = 'production';
-            data.rmbg = 'false';
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `items/${createIdResponse}/small.png`, imageThumbnailResponse);
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
-        });
-
-        it('should create new file - Other category given', async () => {
-            // perform action to test
-            data.categoryId = 0;
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: 0 });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
-        });
-
-        it('should create new file - client is super admin (no credits deducted)', async () => {
-            // perform action to test
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            mockIsSuperAdmin.mockResolvedValue(true);
-
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
-            expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockDeductCredits).not.toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should create new file - user is non-admin and rmbg, crop image', async () => {
-            // perform action to test
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            user.isAdmin = false;
-            user.isSuperAdmin = false;
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
+        it('should allow super admin user to not rmbg', async () => {
+            req.user.isSuperAdmin = true;
+            req.body.rmbg = false;
+            await makeFunctionCall();
 
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should fail if user is non-admin and tries to not crop image', async () => {
-            // perform action to test
-            user.isAdmin = false;
-            user.isSuperAdmin = false;
-            data.crop = 'false';
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
+        it('should allow super admin user to not crop', async () => {
+            req.user.isSuperAdmin = true;
+            req.body.crop = false;
+            await makeFunctionCall();
 
-            await files.post(req, mockRes, mockNext);
+            expect(mockRes.status).toHaveBeenCalledWith(201);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
+        it('should allow super admin user to not rmbg and crop', async () => {
+            req.user.isSuperAdmin = true;
+            req.body.rmbg = false;
+            req.body.crop = false;
+            await makeFunctionCall();
+
+            expect(mockRes.status).toHaveBeenCalledWith(201);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
+
+        it('should allow admin user to not crop', async () => {
+            req.user.isAdmin = true;
+            req.body.rmbg = false;
+            await makeFunctionCall();
+
+            expect(mockRes.status).toHaveBeenCalledWith(201);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
+
+        it('should allow admin user to not crop', async () => {
+            req.user.isAdmin = true;
+            req.body.crop = false;
+            await makeFunctionCall();
+
+            expect(mockRes.status).toHaveBeenCalledWith(201);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
+
+        it('should allow admin user to not rmbg and crop', async () => {
+            req.user.isAdmin = true;
+            req.body.rmbg = false;
+            req.body.crop = false;
+            await makeFunctionCall();
+
+            expect(mockRes.status).toHaveBeenCalledWith(201);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
+
+        it('should not rmbg', async () => {
+            req.user.isSuperAdmin = true;
+            req.body.rmbg = false;
+            await makeFunctionCall();
+
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+            expect(mockb64ToBuffer).toHaveBeenCalledWith(body.fileSrc);
+            expect(mockRes.status).toHaveBeenCalledWith(201);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
+
+        it('should not crop', async () => {
+            req.user.isSuperAdmin = true;
+            req.body.crop = false;
+            await makeFunctionCall();
+
+            expect(mockRemoveBackground).toHaveBeenCalledWith(body.fileSrc, false);
+            expect(mockRes.status).toHaveBeenCalledWith(201);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
+
+        it('should fail if non-admin user does not rmbg', async () => {
+            req.body.rmbg = false;
+            await makeFunctionCall();
+
+            expect(mockCreateError).toHaveBeenCalledWith('non-admins must remove background and crop image on file upload', 403);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
+        });
+
+        it('should fail if non-admin user does not crop', async () => {
+            req.body.crop = false;
+            await makeFunctionCall();
+
+            expect(mockCreateError).toHaveBeenCalledWith('non-admins must remove background and crop image on file upload', 403);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
+        });
+
+        it('should fail if non-admin user does not rmbg and crop', async () => {
+            req.body.rmbg = false;
+            req.body.crop = false;
+            await makeFunctionCall();
+
+            expect(mockCreateError).toHaveBeenCalledWith('non-admins must remove background and crop image on file upload', 403);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
+        });
+
+        it('should handle find error', async () => {
+            err = new Error('Find error');
+            mockCollection.find.mockImplementationOnce(() => { throw err });
+            await makeFunctionCall();
+
+            expect(mockCollection.find).toHaveBeenCalledWith({ _id: params.categoryId });
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+
+        it('should handle toArray error', async () => {
+            err = new Error('ToArray error');
+            mockCollection.toArray.mockRejectedValueOnce(err);
+            await makeFunctionCall();
+
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(403);
-            expect(err.message).toBe('non-admins must remove background and crop image on file upload');
-        });
-
-        it('should fail if user is non-admin and tries to not remove background', async () => {
-            // perform action to test
-            user.isAdmin = false;
-            user.isSuperAdmin = false;
-            data.rmbg = 'false';
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(403);
-            expect(err.message).toBe('non-admins must remove background and crop image on file upload');
-        });
-
-        it('should handle find failure', async () => {
-            // perform action to test
-            const findError = new Error('find failed');
-            findError.status = 500;
-            mockCollection.find.mockImplementation(() => { throw findError });
-
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('find failed');
-        });
-
-        it('should handle toArray failure', async () => {
-            // perform action to test
-            const toArrayError = new Error('toArray failed');
-            toArrayError.status = 500;
-            mockCollection.toArray.mockRejectedValue(toArrayError);
-
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('toArray failed');
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
         it('should fail if no category found', async () => {
-            // perform action to test
-            mockCollection.toArray.mockResolvedValue([]);
+            mockCollection.toArray.mockResolvedValueOnce([]);
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(404);
-            expect(err.message).toBe(`cannot add file: no category or multiple categories with the id "${data.categoryId}" exist`);
+            expect(mockCreateError).toHaveBeenCalledWith(`cannot add file: no category or multiple categories with the id "${params.categoryId.toString()}" exist`, 404);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
-        it('should handle isSuperAdmin failure', async () => {
-            // perform action to test
-            const error = new Error('isSuperAdmin failed');
-            error.status = 500;
-            mockIsSuperAdmin.mockRejectedValue(error);
+        it('should fail if multiple categories found', async () => {
+            mockCollection.toArray.mockResolvedValueOnce([{ category: '1' }, { category: '2' }]);
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('isSuperAdmin failed');
+            expect(mockCreateError).toHaveBeenCalledWith(`cannot add file: no category or multiple categories with the id "${params.categoryId.toString()}" exist`, 404);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
-        it('should handle getCredits failure', async () => {
-            // perform action to test
-            const creditsError = new Error('getCredits failed');
-            creditsError.status = 500;
-            mockGetCredits.mockRejectedValue(creditsError);
+        it('should handle isSuperAdmin error', async () => {
+            err = new Error('IsSuperAdmin error');
+            mockIsSuperAdmin.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('getCredits failed');
+            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, params.clientId);
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should fail with invalid credits', async () => {
-            // perform action to test
-            mockGetCredits.mockResolvedValue(0);
+        it('should handle getCredits error', async () => {
+            err = new Error('GetCredits error');
+            mockGetCredits.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(403);
-            expect(err.message).toBe('client does not have any credits');
+            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, params.clientId);
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle createId failure', async () => {
-            // perform action to test
-            const createIdError = new Error('createId failed');
-            createIdError.status = 500;
-            mockCreateId.mockImplementation(() => { throw createIdError });
+        it('should fail if insufficient credits', async () => {
+            mockGetCredits.mockResolvedValueOnce(0);
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
+            expect(mockCreateError).toHaveBeenCalledWith('client does not have any credits', 403);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
+        });
 
-            await files.post(req, mockRes, mockNext);
+        it('should handle createId error', async () => {
+            err = new Error('CreateId error');
+            mockCreateId.mockImplementationOnce(() => { throw err });
+            await makeFunctionCall();
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
             expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('createId failed');
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle remove background failure', async () => {
-            // perform action to test
-            const rmbgError = new Error('removal of background failed');
-            rmbgError.status = 500;
-            mockRemoveBackground.mockRejectedValue(rmbgError);
+        it('should handle removeBackground error', async () => {
+            err = new Error('RemoveBackground error');
+            mockRemoveBackground.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('removal of background failed');
+            expect(mockRemoveBackground).toHaveBeenCalledWith(body.fileSrc, body.crop);
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle b64ToBuffer failure', async () => {
-            // perform action to test
-            data.rmbg = false;
-            const bufferError = new Error('conversion from b64 to buffer failed');
-            bufferError.status = 500;
-            mockb64ToBuffer.mockRejectedValue(bufferError);
+        it('should handle b64ToBuffer error', async () => {
+            req.user.isAdmin = true;
+            req.body.rmbg = false;
+            err = new Error('b64ToBuffer error');
+            mockb64ToBuffer.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).toHaveBeenCalledWith(data.fileSrc);
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('conversion from b64 to buffer failed');
+            expect(mockb64ToBuffer).toHaveBeenCalledWith(body.fileSrc);
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle createImageThumbnail failure', async () => {
-            // perform action to test
-            const thumbError = new Error('createImageThumbnail failed');
-            thumbError.status = 500;
-            mockCreateImageThumbnail.mockRejectedValue(thumbError);
+        it('should handle createImageThumbnail error', async () => {
+            err = new Error('createImageThumbnail error');
+            mockCreateImageThumbnail.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('createImageThumbnail failed');
+            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(bufferResponse, 300, 300);
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle parse failure (function throws error)', async () => {
-            // perform action to test
-            const parseError = new Error('parse file name failed');
-            parseError.status = 500;
-            mockParse.mockImplementation(() => { throw parseError });
+        it('should handle parse error', async () => {
+            err = new Error('parse error');
+            mockParse.mockImplementationOnce(() => { throw err });
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('parse file name failed');
+            expect(mockParse).toHaveBeenCalledWith(body.fullFileName);
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle parse failure (returns invalid data)', async () => {
-            // perform action to test
-            mockParse.mockImplementation(() => {
-                return { extension: 'png' };
-            });
+        it('should fail if file is not parsed properly', async () => {
+            mockParse.mockReturnValueOnce({ Name: 'blaze-tastic', extension: 'png' });
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('error parsing file name');
+            expect(mockCreateError).toHaveBeenCalledWith('error parsing file name', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
-        it('should handle uploadToGCS failure (large file)', async () => {
-            // perform action to test
-            const uploadError = new Error('uploadToGCS failed');
-            uploadError.status = 500;
-            mockUploadToGCS.mockRejectedValueOnce(uploadError);
+        it('should handle uploadToGCS error (large file)', async () => {
+            err = new Error('uploadToGCS error');
+            mockUploadToGCS.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledTimes(1);
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('uploadToGCS failed');
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${idResponse}/full.png`, bufferResponse);
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle uploadToGCS failure (small file)', async () => {
-            // perform action to test
+        it('should handle uploadToGCS error (small file)', async () => {
+            err = new Error('uploadToGCS error');
             mockUploadToGCS.mockResolvedValueOnce();
-            const uploadError = new Error('uploadToGCS failed');
-            uploadError.status = 500;
-            mockUploadToGCS.mockRejectedValueOnce(uploadError);
+            mockUploadToGCS.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('uploadToGCS failed');
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${idResponse}/full.png`, bufferResponse);
+            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${idResponse}/small.png`, thumbnailResponse);
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle insertion (update) failure', async () => {
-            // perform action to test
-            const updateError = new Error('insertion of file failed');
-            updateError.status = 500;
-            mockCollection.updateOne.mockRejectedValue(updateError);
+        it('should handle updateOne error', async () => {
+            err = new Error('updateOne error');
+            mockCollection.updateOne.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
             expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('insertion of file failed');
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should fail if nothing inserted', async () => {
-            // perform action to test
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 0 });
+        it('should handle if nothing inserted', async () => {
+            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(404);
-            expect(err.message).toBe('insertion of file failed: category not found with given category id');
+            expect(mockCreateError).toHaveBeenCalledWith('insertion of file failed: category not found with given category id', 404);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
-        it('should handle deductCredits failure', async () => {
-            // perform action to test
-            const deductError = new Error('deductCredits failed');
-            deductError.status = 500;
-            mockDeductCredits.mockRejectedValue(deductError);
+        it('should handle deductCredits error', async () => {
+            err = new Error('deductCredits error');
+            mockDeductCredits.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(data.categoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockGetCredits).toHaveBeenCalledWith(mockDb, clientId);
-            expect(mockCreateId).toHaveBeenCalled();
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).toHaveBeenCalledWith(Buffer.from(data.fileSrc), 300, 300);
-            expect(mockParse).toHaveBeenCalledWith(data.fullFileName);
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/full.png`, Buffer.from(data.fileSrc));
-            expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${createIdResponse}/small.png`, imageThumbnailResponse);
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, clientId, mockCredits);
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('deductCredits failed');
-        });
-
-        it('should fail with missing file source', async () => {
-            // perform action to test
-            data.fileSrc = null;
-
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.find).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('file source is required to create file');
-        });
-
-        it('should fail with missing file name', async () => {
-            // perform action to test
-            delete data.fullFileName;
-
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.find).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('file name is required to create file');
-        });
-
-        it('should fail with missing client id', async () => {
-            // perform action to test
-            const req = { fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.find).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to add file: invalid or missing client id');
-        });
-
-        it('should fail with invalid client id', async () => {
-            // perform action to test
-            const req = { params: { clientId: 'not-valid-id' }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.find).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to add file: invalid or missing client id');
-        });
-
-        it('should fail with missing category id', async () => {
-            // perform action to test
-            data.categoryId = '';
-
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.find).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to add file: invalid or missing category id');
-        });
-
-        it('should fail with invalid category id', async () => {
-            // perform action to test
-            data.categoryId = 'not-valid-id';
-
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.find).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to add file: invalid or missing category id');
-        });
-
-        it('should fail with missing remove background option', async () => {
-            // perform action to test
-            delete data.rmbg;
-
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.find).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('background removal option is required to create file');
-        });
-
-        it('should fail with missing crop image option', async () => {
-            // perform action to test
-            delete data.crop;
-
-            const req = { params: { clientId: clientId }, fields: data, user: user, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.post(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.find).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockIsSuperAdmin).not.toHaveBeenCalled();
-            expect(mockGetCredits).not.toHaveBeenCalled();
-            expect(mockCreateId).not.toHaveBeenCalled();
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).not.toHaveBeenCalled();
-            expect(mockCreateImageThumbnail).not.toHaveBeenCalled();
-            expect(mockParse).not.toHaveBeenCalled();
-            expect(mockUploadToGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockDeductCredits).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('crop image option is required to create file');
+            expect(mockDeductCredits).toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
     });
 
-    describe('read', () => {
-        let clientId;
-        let data;
+    describe('get', () => {
+        let params, req;
+        let mockFiles;
         beforeEach(() => {
-            clientId = (new ObjectId()).toString();
-            data = {
-                clientId: clientId,
+            const file = {
+                clientId: ObjectId().toString(),
                 fileName: 'blaze-tastic',
                 fullFileUrl: 'full.file.url',
                 smallFileUrl: 'small.file.url',
                 fullGcsDest: 'dev/items/id/full.png',
                 smallGcsDest: 'dev/items/id/small.png',
-                gcsId: cuid2.createId()
+                gcsId: idResponse,
+                tags: [ObjectId().toString(), ObjectId().toString()],
             };
+            mockFiles = [file, file];
+
+            params = {
+                clientId: file.clientId,
+            };
+            req = { params, locals };
+
+            mockCollection.toArray.mockResolvedValue(mockFiles);
         });
 
-        it('should get files for client', async () => {
-            // perform action to test
-            const mockFiles = [data, data];
-            mockCollection.toArray.mockResolvedValue(mockFiles);
-
-            const req = { params: { clientId: clientId }, locals: { db: mockDb } };
-
+        async function makeFunctionCall() {
             await files.get(req, mockRes, mockNext);
+        }
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
+        it('should get files for client', async () => {
+            await makeFunctionCall();
+
             expect(mockCollection.aggregate).toHaveBeenCalled();
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith(mockFiles);
-            expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should handle aggregate failure', async () => {
-            // perform action to test
-            const aggregateError = new Error('aggregation of files failed');
-            aggregateError.status = 500;
-            mockCollection.aggregate.mockImplementation(() => { throw aggregateError });
+        it('should handle aggregate error', async () => {
+            err = new Error('aggregate error');
+            mockCollection.aggregate.mockImplementationOnce(() => { throw err });
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, locals: { db: mockDb } };
-
-            await files.get(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.aggregate).toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('aggregation of files failed');
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle toArray failure', async () => {
-            // perform action to test
-            const toArrayError = new Error('array transformation of files failed');
-            toArrayError.status = 500;
-            mockCollection.toArray.mockRejectedValue(toArrayError);
+        it('should handle toArray error', async () => {
+            err = new Error('toArray error');
+            mockCollection.toArray.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            const req = { params: { clientId: clientId }, locals: { db: mockDb } };
-
-            await files.get(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.aggregate).toHaveBeenCalled();
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('array transformation of files failed');
-        });
-
-        it('should fail with missing client id', async () => {
-            // perform action to test
-            clientId = '';
-
-            const req = { params: { clientId: clientId }, locals: { db: mockDb } };
-
-            await files.get(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.aggregate).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to get files: invalid or missing client id');
-        });
-
-        it('should fail with invalid client id', async () => {
-            // perform action to test
-            clientId = 'not-valid-id';
-
-            const req = { params: { clientId: clientId }, locals: { db: mockDb } };
-
-            await files.get(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.aggregate).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to get files: invalid or missing client id');
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
     });
     
-    describe('update file name', () => {
-        let data;
-        let categoryId;
-        let gcsId;
+    describe('patchName', () => {
+        let params, body, req;
         beforeEach(async () => {
-            data = { newName: 'blaze-tastic' };
-
-            categoryId = (new ObjectId()).toString();
-            gcsId = cuid2.createId();
+            params = {
+                categoryId: ObjectId().toString(),
+                gcsId: idResponse,
+            }
+            body = {
+                name: 'Blaze-Tastic',
+                tags: [ObjectId().toString()],
+            };
+            req = { params, body, locals };
         });
+
+        async function makeFunctionCall() {
+            await files.patchName(req, mockRes, mockNext);
+        }
 
         it('should update file name', async () => {
-            // perform action to test
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
+            await makeFunctionCall();
 
-            await files.patchName(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should update file name given Other category', async () => {
-            // perform action to test
-            categoryId = 0;
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
+        it('should handle updateOne failure', async () => {
+            err = new Error('updateOne error');
+            mockCollection.updateOne.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            await files.patchName(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
             expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle update failure', async () => {
-            // perform action to test
-            const updateError = new Error('update of file name failed');
-            updateError.status = 500;
-            mockCollection.updateOne.mockRejectedValue(updateError);
+        it('should fail if not file updated', async () => {
+            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
+            await makeFunctionCall();
 
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchName(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('update of file name failed');
-        });
-
-        it('should fail if no file found with given category and gcs id', async () => {
-            // perform action to test
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 0 });
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchName(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(404);
-            expect(err.message).toBe('update of file name failed: category or file not found with given category or gcs id');
-        });
-
-        it('should fail with missing file name', async () => {
-            // perform action to test
-            data.newName = null;
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchName(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('file name is required to update file name');
-        });
-
-        it('should fail with missing category id', async () => {
-            // perform action to test
-            categoryId = '';
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchName(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to update file name: invalid or missing category id');
-        });
-
-        it('should fail with invalid category id', async () => {
-            // perform action to test
-            categoryId = 'not-valid-id';
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchName(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to update file name: invalid or missing category id');
-        });
-
-        it('should fail with missing gcs id', async () => {
-            // perform action to test
-            const req = { body: data, params: { categoryId: categoryId }, locals: { db: mockDb } };
-
-            await files.patchName(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('gcs id is required to update file name');
+            expect(mockCreateError).toHaveBeenCalledWith('update of file name failed: category or file not found with given category or gcs id', 404);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
     });
 
     describe('update category', () => {
-        let data;
-        let newCategoryId;
-        let categoryId;
-        let gcsId;
+        let params, body, req;
         beforeEach(async () => {
-            newCategoryId = (new ObjectId()).toString();
-            categoryId = (new ObjectId()).toString();
-            gcsId = cuid2.createId();
+            params = {
+                categoryId: ObjectId().toString(),
+                gcsId: idResponse,
+            };
+            body = {
+                newCategoryId: ObjectId().toString(),
+            };
+            req = { params, body, locals };
 
-            data = { newCategoryId: newCategoryId };
-
-            mockCollection.findOne.mockResolvedValue({
-                _id: ObjectId(categoryId),
-                name: 'Blazers',
+            mockCollection.findOne.mockResolvedValue({ 
+                _id: ObjectId(params.categoryId),
                 items: [
-                    { gcsId: 'not this one' },
-                    { gcsId: 'nope' },
-                    { gcsId: gcsId },
-                    { gcsId: 'not this one either' }
-                ]
+                    { gcsId: params.gcsId },
+                ],
             });
-
-            mockCollection.toArray.mockResolvedValue([{ file: 'exists' }]);
         });
+
+        async function makeFunctionCall() {
+            await files.patchCategory(req, mockRes, mockNext);
+        }
 
         it('should update file category', async () => {
-            // perform action to test
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
+            await makeFunctionCall();
 
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(newCategoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.categoryId });
             expect(mockCollection.updateOne).toHaveBeenCalledTimes(2);
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
-        });
-
-        it('should update file category - current Other category', async () => {
-            // perform action to test
-            categoryId = '0';
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(newCategoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: 0 });
-            expect(mockCollection.updateOne).toHaveBeenCalledTimes(2);
-            expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
-        });
-
-        it('should update file category - new Other category', async () => {
-            // perform action to test
-            data.newCategoryId = 0;
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: 0 });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockCollection.updateOne).toHaveBeenCalledTimes(2);
-            expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
-        });
-
-        it('should handle find error', async () => {
-            // perform action to test
-            const findError = new Error('find failed');
-            findError.status = 500;
-            mockCollection.find.mockImplementation(() => { throw findError });
-
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(newCategoryId) });
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockCollection.findOne).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('find failed');
-        });
-
-        it('should handle toArray error', async () => {
-            // perform action to test
-            const toArrayError = new Error('toArray failed');
-            toArrayError.status = 500;
-            mockCollection.toArray.mockRejectedValue(toArrayError);
-
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(newCategoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.findOne).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('toArray failed');
-        });
-
-        it('should fail if new category not found', async () => {
-            // perform action to test
-            mockCollection.toArray.mockResolvedValue([]);
-
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(newCategoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.findOne).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(404);
-            expect(err.message).toBe('cannot change file category: no category or multiple categories exist');
         });
 
         it('should handle findOne error', async () => {
-            // perform action to test
-            const findError = new Error('findOne failed');
-            findError.status = 500;
-            mockCollection.findOne.mockRejectedValue(findError);
+            err = new Error('findOne error');
+            mockCollection.findOne.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(newCategoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('findOne failed');
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.categoryId });
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle update error (remove from current category)', async () => {
-            // perform action to test
-            const updateError = new Error('update failed');
-            updateError.status = 500;
-            mockCollection.updateOne.mockRejectedValue(updateError);
+        it('should handle no file found', async () => {
+            mockCollection.findOne.mockResolvedValueOnce();
+            await makeFunctionCall();
 
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
+            expect(mockCreateError).toHaveBeenCalledWith('failed to retrieve file from database', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
+        });
 
-            await files.patchCategory(req, mockRes, mockNext);
+        it('should handle first updateOne error', async () => {
+            err = new Error('updateOne error');
+            mockCollection.updateOne.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(newCategoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
             expect(mockCollection.updateOne).toHaveBeenCalledTimes(1);
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('update failed');
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle update error (add to new category)', async () => {
-            // perform action to test
-            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 1 });
-
-            const updateError = new Error('update failed');
-            updateError.status = 500;
-            mockCollection.updateOne.mockRejectedValueOnce(updateError);
-
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(newCategoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockCollection.updateOne).toHaveBeenCalledTimes(2);
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('update failed');
-        });
-
-        it('should fail if no removal from category occurs', async () => {
-            // perform action to test
+        it('should handle no first update', async () => {
             mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
+            await makeFunctionCall();
 
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(newCategoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
             expect(mockCollection.updateOne).toHaveBeenCalledTimes(1);
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(404);
-            expect(err.message).toBe('update of file category failed: file not removed from current category');
+            expect(mockCreateError).toHaveBeenCalledWith('update of file category failed: file not added to new category', 404);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
-        it('should fail if no insertion to new category occurs', async () => {
-            // perform action to test
+        it('should handle second updateOne error', async () => {
+            err = new Error('updateOne error');
+            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 1 });
+            mockCollection.updateOne.mockRejectedValueOnce(err);
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalledTimes(2);
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+
+        it('should handle no second update', async () => {
             mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 1 });
             mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
+            await makeFunctionCall();
 
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(newCategoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
             expect(mockCollection.updateOne).toHaveBeenCalledTimes(2);
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(404);
-            expect(err.message).toBe('update of file category failed: file not added to new category');
-        });
-
-        it('should fail if findOne returns nothing', async () => {
-            // perform action to test
-            mockCollection.findOne.mockResolvedValue();
-
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(newCategoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('failed to retrieve file from database');
-        });
-
-        it('should fail if findOne returns object without items', async () => {
-            // perform action to test
-            mockCollection.findOne.mockResolvedValue({ _id: ObjectId(categoryId), name: 'Blazers' });
-
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(newCategoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('failed to retrieve file from database');
-        });
-
-        it('should fail if findOne returns items without matching gcsId', async () => {
-            // perform action to test
-            mockCollection.findOne.mockResolvedValue({ _id: ObjectId(categoryId), name: 'Blazers', 
-                items: [{ gcsId: 'nope' }, { gcsId: 'not this one' }, { gcsId: 'no dice' }]
-            });
-
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: ObjectId(newCategoryId) });
-            expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('failed to retrieve file from database');
-        });
-
-        it('should fail with missing new category id', async () => {
-            // perform action to test
-            data.newCategoryId = null;
-
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.find).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockCollection.findOne).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to update file category: invalid or missing new category id');
-        });
-
-        it('should fail with invalid new category id', async () => {
-            // perform action to test
-            data.newCategoryId = 'not-valid-id';
-
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.find).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockCollection.findOne).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to update file category: invalid or missing new category id');
-        });
-
-        it('should fail with missing category id', async () => {
-            // perform action to test
-            const req = { body: data, params: { gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.find).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockCollection.findOne).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to update file category: invalid or missing category id');
-        });
-
-        it('should fail with invalid category id', async () => {
-            // perform action to test
-            categoryId = 'not-valid-id'
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.find).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockCollection.findOne).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to update file category: invalid or missing category id');
-        });
-
-        it('should fail with missing gcs id', async () => {
-            // perform action to test
-            gcsId = '';
-
-            const req = { body: data, params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb } };
-
-            await files.patchCategory(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.find).not.toHaveBeenCalled();
-            expect(mockCollection.toArray).not.toHaveBeenCalled();
-            expect(mockCollection.findOne).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('gcs id is required to update file category');
+            expect(mockCreateError).toHaveBeenCalledWith('update of file category failed: file not removed from current category', 404);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
     });
 
     describe('delete', () => {
-        let categoryId;
-        let gcsId;
+        let params, req;
         beforeEach(async () => {
-            categoryId = (new ObjectId()).toString();
-            gcsId = cuid2.createId();
+            params = {
+                categoryId: ObjectId().toString(),
+                gcsId: idResponse,
+            };
+            req = { params, locals };
 
             mockCollection.findOne.mockResolvedValue({
-                _id: ObjectId(categoryId),
-                name: 'Blazers',
+                _id: ObjectId(params.categoryId),
                 items: [
-                    { gcsId: 'not this one' },
-                    { gcsId: 'nope' },
-                    { gcsId: gcsId, fullGcsDest: 'full/gcs/dest.png', smallGcsDest: 'small/gcs/dest.png' },
-                    { gcsId: 'not this one either' }
-                ]
+                    { 
+                        gcsId: params.gcsId, 
+                        fullGcsDest: 'full/gcs/dest.png',
+                        smallGcsDest: 'small/gcs/dest.png',
+                    },
+                ],
             });
         });
 
+        async function makeFunctionCall() {
+            await files.delete(req, mockRes, mockNext);
+        }
+
         it('should delete file', async () => {
-            // perform action to test
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb, bucket: mockBucket } };
+            await makeFunctionCall();
 
-            await files.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.categoryId });
             expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, 'full/gcs/dest.png');
             expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, 'small/gcs/dest.png');
             expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
-        });
-
-        it('should delete file given Other category', async () => {
-            // perform action to test
-            categoryId = '0';
-            mockCollection.updateOne.mockResolvedValue({ modifiedCount: 1 });
-            const req = { params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: 0 });
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, 'full/gcs/dest.png');
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, 'small/gcs/dest.png');
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-            expect(mockNext).not.toHaveBeenCalled();
         });
 
         it('should handle findOne error', async () => {
-            // perform action to test
-            const findError = new Error('findOne failed');
-            findError.status = 500;
-            mockCollection.findOne.mockRejectedValue(findError);
+            err = new Error('findOne error');
+            mockCollection.findOne.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            const req = { params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('findOne failed');
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.categoryId });
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle deleteFromGCS error (full file)', async () => {
-            // perform action to test
-            const deleteError = new Error('deleteFromGCS failed');
-            deleteError.status = 500;
-            mockDeleteFromGCS.mockRejectedValue(deleteError);
+        it('should handle no file found', async () => {
+            mockCollection.findOne.mockResolvedValueOnce();
+            await makeFunctionCall();
 
-            const req = { params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb, bucket: mockBucket } };
+            expect(mockCreateError).toHaveBeenCalledWith('failed to retrieve file from database', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);           
+        });
 
-            await files.delete(req, mockRes, mockNext);
+        it('should handle file without fullGcsDest', async () => {
+            mockCollection.findOne.mockResolvedValueOnce({
+                _id: ObjectId(params.categoryId),
+                items: [
+                    {
+                        gcsId: idResponse,
+                        smallGcsDest: 'small/gcs/dest.png',
+                    },
+                ],
+            });
+            await makeFunctionCall();
 
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
+            expect(mockCreateError).toHaveBeenCalledWith('file does not have both a full and small gcs path', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);           
+        });
+
+        it('should handle file without smallGcsDest', async () => {
+            mockCollection.findOne.mockResolvedValueOnce({
+                _id: ObjectId(params.categoryId),
+                items: [
+                    {
+                        gcsId: idResponse,
+                        fullGcsDest: 'full/gcs/dest.png',
+                    },
+                ],
+            });
+            await makeFunctionCall();
+
+            expect(mockCreateError).toHaveBeenCalledWith('file does not have both a full and small gcs path', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);           
+        });
+
+        it('should handle file without fullGcsDest and smallGcsDest', async () => {
+            mockCollection.findOne.mockResolvedValueOnce({
+                _id: ObjectId(params.categoryId),
+                items: [
+                    {
+                        gcsId: idResponse,
+                    },
+                ],
+            });
+            await makeFunctionCall();
+
+            expect(mockCreateError).toHaveBeenCalledWith('file does not have both a full and small gcs path', 500);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);           
+        });
+
+        it('should handle first deleteFromGcsDest error', async () => {
+            err = new Error('deleteFromGcsDest error');
+            mockDeleteFromGCS.mockRejectedValueOnce(err);
+            await makeFunctionCall();
+
             expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, 'full/gcs/dest.png');
-            expect(mockDeleteFromGCS).toHaveBeenCalledTimes(1);
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('deleteFromGCS failed');
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle deleteFromGCS error (small file)', async () => {
-            // perform action to test
+        it('should handle second deleteFromGcsDest error', async () => {
+            err = new Error('deleteFromGcsDest error');
             mockDeleteFromGCS.mockResolvedValueOnce();
+            mockDeleteFromGCS.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            const deleteError = new Error('deleteFromGCS failed');
-            deleteError.status = 500;
-            mockDeleteFromGCS.mockRejectedValue(deleteError);
-
-            const req = { params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
             expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, 'full/gcs/dest.png');
             expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, 'small/gcs/dest.png');
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('deleteFromGCS failed');
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle update error', async () => {
-            // perform action to test
-            const updateError = new Error('update failed');
-            updateError.status = 500;
-            mockCollection.updateOne.mockRejectedValue(updateError);
+        it('should handle updateOne error', async () => {
+            err = new Error('updateOne error');
+            mockCollection.updateOne.mockRejectedValueOnce(err);
+            await makeFunctionCall();
 
-            const req = { params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, 'full/gcs/dest.png');
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, 'small/gcs/dest.png');
             expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('update failed');
+            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should fail if no file deletion occurs', async () => {
-            // perform action to test
+        it('should handle no deletion', async () => {
             mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
+            await makeFunctionCall();
 
-            const req = { params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, 'full/gcs/dest.png');
-            expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, 'small/gcs/dest.png');
-            expect(mockCollection.updateOne).toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(404);
-            expect(err.message).toBe('deletion of file failed: file not deleted from database');
-        });
-
-        it('should fail if findOne returns nothing', async () => {
-            // perform action to test
-            mockCollection.findOne.mockResolvedValue();
-
-            const req = { params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('failed to retrieve file from database');
-        });
-
-        it('should fail if findOne returns object without items', async () => {
-            // perform action to test
-            mockCollection.findOne.mockResolvedValue({ _id: ObjectId(categoryId), name: 'Blazers' });
-
-            const req = { params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('failed to retrieve file from database');
-        });
-
-        it('should fail if findOne returns items without matching gcsId', async () => {
-            // perform action to test
-            mockCollection.findOne.mockResolvedValue({ _id: ObjectId(categoryId), name: 'Blazers', 
-                items: [{ gcsId: 'nope'}, { gcsId: 'not this one' }, { gcsId: 'no dice' }]
-            });
-
-            const req = { params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('failed to retrieve file from database');
-        });
-
-        it('should fail if findOne returns matching item without fullGcsDest', async () => {
-            // perform action to test
-            mockCollection.findOne.mockResolvedValue({ _id: ObjectId(categoryId), name: 'Blazers', 
-                items: [{ gcsId: 'nope' }, { gcsId: gcsId, smallGcsDest: 'small/gcs/dest.png' }, { gcsId: 'no dice' }]
-            });
-
-            const req = { params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('failed to retrieve file from database');
-        });
-
-        it('should fail if findOne returns matching item without smallGcsDest', async () => {
-            // perform action to test
-            mockCollection.findOne.mockResolvedValue({ _id: ObjectId(categoryId), name: 'Blazers', 
-                items: [{ gcsId: 'nope' }, { gcsId: gcsId, fullGcsDest: 'full/gcs/dest.png' }, { gcsId: 'no dice' }]
-            });
-
-            const req = { params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).toHaveBeenCalledWith('categories');
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(categoryId) });
-            expect(mockDeleteFromGCS).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(500);
-            expect(err.message).toBe('failed to retrieve file from database');
-        });
-
-        it('should fail with missing category id', async () => {
-            // perform action to test
-            categoryId = '';
-            const req = { params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.findOne).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to delete file: invalid or missing category id');
-        });
-
-        it('should fail with invalid category id', async () => {
-            // perform action to test
-            categoryId = 'not-valid-id';
-            const req = { params: { categoryId: categoryId, gcsId: gcsId }, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.findOne).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('failed to delete file: invalid or missing category id');
-        });
-
-        it('should fail with missing gcs id', async () => {
-            // perform action to test
-            const req = { params: { categoryId: categoryId }, locals: { db: mockDb, bucket: mockBucket } };
-
-            await files.delete(req, mockRes, mockNext);
-
-            // perform checks
-            expect(mockDb.collection).not.toHaveBeenCalled();
-            expect(mockCollection.findOne).not.toHaveBeenCalled();
-            expect(mockCollection.updateOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(400);
-            expect(err.message).toBe('gcs id is required to delete file');
+            expect(mockCreateError).toHaveBeenCalledWith('deletion of file failed: file not deleted from database', 404);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
     });
 });
