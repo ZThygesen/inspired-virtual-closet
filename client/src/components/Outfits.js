@@ -92,13 +92,18 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
             <OutfitsContainer style={{ display: display ? 'flex' : 'none' }}>
                 <div className="title-search">
                     <h2 className="outfits-title">Outfits ({searchResults.length})</h2>
-                    <Input 
-                        type="text"
-                        id="fuzzy-search"
-                        label="Search"
-                        value={searchString}
-                        onChange={e => setSearchString(e.target.value)}
-                    />
+                    <div className="search-box">
+                        <Input
+                            type="text"
+                            id="fuzzy-search"
+                            label="Search"
+                            value={searchString}
+                            onChange={e => setSearchString(e.target.value)}
+                        />
+                        <button className='material-icons clear-search-button' onClick={() => setSearchString('')}>
+                            clear
+                        </button>
+                    </div>
                 </div>
                 
                 <div className="outfits">
