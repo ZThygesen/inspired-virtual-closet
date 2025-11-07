@@ -43,6 +43,10 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
         setCurrOpenIndex(index);
     }
 
+    function closeOutfitModal() {
+        setCurrOpenIndex(null);
+    }
+
     function editOutfit(outfit) {
         sendOutfitToCanvas(outfit);
     }
@@ -108,6 +112,7 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
                                 prevOutfitModal={prevOutfitModal}
                                 nextOutfitModal={nextOutfitModal}
                                 openOutfitModal={() => openOutfitModal(index)}
+                                closeOutfitModal={closeOutfitModal}
                                 isOpen={currOpenIndex === index}
                                 key={cuid()}
                             />
