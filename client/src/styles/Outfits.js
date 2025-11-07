@@ -18,6 +18,33 @@ export const OutfitsContainer = styled.div`
 
         & .MuiFormControl-root {
             max-width: 500px;
+
+            & input {
+                padding-right: 32px;
+            }
+        }
+
+        & .search-box {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+
+            & .clear-search-button {
+                font-size: 24px !important;
+                background: none;
+                position: absolute;
+                right: 4px;
+                cursor: pointer;
+                transition: 0.1s;
+                border-radius: 50%;
+                padding: 4px;
+                &:hover {
+                    background-color: var(--material-btn-bg);
+                }
+            }
         }
     }
 
@@ -100,5 +127,40 @@ export const OutfitCardContainer = styled.div`
     .outfit-option.important {
         color: var(--primary);
         transform: scaleX(-1);
+    }
+
+    &.on-modal {
+        width: unset;
+        height: 100%;
+        max-width: 90%;
+        max-height: 90%;
+        margin: 0;
+        padding: 4px 48px;
+        background-color: var(--white);
+
+        .outfit-name {
+            padding: 4px;
+        }
+
+        .outfit-card-img {
+            height: 100%;
+            min-height: 0;
+        }
+
+        img {
+            max-height: 90%;
+            max-width: 90%;
+            cursor: default;
+        }
+
+        .outfit-options {
+            gap: 24px;
+            margin: 0;
+            padding: 4px;
+
+            .outfit-option {
+                font-size: 54px !important;
+            }
+        }
     }
 `;

@@ -232,7 +232,7 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
         { name: `Canvas (${canvasItems.length - 1})`, icon: 'swipe'},
         { name: `Outfits (${outfits.length})`, icon: 'dry_cleaning'},
         { name: `Shopping (${shoppingItems.length})`, icon: 'sell'},
-        { name: 'Profile', icon: 'person'},
+        // { name: 'Profile', icon: 'person'},
         { name: 'Add', icon: 'add_box'}
     ];
 
@@ -317,11 +317,11 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
                         shoppingItems={shoppingItems}
                         updateShoppingItems={getShoppingItems}
                     />
-                    <Profile 
+                    {/* <Profile 
                         display={closetMode === 4}
-                    />
+                    /> */}
                     <AddItems   
-                        display={closetMode === 5}
+                        display={closetMode === 4}
                         updateItems={updateItems} 
                     />
                 </div>

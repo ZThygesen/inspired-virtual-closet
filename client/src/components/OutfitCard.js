@@ -6,7 +6,7 @@ import Input from './Input';
 import { OutfitCardContainer } from '../styles/Outfits';
 import { useUser } from './UserContext';
 
-export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteOutfit, prevOutfitModal, nextOutfitModal, openOutfitModal, isOpen }) {
+export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteOutfit, prevOutfitModal, nextOutfitModal, openOutfitModal, closeOutfitModal, isOpen }) {
     const { setError } = useError();
 
     const [editOpen, setEditOpen] = useState(false);
@@ -23,6 +23,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
 
     function handleCloseImageModal() {
         setImageModalOpen(false);
+        closeOutfitModal();
     }
 
     function handleConfirmEdit() {
@@ -120,9 +121,33 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
             >
                 <>  
                     <button className="material-icons close-modal" onClick={handleCloseImageModal}>close</button>
-                    <img src={outfit.outfitUrl} alt={outfit.outfitName} className="image-modal" />
-                    <button className="material-icons prev-card" onClick={prevOutfitModal}>chevron_left</button>
-                    <button className="material-icons next-card" onClick={nextOutfitModal}>chevron_right</button>
+                    <OutfitCardContainer className='on-modal'>
+                        <p className="outfit-name">{outfit.outfitName}</p>
+                        <div className="outfit-card-img">
+                            <img
+                                src={outfit.outfitUrl}
+                                alt={outfit.outfitName}
+                            />
+                        </div>
+                        <div className="outfit-options">
+                            <Tooltip title="Previous Outfit">
+                                <button
+                                    className='material-icons outfit-option prev-card'
+                                    onClick={prevOutfitModal}
+                                >
+                                    chevron_left
+                                </button>
+                            </Tooltip>
+                            <Tooltip title="Next Outfit">
+                                <button
+                                    className='material-icons outfit-option next-card'
+                                    onClick={nextOutfitModal}
+                                >
+                                    chevron_right
+                                </button>
+                            </Tooltip>
+                        </div>
+                    </OutfitCardContainer>
                 </>
             </Modal>
             <Modal

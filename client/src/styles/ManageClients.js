@@ -65,6 +65,33 @@ export const ManageClientsContainer = styled(PageContainer)`
 
         & .MuiFormControl-root {
             max-width: 500px;
+
+            & input {
+                padding-right: 32px;
+            }
+        }
+
+        & .search-box {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+
+            & .clear-search-button {
+                font-size: 24px !important;
+                background: none;
+                position: absolute;
+                right: 4px;
+                cursor: pointer;
+                transition: 0.1s;
+                border-radius: 50%;
+                padding: 4px;
+                &:hover {
+                    background-color: var(--material-btn-bg);
+                }
+            }
         }
     }
 
