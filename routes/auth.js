@@ -102,14 +102,12 @@ const auth = {
             if (!helpers.isValidId(clientId)) {
                 return next(helpers.createError('client id is invalid or missing', 400));
             }
-
             const { db } = req.locals;
             const collection = db.collection('clients');
-            const client = await collection.findOne({ _id: ObjectId(clientId )});
+            const client = await collection.findOne({ _id: ObjectId(clientId)});
             if (!client) {
                 return next(helpers.createError('client not found', 404));
             }
-
             switch (true) {
                 case req?.user?.isSuperAdmin:
                     // super admin users have all permissions

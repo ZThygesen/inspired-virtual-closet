@@ -8,6 +8,7 @@ import ClosetNavigation from '../components/ClosetNavigation';
 import CategoriesSidebar from '../components/CategoriesSidebar';
 import Loading from '../components/Loading';
 import { SidebarProvider } from '../components/SidebarContext';
+import { DataProvider } from '../components/DataContext';
 
 const Container = styled.div`
     flex: 1;
@@ -21,6 +22,7 @@ export default function VirtualCloset() {
     const { client } = useLocation().state;
     const [category, setCategory] = useState({});
     const [categories, setCategories] = useState([]);
+    const [categoryGroups, setCategoryGroups] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const sidebarRef = useRef();
@@ -57,20 +59,30 @@ export default function VirtualCloset() {
             items: []
         }
 
-        // filter out categories with and without items
-        const catsWithItems = [];
-        const catsWithoutItems = [];
-        if (categories.length > 0) {
-            categories.forEach(category => {
-                if (category.items.length > 0) {
-                    catsWithItems.push(category);
-                } else {
-                    catsWithoutItems.push(category);
-                }
+        const items = [];
+        const categoriesByGroup = [];
+
+        // create hash of { group name => categories with group name }
+        const groupMap = {};
+        categories.forEach(category => {
+            if (!groupMap[category.group]) {
+                groupMap[category.group] = [];
+            }
+            groupMap[category.group].push(category);
+        });
+
+        // iterate over each group
+        const groups = Object.keys(groupMap);
+        groups.forEach(group => {
+            const groupCategories = groupMap[group];
+
+            // extract items from each group
+            groupCategories.forEach(category => {
+                items.push(...category.items);
             });
 
-            // sort category names alphabetically
-            catsWithItems.sort(function(a, b) {
+            // sort group's categories alphabetically
+            groupCategories.sort(function(a, b) {
                 if (a.name < b.name) {
                     return -1;
                 } 
@@ -82,35 +94,33 @@ export default function VirtualCloset() {
                 }
             });
 
-            catsWithoutItems.sort(function(a, b) {
-                if (a.name < b.name) {
-                    return -1;
-                } 
-                else if (a.name > b.name) {
-                    return 1;
-                }
-                else {
-                    return 0;
-                }
-            });
+            // save array of objects that look like { group name, categories with group name }
+            categoriesByGroup.push({ group: group, categories: [...groupCategories] });
+        });
 
-            // create all items category
-            let catItems = [];
-            catsWithItems.forEach(cat => {
-                catItems.push(...cat.items)
-            });
-            const allItems = [...otherCategory.items, ...catItems];
+        // sort group names alphabetically
+        categoriesByGroup.sort(function(a, b) {
+            if (a.group < b.group) {
+                return -1;
+            }
+            else if (a.group > b.group) {
+                return 1;
+            }
+            else {
+                return 0;
+            }
+        });
 
-            allCategory.items = allItems;
+        // compile all items together
+        const allItems = [...otherCategory.items, ...items];
+        allCategory.items = allItems;
 
-            // compile all the categories together
-            categories = [allCategory, otherCategory, ...catsWithItems, ...catsWithoutItems];
-        } else {
-            allCategory.items = otherCategory.items;
-            categories = [allCategory, otherCategory];
-        }
+        // compile all the categories together
+        categories = [allCategory, otherCategory, ...categories];
+        categoriesByGroup.unshift({ group: -1, categories: [allCategory, otherCategory] });
 
         setCategories(categories);
+        setCategoryGroups(categoriesByGroup);
 
         // if the current category was recently updated, need to re-render
         if (updateCat) {
@@ -124,84 +134,31 @@ export default function VirtualCloset() {
         getCategories(undefined, true);
     }, [getCategories]);
 
-    async function addCategory(newCategory) {
-        setLoading(true);
-
-        try {
-            await api.post('/categories', { category: newCategory });
-            await getCategories();
-        } catch (err) {
-            setError({
-                message: 'There was an error adding the category.',
-                status: err.response.status
-            });
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    async function editCategory(category, newName) {
-        setLoading(true);
-        if (category.name === newName) {
-            setLoading(false);
-            return;
-        }
-
-        try {
-            await api.patch(`/categories/${category._id}`, { newName: newName });
-            await getCategories(category);
-        } catch (err) {
-            setError({
-                message: 'There was an error editing the category.',
-                status: err.response.status
-            });
-        } finally {
-            setLoading(false);
-        }
-    }
-    
-    async function deleteCategory(category) {
-        setLoading(true);
-        
-        try {
-            await api.delete(`/categories/${category._id}`);
-            await getCategories();
-        } catch (err) {
-            setError({
-                message: 'There was an error adding the category.',
-                status: err.response.status
-            });
-        } finally {
-            setLoading(false);
-        }
-    }
-
     return (
         <>
             <ClientProvider clientId={client._id}>
                 <SidebarProvider>
-                    <Container>
-                        <CategoriesSidebar
-                            sidebarRef={sidebarRef}
-                            categories={categories}
-                            activeCategory={category}
-                            setCategory={setCategory}
-                            addCategory={addCategory}
-                            updateCategories={getCategories}
-                            editCategory={editCategory}
-                            deleteCategory={deleteCategory}
-                            sendToCanvas={sendToCanvas}
-                            canvasItems={canvasItems}
-                        />
-                        <ClosetNavigation
-                            sidebarRef={sidebarRef}
-                            client={client}
-                            category={category}
-                            getCategories={getCategories}
-                            setSendToCanvas={(fn) => (sendToCanvas.current = fn)}
-                            setCategoryCanvasItems={setCanvasItems}
-                        />
-                    </Container>
+                    <DataProvider>
+                        <Container>
+                            <CategoriesSidebar
+                                sidebarRef={sidebarRef}
+                                categories={categories}
+                                categoryGroups={categoryGroups}
+                                activeCategory={category}
+                                setCategory={setCategory}
+                                sendToCanvas={sendToCanvas}
+                                canvasItems={canvasItems}
+                            />
+                            <ClosetNavigation
+                                sidebarRef={sidebarRef}
+                                client={client}
+                                category={category}
+                                getCategories={getCategories}
+                                setSendToCanvas={(fn) => (sendToCanvas.current = fn)}
+                                setCategoryCanvasItems={setCanvasItems}
+                            />
+                        </Container>
+                    </DataProvider>
                     <Loading open={loading} />
                 </SidebarProvider>
             </ClientProvider>

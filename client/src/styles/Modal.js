@@ -16,9 +16,10 @@ export const ModalContentContainer = styled.div`
             width: auto;
             height: auto;
             position: relative;
+            background-color: var(--white);
         }
 
-        .on-canvas {
+        /* .on-canvas {
             color: var(--white);
             font-size: 32px;
             position: absolute;
@@ -32,12 +33,13 @@ export const ModalContentContainer = styled.div`
             border-radius: 50%;
             font-size: 88px !important;
             position: absolute;
-            color: var(--grey);
+            color: var(--primary-light);
             padding: 8px;
             transition: 0.1s;
 
             &:hover {
                 cursor: pointer;
+                color: var(--primary);
                 background-color: var(--material-btn-bg);
             }
         }
@@ -53,7 +55,7 @@ export const ModalContentContainer = styled.div`
         .send-to-canvas {
             bottom: 12px;
             color: var(--primary);
-        }
+        } */
     }
 
     &:not(.image-modal) {
@@ -103,6 +105,26 @@ export const ModalContentContainer = styled.div`
         align-items: center;
         gap: 20px;
         padding: 8px 0;
+
+        &.no-scroll {
+            height: 100vh;
+            overflow-y: hidden;
+        }
+
+        & .checkboxes {
+            & .checkboxes-field-name {
+                text-align: left;
+                font-size: 20px;
+                margin-bottom: 4px;
+            }
+            display: flex;
+            flex-direction: column;
+            align-self: flex-start;
+
+            & label {
+                margin-left: 0px;
+            }
+        }
     }
 
     .modal-content p {
@@ -130,7 +152,7 @@ export const ModalContentContainer = styled.div`
     }
 
     .modal-content .bold {
-        font-weight: 700;
+        font-weight: 600;
     }
 
     .modal-content .underline {
@@ -160,7 +182,7 @@ export const ModalContentContainer = styled.div`
         text-decoration: underline;
     }
 
-    button:not(.material-icons) {
+    & button:not(.material-icons, .settings-tab, .archive-tab) {
         font-size: 20px;
         font-family: 'Prata';
         background: none;
@@ -174,6 +196,144 @@ export const ModalContentContainer = styled.div`
             background-color: var(--primary);
             border-color: var(--primary);
             color: var(--white);
+        }
+    }
+
+    // For add tags modal
+    & .tag-checkboxes {
+        display: flex;
+        width: 100%;
+        padding: 4px;
+
+        & .tag-groups {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+
+        & .tag-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: var(--box-shadow);
+        }
+
+        & .tag-group-name {
+            text-align: left !important;
+            font-size: 20px !important;
+            font-weight: 600 !important;
+        }
+
+        & .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            width: 100%;
+        }
+
+        & .tag {
+            display: flex;
+            align-items: center;
+            box-shadow: var(--box-shadow);
+            padding: 0 8px;
+            border-radius: 20px;
+
+            &.checked {
+                box-shadow: var(--box-shadow-orange);
+            }
+        }
+                        
+        & .tag-color {
+            width: 16px;
+            height: 16px;
+            outline: 1px solid var(--black);
+            border-radius: 50%;
+        }
+    }
+
+    // For viewing tags in modal
+    & .tags-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+        padding: 0 2px;
+
+        & .tags-prompt {
+            text-align: left !important;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        & .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            width: 100%;
+        }
+
+        & .tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--box-shadow);
+            padding: 12px 16px;
+            border-radius: 20px;
+        }
+
+        & .tag-name {
+
+        }
+                        
+        & .tag-color {
+            width: 16px;
+            height: 16px;
+            outline: 1px solid var(--black);
+            border-radius: 50%;
+        }
+
+        & .add-tags-button {
+            width: 100%;
+            background-color: var(--grey);
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: 0.1s;
+            border: none;
+            font-family: unset;
+            letter-spacing: unset;
+            font-size: 16px;
+            cursor: pointer;
+
+            &:hover {
+                background-color: var(--primary-light);
+                color: unset;
+            }
+        }
+    }
+
+    & .file-card-img {
+        width: 100%;
+        height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    & .file-img {
+        background: transparent;
+        max-width: 200px;
+        max-height: 200px;
+        height: auto;
+        width: auto;
+        cursor: pointer;
+        transition: all 0.1s;
+
+        &:not(.invalid):hover {
+            border-color: var(--primary);
         }
     }
 

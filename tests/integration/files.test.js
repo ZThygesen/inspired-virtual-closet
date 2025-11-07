@@ -1,69 +1,41 @@
 import { jest } from '@jest/globals';
-import { app, bucket } from '../../server';
-import { agent as supertest } from 'supertest';
-import { MongoClient } from 'mongodb';
+import { bucket } from '../../server';
 import { ObjectId } from 'mongodb';
 import { helpers } from '../../helpers';
 import cuid2 from '@paralleldrive/cuid2';
-import jwt from 'jsonwebtoken';
+import { integrationHelpers } from './helpers';
+import { schema } from '../../schema/files.schema';
 
 describe('files', () => {
-    let user;
-    let token;
-    let cookie;
-    async function createUser(db) {
-        user = {
-            _id: new ObjectId(),
-            firstName: 'Jane',
-            lastName: 'Deer',
-            email: 'janedeer11@gmail.com',
-            credits: 350,
-            isAdmin: true,
-            isSuperAdmin: true
-        };
+    let user, client, db, collection, clientCollection;
+    beforeAll(async () => { 
+        await integrationHelpers.beforeAll('categories');
 
-        const collection = db.collection('clients');
-        await collection.insertOne(user);
+        expect(bucket.id).toBe('edie-styles-virtual-closet-test');
+        const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+        expect(files).toHaveLength(0);
+    });
+    afterAll(async () => { 
+        await integrationHelpers.afterAll();
+        await clearBucket();
+    });
+    beforeEach(async () => {
+        await integrationHelpers.beforeEach();
+        ({
+            user,
+            client,
+            db,
+            collection,
+            clientCollection,
+        } = integrationHelpers);
+        await insertOther();
+        expect(bucket.id).toBe('edie-styles-virtual-closet-test');
+    });
+    afterEach(async () => {
+        await integrationHelpers.afterEach();
+    });
 
-        token = jwt.sign({ id: user._id, isAdmin: user.isAdmin, isSuperAdmin: user.isSuperAdmin }, process.env.JWT_SECRET);
-        cookie = `token=${token}`;
-    }
-
-    async function removeUser(db) {
-        const collection = db.collection('clients');
-
-        await collection.deleteOne({ _id: user._id });
-    }
-
-    let clientId;
-    let client;
-    async function createClient(db) {
-        clientId = new ObjectId();
-        client = {
-            _id: clientId,
-            firstName: 'Jane',
-            lastName: 'Deer',
-            email: 'janedeer11@gmail.com',
-            credits: 350,
-            isAdmin: false,
-            isSuperAdmin: false
-        };
-
-        const collection = db.collection('clients');
-        await collection.insertOne(client);
-    }
-
-    async function removeClient(db) {
-        const collection = db.collection('clients');
-
-        await collection.deleteOne({ _id: client._id });
-    }
-
-    async function clearCollection(collection) {
-        await collection.deleteMany({ });
-    }
-
-    async function insertOther(collection) {
+    async function insertOther() {
         await collection.insertOne({ _id: 0, name: 'Other', items: [] });
     }
 
@@ -75,1748 +47,907 @@ describe('files', () => {
         expect(files).toHaveLength(0);
     }
 
-    let mongoClient;
-    let db;
-    let collection;
-
-    beforeAll(async () => {
-        mongoClient = new MongoClient(process.env.DB_URI);
-        await mongoClient.connect();
-        db = mongoClient.db(process.env.DB_NAME_TEST);
-        collection = db.collection('categories');
-
-        expect(bucket.id).toBe('edie-styles-virtual-closet-test');
-
-        const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-        expect(files).toHaveLength(0);
-    });
-
-    afterAll(async () => {
-        await mongoClient.close();
-        await clearBucket();
-    });
-
-    beforeEach(async () => {
-        expect(process.env.NODE_ENV).toBe('test');
-
-        expect(bucket.id).toBe('edie-styles-virtual-closet-test');
-
-        await createUser(db);
-        await createClient(db);
-    });
-
-    afterEach(async () => {
-        await clearCollection(collection);
-        await insertOther(collection);
-        await removeUser(db);
-        await removeClient(db);
-
-        jest.resetAllMocks();
-        jest.restoreAllMocks();
-    });
-
-    function agent(app) {
-        return supertest(app).set('Cookie', cookie);
-    }
-
-    describe('create', () => {
-        afterAll(async () => {
-            await clearBucket();
-        });
-
+    describe('post', () => {
+        let category;
+        let params, body;
         let mockRemoveBackground;
-        let categoryId;
-        let categoryData;
-        let data;
-        let clientCollection;
         beforeEach(async () => {
-            mockRemoveBackground = jest.spyOn(helpers, 'removeBackground');
-            mockRemoveBackground.mockImplementation(async (fileSrc) => {
-                return await helpers.b64ToBuffer(fileSrc);
-            });
-
-            categoryId = new ObjectId();
-            categoryData = {
-                _id: categoryId,
+            await clearBucket();
+            category = {
+                _id: ObjectId(),
                 name: 'Blazers',
-                items: []
+                group: 'Formal',
+                items: [],
             };
+            await collection.insertOne(category);
 
-            await collection.insertOne(categoryData);
-
-            data = {
+            params = [client._id.toString(), category._id.toString()];
+            body = {
                 fileSrc: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==',
                 fullFileName: 'Blazin Blazer.png',
-                clientId: clientId.toString(),
-                categoryId: categoryId.toString(),
-                rmbg: true,
-                crop: true
+                tags: JSON.stringify([ObjectId().toString(), ObjectId().toString()]),
+                rmbg: false, // keep false by default to keep 429s from happening with Photoroom
+                crop: true,
             };
 
-            clientCollection = db.collection('clients');
+            mockRemoveBackground = jest.spyOn(helpers, 'removeBackground');
         });
 
-        it('should add new file - remove background, crop', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
+        const request = (params, body) => integrationHelpers.executeRequest('post', '/files', params, body, {
+            isFormData: true,
+        });
 
-            // perform checks
+        it('should add new file', async () => {
+            body.rmbg = true;
+            const response = await request(params, body);
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
+            expect(mockRemoveBackground).toHaveBeenCalledWith(body.fileSrc, body.crop);
     
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(1);
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(1);
 
-            const file = category.items[0];
+            const file = cat.items[0];
             expect(file).toBeTruthy();
-            expect(file.clientId).toBe(data.clientId);
-            expect(file.fileName).toBe('Blazin Blazer');
             expect(file).toHaveProperty('gcsId');
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits - 1);
-
             const gcsId = file.gcsId;
-            expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
-            expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
-            expect(file.fullGcsDest).toBe(`test/items/${gcsId}/full.png`);
-            expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
+            expect(file).toMatchObject({
+                clientId: client._id.toString(),
+                fileName: body.fullFileName.split('.')[0],
+                fullFileUrl: `https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`,
+                smallFileUrl: `https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`,
+                fullGcsDest: `test/items/${gcsId}/full.png`,
+                smallGcsDest: `test/items/${gcsId}/small.png`,
+                tags: JSON.parse(body.tags),
+                gcsId: gcsId,
+            });
+
+            const clientData = await clientCollection.findOne({ _id: client._id });
+            expect(clientData.credits).toBe(client.credits - 1);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(2);
         });
 
-        it('should add new file - remove background, no crop', async () => {
-            // perform action to test
-            data.crop = false;
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
+        it('should add new file with no tags', async () => {
+            body.tags = JSON.stringify([]);
+            const response = await request(params, body);
 
-            // perform checks
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, false);
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(1);
-
-            const file = category.items[0];
-            expect(file).toBeTruthy();
-            expect(file.clientId).toBe(data.clientId);
-            expect(file.fileName).toBe('Blazin Blazer');
-            expect(file).toHaveProperty('gcsId');
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits - 1);
-
-            const gcsId = file.gcsId;
-            expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
-            expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
-            expect(file.fullGcsDest).toBe(`test/items/${gcsId}/full.png`);
-            expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(4);
+            expect(files).toHaveLength(2);
         });
 
-        it('should add new file - no remove background', async () => {
-            // perform action to test
-            data.rmbg = false;
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
+        it('should not deduct credits for super admin client', async () => {
+            await clientCollection.updateOne({ _id: client._id }, { $set: { isSuperAdmin: true } });
+            const response = await request(params, body);
 
-            // perform checks
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(1);
 
-            const file = category.items[0];
-            expect(file).toBeTruthy();
-            expect(file.clientId).toBe(data.clientId);
-            expect(file.fileName).toBe('Blazin Blazer');
-            expect(file).toHaveProperty('gcsId');
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits - 1);
-
-            const gcsId = file.gcsId;
-            expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
-            expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
-            expect(file.fullGcsDest).toBe(`test/items/${gcsId}/full.png`);
-            expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(6);
-        });
-
-        it('should add new file - Other category given', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', 0)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
-
-            // perform checks
-            expect(response.status).toBe(201);
-            expect(response.body.message).toBe('Success!');
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-    
-            const category = await collection.findOne({ _id: 0 });
-            expect(category.items).toHaveLength(1);
-
-            const file = category.items[0];
-            expect(file).toBeTruthy();
-            expect(file.clientId).toBe(data.clientId);
-            expect(file.fileName).toBe('Blazin Blazer');
-            expect(file).toHaveProperty('gcsId');
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits - 1);
-
-            const gcsId = file.gcsId;
-            expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
-            expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
-            expect(file.fullGcsDest).toBe(`test/items/${gcsId}/full.png`);
-            expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(8);
-        });
-
-        it('should add new file - not full file name', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', 'Blazin Blazer')
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
-
-            // perform checks
-            expect(response.status).toBe(201);
-            expect(response.body.message).toBe('Success!');
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(1);
-
-            const file = category.items[0];
-            expect(file).toBeTruthy();
-            expect(file.clientId).toBe(data.clientId);
-            expect(file.fileName).toBe('Blazin Blazer');
-            expect(file).toHaveProperty('gcsId');
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits - 1);
-
-            const gcsId = file.gcsId;
-            expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
-            expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
-            expect(file.fullGcsDest).toBe(`test/items/${gcsId}/full.png`);
-            expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(10);
-        });
-
-        it('should add new file - no credits deducted because client is super admin', async () => {
-            await removeClient(db);
-            client.isAdmin = true;
-            client.isSuperAdmin = true;
-            await clientCollection.insertOne(client);
-
-            // perform action to test
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', 0)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
-
-            // perform checks
-            expect(response.status).toBe(201);
-            expect(response.body.message).toBe('Success!');
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-    
-            const category = await collection.findOne({ _id: 0 });
-            expect(category.items).toHaveLength(1);
-
-            const file = category.items[0];
-            expect(file).toBeTruthy();
-            expect(file.clientId).toBe(data.clientId);
-            expect(file.fileName).toBe('Blazin Blazer');
-            expect(file).toHaveProperty('gcsId');
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
+            const clientData = await clientCollection.findOne({ _id: client._id });
             expect(clientData.credits).toBe(client.credits);
 
-            const gcsId = file.gcsId;
-            expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
-            expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
-            expect(file.fullGcsDest).toBe(`test/items/${gcsId}/full.png`);
-            expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
-
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(1);
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(12);
+            expect(files).toHaveLength(2);
         });
 
-        it('should add new file - client has 1 credit', async () => {
-            await removeClient(db);
-            client.credits = 1;
-            await clientCollection.insertOne(client);
+        it('should allow super admin user to not rmbg', async () => {
+            body.rmbg = false;
+            const response = await request(params, body);
 
-            // perform action to test
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', 0)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
-
-            // perform checks
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
-            expect(mockRemoveBackground).toHaveBeenCalledWith(data.fileSrc, true);
-    
-            const category = await collection.findOne({ _id: 0 });
-            expect(category.items).toHaveLength(1);
 
-            const file = category.items[0];
-            expect(file).toBeTruthy();
-            expect(file.clientId).toBe(data.clientId);
-            expect(file.fileName).toBe('Blazin Blazer');
-            expect(file).toHaveProperty('gcsId');
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
 
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(0);
-
-            const gcsId = file.gcsId;
-            expect(file.fullFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Ffull.png`);
-            expect(file.smallFileUrl).toBe(`https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Fitems%2F${gcsId}%2Fsmall.png`);
-            expect(file.fullGcsDest).toBe(`test/items/${gcsId}/full.png`);
-            expect(file.smallGcsDest).toBe(`test/items/${gcsId}/small.png`);
-
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(1);
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
+            expect(files).toHaveLength(2);
         });
 
-        it('should fail if user non-admin and rmbg not selected', async () => {
-            // perform action to test
-            token = jwt.sign({ id: clientId, isAdmin: false, isSuperAdmin: false }, process.env.JWT_SECRET);
-            cookie = `token=${token}`;
-            data.rmbg = false;
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
+        it('should allow super admin user to not crop', async () => {
+            body.rmbg = true;
+            body.crop = false;
+            const response = await request(params, body);
+            expect(response.status).toBe(201);
+            expect(response.body.message).toBe('Success!');
 
-            // perform checks
+            expect(mockRemoveBackground).toHaveBeenCalledWith(body.fileSrc, false);
+
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(1);
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(2);
+        });
+
+        it('should allow super admin user to not rmbg and crop', async () => {
+            body.rmbg = false
+            body.crop = false;
+            const response = await request(params, body);
+
+            expect(response.status).toBe(201);
+            expect(response.body.message).toBe('Success!');
+
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(1);
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(2);
+        });
+
+        it('should allow admin user to not rmbg', async () => {
+            await integrationHelpers.setUserAdmin();
+            body.rmbg = false;
+            const response = await request(params, body);
+
+            expect(response.status).toBe(201);
+            expect(response.body.message).toBe('Success!');
+
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(1);
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(2);
+        });
+
+        it('should allow admin user to not crop', async () => {
+            await integrationHelpers.setUserAdmin();
+            body.rmbg = true;
+            body.crop = false;
+            const response = await request(params, body);
+            expect(response.status).toBe(201);
+            expect(response.body.message).toBe('Success!');
+
+            expect(mockRemoveBackground).toHaveBeenCalledWith(body.fileSrc, false);
+
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(1);
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(2);
+        });
+
+        it('should allow admin user to not rmbg and crop', async () => {
+            await integrationHelpers.setUserAdmin();
+            body.rmbg = false
+            body.crop = false;
+            const response = await request(params, body);
+
+            expect(response.status).toBe(201);
+            expect(response.body.message).toBe('Success!');
+
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(1);
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(2);
+        });
+
+        it('should fail if non-admin user does not rmbg', async () => {
+            await integrationHelpers.setUserNormal();
+            params = [user._id.toString(), category._id.toString()];
+            body.rmbg = false;
+            const response = await request(params, body);
+
             expect(response.status).toBe(403);
             expect(response.body.message).toBe('non-admins must remove background and crop image on file upload');
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(0);
 
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits);
-
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(0);
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
+            expect(files).toHaveLength(0);
         });
 
-        it('should fail if user non-admin and crop not selected', async () => {
-            // perform action to test
-            token = jwt.sign({ id: clientId, isAdmin: false, isSuperAdmin: false }, process.env.JWT_SECRET);
-            cookie = `token=${token}`;
-            data.crop = false;
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
+        it('should fail if non-admin user does not crop', async () => {
+            await integrationHelpers.setUserNormal();
+            params = [user._id.toString(), category._id.toString()];
+            body.rmbg = true;
+            body.crop = false;
+            const response = await request(params, body);
 
-            // perform checks
             expect(response.status).toBe(403);
             expect(response.body.message).toBe('non-admins must remove background and crop image on file upload');
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(0);
 
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits);
-
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(0);
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
+            expect(files).toHaveLength(0);
         });
 
-        it('should fail with missing file source', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', '')
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
+        it('should fail if non-admin user does not rmbg and crop', async () => {
+            await integrationHelpers.setUserNormal();
+            params = [user._id.toString(), category._id.toString()];
+            body.rmbg = false;
+            body.crop = false;
+            const response = await request(params, body);
 
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('file source is required to create file');
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(0);
+            expect(response.status).toBe(403);
+            expect(response.body.message).toBe('non-admins must remove background and crop image on file upload');
 
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits);
-
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(0);
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
+            expect(files).toHaveLength(0);
         });
 
-        it('should fail with invalid MIME file source', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', 'data:image/gif;base64,invalid-file-source')
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
+        it('should fail if category does not exist', async () => {
+            const otherId = ObjectId().toString();
+            params = [client._id.toString(), otherId];
+            const response = await request(params, body);
 
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('not a valid base64 image string');
-            expect(mockRemoveBackground).toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(0);
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
-        });
-
-        it('should fail with invalid file source', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', 'data:image/png;base64,')
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
-
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('arrayBuffer not successfully converted to buffer');
-            expect(mockRemoveBackground).toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(0);
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
-        });
-
-        it('should fail with missing file name', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', '')
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
-
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('file name is required to create file');
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(0);
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
-        });
-
-        it('should fail with invalid client id', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .post(`/files/not-valid-id`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
-
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('client id is invalid or missing');
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(0);
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
-        });
-
-        it('should fail with invalid category id', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', '')
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
-
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('failed to add file: invalid or missing category id');
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(0);
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
-        });
-
-        it('should fail with missing rembg option', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('crop', data.crop);
-
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('background removal option is required to create file');
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(0);
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
-        });
-
-        it('should fail with missing crop option', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg);
-
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('crop image option is required to create file');
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(0);
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
-        });
-
-        it('should fail with nonexistent category id', async () => {
-            // perform action to test
-            await clearCollection(collection);
-            await insertOther(collection);
-
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
-
-            // perform checks
             expect(response.status).toBe(404);
-            expect(response.body.message).toBe(`cannot add file: no category or multiple categories with the id "${data.categoryId}" exist`);
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category).toBeFalsy();
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits);
-
+            expect(response.body.message).toBe(`cannot add file: no category or multiple categories with the id "${otherId}" exist`)
+            
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(0);
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
+            expect(files).toHaveLength(0);
         });
 
-        it('should fail if client doesn\'t exist', async () => {
-            // perform action to test
-            await removeClient(db);
+        it('should fail if client does not exist', async () => {
+            await integrationHelpers.removeClient();
+            const response = await request(params, body);
 
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
-
-            // perform checks
             expect(response.status).toBe(404);
-            expect(response.body.message).toBe('client not found');
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(0);
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData).toBeFalsy();
-
+            expect(response.body.message).toBe('client not found')
+            
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(0);
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
+            expect(files).toHaveLength(0);
         });
 
         it('should fail if client has no credits', async () => {
-            // perform action to test
-            await removeClient(db);
-            client.credits = 0;
-            await clientCollection.insertOne(client);
+            await clientCollection.updateOne({ _id: client._id }, { $set: { credits: 0 } });
+            const response = await request(params, body);
 
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
-
-            // perform checks
             expect(response.status).toBe(403);
-            expect(response.body.message).toBe('client does not have any credits');
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(0);
+            expect(response.body.message).toBe('client does not have any credits')
 
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits);
-
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(0);
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
+            expect(files).toHaveLength(0);
         });
 
-        it('should fail if client has credits that is not a number', async () => {
-            // perform action to test
-            await removeClient(db);
-            client.credits = 'not a number';
-            await clientCollection.insertOne(client);
-
-            const response = await agent(app)
-                .post(`/files/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('fullFileName', data.fullFileName)
-                .field('categoryId', data.categoryId)
-                .field('rmbg', data.rmbg)
-                .field('crop', data.crop);
-
-            // perform checks
-            expect(response.status).toBe(403);
-            expect(response.body.message).toBe('client does not have any credits or does not exist');
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-    
-            const category = await collection.findOne({ _id: ObjectId(data.categoryId) });
-            expect(category.items).toHaveLength(0);
-
-            const clientData = await clientCollection.findOne({ _id: clientId });
-            expect(clientData.credits).toBe(client.credits);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(14);
+        integrationHelpers.testParams(schema.post.params.fields, request, () => body, ['clientId', 'categoryId'], {
+            checkPermissions: true,
         });
+        integrationHelpers.testBody(schema.post.body.fields, request, () => params, {
+            isFormData: true,
+        });
+        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body, 201);
     });
     
-    describe('read', () => {
-        function createFile(clientId) {
-            return {
-                clientId: clientId,
-                fileName: 'Blazin Blazer',
-                fullFileUrl: 'full.file.url',
-                smallFileUrl: 'small.file.url',
-                fullGcsDest: 'test/items/full.png',
-                smallGcsDest: 'test/items/small.png',
-                gcsId: cuid2.createId()
-            };
-        }
-
-        let clientId2;
-        let clientId3;
-        let clientId4;
-        let categoryId;
-        let categoryData;
-        let otherData;
+    describe('get', () => {
+        let category1, category2, category3;
+        let params, body;
         beforeEach(async () => {
-            clientId2 = (new ObjectId()).toString();
-            clientId3 = (new ObjectId()).toString();
-            clientId4 = (new ObjectId()).toString();
-            categoryId = new ObjectId();
-            categoryData = {
-                _id: categoryId,
+            category1 = {
+                _id: ObjectId(),
                 name: 'Blazers',
                 items: [
-                    createFile(clientId.toString()),
-                    createFile(clientId.toString()),
-                    createFile(clientId2),
-                    createFile(clientId.toString()),
-                    createFile(clientId3),
-                    createFile(clientId2)
-                ]
+                    { clientId: client._id.toString() },
+                    { clientId: ObjectId().toString() },
+                    { clientId: client._id.toString() },
+                ],
             };
-
-            otherData = {
-                _id: 0,
-                name: 'Other',
+            category2 = {
+                _id: ObjectId(),
+                name: 'Suits',
                 items: [
-                    createFile(clientId.toString()),
-                    createFile(clientId2),
-                    createFile(clientId2),
-                    createFile(clientId.toString()),
-                    createFile(clientId2),
-                    createFile(clientId.toString())
-                ]
+                    { clientId: client._id.toString() },
+                    { clientId: ObjectId().toString() },
+                    { clientId: ObjectId().toString() },
+                ],
             };
+            category3 = {
+                _id: ObjectId(),
+                name: 'Slacks',
+                items: [
+                    { clientId: ObjectId().toString() },
+                    { clientId: ObjectId().toString() },
+                    { clientId: ObjectId().toString() },
+                ],
+            };
+            await collection.insertOne(category1);
 
-            await clearCollection(collection);
-            await collection.insertOne(categoryData);
-            await collection.insertOne(otherData);
+            params = [client._id.toString()];
+            body = {};
         });
 
-        it('should get files', async () => {
-            await clearCollection(collection);
+        const request = (params, body) => integrationHelpers.executeRequest('get', '/files', params, body);
 
-            const file = createFile(clientId.toString());
-            await collection.insertOne({
-                _id: categoryData._id,
-                name: categoryData.name,
-                items: [ file ]
-            });
-
-            // perform action to test
-            let response = await agent(app)
-                .get(`/files/${file.clientId}`);
+        it('should get files for client', async () => {
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(200);
-            expect(response.body).toHaveLength(1);
 
-            const category = response.body[0];
-            expect(category._id.toString()).toBe(categoryData._id.toString());
-            expect(category.name).toBe(categoryData.name);
-            expect(category.items).toHaveLength(1);
+            const categories = response.body;
+            expect(categories).toHaveLength(2);
 
-            const item = category.items[0];
-            expect(item.clientId).toBe(file.clientId);
-            expect(item.fileName).toBe(file.fileName);
-            expect(item.fullFileUrl).toBe(file.fullFileUrl);
-            expect(item.smallFileUrl).toBe(file.smallFileUrl);
-            expect(item.fullGcsDest).toBe(file.fullGcsDest);
-            expect(item.smallGcsDest).toBe(file.smallGcsDest);
-            expect(item.gcsId).toBe(file.gcsId);
+            const cat1 = categories.filter(category => category._id === category1._id.toString())[0];
+            expect(cat1.items).toHaveLength(2);
+            cat1.items.forEach(item => {
+                expect(item.clientId).toBe(client._id.toString());
+            });
         });
 
         it('should handle no files for client', async () => {
-            await clearCollection(collection);
-            await insertOther(collection);
-            await collection.insertOne({ _id: categoryData._id, name: categoryData.Name, items: [] });
-            // perform action to test
-            let response = await agent(app)
-                .get(`/files/${clientId.toString()}`);
-            
-            // perform checks
-            expect(response.status).toBe(200);
-            expect(response.body).toHaveLength(2);
-            expect(response.body[0].items).toHaveLength(0);
-            expect(response.body[1].items).toHaveLength(0);
-        });
+            const otherClientId = ObjectId();
+            await clientCollection.insertOne({ _id: otherClientId });
+            params = [otherClientId.toString()];
 
-        it('should only get client files', async () => {
-            // perform action to test
-            let response = await agent(app)
-                .get(`/files/${clientId.toString()}`);
-            
-            // perform checks
-            expect(response.status).toBe(200);
-
-            let categories = response.body;
+            const response = await request(params, body);
+            const categories = response.body;
             expect(categories).toHaveLength(2);
 
-            let files = categories.map(category => category.items).flat();
-            expect(files.length).toBe(6);
-            files.forEach(file => expect(file.clientId).toBe(clientId.toString()));
+            const cat1 = categories.filter(category => category._id === category1._id.toString())[0];
+            expect(cat1.items).toHaveLength(0);
         });
 
-        it('should fail with invalid client id', async () => {
-            // perform action to test
-            let response = await agent(app)
-                .get(`/files/not-valid-id`);
-            
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('client id is invalid or missing');
+        it('should work across multiple categories', async () => {
+            await collection.insertMany([category2, category3]);
+            const response = await request(params, body);
+
+            expect(response.status).toBe(200);
+
+            const categories = response.body;
+            expect(categories).toHaveLength(4);
+
+            const cat1 = categories.filter(category => category._id === category1._id.toString())[0];
+            const cat2 = categories.filter(category => category._id === category2._id.toString())[0];
+            const cat3 = categories.filter(category => category._id === category3._id.toString())[0];
+            expect(cat1.items).toHaveLength(2);
+            expect(cat2.items).toHaveLength(1);
+            expect(cat3.items).toHaveLength(0);
+
+            [cat1, cat2, cat3].forEach(cat => {
+                cat.items.forEach(item => {
+                    expect(item.clientId).toBe(client._id.toString());
+                });
+            });
         });
 
-        it('should fail id client doesn\'t exist', async () => {
-            await removeClient(db);
-            // perform action to test
-            let response = await agent(app)
-                .get(`/files/${clientId.toString()}`);
+        it('should fail if client does not exist', async () => {
+            await integrationHelpers.removeClient();
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('client not found');
         });
+
+        integrationHelpers.testParams(schema.get.params.fields, request, () => body, ['clientId'], {
+            checkPermissions: true,
+        });
+        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body);
     });
 
-    describe('update file name', () => {
-        function createFile(clientId) {
-            return {
-                clientId: clientId,
-                fileName: 'Blazin Blazer',
-                fullFileUrl: 'full.file.url',
-                smallFileUrl: 'small.file.url',
-                fullGcsDest: 'test/items/full.png',
-                smallGcsDest: 'test/items/small.png',
-                gcsId: cuid2.createId()
-            };
-        }
-
-        let categoryId;
-        let fileData;
-        let data;
-        let patchData;
+    describe('patchName', () => {
+        let file, category;
+        let params, body;
         beforeEach(async () => {
-            categoryId = new ObjectId();
-
-            fileData = createFile(clientId.toString());
-            data = {
-                _id: categoryId,
-                name: 'Blazers',
-                items: [ 
-                    createFile((new ObjectId()).toString()), 
-                    createFile((new ObjectId()).toString()), 
-                    fileData, 
-                    createFile((new ObjectId()).toString()) ]
+            file = {
+                clientId: client._id.toString(),
+                fileName: 'Blazin Blazer',
+                tags: [ObjectId().toString()],
+                gcsId: cuid2.createId(),
             };
-            await collection.insertOne(data);
+            category = {
+                _id: ObjectId(),
+                name: 'Blazers',
+                items: [
+                    file,
+                    { gcsId: cuid2.createId() },
+                    { gcsId: cuid2.createId() },
+                ],
+            }
+            await collection.insertOne(category);
 
-            patchData = { newName: 'Blaze-tastic Blazer' };
+            params = [client._id.toString(), category._id.toString(), file.gcsId];
+            body = {
+                name: 'Fantastic Fedora',
+                tags: [file.tags[0], ObjectId().toString()],
+            };
         });
 
-        it('should update file name', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/files/${clientId.toString()}/${categoryId.toString()}/${fileData.gcsId}`)
-                .send(patchData);
+        const request = (params, body) => integrationHelpers.executeRequest('patch', '/files', params, body);
+
+        it('should update file', async () => {
+            const response = await request(params, body);
             
-            // perform checks
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Success!');
+    
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(3);
+
+            const updatedFile = cat.items.find(item => item.gcsId === file.gcsId);
+            expect(updatedFile).toMatchObject({
+                clientId: file.clientId,
+                fileName: body.name,
+                tags: body.tags,
+                gcsId: file.gcsId,
+            });
+            expect(updatedFile.tags).toHaveLength(2);
+        });
+
+        it('should update file in other category', async () => {
+            await integrationHelpers.clearCollection();
+            await collection.insertOne({ _id: 0, name: 'Other', items: category.items });
+            params = [client._id.toString(), 0, file.gcsId];
+            const response = await request(params, body);
+            
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Success!');
+    
+            const cat = await collection.findOne({ _id: 0 });
+            expect(cat.items).toHaveLength(3);
+
+            const updatedFile = cat.items.find(item => item.gcsId === file.gcsId);
+            expect(updatedFile).toMatchObject({
+                clientId: file.clientId,
+                fileName: body.name,
+                tags: body.tags,
+                gcsId: file.gcsId,
+            });
+            expect(updatedFile.tags).toHaveLength(2);
+        });
+
+        it('should remove all tags', async () => {
+            body.tags = [];
+            const response = await request(params, body);
+            
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
-            const category = await collection.findOne({ _id: data._id });
-            expect(category.name).toBe(data.name);
-            expect(category.items).toHaveLength(4);
-            const file = category.items.find(item => item.gcsId === fileData.gcsId);
-
-            expect(file.clientId).toBe(fileData.clientId);
-            expect(file.fileName).toBe(patchData.newName);
-            expect(file.fullFileUrl).toBe(fileData.fullFileUrl);
-            expect(file.smallFileUrl).toBe(fileData.smallFileUrl);
-            expect(file.fullGcsDest).toBe(fileData.fullGcsDest);
-            expect(file.smallGcsDest).toBe(fileData.smallGcsDest);
-            expect(file.gcsId).toBe(fileData.gcsId);
+            const cat = await collection.findOne({ _id: category._id });
+            const updatedFile = cat.items.find(item => item.gcsId === file.gcsId);
+            expect(updatedFile.tags).toHaveLength(0);
         });
 
-        it('should update file name given Other category', async () => {
-            // perform action to test
-            await clearCollection(collection);
-            const otherCategory = { _id: 0, name: 'Other', items: data.items };
-            data = otherCategory;
-            await collection.insertOne(data);
-
-            const response = await agent(app)
-                .patch(`/files/${clientId.toString()}/0/${fileData.gcsId}`)
-                .send(patchData);
+        it('should only update name', async () => {
+            body.tags = file.tags;
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
-            const category = await collection.findOne({ _id: data._id });
-            expect(category.name).toBe(data.name);
-            expect(category.items).toHaveLength(4);
-            const file = category.items.find(item => item.gcsId === fileData.gcsId);
-
-            expect(file.clientId).toBe(fileData.clientId);
-            expect(file.fileName).toBe(patchData.newName);
-            expect(file.fullFileUrl).toBe(fileData.fullFileUrl);
-            expect(file.smallFileUrl).toBe(fileData.smallFileUrl);
-            expect(file.fullGcsDest).toBe(fileData.fullGcsDest);
-            expect(file.smallGcsDest).toBe(fileData.smallGcsDest);
-            expect(file.gcsId).toBe(fileData.gcsId);
+            const cat = await collection.findOne({ _id: category._id });
+            const updatedFile = cat.items.find(item => item.gcsId === file.gcsId);
+            expect(updatedFile).toMatchObject({
+                fileName: body.name,
+                tags: file.tags,
+            });
         });
 
-        it('should fail with missing file name', async () => {
-            // perform action to test
-            delete patchData.newName;
-            const response = await agent(app)
-                .patch(`/files/${clientId.toString()}/${categoryId.toString()}/${fileData.gcsId}`)
-                .send(patchData);
+        it('should only update tags', async () => {
+            body.name = file.fileName;
+            const response = await request(params, body);
             
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('file name is required to update file name');
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Success!');
 
-            const category = await collection.findOne({ _id: data._id });
-            expect(category.name).toBe(data.name);
-            const file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file.fileName).not.toBe(patchData.newName);
+            const cat = await collection.findOne({ _id: category._id });
+            const updatedFile = cat.items.find(item => item.gcsId === file.gcsId);
+            expect(updatedFile).toMatchObject({
+                fileName: file.fileName,
+                tags: body.tags,
+            });
         });
 
-        it('should fail with invalid category id', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/files/${clientId.toString()}/not-valid-id/${fileData.gcsId}`)
-                .send(patchData);
+        it('should fail if category does not exist', async () => {
+            params = [client._id.toString(), ObjectId().toString(), file.gcsId];
+            const response = await request(params, body);
             
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('failed to update file name: invalid or missing category id');
-
-            const category = await collection.findOne({ _id: data._id });
-            expect(category.name).toBe(data.name);
-            const file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file.fileName).not.toBe(patchData.newName);
-        });
-
-        it('should fail with nonexistent category id', async () => {
-            // perform action to test
-            await clearCollection(collection);
-            const response = await agent(app)
-                .patch(`/files/${clientId.toString()}/${categoryId.toString()}/${fileData.gcsId}`)
-                .send(patchData);
-            
-            // perform checks
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('update of file name failed: category or file not found with given category or gcs id');
 
-            const category = await collection.findOne({ _id: data._id });
-            expect(category).toBeFalsy();
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat).toStrictEqual(category);
         });
 
-        it('should fail with nonexistent gcs id', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/files/${clientId.toString()}/${categoryId.toString()}/not-valid-gcs-id`)
-                .send(patchData);
+        it('should fail if file does not exist', async () => {
+            params = [client._id.toString(), category._id.toString(), 'invalid-gcs-id'];
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('update of file name failed: category or file not found with given category or gcs id');
 
-            const category = await collection.findOne({ _id: data._id });
-            expect(category.name).toBe(data.name);
-            const file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file.fileName).not.toBe(patchData.newName);
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat).toStrictEqual(category);
         });
 
-        it('should fail with invalid client id', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/files/not-valid-id/${categoryId.toString()}/${fileData.gcsId}`)
-                .send(patchData);
+        it('should fail if client does not exist', async () => {
+            await integrationHelpers.removeClient();
+            const response = await request(params, body);
             
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('client id is invalid or missing');
-
-            const category = await collection.findOne({ _id: data._id });
-            expect(category.name).toBe(data.name);
-            const file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file.fileName).not.toBe(patchData.newName);
-        });
-
-        it('should fail if client doesn\'t exist', async () => {
-            await removeClient(db);
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/files/${clientId.toString()}/${categoryId.toString()}/${fileData.gcsId}`)
-                .send(patchData);
-            
-            // perform checks
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('client not found');
 
-            const category = await collection.findOne({ _id: data._id });
-            expect(category.name).toBe(data.name);
-            const file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file.fileName).not.toBe(patchData.newName);
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat).toStrictEqual(category);
         });
-
-
+        
+        integrationHelpers.testParams(schema.patchName.params.fields, request, () => body, ['clientId', 'categoryId', 'gcsId'], {
+            checkPermissions: true,
+        });
+        integrationHelpers.testBody(schema.patchName.body.fields, request, () => params);
+        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body);
     });
 
-    describe('update file category', () => {
-        function createFile(clientId) {
-            return {
-                clientId: clientId,
-                fileName: 'Blazin Blazer',
-                fullFileUrl: 'full.file.url',
-                smallFileUrl: 'small.file.url',
-                fullGcsDest: 'test/items/full.png',
-                smallGcsDest: 'test/items/small.png',
-                gcsId: cuid2.createId()
-            };
-        }
-
-        let categoryId;
-        let fileData;
-        let data;
-        let newCategoryId;
-        let newCategoryData;
-        let patchData;
+    describe('patchCategory', () => {
+        let file, category1, category2;
+        let params, body;
         beforeEach(async () => {
-            categoryId = new ObjectId();
-
-            fileData = createFile(clientId.toString());
-            data = {
-                _id: categoryId,
+            file = {
+                clientId: client._id.toString(),
+                fileName: 'Blazin Blazer',
+                gcsId: cuid2.createId(),
+            };
+            category1 = {
+                _id: ObjectId(),
                 name: 'Blazers',
-                items: [ 
-                    createFile((new ObjectId()).toString()), 
-                    createFile((new ObjectId()).toString()), 
-                    fileData, 
-                    createFile((new ObjectId()).toString()) ]
+                items: [file],
             };
-            await collection.insertOne(data);
-
-            newCategoryId = new ObjectId();
-            newCategoryData = {
-                _id: newCategoryId,
-                name: 'T-Shirts',
-                items: [ createFile((new ObjectId()).toString()) ]
+            category2 = {
+                _id: ObjectId(),
+                name: 'Suits',
+                items: [],
             };
-            await collection.insertOne(newCategoryData);
+            await collection.insertMany([category1, category2]);
 
-            patchData = { newCategoryId: newCategoryId.toString() };
+            params = [client._id.toString(), category1._id.toString(), file.gcsId];
+            body = {
+                newCategoryId: category2._id.toString(),
+            };
         });
+
+        const request = (params, body) => integrationHelpers.executeRequest('patch', '/files/category', params, body);
 
         it('should update file category', async () => {
-            let currCategory = await collection.findOne({ _id: data._id });
-            let currItems = currCategory.items;
-            expect(currItems).toHaveLength(4);
+            let oldCategory = await collection.findOne({ _id: category1._id });
+            let newCategory = await collection.findOne({ _id: category2._id });
+            expect(oldCategory.items).toHaveLength(1);
+            expect(newCategory.items).toHaveLength(0);
 
-            let newCategory = await collection.findOne({ _id: newCategoryData._id });
-            let newItems = newCategory.items;
-            expect(newItems).toHaveLength(1);
+            const response = await request(params, body);
 
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/files/category/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`)
-                .send(patchData);
-            
-            // perform checks
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
-            currCategory = await collection.findOne({ _id: data._id });
-            currItems = currCategory.items;
-            expect(currItems).toHaveLength(3);
-
-            newCategory = await collection.findOne({ _id: newCategoryData._id });
-            newItems = newCategory.items;
-            expect(newItems).toHaveLength(2);
-
-            const file = newItems.find(item => item.gcsId === fileData.gcsId);
-
-            expect(file.clientId).toBe(fileData.clientId);
-            expect(file.fileName).toBe(fileData.fileName);
-            expect(file.fullFileUrl).toBe(fileData.fullFileUrl);
-            expect(file.smallFileUrl).toBe(fileData.smallFileUrl);
-            expect(file.fullGcsDest).toBe(fileData.fullGcsDest);
-            expect(file.smallGcsDest).toBe(fileData.smallGcsDest);
-            expect(file.gcsId).toBe(fileData.gcsId);
+            oldCategory = await collection.findOne({ _id: category1._id });
+            newCategory = await collection.findOne({ _id: category2._id });
+            expect(oldCategory.items).toHaveLength(0);
+            expect(newCategory.items).toHaveLength(1);
+            expect(newCategory.items[0]).toStrictEqual(file);
         });
 
-        it('should update file category - current is Other', async () => {
-            await collection.updateOne({ _id: 0 }, { $push: { items: fileData } });
-            let currCategory = await collection.findOne({ _id: 0 });
-            let currItems = currCategory.items;
-            expect(currItems).toHaveLength(1);
+        it('should not affect other files', async () => {
+            await integrationHelpers.clearCollection();
+            category1.items = [file, { file: 1 }, { file: 2 }];
+            category2.items = [{ tag: 1 }, { tag: 2 }];
+            await collection.insertMany([category1, category2]);
 
-            let newCategory = await collection.findOne({ _id: newCategoryData._id });
-            let newItems = newCategory.items;
-            expect(newItems).toHaveLength(1);
+            let oldCategory = await collection.findOne({ _id: category1._id });
+            let newCategory = await collection.findOne({ _id: category2._id });
+            expect(oldCategory.items).toHaveLength(3);
+            expect(newCategory.items).toHaveLength(2);
 
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/files/category/${clientId.toString()}/0/${fileData.gcsId}`)
-                .send(patchData);
-            
-            // perform checks
+            const response = await request(params, body);
+
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
-            currCategory = await collection.findOne({ _id: 0 });
-            currItems = currCategory.items;
-            expect(currItems).toHaveLength(0);
+            oldCategory = await collection.findOne({ _id: category1._id });
+            newCategory = await collection.findOne({ _id: category2._id });
+            expect(oldCategory.items).toHaveLength(2);
+            expect(newCategory.items).toHaveLength(3);
 
-            newCategory = await collection.findOne({ _id: newCategoryData._id });
-            newItems = newCategory.items;
-            expect(newItems).toHaveLength(2);
-
-            const file = newItems.find(item => item.gcsId === fileData.gcsId);
-
-            expect(file.clientId).toBe(fileData.clientId);
-            expect(file.fileName).toBe(fileData.fileName);
-            expect(file.fullFileUrl).toBe(fileData.fullFileUrl);
-            expect(file.smallFileUrl).toBe(fileData.smallFileUrl);
-            expect(file.fullGcsDest).toBe(fileData.fullGcsDest);
-            expect(file.smallGcsDest).toBe(fileData.smallGcsDest);
-            expect(file.gcsId).toBe(fileData.gcsId);
+            const movedFile = newCategory.items.filter(movedFile => movedFile.gcsId === file.gcsId)[0];
+            expect(movedFile).toStrictEqual(file);
         });
 
-        it('should update file category - new is Other', async () => {
-            let currCategory = await collection.findOne({ _id: data._id });
-            let currItems = currCategory.items;
-            expect(currItems).toHaveLength(4);
-
+        it('should move file to other', async () => {
+            let oldCategory = await collection.findOne({ _id: category1._id });
             let newCategory = await collection.findOne({ _id: 0 });
-            let newItems = newCategory.items;
-            expect(newItems).toHaveLength(0);
+            expect(oldCategory.items).toHaveLength(1);
+            expect(newCategory.items).toHaveLength(0);
 
-            // perform action to test
-            patchData.newCategoryId = 0;
-            const response = await agent(app)
-                .patch(`/files/category/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`)
-                .send(patchData);
-            
-            // perform checks
+            body.newCategoryId = 0;
+            const response = await request(params, body);
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
-            currCategory = await collection.findOne({ _id: data._id });
-            currItems = currCategory.items;
-            expect(currItems).toHaveLength(3);
-
+            oldCategory = await collection.findOne({ _id: category1._id });
             newCategory = await collection.findOne({ _id: 0 });
-            newItems = newCategory.items;
-            expect(newItems).toHaveLength(1);
-
-            const file = newItems.find(item => item.gcsId === fileData.gcsId);
-
-            expect(file.clientId).toBe(fileData.clientId);
-            expect(file.fileName).toBe(fileData.fileName);
-            expect(file.fullFileUrl).toBe(fileData.fullFileUrl);
-            expect(file.smallFileUrl).toBe(fileData.smallFileUrl);
-            expect(file.fullGcsDest).toBe(fileData.fullGcsDest);
-            expect(file.smallGcsDest).toBe(fileData.smallGcsDest);
-            expect(file.gcsId).toBe(fileData.gcsId);
+            expect(oldCategory.items).toHaveLength(0);
+            expect(newCategory.items).toHaveLength(1);
+            expect(newCategory.items[0]).toStrictEqual(file);
         });
 
-        it('should update file category - same new and current', async () => {
-            let currCategory = await collection.findOne({ _id: data._id });
-            let currItems = currCategory.items;
-            expect(currItems).toHaveLength(4);
+        it('should move file from other', async () => {
+            await integrationHelpers.clearCollection();
+            category1.items = [];
+            await collection.insertMany([category1, {
+                _id: 0,
+                name: 'Other',
+                items: [file],
+            }]);
 
-            // perform action to test
-            patchData.newCategoryId = data._id.toString();
-            const response = await agent(app)
-                .patch(`/files/category/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`)
-                .send(patchData);
-            
-            // perform checks
+            let oldCategory = await collection.findOne({ _id: 0 });
+            let newCategory = await collection.findOne({ _id: category1._id });
+            expect(oldCategory.items).toHaveLength(1);
+            expect(newCategory.items).toHaveLength(0);
+
+            params = [client._id.toString(), 0, file.gcsId];
+            body.newCategoryId = category1._id.toString();
+            const response = await request(params, body);
+
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
-            currCategory = await collection.findOne({ _id: data._id });
-            currItems = currCategory.items;
-            expect(currItems).toHaveLength(4);
-
-            const file = currItems.find(item => item.gcsId === fileData.gcsId);
-
-            expect(file.clientId).toBe(fileData.clientId);
-            expect(file.fileName).toBe(fileData.fileName);
-            expect(file.fullFileUrl).toBe(fileData.fullFileUrl);
-            expect(file.smallFileUrl).toBe(fileData.smallFileUrl);
-            expect(file.fullGcsDest).toBe(fileData.fullGcsDest);
-            expect(file.smallGcsDest).toBe(fileData.smallGcsDest);
-            expect(file.gcsId).toBe(fileData.gcsId);
+            oldCategory = await collection.findOne({ _id: 0 });
+            newCategory = await collection.findOne({ _id: category1._id });
+            expect(oldCategory.items).toHaveLength(0);
+            expect(newCategory.items).toHaveLength(1);
+            expect(newCategory.items[0]).toStrictEqual(file);
         });
 
-        it('should fail with missing new category id', async () => {
-            // perform action to test
-            delete patchData.newCategoryId;
-            const response = await agent(app)
-                .patch(`/files/category/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`)
-                .send(patchData);
-            
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('failed to update file category: invalid or missing new category id');
+        it('should fail with category that does not exist', async () => {
+            params = [client._id.toString(), ObjectId().toString(), file.gcsId];
+            const response = await request(params, body);
 
-            const currCategory = await collection.findOne({ _id: data._id });
-            const currItems = currCategory.items;
-            expect(currItems).toHaveLength(4);
-            const file = currItems.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            const newCategory = await collection.findOne({ _id: newCategoryData._id });
-            const newItems = newCategory.items;
-            expect(newItems).toHaveLength(1);
-        });
-
-        it('should fail with invalid new category id', async () => {
-            // perform action to test
-            patchData.newCategoryId = 'not-valid-id';
-            const response = await agent(app)
-                .patch(`/files/category/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`)
-                .send(patchData);
-            
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('failed to update file category: invalid or missing new category id');
-
-            const currCategory = await collection.findOne({ _id: data._id });
-            const currItems = currCategory.items;
-            expect(currItems).toHaveLength(4);
-            const file = currItems.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            const newCategory = await collection.findOne({ _id: newCategoryData._id });
-            const newItems = newCategory.items;
-            expect(newItems).toHaveLength(1);
-        });
-
-        it('should fail with invalid category id', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/files/category/${clientId.toString()}/not-valid-id/${fileData.gcsId}`)
-                .send(patchData);
-            
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('failed to update file category: invalid or missing category id');
-
-            const currCategory = await collection.findOne({ _id: data._id });
-            const currItems = currCategory.items;
-            expect(currItems).toHaveLength(4);
-            const file = currItems.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            const newCategory = await collection.findOne({ _id: newCategoryData._id });
-            const newItems = newCategory.items;
-            expect(newItems).toHaveLength(1);
-        });
-
-        it('should fail if current category doesn\'t exist', async () => {
-            await collection.deleteOne({ _id: data._id });
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/files/category/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`)
-                .send(patchData);
-            
-            // perform checks
             expect(response.status).toBe(500);
             expect(response.body.message).toBe('failed to retrieve file from database');
-
-            const currCategory = await collection.findOne({ _id: data._id });
-            expect(currCategory).toBeFalsy();
         });
 
-        it('should fail if file doesn\'t exist', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/files/category/${clientId.toString()}/${data._id.toString()}/not-valid-gcs-id`)
-                .send(patchData);
-            
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('failed to retrieve file from database');
+        it('should fail with new category that does not exist', async () => {
+            body.newCategoryId = ObjectId().toString();
+            const response = await request(params, body);
 
-            const currCategory = await collection.findOne({ _id: data._id });
-            const currItems = currCategory.items;
-            expect(currItems).toHaveLength(4);
-            const file = currItems.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            const newCategory = await collection.findOne({ _id: newCategoryData._id });
-            const newItems = newCategory.items;
-            expect(newItems).toHaveLength(1);
-        });
-
-        it('should fail if new category doesn\'t exist', async () => {
-            await collection.deleteOne({ _id: newCategoryData._id });
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/files/category/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`)
-                .send(patchData);
-            
-            // perform checks
             expect(response.status).toBe(404);
-            expect(response.body.message).toBe('cannot change file category: no category or multiple categories exist');
-
-            const currCategory = await collection.findOne({ _id: data._id });
-            const currItems = currCategory.items;
-            expect(currItems).toHaveLength(4);
-            const file = currItems.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            const newCategory = await collection.findOne({ _id: newCategoryData._id });
-            expect(newCategory).toBeFalsy();
+            expect(response.body.message).toBe('update of file category failed: file not added to new category');
         });
 
-        it('should with invalid client id', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/files/category/not-valid-id/${data._id.toString()}/${fileData.gcsId}`)
-                .send(patchData);
-            
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('client id is invalid or missing');
+        it('should fail with file that does not exist', async () => {
+            params = [client._id.toString(), category1._id.toString(), cuid2.createId()];
+            const response = await request(params, body);
 
-            const currCategory = await collection.findOne({ _id: data._id });
-            const currItems = currCategory.items;
-            expect(currItems).toHaveLength(4);
-            const file = currItems.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            const newCategory = await collection.findOne({ _id: newCategoryData._id });
-            const newItems = newCategory.items;
-            expect(newItems).toHaveLength(1);
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('failed to retrieve file from database');
         });
 
-        it('should fail if client doesn\'t exist', async () => {
-            await removeClient(db);
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/files/category/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`)
-                .send(patchData);
-            
-            // perform checks
+        it('should fail with client that does not exist', async () => {
+            await integrationHelpers.removeClient();
+            const response = await request(params, body);
+
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('client not found');
-
-            const currCategory = await collection.findOne({ _id: data._id });
-            const currItems = currCategory.items;
-            expect(currItems).toHaveLength(4);
-            const file = currItems.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            const newCategory = await collection.findOne({ _id: newCategoryData._id });
-            const newItems = newCategory.items;
-            expect(newItems).toHaveLength(1);
         });
+
+        integrationHelpers.testParams(schema.patchCategory.params.fields, request, () => body, ['clientId', 'categoryId', 'gcsId'], {
+            checkPermissions: true,
+        });
+        integrationHelpers.testBody(schema.patchCategory.body.fields, request, () => params);
+        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body);
     });
 
     describe('delete', () => {
-        function createFile(clientId) {
-            return {
-                clientId: clientId,
-                fileName: 'Blazin Blazer',
-                fullFileUrl: 'full.file.url',
-                smallFileUrl: 'small.file.url',
-                fullGcsDest: 'test/items/full.png',
-                smallGcsDest: 'test/items/small.png',
-                gcsId: cuid2.createId()
-            };
-        }
-
-        let b64str = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==';
-        let gcsId;
-        let fullGcsDest;
-        let smallGcsDest;
-        let fileBuffer;
-        let fullFileUrl;
-        let smallFileUrl;
-
-        let categoryId;
-        let fileData;
-        let data;
+        let category, file;
+        let params, body;
         beforeEach(async () => {
-            expect(bucket.id).toBe('edie-styles-virtual-closet-test');
-            let [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(0);
+            await clearBucket();
 
-            gcsId = cuid2.createId();
-            fullGcsDest = `test/items/${gcsId}/full.png`;
-            smallGcsDest = `test/items/${gcsId}/small.png`;
-            fileBuffer = await helpers.b64ToBuffer(b64str);
+            const gcsId = cuid2.createId();
+            const fullGcsDest = `test/items/${gcsId}/full.png`;
+            const smallGcsDest = `test/items/${gcsId}/small.png`;
+            const fileBuffer = await helpers.b64ToBuffer('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==');
+            const fullFileUrl = await helpers.uploadToGCS(bucket, fullGcsDest, fileBuffer);
+            const smallFileUrl = await helpers.uploadToGCS(bucket, smallGcsDest, fileBuffer);
 
-            fullFileUrl = await helpers.uploadToGCS(bucket, fullGcsDest, fileBuffer);
-            smallFileUrl = await helpers.uploadToGCS(bucket, smallGcsDest, fileBuffer);
-
-            [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(2);
 
-            categoryId = new ObjectId();
-
-            fileData = {
-                clientId: clientId.toString(),
+            file = {
+                clientId: client._id.toString(),
                 fileName: 'Blazin Blazer',
                 fullFileUrl: fullFileUrl,
                 smallFileUrl: smallFileUrl,
                 fullGcsDest: fullGcsDest,
                 smallGcsDest: smallGcsDest,
-                gcsId: gcsId
+                gcsId: gcsId,
             };
-
-            data = {
-                _id: categoryId,
+            category = {
+                _id: ObjectId(),
                 name: 'Blazers',
-                items: [
-                    createFile((new ObjectId()).toString()), 
-                    fileData,
-                    createFile((new ObjectId()).toString()),
-                    createFile((new ObjectId()).toString())
-                ]
+                items: [file],
             };
-            await collection.insertOne(data);
+            await collection.insertOne(category);
+
+            params = [client._id.toString(), category._id.toString(), file.gcsId];
+            body = {};
         });
 
-        afterEach(async() => {
+        afterAll(async () => {
             await clearBucket();
         });
 
+        const request = (params, body) => integrationHelpers.executeRequest('delete', '/files', params, body);
+
         it('should delete file', async () => {
-            let category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(4);
-            let file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/files/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`);
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
-            category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(3);
-            file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeFalsy();
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(0);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(0);
         });
 
-        it('should delete file - Other category', async () => {
-            await clearCollection(collection);
-            await collection.insertOne({ _id: 0, name: 'Other', items: [ fileData ] });
-
-            let category = await collection.findOne({ _id: 0 });
-            expect(category.items).toHaveLength(1);
-            let file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/files/${clientId.toString()}/0/${fileData.gcsId}`);
+        it('should delete file in other', async () => {
+            await integrationHelpers.clearCollection();
+            await collection.insertOne({
+                _id: 0,
+                name: 'Other',
+                items: [file],
+            });
+            params = [client._id.toString(), 0, file.gcsId];
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
-            category = await collection.findOne({ _id: 0 });
-            expect(category.items).toHaveLength(0);
-            file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeFalsy();
+            const cat = await collection.findOne({ _id: 0 });
+            expect(cat.items).toHaveLength(0);
 
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(0);
         });
 
-        it('should fail with invalid category id', async () => {
-            let category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(4);
-            let file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
+        it('should delete file but not other files in category', async () => {
+            await integrationHelpers.clearCollection();
+            category.items = [file, { file: 1 }, { file: 2 }];
+            await collection.insertOne(category);
 
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/files/${clientId.toString()}/not-valid-id/${fileData.gcsId}`);
+            const response = await request(params, body);
             
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('failed to delete file: invalid or missing category id');
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Success!');
 
-            category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(4);
-            file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
+            const cat = await collection.findOne({ _id: category._id });
+            expect(cat.items).toHaveLength(2);
 
+            const deletedFile = cat.items.filter(fileToCheck => fileToCheck.gcsId === file.gcsId)[0];
+            expect(deletedFile).toBeFalsy();
+
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(0);
+        });
+
+        it('should fail with category that does not exist', async () => {
+            params = [client._id.toString(), ObjectId().toString(), file.gcsId];
+            const response = await request(params, body);
+            
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('failed to retrieve file from database');
+            
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(2);
         });
 
-        it('should fail with nonexistent category', async () => {
-            await clearCollection(collection);
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/files/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`);
+        it('should fail with file that does not exist', async () => {
+            params = [client._id.toString(), category._id.toString(), cuid2.createId()];
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(500);
             expect(response.body.message).toBe('failed to retrieve file from database');
-
-            const category = await collection.findOne({ _id: data._id });
-            expect(category).toBeFalsy();
-
+            
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(2);
         });
 
-        it('should fail with nonexistent gcs id', async () => {
-            let category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(4);
-            let file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/files/${clientId.toString()}/${data._id.toString()}/not-valid-gcs-id`);
+        it('should fail with client that does not exist', async () => {
+            await integrationHelpers.removeClient();
+            const response = await request(params, body);
             
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('failed to retrieve file from database');
-
-            category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(4);
-            file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
+            expect(response.status).toBe(404);
+            expect(response.body.message).toBe('client not found');
+            
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(2);
         });
 
-        it('should fail with no fullGcsDest', async () => {
-            await clearCollection(collection);
-            delete fileData.fullGcsDest;
-            data.items = [ fileData ];
-            await collection.insertOne(data);
+        it('should fail file does not have fullGcsDest', async () => {
+            await integrationHelpers.clearCollection();
+            delete file.fullGcsDest;
+            category.items = [file];
+            await collection.insertOne(category);
 
-            let category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(1);
-            let file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/files/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`);
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(500);
-            expect(response.body.message).toBe('failed to retrieve file from database');
-
-            category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(1);
-            file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
+            expect(response.body.message).toBe('file does not have both a full and small gcs path');
+            
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(2);
         });
 
-        it('should fail with no smallGcsDest', async () => {
-            await clearCollection(collection);
-            delete fileData.smallGcsDest;
-            data.items = [ fileData ];
-            await collection.insertOne(data);
+        it('should fail file does not have smallGcsDest', async () => {
+            await integrationHelpers.clearCollection();
+            delete file.smallGcsDest;
+            category.items = [file];
+            await collection.insertOne(category);
 
-            let category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(1);
-            let file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/files/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`);
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(500);
-            expect(response.body.message).toBe('failed to retrieve file from database');
+            expect(response.body.message).toBe('file does not have both a full and small gcs path');
+            
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(2);
+        });
 
-            category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(1);
-            file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
+        it('should fail file does not have both fullGcsDest and smallGcsDest', async () => {
+            await integrationHelpers.clearCollection();
+            delete file.fullGcsDest;
+            delete file.smallGcsDest;
+            category.items = [file];
+            await collection.insertOne(category);
 
+            const response = await request(params, body);
+            
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe('file does not have both a full and small gcs path');
+            
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(2);
         });
 
         it('should fail with invalid fullGcsDest', async () => {
-            await clearCollection(collection);
-            fileData.fullGcsDest = `test/items/invalid/gcs-dest.png`;
-            data.items = [ fileData ];
-            await collection.insertOne(data);
+            await integrationHelpers.clearCollection();
+            file.fullGcsDest = 'invalid';
+            category.items = [file];
+            await collection.insertOne(category);
 
-            let category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(1);
-            let file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/files/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`);
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(500);
-            expect(response.body.message).toBe(`No such object: edie-styles-virtual-closet-test/${fileData.fullGcsDest}`);
-
-            category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(1);
-            file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
+            expect(response.body.message).toBe('No such object: edie-styles-virtual-closet-test/invalid');
+            
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(2);
         });
 
         it('should fail with invalid smallGcsDest', async () => {
-            await clearCollection(collection);
-            fileData.smallGcsDest = `test/items/${gcsId}/invalid-gcs-dest.png`;
-            data.items = [ fileData ];
-            await collection.insertOne(data);
+            await integrationHelpers.clearCollection();
+            file.smallGcsDest = 'invalid';
+            category.items = [file];
+            await collection.insertOne(category);
 
-            let category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(1);
-            let file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/files/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`);
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(500);
-            expect(response.body.message).toBe(`No such object: edie-styles-virtual-closet-test/${fileData.smallGcsDest}`);
-
-            category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(1);
-            file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
+            expect(response.body.message).toBe('No such object: edie-styles-virtual-closet-test/invalid');
+            
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(1);
         });
 
-        it('should fail with invalid client id', async () => {
-            let category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(4);
-            let file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/files/not-valid-id/${data._id.toString()}/${fileData.gcsId}`);
-            
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('client id is invalid or missing');
-
-            category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(4);
-            file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(2);
+        integrationHelpers.testParams(schema.delete.params.fields, request, () => body, ['clientId', 'categoryId', 'gcsId'], {
+            checkPermissions: true,
         });
-
-        it('should fail if client doesn\'t exist', async () => {
-            await removeClient(db);
-
-            let category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(4);
-            let file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/files/${clientId.toString()}/${data._id.toString()}/${fileData.gcsId}`);
-            
-            // perform checks
-            expect(response.status).toBe(404);
-            expect(response.body.message).toBe('client not found');
-
-            category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(4);
-            file = category.items.find(item => item.gcsId === fileData.gcsId);
-            expect(file).toBeTruthy();
-
-            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
-            expect(files).toHaveLength(2);
-        });
+        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body);
     });
 });

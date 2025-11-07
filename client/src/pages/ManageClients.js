@@ -8,7 +8,9 @@ import Loading from '../components/Loading';
 import ActionButton from '../components/ActionButton';
 import Modal from '../components/Modal';
 import Input from '../components/Input';
-import { CircularProgress } from '@mui/material';
+import TheArchive from '../components/TheArchive';
+import ClosetSettings from '../components/ClosetSettings';
+import { CircularProgress, Tooltip } from '@mui/material';
 import { ManageClientsContainer } from '../styles/ManageClients';
 import { useUser } from '../components/UserContext';
 
@@ -52,6 +54,10 @@ export default function ManageClients() {
     const [newClientEmail, setNewClientEmail] = useState('');
     const [newClientRole, setNewClientRole] = useState(false);
     const [newClientCredits, setNewClientCredits] = useState(350);
+
+    const [archiveOpen, setArchiveOpen] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(false);
+
     const [loading, setLoading] = useState(false);
 
     const [deleteProgressOpen, setDeleteProgressOpen] = useState(false);
@@ -60,6 +66,32 @@ export default function ManageClients() {
     const [deleteProgressDenominator, setDeleteProgressDenominator] = useState(1);
 
     const { user } = useUser();
+
+    const [searchResultsSuperAdmin, setSearchResultsSuperAdmin] = useState(superAdmins || []);
+    const [searchResultsAdmin, setSearchResultsAdmin] = useState(admins || []);
+    const [searchResultsClients, setSearchResultsClients] = useState(clients || []);
+    const [searchString, setSearchString] = useState('');
+    
+    const filter = useCallback((clients, searchString) => {
+        const words = searchString.toLowerCase().split(/\s+/).filter(Boolean);
+        const results = clients.filter(client =>
+            words.every(word => 
+                client?.firstName?.toLowerCase()?.includes(word) ||
+                client?.lastName?.toLowerCase()?.includes(word)
+            )
+        );
+        return results;
+    }, []);
+
+    useEffect(() => {
+        const superAdminResults = filter(superAdmins, searchString);
+        const adminResults = filter(admins, searchString);
+        const clientResults = filter(clients, searchString);
+
+        setSearchResultsSuperAdmin(superAdminResults);
+        setSearchResultsAdmin(adminResults);
+        setSearchResultsClients(clientResults);
+    }, [filter, searchString, superAdmins, admins, clients]);
 
     const getClients = useCallback(async () => {
         setLoading(true);
@@ -309,35 +341,75 @@ export default function ManageClients() {
         });
     }
 
+    function handleOpenArchive() {
+        setArchiveOpen(true);
+    }
+
+    function handleCloseArchive() {
+        setArchiveOpen(false);
+    }
+
+    function handleOpenSettings() {
+        setSettingsOpen(true);
+    }
+
+    function handleCloseSettings() {
+        setSettingsOpen(false);
+    }
+
     return (
         <>
             <ManageClientsContainer>
-                <h1 className="title">Clients</h1>
+                <div className="clients-header">
+                    <h1 className="title">Clients</h1>
+                    <Tooltip title="The Archive">
+                        <button className="material-icons the-archive-button" onClick={handleOpenArchive}>inventory_2</button>
+                    </Tooltip>
+                    <Tooltip title="Closet Settings">
+                        <button className="material-icons closet-settings-button" onClick={handleOpenSettings}>settings</button>
+                    </Tooltip>
+                </div>
+                <div className="title-search">
+                    <div className="search-box">
+                        <Input
+                            type="text"
+                            id="fuzzy-search"
+                            label="Search"
+                            value={searchString}
+                            onChange={e => setSearchString(e.target.value)}
+                        />
+                        <button className='material-icons clear-search-button' onClick={() => setSearchString('')}>
+                            clear
+                        </button>
+                    </div>
+                </div>
+                
                 <div className="clients">
                     {
-                        superAdmins.map(client => (
+                        searchResultsSuperAdmin?.map(client => (
                             <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
                         ))
                     }
                     {
-                        admins.map(client => (
+                        searchResultsAdmin?.map(client => (
                             <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
                         ))
                     }
                     { 
-                        clients.map(client => (
+                        searchResultsClients?.map(client => (
                             <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
                         ))
                     }
                 </div>
                 { user?.isSuperAdmin &&
                     <div className="footer">
-                        <ActionButton variant={'secondary'} onClick={() => setOpenModal(true)}>Add Client</ActionButton>
+                        <ActionButton variant={'secondary less-vertical-padding'} onClick={() => setOpenModal(true)}>Add Client</ActionButton>
                     </div>
                 }
             </ManageClientsContainer>
             <Loading open={loading} />
             { user?.isSuperAdmin &&
+            <>
                 <Modal
                     open={openModal}
                     closeFn={handleClose}
@@ -389,18 +461,48 @@ export default function ManageClients() {
                         </div>
                     </>
                 </Modal>
+                <Modal
+                    open={deleteProgressOpen}
+                >
+                    <div className="modal-title">Deleting Client</div>
+                    <div className="modal-content">
+                        <p className="large">{deleteProgressMessage}</p>
+                        <p className="medium">{deleteProgressNumerator}/{deleteProgressDenominator} deleted</p>
+                        <CircularProgressWithLabel value={(deleteProgressNumerator / deleteProgressDenominator) * 100} />
+                    </div>
+                </Modal>
+                <Modal
+                    open={archiveOpen}
+                    closeFn={handleCloseArchive}
+                >
+                    <>
+                        <button className="material-icons close-modal" onClick={handleCloseArchive}>close</button>
+                        <h2 className="modal-title">The Archive</h2>
+                        <div className="modal-content no-scroll">
+                            <TheArchive 
+                                handleOpenArchive={handleOpenArchive}
+                                handleCloseArchive={handleCloseArchive}
+                            />
+                        </div>
+                    </>
+                </Modal>
+                <Modal
+                    open={settingsOpen}
+                    closeFn={handleCloseSettings}
+                >
+                    <>
+                        <button className="material-icons close-modal" onClick={handleCloseSettings}>close</button>
+                        <h2 className="modal-title">Closet Settings</h2>
+                        <div className="modal-content no-scroll">
+                            <ClosetSettings 
+                                handleOpenSettings={handleOpenSettings}
+                                handleCloseSettings={handleCloseSettings}
+                            />
+                        </div>
+                    </>
+                </Modal>
+            </>
             }
-            <Modal
-                open={deleteProgressOpen}
-            >
-                <div className="modal-title">Deleting Client</div>
-                <div className="modal-content">
-                    <p className="large">{deleteProgressMessage}</p>
-                    <p className="medium">{deleteProgressNumerator}/{deleteProgressDenominator} deleted</p>
-                    <CircularProgressWithLabel value={(deleteProgressNumerator / deleteProgressDenominator) * 100} />
-                </div>
-
-            </Modal>
         </>
     ); 
 }

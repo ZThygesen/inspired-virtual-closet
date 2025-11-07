@@ -1,33 +1,57 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useError } from './ErrorContext';
 import api from '../api';
 import ClothingCard from './ClothingCard';
 import Loading from './Loading';
-import { ClothesContainer, DropdownContainer, SwapCategoryDropdown } from '../styles/Clothes';
+import { ClothesContainer } from '../styles/Clothes';
+import { DropdownContainer, SwapDropdown } from '../styles/Dropdown';
 import Modal from './Modal';
 import { useClient } from './ClientContext';
+import { useData } from './DataContext';
+import Input from './Input';
+import cuid from 'cuid';
 
 export default function Clothes({ display, category, updateItems, addCanvasItem, canvasItems }) {
     const { setError } = useError();
 
     const [itemToSwapCategory, setItemToSwapCategory] = useState({});
-    const [currCategorySelected, setCurrCategorySelected] = useState({});
+    const [currCategorySelected, setCurrCategorySelected] = useState('');
     const [categoryOptions, setCategoryOptions] = useState([]);
     const [swapCategoryOpen, setSwapCategoryOpen] = useState(false);
     const [currOpenIndex, setCurrOpenIndex] = useState(null);
     const [loading, setLoading] = useState(false);
 
     const { client } = useClient();
+    const { clothesCategories } = useData();
+
+    const [items, setItems] = useState(category?.items || []);
+    const [searchResults, setSearchResults] = useState(category?.items || []);
+    const [searchString, setSearchString] = useState('');
+
+    useEffect(() => {
+        setItems(category?.items || []);
+    }, [category]);
+
+    useEffect(() => {
+        const words = searchString.toLowerCase().split(/\s+/).filter(Boolean);
+        const results = items.filter(item =>
+            words.every(word =>
+                item?.fileName?.toLowerCase()?.includes(word) || 
+                item?.tagNames?.some(tag => tag.toLowerCase().includes(word))
+            )
+        );
+        setSearchResults(results);
+    }, [searchString, items]);
 
     function handleSwapCategoryClose() {
         setSwapCategoryOpen(false);
         setItemToSwapCategory({});
-        setCurrCategorySelected({});
+        setCurrCategorySelected('');
         setCategoryOptions([]);
     }
 
     async function handleSwapCategorySubmit() {
-        if (currCategorySelected.value === category._id) {
+        if (currCategorySelected.value === category._id || currCategorySelected === '') {
             handleSwapCategoryClose();
             return;
         }
@@ -74,73 +98,43 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
         setCurrOpenIndex(index);
     }
 
+    function closeClothingModal() {
+        setCurrOpenIndex(null);
+    }
+
     async function swapCategory(item) {
-        setLoading(true);
         setItemToSwapCategory(item);
 
-        let categories;
-
-        try {
-            const response = await api.get('/categories');
-            categories = response.data; 
-        } catch (err) {
-            setError({
-                message: 'There was an error fetching categories.',
-                status: err.response.status
+        const options = [];
+        clothesCategories.forEach(group => {
+            const categoryOptions = [];
+            group.categories.forEach(category => {
+                categoryOptions.push({
+                    value: category._id,
+                    label: category.name
+                });
             });
-            setLoading(false);
-            setItemToSwapCategory({});
-            return;
-        }
-
-        // filter out the other category
-        const otherCategoryIndex = categories.findIndex(category => category._id === 0);
-        const otherCategory = categories.splice(otherCategoryIndex, 1)[0];
-
-        // sort categories alphabetically
-        categories.sort(function(a, b) {
-            if (a.name < b.name) {
-                return -1;
-            } 
-            else if (a.name > b.name) {
-                return 1;
-            }
-            else {
-                return 0;
-            }
+            options.push({
+                type: 'group',
+                name: group.group,
+                items: categoryOptions
+            });
         });
 
-        const sortedCategories = [otherCategory, ...categories];
-
-        // set dropdown options
-        const options = [];
-        for (const categoryOpt of sortedCategories) {
-            const option = {
-                value: categoryOpt._id,
-                label: categoryOpt.name
-            };
-
-            if (categoryOpt._id === category._id) {
-                setCurrCategorySelected(option);
-            }
-
-            options.push(option);
-        }
-
         setCategoryOptions(options);
-        setLoading(false);
         setSwapCategoryOpen(true)
     }
     
-    async function editItem(item, newName) {
+    async function editItem(item, newName, itemTags) {
         setLoading(true);
-        if (item.fileName === newName) {
+        const itemTagsStr = JSON.stringify(itemTags);
+        if (item.fileName === newName && JSON.stringify(item.tags) === itemTagsStr) {
             setLoading(false);
             return;
         }
 
         try {
-            await api.patch(`/files/${client._id}/${category._id}/${item.gcsId}`, { newName: newName });
+            await api.patch(`/files/${client._id}/${category._id}/${item.gcsId}`, { name: newName, tags: itemTags });
             await updateItems();
         } catch (err) {
             setError({
@@ -171,10 +165,24 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
     return (
         <>
             <ClothesContainer style={{ display: display ? 'flex' : 'none' }}>
-                <h2 className="category-title">{category.name}</h2>
+                <div className="title-search">
+                    <h2 className="category-title">{category.name} ({searchResults.length})</h2>
+                    <div className="search-box">
+                        <Input
+                            type="text"
+                            id="fuzzy-search"
+                            label="Search"
+                            value={searchString}
+                            onChange={e => setSearchString(e.target.value)}
+                        />
+                        <button className='material-icons clear-search-button' onClick={() => setSearchString('')}>
+                            clear
+                        </button>
+                    </div>
+                </div>
                 <div className="items">
                     {
-                        category?.items?.map((item, index) => (
+                        searchResults?.map((item, index) => (
                             <ClothingCard
                                 item={item}
                                 editable={category._id !== -1}
@@ -186,8 +194,9 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
                                 prevClothingModal={prevClothingModal}
                                 nextClothingModal={nextClothingModal}
                                 openClothingModal={() => openClothingModal(index)}
+                                closeClothingModal={closeClothingModal}
                                 isOpen={currOpenIndex === index}
-                                key={index}
+                                key={cuid()}
                             />
                         ))
                     }
@@ -201,7 +210,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
                 <DropdownContainer>
                     <p className="curr-category">Current category: <span className="large category-name">{category.name}</span></p>
                     <p className="new-category">New Category</p>
-                    <SwapCategoryDropdown options={categoryOptions} onChange={handleSelectCategory} value={currCategorySelected} />
+                    <SwapDropdown options={categoryOptions} onChange={handleSelectCategory} value={currCategorySelected} />
                 </DropdownContainer>
                 <div className="modal-content">
                     <p className="medium bold underline">{itemToSwapCategory.fileName}</p>

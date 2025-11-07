@@ -12,6 +12,7 @@ export const ClientCardContainer = styled.div`
     background-color: var(--white);
     width: 300px;
     max-width: 300px;
+    max-height: 300px;
     position: relative;
 
     &.is-self {

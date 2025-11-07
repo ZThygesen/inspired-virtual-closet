@@ -8,9 +8,7 @@ const DropContainer = styled.div`
     justify-content: center;
     gap: 20px;
     width: 100%;
-    max-width: 800px;
     padding: 30px;
-    margin-bottom: 20px;
 
     & .upload-icon {
         width: 80px;

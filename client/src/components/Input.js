@@ -1,7 +1,8 @@
-import { TextInput, Checkbox } from "../styles/Input";
-import { FormControlLabel } from "@mui/material";
+import { TextInput, Checkbox, Color, Radio } from "../styles/Input";
+import { FormControlLabel, Radio as RD } from "@mui/material";
+import cuid from "cuid";
 
-export default function Input({ type, id, label, value, onChange, required = true }) {
+export default function Input({ type, id, label, value, radioOptions = [], onChange, required = true }) {
     return (
         type === 'text' ?
         <TextInput
@@ -42,6 +43,44 @@ export default function Input({ type, id, label, value, onChange, required = tru
             maxRows={3}
             required={required}
         />
+        :
+        type === 'color' ?
+        <div
+            style={{ display: "flex", alignItems: "center", gap: "12px" }}
+        >
+            <label htmlFor={id}>{label}</label>
+            <Color
+                type="color"
+                className="color-input"
+                id={id}
+                value={value}
+                onChange={onChange}
+                required={required}
+            />
+        </div>
+        :
+        type === 'radio' ?
+        <div
+            
+        >
+            {label}
+            <Radio
+                value={value ?? ''}
+                onChange={onChange}
+                row
+            >
+                {
+                    radioOptions.map(option => (
+                        <FormControlLabel
+                            value={option.value ?? ''}
+                            label={option.label}
+                            control={<RD />}
+                            key={cuid()}
+                        />
+                    ))
+                }
+            </Radio>
+        </div>
         :
         <TextInput 
             id={id}

@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useError } from './ErrorContext';
 import api from '../api';
 import OutfitCard from './OutfitCard';
 import { OutfitsContainer } from '../styles/Outfits';
 import Loading from './Loading';
-import { useClient } from './ClientContext'; 
+import { useClient } from './ClientContext';
+import Input from './Input';
+import cuid from 'cuid'; 
 
 export default function Outfits({ display, outfits, updateOutfits, sendOutfitToCanvas }) {
     const { setError } = useError();
@@ -13,6 +15,17 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
 
     const [currOpenIndex, setCurrOpenIndex] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    const [searchResults, setSearchResults] = useState(outfits || []);
+    const [searchString, setSearchString] = useState('');
+
+    useEffect(() => {
+        const words = searchString.toLowerCase().split(/\s+/).filter(Boolean);
+        const results = outfits.filter(outfit =>
+            words.every(word => outfit?.outfitName?.toLowerCase()?.includes(word))
+        );
+        setSearchResults(results);
+    }, [searchString, outfits]);
 
     function prevOutfitModal() {
         if (currOpenIndex > 0) {
@@ -28,6 +41,10 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
 
     function openOutfitModal(index) {
         setCurrOpenIndex(index);
+    }
+
+    function closeOutfitModal() {
+        setCurrOpenIndex(null);
     }
 
     function editOutfit(outfit) {
@@ -73,10 +90,25 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
     return (
         <>
             <OutfitsContainer style={{ display: display ? 'flex' : 'none' }}>
-                <h2 className="outfits-title">Outfits</h2>
+                <div className="title-search">
+                    <h2 className="outfits-title">Outfits ({searchResults.length})</h2>
+                    <div className="search-box">
+                        <Input
+                            type="text"
+                            id="fuzzy-search"
+                            label="Search"
+                            value={searchString}
+                            onChange={e => setSearchString(e.target.value)}
+                        />
+                        <button className='material-icons clear-search-button' onClick={() => setSearchString('')}>
+                            clear
+                        </button>
+                    </div>
+                </div>
+                
                 <div className="outfits">
                     {
-                        outfits?.map((outfit, index) => (
+                        searchResults?.map((outfit, index) => (
                             <OutfitCard
                                 outfit={outfit}
                                 editOutfit={editOutfit}
@@ -85,8 +117,9 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
                                 prevOutfitModal={prevOutfitModal}
                                 nextOutfitModal={nextOutfitModal}
                                 openOutfitModal={() => openOutfitModal(index)}
+                                closeOutfitModal={closeOutfitModal}
                                 isOpen={currOpenIndex === index}
-                                key={index}
+                                key={cuid()}
                             />
                         ))
                     }

@@ -10,7 +10,7 @@ export const ShoppingContainer = styled.div`
     .shopping-title {
         font-family: 'Prata';
         font-size: 32px;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
     }
 
     .shopping-info {

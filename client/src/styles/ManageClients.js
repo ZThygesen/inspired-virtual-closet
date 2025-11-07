@@ -1,8 +1,8 @@
 import styled from 'styled-components';
 import { PageContainer } from './PageContainer';
 
-const subheaderHeight = 100;
-const footerHeight = 100;
+const subheaderHeight = 75;
+const footerHeight = 90;
 
 export const ManageClientsContainer = styled(PageContainer)`
     height: calc(100% - var(--header-height));
@@ -13,9 +13,9 @@ export const ManageClientsContainer = styled(PageContainer)`
     padding: 0;
     position: relative;
 
-    .title {
+    .clients-header {
         width: 100%;
-        min-height: ${subheaderHeight}px;
+        height: ${subheaderHeight}px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -27,14 +27,78 @@ export const ManageClientsContainer = styled(PageContainer)`
         padding: 0 20px;
         z-index: 500;
         box-shadow: var(--box-shadow);
+
+        & .title {
+            font-size: 32px;
+            font-family: 'Prata';
+            color: var(--black);
+            white-space: nowrap;
+        }
+
+        & .the-archive-button,
+        & .closet-settings-button {
+            background: none;
+            font-size: 36px;
+            padding: 8px;
+            border-radius: 50%;
+            position: absolute;
+            left: 20px;
+            cursor: pointer;
+
+            &:hover {
+                background-color: var(--material-btn-bg);
+            }
+        }
+
+        & .closet-settings-button {
+            left: unset;
+            right: 20px;
+        }
+    }
+
+    & .title-search {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+        background: transparent;
+
+        & .MuiFormControl-root {
+            max-width: 500px;
+
+            & input {
+                padding-right: 32px;
+            }
+        }
+
+        & .search-box {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+
+            & .clear-search-button {
+                font-size: 24px !important;
+                background: none;
+                position: absolute;
+                right: 4px;
+                cursor: pointer;
+                transition: 0.1s;
+                border-radius: 50%;
+                padding: 4px;
+                &:hover {
+                    background-color: var(--material-btn-bg);
+                }
+            }
+        }
     }
 
     .clients {
         width: 100%;
         max-width: 1400px;
         flex: 1;
-        /* display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); */
         display: flex;
         flex-wrap: wrap;
         align-items: stretch;
@@ -46,10 +110,11 @@ export const ManageClientsContainer = styled(PageContainer)`
 
     .footer {
         width: 100%;
-        min-height: ${footerHeight}px;
+        height: ${footerHeight}px;
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 20px;
         background-color: var(--grey);
         padding: 20px;
         box-shadow: var(--top-shadow);
@@ -57,14 +122,20 @@ export const ManageClientsContainer = styled(PageContainer)`
     }
 
     @media (min-width: 480px) {
-        .title {
-            font-size: 40px;
+        .clients-header {
+            & .title {
+                font-size: 40px;
+            }
         }
+        
     }
 
     @media (min-width: 768px) {
-        .title {
-            font-size: 48px;
+        .clients-header {
+            & .title {
+                font-size: 48px;
+            }
         }
+        
     }
 `;

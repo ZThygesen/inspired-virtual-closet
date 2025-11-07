@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { TextField, Checkbox as CB } from '@mui/material';
+import { TextField, Checkbox as CB, RadioGroup } from '@mui/material';
 
 export const TextInput = styled(TextField)`
     * {
@@ -46,4 +46,15 @@ export const TextInput = styled(TextField)`
 `;
 
 export const Checkbox = styled(CB)`
+`;
+
+export const Color = styled.input`
+    &.color-input {
+        &:hover {
+            cursor: pointer;
+        }
+    }
+`;
+
+export const Radio = styled(RadioGroup)`
 `;

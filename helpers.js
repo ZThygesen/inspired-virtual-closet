@@ -21,7 +21,7 @@ export const helpers = {
         return false;
     },
 
-    // checks if given category id is the Other category id
+    // checks if given category id is the Other category/tag group id
     isOtherCategory(id) {
         return id === 0 || id === '0';
     },
@@ -209,7 +209,8 @@ export const helpers = {
             } 
             else if (process.env.NODE_ENV === 'test') {
                 bucket = storage.bucket('edie-styles-virtual-closet-test');
-            } else {
+            } 
+            else {
                 bucket = storage.bucket('edie-styles-virtual-closet-dev');
             }
             
@@ -339,6 +340,87 @@ export const helpers = {
                 }
             }
         );
+    },
+
+    // move all tags from one group to the Other tag group
+    async moveTagsToOther(db, tagGroupId) {
+        if (!db) {
+            throw this.createError('database instance required to move tags to other tag group', 500);
+        }
+
+        if (this.isOtherCategory(tagGroupId)) {
+            throw this.createError('cannot move tags from Other to Other', 500);
+        }
+
+        if (!this.isValidId(tagGroupId)) {
+            throw this.createError('failed to move tags to other: invalid or missing tag group id', 400);
+        }
+
+        // get all tags associated with group
+        const collection = db.collection('tags');
+        const tagGroup = await collection.findOne({ _id: ObjectId(tagGroupId) });
+        
+        if (!tagGroup) {
+            throw this.createError('tag group does not exist', 404);
+        }
+
+        const tags = tagGroup?.tags;
+        
+        // move all tags to "Other" group
+        await collection.updateOne(
+            { _id: 0 },
+            {
+                $push: {
+                    tags: {
+                        $each: tags
+                    }
+                }
+            }
+        );
+    },
+
+    // TODO: NEEDS TESTING BEFORE USE
+    async removeTagFromItems(db, tagId) {
+        if (!db) {
+            throw this.createError('database instance required to remove tag from items', 500);
+        }
+
+        if (!this.isValidId(tagId)) {
+            throw this.createError('failed to remove tag from items: invalid or missing tag id', 400);
+        }
+
+        const collection = db.collection('categories');
+        const categories = await collection.find({ }).toArray();
+        for (const category of categories) {
+            let hasTag = 0;
+            let categoryId = category._id;
+            if (this.isOtherCategory(categoryId)) {
+                categoryId = 0;
+            }
+            else {
+                categoryId = ObjectId(categoryId);
+            }
+
+            const items = category.items;
+            for (const item of items) {
+                if (item?.tags?.some(tag => tag?.tagId === tagId)) {
+                    const filteredTags = item.tags.filter(tag => tag?.tagId !== tagId);
+                    item.tags = filteredTags;
+                    hasTag = 1;
+                }
+            }
+
+            if (hasTag) {
+                await collection.updateOne(
+                    { _id: categoryId },
+                    {
+                        $set: {
+                            items: items
+                        } 
+                    }
+                );
+            }
+        }
     },
 
     // determines if given client is a super admin
