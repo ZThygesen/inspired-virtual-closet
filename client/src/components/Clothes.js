@@ -27,6 +27,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
 
     const [items, setItems] = useState(category?.items || []);
     const [searchResults, setSearchResults] = useState(category?.items || []);
+    const [resultsToShow, setResultsToShow] = useState(category?.items || []);
     const [searchString, setSearchString] = useState('');
     
     const [showPagination, setShowPagination] = useState(false);
@@ -54,6 +55,8 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
                 item?.tagNames?.some(tag => tag.toLowerCase().includes(word))
             )
         );
+        setSearchResults(results);
+
         // check if pagination is needed
         if (results.length > itemsPerPage) {
             setShowPagination(true);
@@ -61,11 +64,11 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
             const startIndex = (currPage - 1) * itemsPerPage;
             const endIndex = startIndex + itemsPerPage;
             const reducedResults = results.slice(startIndex, endIndex);
-            setSearchResults(reducedResults);
+            setResultsToShow(reducedResults);
         }
         else {
             setShowPagination(false);
-            setSearchResults(results);
+            setResultsToShow(results);
         }
     }, [currPage, searchString, items]);
 
@@ -192,7 +195,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
         <>
             <ClothesContainer style={{ display: display ? 'flex' : 'none' }}>
                 <div className="title-search">
-                    <h2 className="category-title">{category.name} ({items.length})</h2>
+                    <h2 className="category-title">{category.name} ({searchResults.length})</h2>
                     <div className="search-box">
                         <Input
                             type="text"
@@ -217,7 +220,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
                 </div>
                 <div className="items">
                     {
-                        searchResults?.map((item, index) => (
+                        resultsToShow?.map((item, index) => (
                             <ClothingCard
                                 item={item}
                                 editable={category._id !== -1}

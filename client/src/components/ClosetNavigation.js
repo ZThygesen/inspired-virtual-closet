@@ -226,7 +226,6 @@ export default function ClosetNavigation({ sidebarRef, client, category, getCate
     useEffect(() => {
         getShoppingItems();
     }, [getShoppingItems]);
-
     const closetModes = [
         { name: 'Clothes', icon: 'checkroom'},
         { name: `Canvas (${canvasItems.length - 1})`, icon: 'swipe'},

@@ -29,7 +29,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
     const [singleTextboxSelected, setSingleTextboxSelected] = useState(false);
     const [textboxSelected, setTextboxSelected] = useState(null);
     const [fontAdjust, setFontAdjust] = useState(0);
-
+    console.log(images);
     const { setMobileMode, setCanvasMode } = useSidebar();
 
     // outfit functionality
@@ -328,6 +328,9 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
         setOutfitImageData('');
     }
 
+    const uniqueOutfitItems = new Set(images.filter(image => image?.itemId !== undefined).map(image => image.itemId));
+        const outfitItems = Array.from(uniqueOutfitItems);
+        console.log(outfitItems)
     async function handleSaveOutfit(e) {
         e.preventDefault();
 
@@ -337,10 +340,14 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
 
         setLoading(true);
 
+        const uniqueFilesUsed = new Set(images.filter(image => image?.itemId !== undefined).map(image => image.itemId));
+        const filesUsed = Array.from(uniqueFilesUsed);
+
         const formData = new FormData();
         formData.append('fileSrc', outfitImageData);
         formData.append('stageItemsStr', JSON.stringify(stageItems));
         formData.append('outfitName', outfitName);
+        formData.append('filesUsed', JSON.stringify(filesUsed));
 
         try {
             if (editMode) {

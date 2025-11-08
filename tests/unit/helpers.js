@@ -36,6 +36,11 @@ export const unitHelpers = {
     mockCreateId: null,
     mockBucket: null,
 
+    // outfits
+    whiteBgResponse: null,
+
+    mockAddWhiteBackground: null,
+
     // tags
     mockMoveTagsToOther: null,
 
@@ -92,6 +97,11 @@ export const unitHelpers = {
         this.mockParse = jest.spyOn(path, 'parse').mockReturnValue({ name: 'blaze-tastic', extension: 'png' });
         this.mockCreateId = jest.spyOn(cuid2, 'createId').mockReturnValue(this.idResponse);
         this.mockBucket = { bucket: 'head' };
+
+        // outfits
+        this.whiteBgResponse = Buffer.from('this is a white background image');
+
+        this.mockAddWhiteBackground = jest.spyOn(helpers, 'addWhiteBackground').mockResolvedValue(this.whiteBgResponse)
 
         // tags
         this.mockMoveTagsToOther = jest.spyOn(helpers, 'moveTagsToOther').mockResolvedValue();
