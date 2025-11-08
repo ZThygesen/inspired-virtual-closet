@@ -10,6 +10,7 @@ import { useClient } from './ClientContext';
 import { useData } from './DataContext';
 import Input from './Input';
 import cuid from 'cuid';
+import { Pagination } from '@mui/material';
 
 export default function Clothes({ display, category, updateItems, addCanvasItem, canvasItems }) {
     const { setError } = useError();
@@ -27,6 +28,19 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
     const [items, setItems] = useState(category?.items || []);
     const [searchResults, setSearchResults] = useState(category?.items || []);
     const [searchString, setSearchString] = useState('');
+    
+    const [showPagination, setShowPagination] = useState(false);
+    const [currPage, setCurrPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const itemsPerPage = 50;
+
+    function handlePageChange(e, page) {
+        setCurrPage(page);
+    }
+
+    useEffect(() => {
+        setCurrPage(1);
+    }, [searchString]);
 
     useEffect(() => {
         setItems(category?.items || []);
@@ -40,8 +54,20 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
                 item?.tagNames?.some(tag => tag.toLowerCase().includes(word))
             )
         );
-        setSearchResults(results);
-    }, [searchString, items]);
+        // check if pagination is needed
+        if (results.length > itemsPerPage) {
+            setShowPagination(true);
+            setTotalPages(Math.ceil(results.length / itemsPerPage));
+            const startIndex = (currPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const reducedResults = results.slice(startIndex, endIndex);
+            setSearchResults(reducedResults);
+        }
+        else {
+            setShowPagination(false);
+            setSearchResults(results);
+        }
+    }, [currPage, searchString, items]);
 
     function handleSwapCategoryClose() {
         setSwapCategoryOpen(false);
@@ -166,7 +192,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
         <>
             <ClothesContainer style={{ display: display ? 'flex' : 'none' }}>
                 <div className="title-search">
-                    <h2 className="category-title">{category.name} ({searchResults.length})</h2>
+                    <h2 className="category-title">{category.name} ({items.length})</h2>
                     <div className="search-box">
                         <Input
                             type="text"
@@ -179,6 +205,15 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
                             clear
                         </button>
                     </div>
+                    { showPagination && 
+                        <Pagination 
+                            count={totalPages} 
+                            page={currPage} 
+                            onChange={handlePageChange}
+                            variant='outlined'
+                            shape='rounded'
+                        />
+                    }
                 </div>
                 <div className="items">
                     {
