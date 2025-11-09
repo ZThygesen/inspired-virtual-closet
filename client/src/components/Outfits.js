@@ -59,7 +59,7 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
         }
 
         try {
-            await api.patch(`/outfits/name/${client._id}/${outfit._id}`, { newName: newName });
+            await api.patch(`/outfits/name/${client._id}/${outfit._id}`, { outfitName: newName });
             await updateOutfits();
         } catch (err) {
             setError({

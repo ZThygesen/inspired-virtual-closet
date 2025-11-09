@@ -1,5 +1,4 @@
 import express from 'express';
-import { ObjectId } from 'mongodb';
 import cuid2 from '@paralleldrive/cuid2';
 import { helpers } from '../helpers.js';
 import { schemaHelpers } from '../schema/helpers.js';
