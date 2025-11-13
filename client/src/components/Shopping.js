@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useError } from './ErrorContext';
+import { useError } from '../contexts/ErrorContext';
 import api from '../api';
 import { Tooltip } from '@mui/material';
 import ShoppingCard from './ShoppingCard';
@@ -8,8 +8,8 @@ import { ShoppingContainer } from '../styles/Shopping';
 import cuid from 'cuid';
 import Input from './Input';
 import Modal from './Modal';
-import { useUser } from './UserContext';
-import { useClient } from './ClientContext';
+import { useUser } from '../contexts/UserContext';
+import { useClient } from '../contexts/ClientContext';
 
 export default function Shopping({ display, shoppingItems, updateShoppingItems }) {
     const { setError } = useError();

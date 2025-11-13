@@ -87,7 +87,22 @@ export const ClothingCardContainer = styled.div`
         color: var(--primary) !important;
         position: absolute;
         top: 6px;
+        left: 12px;
+    }
+
+    .search-outfits-icon {
+        font-size: 36px !important;
+        color: var(--primary) !important;
+        position: absolute;
+        top: 6px;
         right: 12px;
+
+        & .num-outfits {
+            color: var(--primary);
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
     }
 
     .file-name {
@@ -149,7 +164,7 @@ export const ClothingCardContainer = styled.div`
     }
 
     &.from-sidebar {
-        padding: 16px;
+        padding: 48px 16px 16px 16px;
         margin: 0;
         gap: 0;
         background-color: var(--white);

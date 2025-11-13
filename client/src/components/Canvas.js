@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useError } from './ErrorContext';
+import { useError } from '../contexts/ErrorContext';
+import { useClient } from '../contexts/ClientContext';
 import api from '../api';
 import { Layer, Rect, Stage, Transformer } from 'react-konva';
 import Modal from './Modal';
@@ -9,14 +10,15 @@ import CanvasImage from './CanvasImage';
 import CanvasTextbox from './CanvasTextbox';
 import { CanvasContainer } from '../styles/Canvas';
 import { Tooltip } from '@mui/material';
-import { useSidebar } from './SidebarContext';
+import { useSidebar } from '../contexts/SidebarContext';
 
 const initialWidth = 1000;
 const initialHeight = 800;
 const ASPECT_RATIO = initialWidth / initialHeight;
 
-export default function Canvas({ display, sidebarRef, client, images, textboxes, addCanvasItem, removeCanvasItems, updateOutfits, editMode, outfitToEdit, cancelEdit }) {
+export default function Canvas({ display, sidebarRef, images, textboxes, addCanvasItem, removeCanvasItems, updateOutfits, editMode, outfitToEdit, cancelEdit }) {
     const { setError } = useError();
+    const { client } = useClient();
     
     const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
     const [scale, setScale] = useState({ x: 1, y: 1 });
@@ -341,7 +343,7 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
 
         const formData = new FormData();
         formData.append('fileSrc', outfitImageData);
-        formData.append('stageItemsStr', JSON.stringify(stageItems));
+        formData.append('stageItems', JSON.stringify(stageItems));
         formData.append('outfitName', outfitName);
         formData.append('filesUsed', JSON.stringify(filesUsed));
 
@@ -362,17 +364,20 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
             if (editMode) {
                 setError({
                     message: 'There was an error editing the outfit.',
-                    status: err.response.status
+                    status: err?.response?.status
                 });
             } else {
                 setError({
                     message: 'There was an error adding the outfit.',
-                    status: err.response.status
+                    status: err?.response?.status
                 });
             }
         } finally {
             clearCanvas();
             handleSaveOutfitClose();
+            if (editMode) {
+                cancelEdit();
+            }
             setLoading(false);
         }
     }

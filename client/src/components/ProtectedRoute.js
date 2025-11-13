@@ -1,11 +1,11 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useUser } from './UserContext';
-import Loading from './Loading';
+import { useUser } from '../contexts/UserContext';
+// import Loading from './Loading';
 
 export default function ProtectedRoute({ adminOnly = false }) {
-    const { user, loading } = useUser();
+    const { user } = useUser();
 
-    if (!loading) {
+    // if (!loading) {
         if (!user) {
             return <Navigate to="/" />;
         }
@@ -15,7 +15,7 @@ export default function ProtectedRoute({ adminOnly = false }) {
         }
         
         return <Outlet />;
-    } else {
-        return <Loading open={loading} />;
-    }
+    // } else {
+    //     return <Loading open={loading} />;
+    // }
 }

@@ -213,7 +213,7 @@ describe('outfits', () => {
             }
             body = {
                 fileSrc: 'file source string',
-                stageItemsStr: 'stage items string',
+                stageItems: 'stage items string',
                 outfitName: 'Blazin Blazer Blast',
                 filesUsed: ['file1', 'file2'],
                 gcsDest: 'dev/outfits/id.png'

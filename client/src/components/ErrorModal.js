@@ -1,4 +1,4 @@
-import { useError } from './ErrorContext';
+import { useError } from '../contexts/ErrorContext';
 import Modal from './Modal';
 
 export default function ErrorModal() {

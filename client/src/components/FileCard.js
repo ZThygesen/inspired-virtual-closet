@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useUser } from './UserContext';
-import { useClient } from './ClientContext';
+import { useUser } from '../contexts/UserContext';
+import { useClient } from '../contexts/ClientContext';
 import { FileCardContainer } from '../styles/AddItems';
 import Modal from './Modal';
 import Input from './Input';

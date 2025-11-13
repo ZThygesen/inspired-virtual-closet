@@ -3,7 +3,7 @@ import { Tooltip } from '@mui/material';
 import Modal from './Modal';
 import Input from './Input';
 import { ShoppingCardContainer } from '../styles/Shopping';
-import { useUser } from './UserContext';
+import { useUser } from '../contexts/UserContext';
 
 export default function ShoppingCard({ shoppingItem, editShoppingItem, togglePurchasedStatus, deleteShoppingItem }) {
     const [editOpen, setEditOpen] = useState(false);

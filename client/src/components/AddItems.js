@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
-import { useError } from './ErrorContext';
-import { useUser } from './UserContext';
-import { useClient } from './ClientContext';
-import { useData } from './DataContext';
+import { useError } from '../contexts/ErrorContext';
+import { useUser } from '../contexts/UserContext';
+import { useClient } from '../contexts/ClientContext';
+import { useData } from '../contexts/DataContext';
 import { AddItemsContainer, UploadOptionsContainer, FileContainer } from '../styles/AddItems';
 import { DropdownContainer, SwapDropdown } from '../styles/Dropdown';
 import Dropzone from './Dropzone';
@@ -46,13 +46,13 @@ export default function AddItems({ display, updateItems }) {
     const { setError } = useError();
     const { user } = useUser();
     const { client, updateClient } = useClient();
-    const { profileCategories, clothesCategories, tags } = useData();
+    const { profile, categories, tags } = useData();
 
     const [clothesOptions, setClothesOptions] = useState([]);
 
     useEffect(() => {
         const options = [];
-        clothesCategories.forEach(group => {
+        categories.forEach(group => {
             const categoryOptions = [];
             group.categories.forEach(category => {
                 categoryOptions.push({
@@ -68,7 +68,7 @@ export default function AddItems({ display, updateItems }) {
         });
 
         setClothesOptions(options);
-    }, [clothesCategories]);
+    }, [categories]);
 
     const [allFiles, setAllFiles] = useState([]);
     const [invalidFiles, setInvalidFiles] = useState([]);
@@ -358,7 +358,7 @@ export default function AddItems({ display, updateItems }) {
                                         file={file}
                                         uploadFile={uploadOneFile}
                                         removeFile={removeFile}
-                                        profileCategories={profileCategories}
+                                        profileCategories={profile}
                                         clothesCategories={clothesOptions}
                                         allTags={tags}
                                         massOption={massOption}

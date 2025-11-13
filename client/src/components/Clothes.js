@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
-import { useError } from './ErrorContext';
+import { useError } from '../contexts/ErrorContext';
+import { useClient } from '../contexts/ClientContext';
+import { useData } from '../contexts/DataContext';
 import api from '../api';
 import ClothingCard from './ClothingCard';
 import Loading from './Loading';
 import { ClothesContainer } from '../styles/Clothes';
 import { DropdownContainer, SwapDropdown } from '../styles/Dropdown';
 import Modal from './Modal';
-import { useClient } from './ClientContext';
-import { useData } from './DataContext';
 import Input from './Input';
 import cuid from 'cuid';
 import { Pagination } from '@mui/material';
 
-export default function Clothes({ display, category, updateItems, addCanvasItem, canvasItems }) {
+export default function Clothes({ display, addCanvasItem, canvasItems, searchOutfitsByItem }) {
     const { setError } = useError();
 
     const [itemToSwapCategory, setItemToSwapCategory] = useState({});
@@ -23,11 +23,11 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
     const [loading, setLoading] = useState(false);
 
     const { client } = useClient();
-    const { clothesCategories } = useData();
+    const { categories, updateFiles, currentCategory, currentFiles } = useData();
 
-    const [items, setItems] = useState(category?.items || []);
-    const [searchResults, setSearchResults] = useState(category?.items || []);
-    const [resultsToShow, setResultsToShow] = useState(category?.items || []);
+    // const [items, setItems] = useState(category?.items || []);
+    const [searchResults, setSearchResults] = useState(currentFiles || []);
+    const [resultsToShow, setResultsToShow] = useState(currentFiles || []);
     const [searchString, setSearchString] = useState('');
     
     const [showPagination, setShowPagination] = useState(false);
@@ -41,15 +41,11 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
 
     useEffect(() => {
         setCurrPage(1);
-    }, [searchString]);
-
-    useEffect(() => {
-        setItems(category?.items || []);
-    }, [category]);
+    }, [searchString, currentCategory]);
 
     useEffect(() => {
         const words = searchString.toLowerCase().split(/\s+/).filter(Boolean);
-        const results = items.filter(item =>
+        const results = currentFiles.filter(item =>
             words.every(word =>
                 item?.fileName?.toLowerCase()?.includes(word) || 
                 item?.tagNames?.some(tag => tag.toLowerCase().includes(word))
@@ -70,7 +66,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
             setShowPagination(false);
             setResultsToShow(results);
         }
-    }, [currPage, searchString, items]);
+    }, [currPage, searchString, currentFiles]);
 
     function handleSwapCategoryClose() {
         setSwapCategoryOpen(false);
@@ -80,7 +76,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
     }
 
     async function handleSwapCategorySubmit() {
-        if (currCategorySelected.value === category._id || currCategorySelected === '') {
+        if (currCategorySelected.value === currentCategory._id || currCategorySelected === '') {
             handleSwapCategoryClose();
             return;
         }
@@ -88,10 +84,10 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
         setLoading(true);
 
         try {
-            await api.patch(`/files/category/${client._id}/${category._id}/${itemToSwapCategory.gcsId}`, {
+            await api.patch(`/files/category/${client._id}/${itemToSwapCategory.categoryId}/${itemToSwapCategory.gcsId}`, {
                 newCategoryId: currCategorySelected.value
             });
-            await updateItems();
+            await updateFiles();
         } catch (err) {
             setError({
                 message: 'There was an error changing the item\'s category.',
@@ -107,10 +103,6 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
         setCurrCategorySelected(selection)
     }
 
-    function sendToCanvas(item) {
-        addCanvasItem(item, 'image');
-    }
-
     function prevClothingModal() {
         if (currOpenIndex > 0) {
             setCurrOpenIndex(current => current - 1);
@@ -118,7 +110,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
     }
 
     function nextClothingModal() {
-        if (currOpenIndex < category.items.length - 1) {
+        if (currOpenIndex < currentFiles.length - 1) {
             setCurrOpenIndex(current => current + 1);
         }
     }
@@ -135,7 +127,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
         setItemToSwapCategory(item);
 
         const options = [];
-        clothesCategories.forEach(group => {
+        categories.forEach(group => {
             const categoryOptions = [];
             group.categories.forEach(category => {
                 categoryOptions.push({
@@ -163,8 +155,8 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
         }
 
         try {
-            await api.patch(`/files/${client._id}/${category._id}/${item.gcsId}`, { name: newName, tags: itemTags });
-            await updateItems();
+            await api.patch(`/files/${client._id}/${item.categoryId}/${item.gcsId}`, { name: newName, tags: itemTags });
+            await updateFiles();
         } catch (err) {
             setError({
                 message: 'There was an error editing the item.',
@@ -179,8 +171,8 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
         setLoading(true);
 
         try {
-            await api.delete(`/files/${client._id}/${category._id}/${item.gcsId}`);
-            await updateItems();
+            await api.delete(`/files/${client._id}/${item.categoryId}/${item.gcsId}`);
+            await updateFiles();
         } catch (err) {
             setError({
                 message: 'There was an error deleting the item.',
@@ -195,7 +187,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
         <>
             <ClothesContainer style={{ display: display ? 'flex' : 'none' }}>
                 <div className="title-search">
-                    <h2 className="category-title">{category.name} ({searchResults.length})</h2>
+                    <h2 className="category-title">{currentCategory.name} ({searchResults.length})</h2>
                     <div className="search-box">
                         <Input
                             type="text"
@@ -223,12 +215,12 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
                         resultsToShow?.map((item, index) => (
                             <ClothingCard
                                 item={item}
-                                editable={category._id !== -1}
                                 onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === item.gcsId)}
-                                sendToCanvas={sendToCanvas}
+                                addCanvasItem={() => addCanvasItem(item, 'image')}
                                 swapCategory={swapCategory}
                                 editItem={editItem}
                                 deleteItem={deleteItem}
+                                searchOutfitsByItem={searchOutfitsByItem}
                                 prevClothingModal={prevClothingModal}
                                 nextClothingModal={nextClothingModal}
                                 openClothingModal={() => openClothingModal(index)}
@@ -246,7 +238,7 @@ export default function Clothes({ display, category, updateItems, addCanvasItem,
             >
                 <div className="modal-title">Change Category</div>
                 <DropdownContainer>
-                    <p className="curr-category">Current category: <span className="large category-name">{category.name}</span></p>
+                    <p className="curr-category">Current category: <span className="large category-name">{currentCategory.name}</span></p>
                     <p className="new-category">New Category</p>
                     <SwapDropdown options={categoryOptions} onChange={handleSelectCategory} value={currCategorySelected} />
                 </DropdownContainer>

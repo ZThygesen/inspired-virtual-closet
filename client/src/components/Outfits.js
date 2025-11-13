@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
-import { useError } from './ErrorContext';
+import { useError } from '../contexts/ErrorContext';
+import { useClient } from '../contexts/ClientContext';
+import { useData } from '../contexts/DataContext';
 import api from '../api';
 import OutfitCard from './OutfitCard';
 import { OutfitsContainer } from '../styles/Outfits';
 import Loading from './Loading';
-import { useClient } from './ClientContext';
 import Input from './Input';
 import cuid from 'cuid'; 
+import ClothingCard from './ClothingCard';
+import { Tooltip } from '@mui/material';
 
-export default function Outfits({ display, outfits, updateOutfits, sendOutfitToCanvas }) {
+export default function Outfits({ display, sendOutfitToCanvas, itemToSearch, clearItemToSearch }) {
     const { setError } = useError();
-
     const { client } = useClient();
-
+    const { outfits, updateOutfits } = useData();
     const [currOpenIndex, setCurrOpenIndex] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -21,11 +23,16 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
 
     useEffect(() => {
         const words = searchString.toLowerCase().split(/\s+/).filter(Boolean);
-        const results = outfits.filter(outfit =>
+        let results = outfits.filter(outfit =>
             words.every(word => outfit?.outfitName?.toLowerCase()?.includes(word))
         );
+        if (itemToSearch) {
+            results = results.filter(outfit => 
+                outfit?.filesUsed?.includes(itemToSearch?.gcsId)
+            );
+        }
         setSearchResults(results);
-    }, [searchString, outfits]);
+    }, [searchString, itemToSearch, outfits]);
 
     function prevOutfitModal() {
         if (currOpenIndex > 0) {
@@ -105,6 +112,24 @@ export default function Outfits({ display, outfits, updateOutfits, sendOutfitToC
                         </button>
                     </div>
                 </div>
+
+                { itemToSearch &&
+                <>
+                    <div>Showing outfits using item:</div>
+                    <Tooltip title="Stop Searching By Item">
+                        <button
+                            className='material-icons clear-search-by-item'
+                            onClick={clearItemToSearch}
+                        >
+                            close
+                        </button>
+                    </Tooltip>
+                    <ClothingCard 
+                        item={itemToSearch}
+                        viewOnly={true}
+                    />
+                </>
+                }
                 
                 <div className="outfits">
                     {

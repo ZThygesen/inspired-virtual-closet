@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useError } from './ErrorContext';
+import { useError } from '../contexts/ErrorContext';
 import { Tooltip } from '@mui/material';
 import Modal from './Modal';
 import Input from './Input';
 import { OutfitCardContainer } from '../styles/Outfits';
-import { useUser } from './UserContext';
+import { useUser } from '../contexts/UserContext';
 
 export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteOutfit, prevOutfitModal, nextOutfitModal, openOutfitModal, closeOutfitModal, isOpen }) {
     const { setError } = useError();
