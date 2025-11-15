@@ -121,7 +121,11 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
             >
                 <>  
                     <button className="material-icons close-modal" onClick={handleCloseImageModal}>close</button>
-                    <OutfitCardContainer className='on-modal'>
+                    <img
+                        src={outfit.outfitUrl}
+                        alt={outfit.outfitName}
+                    />
+                    {/* <OutfitCardContainer className='on-modal'>
                         <p className="outfit-name">{outfit.outfitName}</p>
                         <div className="outfit-card-img">
                             <img
@@ -147,7 +151,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                                 </button>
                             </Tooltip>
                         </div>
-                    </OutfitCardContainer>
+                    </OutfitCardContainer> */}
                 </>
             </Modal>
             <Modal
