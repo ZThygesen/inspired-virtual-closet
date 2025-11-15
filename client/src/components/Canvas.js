@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useError } from '../contexts/ErrorContext';
 import { useClient } from '../contexts/ClientContext';
+import { useData } from '../contexts/DataContext';
+import { useSidebar } from '../contexts/SidebarContext';
 import api from '../api';
 import { Layer, Rect, Stage, Transformer } from 'react-konva';
 import Modal from './Modal';
@@ -10,15 +12,16 @@ import CanvasImage from './CanvasImage';
 import CanvasTextbox from './CanvasTextbox';
 import { CanvasContainer } from '../styles/Canvas';
 import { Tooltip } from '@mui/material';
-import { useSidebar } from '../contexts/SidebarContext';
+
 
 const initialWidth = 1000;
 const initialHeight = 800;
 const ASPECT_RATIO = initialWidth / initialHeight;
 
-export default function Canvas({ display, sidebarRef, images, textboxes, addCanvasItem, removeCanvasItems, updateOutfits, editMode, outfitToEdit, cancelEdit }) {
+export default function Canvas({ display, sidebarRef, images, textboxes, addCanvasItem, removeCanvasItems, editMode, outfitToEdit, cancelEdit }) {
     const { setError } = useError();
     const { client } = useClient();
+    const { updateOutfits } = useData();
     
     const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
     const [scale, setScale] = useState({ x: 1, y: 1 });
@@ -359,7 +362,7 @@ export default function Canvas({ display, sidebarRef, images, textboxes, addCanv
                 });
             }
     
-            await updateOutfits(true);
+            await updateOutfits();
         } catch (err) {
             if (editMode) {
                 setError({

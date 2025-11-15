@@ -305,7 +305,7 @@ describe('auth', () => {
             expect(mockNext).not.toHaveBeenCalled();
         });
 
-        it('should fail with missing token', async () => {
+        it('should return null user with missing token', async () => {
             data.token = '';
             const req = { cookies: data, locals: { db: mockDb }};
 
@@ -314,12 +314,9 @@ describe('auth', () => {
             expect(mockVerify).not.toHaveBeenCalled();
             expect(mockDb.collection).not.toHaveBeenCalled();
             expect(mockCollection.findOne).not.toHaveBeenCalled();
-            expect(mockRes.status).not.toHaveBeenCalled();
-            expect(mockRes.json).not.toHaveBeenCalled();
-            expect(mockNext).toHaveBeenCalled();
-            expect(err).toBeInstanceOf(Error);
-            expect(err.status).toBe(401);
-            expect(err.message).toBe('token required to verify authentication');
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith({ user: null });
+            expect(mockNext).not.toHaveBeenCalled();
         });
 
         it('should fail if verify fails', async () => {

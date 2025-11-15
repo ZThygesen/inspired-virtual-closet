@@ -1,52 +1,20 @@
-import { useEffect, useState } from 'react';
 import { useError } from '../contexts/ErrorContext';
 import { Tooltip } from '@mui/material';
-import Modal from './Modal';
-import Input from './Input';
 import { OutfitCardContainer } from '../styles/Outfits';
 import { useUser } from '../contexts/UserContext';
 
-export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteOutfit, prevOutfitModal, nextOutfitModal, openOutfitModal, closeOutfitModal, isOpen }) {
+export default function OutfitCard({ 
+    outfit,
+    setImageModalOpen,
+    setEditModalOpen,
+    setCanvasEditModalOpen,
+    setDeleteModalOpen,
+    setModalOutfit,
+}) {
     const { setError } = useError();
-
-    const [editOpen, setEditOpen] = useState(false);
-    const [editNameOpen, setEditNameOpen] = useState(false);
-    const [newOutfitName, setNewOutfitName] = useState(outfit.outfitName);
-    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-    const [imageModalOpen, setImageModalOpen] = useState(isOpen);
-
     const { user } = useUser();
 
-    useEffect(() => {
-        setImageModalOpen(isOpen);
-    }, [isOpen])
-
-    function handleCloseImageModal() {
-        setImageModalOpen(false);
-        closeOutfitModal();
-    }
-
-    function handleConfirmEdit() {
-        setEditOpen(false);
-        editOutfit(outfit);
-    }
-
-    function handleSubmitEditName(e) {
-        e.preventDefault();
-        setEditNameOpen(false);
-        editOutfitName(outfit, newOutfitName); 
-    }
-
-    function handleCloseEditName() {
-        setEditNameOpen(false);
-        setNewOutfitName(outfit.outfitName);
-    }
-
-    function handleConfirmDeleteClose() {
-        setConfirmDeleteOpen(false);
-    }
-
-    async function handleDownloadOutfit() {
+    async function downloadOutfit() {
         try {
             const image = await fetch(outfit.outfitUrl).then(res => res.blob());
             const imageURL = URL.createObjectURL(image);
@@ -56,10 +24,11 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        } catch (err) {
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error downloading the outfit.',
-                status: err.response.status
+                status: err?.response?.status,
             });
         } 
     }
@@ -72,7 +41,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                     <img
                         src={outfit.outfitUrl}
                         alt={outfit.outfitName}
-                        onClick={() => { openOutfitModal(); setImageModalOpen(true); }}
+                        onClick={() => { setModalOutfit(outfit); setImageModalOpen(true); }}
                     />
                 </div>
                 <div className="outfit-options">
@@ -81,7 +50,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                         <Tooltip title="Edit Outfit on Canvas">
                             <button 
                                 className='material-icons outfit-option important'
-                                onClick={() => setEditOpen(true)}
+                                onClick={() => { setModalOutfit(outfit); setCanvasEditModalOpen(true); }}
                             >
                                 shortcut
                             </button>
@@ -89,7 +58,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                         <Tooltip title="Edit Outfit Name">
                             <button
                                 className='material-icons outfit-option'
-                                onClick={() => setEditNameOpen(true)}
+                                onClick={() => { setModalOutfit(outfit); setEditModalOpen(true); }}
                             >
                                 edit
                             </button>
@@ -97,7 +66,7 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                         <Tooltip title="Delete Outfit">
                             <button
                                 className='material-icons outfit-option'
-                                onClick={() => setConfirmDeleteOpen(true)}
+                                onClick={() => { setModalOutfit(outfit); setDeleteModalOpen(true); }}
                             >
                                 delete
                             </button>
@@ -107,115 +76,13 @@ export default function OutfitCard({ outfit, editOutfit, editOutfitName, deleteO
                     <Tooltip title="Download Outfit">
                         <button
                             className='material-icons outfit-option important'
-                            onClick={handleDownloadOutfit}
+                            onClick={downloadOutfit}
                         >
                             download
                         </button>
                     </Tooltip>
                 </div>
             </OutfitCardContainer>
-            <Modal
-                open={imageModalOpen}
-                closeFn={handleCloseImageModal}
-                isImage={true}
-            >
-                <>  
-                    <button className="material-icons close-modal" onClick={handleCloseImageModal}>close</button>
-                    <OutfitCardContainer className='on-modal'>
-                        <p className="outfit-name">{outfit.outfitName}</p>
-                        <div className="outfit-card-img">
-                            <img
-                                src={outfit.outfitUrl}
-                                alt={outfit.outfitName}
-                            />
-                        </div>
-                        <div className="outfit-options">
-                            <Tooltip title="Previous Outfit">
-                                <button
-                                    className='material-icons outfit-option prev-card'
-                                    onClick={prevOutfitModal}
-                                >
-                                    chevron_left
-                                </button>
-                            </Tooltip>
-                            <Tooltip title="Next Outfit">
-                                <button
-                                    className='material-icons outfit-option next-card'
-                                    onClick={nextOutfitModal}
-                                >
-                                    chevron_right
-                                </button>
-                            </Tooltip>
-                        </div>
-                    </OutfitCardContainer>
-                </>
-            </Modal>
-            <Modal
-                open={confirmDeleteOpen}
-                closeFn={handleConfirmDeleteClose}
-            >
-                <>
-                    <h2 className="modal-title">Delete Outfit</h2>
-                    <div className="modal-content">
-                        <p className="medium">Are you sure you want to delete this outfit?</p>
-                        <p className="large bold underline">{outfit.outfitName}</p>
-                        <img
-                            src={outfit.outfitUrl}
-                            alt={outfit.outfitName}
-                            className="delete-img"
-                        />
-                    </div>
-                    <div className="modal-options">
-                        <button onClick={handleConfirmDeleteClose}>Cancel</button>
-                        <button onClick={() => { handleConfirmDeleteClose(); deleteOutfit(outfit); }}>Delete</button>
-                    </div>
-                </>
-            </Modal>
-            <Modal
-                open={editNameOpen}
-                closeFn={handleCloseEditName}
-                isForm={true}
-                submitFn={handleSubmitEditName}
-            >
-                <>
-                    <h2 className="modal-title">Edit Outfit Name</h2>
-                    <div className="modal-content">
-                        <Input
-                            type="text"
-                            id="outfit-name"
-                            label="Outfit Name"
-                            value={newOutfitName}
-                            onChange={e => setNewOutfitName(e.target.value)}
-                        />
-                        <img
-                            src={outfit.outfitUrl}
-                            alt={outfit.outfitName}
-                            className="edit-img"
-                        />
-                    </div>
-                    <div className="modal-options">
-                        <button type="button" onClick={handleCloseEditName}>Cancel</button>
-                        <button type="submit">Save</button>
-                    </div>
-                </>
-            </Modal>
-            <Modal
-                open={editOpen}
-                closeFn={() => setEditOpen(false)}
-            >
-                <>
-                    <h2 className="modal-title">Edit Outfit On Canvas</h2>
-                    <div className="modal-content">
-                    <p className="medium">Are you sure you want to edit this outfit?</p>
-                        {/* <p className="large bold underline">{categoryToDelete.name}</p> */}
-                        <p className="small bold warning">Continuing will wipe out ALL items currently on the canvas!</p>
-                    </div>
-                    <div className="modal-options">
-                        <button onClick={() => setEditOpen(false)}>Cancel</button>
-                        <button onClick={handleConfirmEdit}>Continue</button>
-                    </div>
-                </>
-            </Modal>
         </>
     );
 }

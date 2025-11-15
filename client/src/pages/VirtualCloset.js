@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useError } from '../contexts/ErrorContext';
 import { useUser } from '../contexts/UserContext';
 import { useClient } from '../contexts/ClientContext';
 import { useData } from '../contexts/DataContext';
 import { useSidebar } from '../contexts/SidebarContext';
 import styled from 'styled-components';
 import CategoriesSidebar from '../components/CategoriesSidebar';
-import Loading from '../components/Loading';
 import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
 import { Tooltip } from '@mui/material';
 import { Link } from 'react-router-dom';
@@ -14,6 +12,8 @@ import cuid from 'cuid';
 import Clothes from '../components/Clothes';
 import Canvas from '../components/Canvas';
 import Outfits from '../components/Outfits';
+import Shopping from '../components/Shopping';
+import AddItems from '../components/AddItems';
 
 const Container = styled.div`
     flex: 1;
@@ -28,11 +28,10 @@ const logoCanvasItem = {
 };
 
 export default function VirtualCloset() {
-    const { setError } = useError();
     const { user } = useUser();
     const { client } = useClient();
     const { outfits, shopping, currentCategory } = useData();
-    const { sidebarOpen, setSidebarOpen, mobileMode, currCategoryClicked, setCurrCategoryClicked } = useSidebar();
+    const { sidebarOpen, setSidebarOpen, mobileMode } = useSidebar();
 
     const ref = useRef();
     const sidebarRef = useRef();
@@ -49,25 +48,6 @@ export default function VirtualCloset() {
     const [itemToSearch, setItemToSearch] = useState(null);
 
     const [optionsExpanded, setOptionsExpanded] = useState(false);
-
-    // useEffect(() => {
-    //     if (currentCategory?.name !== currCategory || currCategoryClicked) {
-    //         setCurrCategory(category?.name);
-    //         scrollToRef(ref);
-    //         if (closetMode !== 0 && closetMode !== 1) {
-    //             setClosetMode(0);
-    //         }
-    //         setCurrCategoryClicked(false);
-    //     }
-    // }, [category, currCategory, closetMode, currCategoryClicked, setCurrCategoryClicked]);
-
-    // useEffect(() => {
-    //     category?.items?.forEach(item => {
-    //         const resolvedTags = resolveTagIds(item?.tags || []);
-    //         const tagNames = resolvedTags.map(tag => tag.tagName);
-    //         item.tagNames = tagNames;
-    //     });
-    // }, [category, resolveTagIds]);
 
     useEffect(() => {
         function handleResize() {
@@ -180,14 +160,8 @@ export default function VirtualCloset() {
         setOutfitToEdit(null);
         setCanvasItems([logoCanvasItem]);
     }
-
-    function scrollToRef(ref) {
-        ref.current.scroll({
-            top: 0,
-            behavior: 'smooth'
-        });
-    }
     
+    // closet controls
     const [closetMode, setClosetMode] = useState(0);
     const closetModes = [
         { name: 'Clothes', icon: 'checkroom'},
@@ -198,6 +172,17 @@ export default function VirtualCloset() {
         { name: 'Add', icon: 'add_box'}
     ];
 
+    useEffect(() => {
+        scrollToRef(ref);
+    }, [currentCategory, closetMode]);
+
+    function scrollToRef(ref) {
+        ref.current.scroll({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+
     return (
         <>
             <Container>
@@ -206,6 +191,7 @@ export default function VirtualCloset() {
                     addCanvasItem={addCanvasItem}
                     searchOutfitsByItem={searchOutfitsByItem}
                     canvasItems={canvasItems}
+                    setClothesClosetMode={() => setClosetMode(0)}
                 />
                 <ClosetNavigationContainer className={`${sidebarOpen ? 'sidebar-open' : ''} ${closetMode === 1 && mobileMode ? 'canvas-mode-mobile' : ''} ${user?.isAdmin || user?.isSuperAdmin ? 'user-admin' : 'user-non-admin'}`}>
                     <div className={`closet-title ${optionsExpanded ? 'expanded' : ''}`} ref={closetTitleRef}>
@@ -278,18 +264,15 @@ export default function VirtualCloset() {
                             itemToSearch={itemToSearch}
                             clearItemToSearch={clearItemToSearch}
                         />
-                        {/* <Shopping 
+                        <Shopping 
                             display={closetMode === 3}
-                            shoppingItems={shoppingItems}
-                            updateShoppingItems={getShoppingItems}
-                        /> */}
+                        />
                         {/* <Profile 
                             display={closetMode === 4}
-                        />
-                        {/* <AddItems   
+                        /> */}
+                        <AddItems   
                             display={closetMode === 4}
-                            updateItems={updateItems} 
-                        />*/}
+                        />
                     </div>
                 </ClosetNavigationContainer>
             </Container>

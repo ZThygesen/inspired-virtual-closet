@@ -61,6 +61,11 @@ export const ClothesContainer = styled.div`
         flex-wrap: wrap;
         align-items: stretch;
         justify-content: center;
+
+        &.on-sidebar {
+            gap: 12px;
+            padding: 12px 0;
+        }
     }
 `;
 
@@ -130,6 +135,9 @@ export const ClothingCardContainer = styled.div`
         max-height: 200px;
         width: auto;
         height: auto;
+    }
+
+    :not(.view-only) img {
         cursor: pointer;
     }
 
@@ -163,8 +171,8 @@ export const ClothingCardContainer = styled.div`
         color: var(--primary);
     }
 
-    &.from-sidebar {
-        padding: 48px 16px 16px 16px;
+    &.on-sidebar {
+        padding: 48px 4px 4px 4px;
         margin: 0;
         gap: 0;
         background-color: var(--white);

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useError } from './ErrorContext';
+import { useUser } from './UserContext';
 import { useClient } from './ClientContext';
 import api from '../api';
 import Loading from '../components/Loading';
@@ -8,6 +9,7 @@ const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {
     const { setError } = useError();
+    const { user } = useUser();
     const { client } = useClient();
 
     // high level data
@@ -23,6 +25,7 @@ export const DataProvider = ({ children }) => {
     // closet states
     const [currentCategory, setCurrentCategory] = useState({ _id: -1, name: 'All' });
     const [currentFiles, setCurrentFiles] = useState([]);
+
     const [loading, setLoading] = useState(false);
 
     const resetData = useCallback(() => {
@@ -36,8 +39,6 @@ export const DataProvider = ({ children }) => {
     }, []);
 
     const updateCategories = useCallback(async () => {
-        setLoading(true);
-
         try {
             const response = await api.get('/categories');
             const categories = response.data.sort((a, b) => a.name - b.name);
@@ -46,17 +47,12 @@ export const DataProvider = ({ children }) => {
         catch (err) {
             setError({
                 message: 'There was an error fetching categories.',
-                status: err?.response?.status || 'N/A'
+                status: err?.response?.status,
             });
-        }
-        finally {
-            setLoading(false);
         }
     }, [setError]);
 
     const updateTags = useCallback(async () => {
-        setLoading(true);
-
         try {
             const response = await api.get('/tags/active');
             const tagData = response.data;
@@ -87,12 +83,9 @@ export const DataProvider = ({ children }) => {
         catch (err) {
             setError({
                 message: 'There was an error fetching tags.',
-                status: err?.response?.status || 'N/A'
+                status: err?.response?.status,
             });
-            setLoading(false);
         }
-
-        setLoading(false);
     }, [setError]);
 
     const resolveTagIds = useCallback((tagIds) => {
@@ -110,7 +103,6 @@ export const DataProvider = ({ children }) => {
 
     const updateFiles = useCallback(async () => {
         if (client) {
-            setLoading(true);
             try {
                 const response = await api.get(`/files/${client._id}`);
                 const files = [];
@@ -118,6 +110,8 @@ export const DataProvider = ({ children }) => {
                     const items = category.items;
                     for (const item of items) {
                         item.categoryId = category._id;
+                        const tags = resolveTagIds(item.tags).map(tag => tag.tagName);
+                        item.tagNamesPrefix = tags.join(' | ');
                     }
                     files.push(...items);
                 }
@@ -127,18 +121,14 @@ export const DataProvider = ({ children }) => {
             catch (err) {
                 setError({
                     message: 'There was an error fetching the client\'s items.',
-                    status: err?.response?.status
+                    status: err?.response?.status,
                 });
             }
-            finally {
-                setLoading(false);
-            }
         }
-    }, [client, setError]);
+    }, [client, resolveTagIds, setError]);
 
     const updateOutfits = useCallback(async () => {
         if (client) {
-            setLoading(true);
             try {
                 const response = await api.get(`/outfits/${client._id}`);
 
@@ -148,18 +138,14 @@ export const DataProvider = ({ children }) => {
             catch (err) {
                 setError({
                     message: 'There was an error fetching the client\'s outfits.',
-                    status: err?.response?.status || 'N/A',
+                    status: err?.response?.status,
                 });
-            }
-            finally {
-                setLoading(false);
             }
         }
     }, [client, setError]);
 
     const updateShopping = useCallback(async () => {
         if (client) {
-            setLoading(true);
             try {
                 const response = await api.get(`/shopping/${client._id}`);
                 setShopping(response.data);
@@ -169,9 +155,6 @@ export const DataProvider = ({ children }) => {
                     message: 'There was an error fetching client shopping items.',
                     status: err.response.status
                 });
-            }
-            finally {
-                setLoading(false);
             }
         }
     }, [client, setError]);
@@ -190,9 +173,11 @@ export const DataProvider = ({ children }) => {
     }, [files, currentCategory]);
 
     useEffect(() => {
-        updateCategories();
-        updateTags();
-    }, [updateCategories, updateTags]);
+        if (user) {
+            updateCategories();
+            updateTags();
+        }
+    }, [user, updateCategories, updateTags]);
 
     const updateAll = useCallback(async () => {
         await updateFiles();
@@ -202,8 +187,10 @@ export const DataProvider = ({ children }) => {
     }, [updateFiles, updateOutfits, updateShopping, updateProfile]);
 
     useEffect(() => {
-        updateAll();
-    }, [updateAll]);
+        if (user) {
+            updateAll();
+        }
+    }, [user, updateAll]);
 
     return (
         <DataContext.Provider value={{  
@@ -227,6 +214,9 @@ export const DataProvider = ({ children }) => {
             setCurrentCategory,
             currentFiles,
             setCurrentFiles,
+            
+            loading,
+            setLoading,
 
             resetData,
         }}>

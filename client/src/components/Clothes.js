@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useError } from '../contexts/ErrorContext';
 import { useClient } from '../contexts/ClientContext';
 import { useData } from '../contexts/DataContext';
 import api from '../api';
 import ClothingCard from './ClothingCard';
-import Loading from './Loading';
 import { ClothesContainer } from '../styles/Clothes';
 import { DropdownContainer, SwapDropdown } from '../styles/Dropdown';
 import Modal from './Modal';
@@ -12,24 +11,14 @@ import Input from './Input';
 import cuid from 'cuid';
 import { Pagination } from '@mui/material';
 
-export default function Clothes({ display, addCanvasItem, canvasItems, searchOutfitsByItem }) {
+export default function Clothes({ display, addCanvasItem, canvasItems, searchOutfitsByItem, onSidebar }) {
     const { setError } = useError();
-
-    const [itemToSwapCategory, setItemToSwapCategory] = useState({});
-    const [currCategorySelected, setCurrCategorySelected] = useState('');
-    const [categoryOptions, setCategoryOptions] = useState([]);
-    const [swapCategoryOpen, setSwapCategoryOpen] = useState(false);
-    const [currOpenIndex, setCurrOpenIndex] = useState(null);
-    const [loading, setLoading] = useState(false);
-
     const { client } = useClient();
-    const { categories, updateFiles, currentCategory, currentFiles } = useData();
+    const { categories, tags, updateFiles, currentCategory, currentFiles, setLoading } = useData();
 
-    // const [items, setItems] = useState(category?.items || []);
     const [searchResults, setSearchResults] = useState(currentFiles || []);
     const [resultsToShow, setResultsToShow] = useState(currentFiles || []);
     const [searchString, setSearchString] = useState('');
-    
     const [showPagination, setShowPagination] = useState(false);
     const [currPage, setCurrPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -68,164 +57,239 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
         }
     }, [currPage, searchString, currentFiles]);
 
-    function handleSwapCategoryClose() {
-        setSwapCategoryOpen(false);
-        setItemToSwapCategory({});
-        setCurrCategorySelected('');
-        setCategoryOptions([]);
+    // modal controls
+    const [imageModalOpen, setImageModalOpen] = useState(false);
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [tagsModalOpen, setTagsModalOpen] = useState(false);
+    const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
+    const [modalItem, setModalItem] = useState({});
+    const [newItemName, setNewItemName] = useState('');
+    const [newItemTags, setNewItemTags] = useState([]);
+    const [newItemTagObjects, setNewItemTagObjects] = useState([]);
+    const [categorySelected, setCategorySelected] = useState('');
+    const [categoryOptions, setCategoryOptions] = useState([]);
+
+    function closeImageModal() {
+        setImageModalOpen(false);
+        setModalItem({});
     }
 
-    async function handleSwapCategorySubmit() {
-        if (currCategorySelected.value === currentCategory._id || currCategorySelected === '') {
-            handleSwapCategoryClose();
-            return;
+    function closeEditModal() {
+        setEditModalOpen(false);
+        setModalItem({});
+        setNewItemName('');
+        setNewItemTags([]);
+        setNewItemTagObjects([]);
+    }
+
+    function closeTagsModal() {
+        setTagsModalOpen(false);
+    }
+
+    function closeCategoryModal() {
+        setCategoryModalOpen(false);
+        setModalItem({});
+        setCategorySelected('');
+    }
+
+    function closeDeleteModal() {
+        setDeleteModalOpen(false);
+        setModalItem({});
+    }
+
+    useEffect(() => {
+        if (editModalOpen) {
+            setNewItemName(modalItem.fileName);
+            setNewItemTags(modalItem.tags || []);
         }
+    }, [editModalOpen, modalItem, tags]);
 
-        setLoading(true);
-
-        try {
-            await api.patch(`/files/category/${client._id}/${itemToSwapCategory.categoryId}/${itemToSwapCategory.gcsId}`, {
-                newCategoryId: currCategorySelected.value
-            });
-            await updateFiles();
-        } catch (err) {
-            setError({
-                message: 'There was an error changing the item\'s category.',
-                status: err.response.status
-            });
-        } finally {
-            setLoading(false);
-            handleSwapCategoryClose();
+    useEffect(() => {
+        const itemTagObjects = [];
+        for (const tagGroup of tags) {
+            const activeTags = tagGroup.tags.filter(tag => newItemTags?.includes(tag.tagId));
+            if (activeTags.length > 0) {
+                itemTagObjects.push(...activeTags);
+            }
         }
-    }
+        setNewItemTagObjects(itemTagObjects);
+    }, [newItemTags, modalItem, tags]);
 
-    function handleSelectCategory(selection) {
-        setCurrCategorySelected(selection)
-    }
-
-    function prevClothingModal() {
-        if (currOpenIndex > 0) {
-            setCurrOpenIndex(current => current - 1);
-        }
-    }
-
-    function nextClothingModal() {
-        if (currOpenIndex < currentFiles.length - 1) {
-            setCurrOpenIndex(current => current + 1);
-        }
-    }
-
-    function openClothingModal(index) {
-        setCurrOpenIndex(index);
-    }
-
-    function closeClothingModal() {
-        setCurrOpenIndex(null);
-    }
-
-    async function swapCategory(item) {
-        setItemToSwapCategory(item);
-
-        const options = [];
-        categories.forEach(group => {
-            const categoryOptions = [];
-            group.categories.forEach(category => {
-                categoryOptions.push({
-                    value: category._id,
-                    label: category.name
-                });
-            });
-            options.push({
-                type: 'group',
-                name: group.group,
-                items: categoryOptions
-            });
-        });
-
-        setCategoryOptions(options);
-        setSwapCategoryOpen(true)
-    }
-    
-    async function editItem(item, newName, itemTags) {
-        setLoading(true);
-        const itemTagsStr = JSON.stringify(itemTags);
-        if (item.fileName === newName && JSON.stringify(item.tags) === itemTagsStr) {
-            setLoading(false);
+    async function editItem(e) {
+        e.preventDefault();
+        if (newItemName === modalItem.fileName && JSON.stringify(newItemTags) === JSON.stringify(modalItem.tags)) {
+            closeEditModal();
             return;
         }
 
         try {
-            await api.patch(`/files/${client._id}/${item.categoryId}/${item.gcsId}`, { name: newName, tags: itemTags });
+            setLoading(true);
+            await api.patch(`/files/${client._id}/${modalItem.categoryId}/${modalItem.gcsId}`, { name: newItemName, tags: newItemTags });
             await updateFiles();
-        } catch (err) {
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error editing the item.',
-                status: err.response.status
+                status: err?.response?.status,
             });
-        } finally {
+        } 
+        finally {
             setLoading(false);
+            closeEditModal();
         }
     }
 
-    async function deleteItem(item) {
-        setLoading(true);
+    useEffect(() => {
+        const theseCategories = categories.filter(category => category._id !== 0);
+        const categoriesWithGroups = theseCategories.filter(category => category.group);
+        const categoriesWithoutGroups = theseCategories.filter(category => !category.group);
+
+        const groupMap = {};
+        for (const category of categoriesWithGroups) {
+            if (!groupMap[category.group]) {
+                groupMap[category.group] = [];
+            }
+            groupMap[category.group].push(category);
+        }
+        for (const category of categoriesWithoutGroups) {
+            if (!groupMap['Other']) {
+                groupMap['Other'] = [];
+            }
+            groupMap['Other'].push(category);
+        }
+
+        const options = [{ value: 0, label: 'Other' }];
+        for (const group of Object.keys(groupMap)) {
+            const categoryOptions = [];
+            const groupCategories = groupMap[group];
+            for (const category of groupCategories) {
+                categoryOptions.push({
+                    value: category._id,
+                    label: category.name,
+                });
+            }
+            options.push({
+                type: 'group',
+                name: group,
+                items: categoryOptions,
+            });
+        }
+        setCategoryOptions(options);
+    }, [categories]);
+
+    const getCategoryName = useCallback((categoryId) => {
+        if (categoryId || categoryId === 0) {
+            const category = categories.filter(category => category._id === categoryId)[0];
+            return category.name;
+        }
+        else {
+            return '';
+        }
+    }, [categories]);
+
+    async function swapCategory() {
+        if (categorySelected.value === modalItem.categoryId || categorySelected === '') {
+            closeCategoryModal();
+            return;
+        }
 
         try {
-            await api.delete(`/files/${client._id}/${item.categoryId}/${item.gcsId}`);
+            setLoading(true);
+            await api.patch(`/files/category/${client._id}/${modalItem.categoryId}/${modalItem.gcsId}`, {
+                newCategoryId: categorySelected.value,
+            });
             await updateFiles();
-        } catch (err) {
+        } 
+        catch (err) {
+            setError({
+                message: 'There was an error changing the item\'s category.',
+                status: err?.response?.status,
+            });
+        } 
+        finally {
+            setLoading(false);
+            closeCategoryModal();
+        }
+    }
+
+    async function deleteItem() {
+        try {
+            setLoading(true);
+            await api.delete(`/files/${client._id}/${modalItem.categoryId}/${modalItem.gcsId}`);
+            await updateFiles();
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error deleting the item.',
-                status: err.response.status
+                status: err?.response?.status,
             });
-        } finally {
+        } 
+        finally {
             setLoading(false);
+            closeDeleteModal();
+        }
+    }
+
+    function prevModalItem() {
+        const currIndex = currentFiles.findIndex(item => item.gcsId === modalItem.gcsId);
+        if (currIndex > 0) {
+            setModalItem(currentFiles[currIndex - 1]);
+        }
+    }
+
+    function nextModalItem() {
+        const currIndex = currentFiles.findIndex(item => item.gcsId === modalItem.gcsId);
+        if (currIndex >= 0 && currIndex < (currentFiles.length - 1)) {
+            setModalItem(currentFiles[currIndex + 1]);
         }
     }
 
     return (
         <>
             <ClothesContainer style={{ display: display ? 'flex' : 'none' }}>
-                <div className="title-search">
-                    <h2 className="category-title">{currentCategory.name} ({searchResults.length})</h2>
-                    <div className="search-box">
-                        <Input
-                            type="text"
-                            id="fuzzy-search"
-                            label="Search"
-                            value={searchString}
-                            onChange={e => setSearchString(e.target.value)}
-                        />
-                        <button className='material-icons clear-search-button' onClick={() => setSearchString('')}>
-                            clear
-                        </button>
+                { !onSidebar &&
+                    <div className="title-search">
+                        <h2 className="category-title">{currentCategory.name} ({searchResults.length})</h2>
+                        <div className="search-box">
+                            <Input
+                                type="text"
+                                id="fuzzy-search"
+                                label="Search"
+                                value={searchString}
+                                size="small"
+                                onChange={e => setSearchString(e.target.value)}
+                            />
+                            <button className='material-icons clear-search-button' onClick={() => setSearchString('')}>
+                                clear
+                            </button>
+                        </div>
+                        { showPagination && 
+                            <Pagination 
+                                count={totalPages} 
+                                page={currPage} 
+                                onChange={handlePageChange}
+                                variant='outlined'
+                                shape='rounded'
+                            />
+                        }
                     </div>
-                    { showPagination && 
-                        <Pagination 
-                            count={totalPages} 
-                            page={currPage} 
-                            onChange={handlePageChange}
-                            variant='outlined'
-                            shape='rounded'
-                        />
-                    }
-                </div>
-                <div className="items">
+                }
+                <div className={`items ${onSidebar ? 'on-sidebar': ''}`}>
                     {
-                        resultsToShow?.map((item, index) => (
+                        resultsToShow?.map(item => (
                             <ClothingCard
                                 item={item}
-                                onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === item.gcsId)}
-                                addCanvasItem={() => addCanvasItem(item, 'image')}
-                                swapCategory={swapCategory}
-                                editItem={editItem}
-                                deleteItem={deleteItem}
+                                addCanvasItem={addCanvasItem}
                                 searchOutfitsByItem={searchOutfitsByItem}
-                                prevClothingModal={prevClothingModal}
-                                nextClothingModal={nextClothingModal}
-                                openClothingModal={() => openClothingModal(index)}
-                                closeClothingModal={closeClothingModal}
-                                isOpen={currOpenIndex === index}
+                                setImageModalOpen={setImageModalOpen}
+                                setEditModalOpen={setEditModalOpen}
+                                setCategoryModalOpen={setCategoryModalOpen}
+                                setDeleteModalOpen={setDeleteModalOpen}
+                                setModalItem={setModalItem}
+                                onSidebar={onSidebar}
+                                onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === item.gcsId)}
                                 key={cuid()}
                             />
                         ))
@@ -233,29 +297,173 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
                 </div>
             </ClothesContainer>
             <Modal
-                open={swapCategoryOpen}
-                closeFn={handleSwapCategoryClose}
+                open={imageModalOpen}
+                closeFn={closeImageModal}
+                isImage={true}
+            >
+                <>  
+                    <button className="material-icons close-modal" onClick={closeImageModal}>close</button>
+                    <ClothingCard 
+                        item={modalItem}
+                        addCanvasItem={addCanvasItem}
+                        searchOutfitsByItem={searchOutfitsByItem}
+                        onModal={true}
+                        onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === modalItem.gcsId)}
+                        prevModalItem={prevModalItem}
+                        nextModalItem={nextModalItem}
+                    />
+                </>
+            </Modal>
+            <Modal
+                open={editModalOpen}
+                closeFn={closeEditModal}
+                isForm={true}
+                submitFn={editItem}
+            >
+                <>
+                    <h2 className="modal-title">Edit Item</h2>
+                    <div className="modal-content">
+                        <Input
+                            type="text"
+                            id="item-name"
+                            label="Item Name"
+                            value={newItemName}
+                            onChange={e => setNewItemName(e.target.value)}
+                        />
+                        <img
+                            src={modalItem.smallFileUrl}
+                            alt={modalItem.fileName}
+                            className="edit-img"
+                        />
+                        <div className="tags-container">
+                            <p className="tags-prompt">Tags</p>
+                            <div className="tags">
+                                {
+                                    newItemTagObjects.map(tag => (
+                                        <div className="tag" key={tag.tagId}>
+                                            <p className="tag-name">{tag.tagName}</p>
+                                            <div className="tag-color" style={{ backgroundColor: tag.tagColor }}></div>
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                            <button className="add-tags-button" type="button" onClick={() => setTagsModalOpen(true)}>Edit Tags</button>
+                        </div>
+                    </div>
+                    <div className="modal-options">
+                        <button type="button" onClick={closeEditModal}>Cancel</button>
+                        <button type="submit">Save</button>
+                    </div>
+                </>
+            </Modal>
+            <Modal
+                open={tagsModalOpen}
+                closeFn={closeTagsModal}
+            >
+                <>
+                    <h2 className="modal-title">Add Tags</h2>
+                    <div className="modal-content">
+                        <div className="file-card-img">
+                            <img
+                                src={modalItem.smallFileUrl}
+                                alt={modalItem.fileName}
+                                className="file-img"
+                            />
+                        </div>
+                        <div className="tag-checkboxes">
+                            <div className="tag-groups">
+                                {
+                                    tags.map(group => (
+                                        (
+                                            group.tags.length > 0 && 
+                                            <div className="tag-group" key={group._id}>
+                                                <p className="tag-group-name">{group.tagGroupName}</p>
+                                                <div className="tags">
+                                                    {
+                                                        group.tags.map(tag => (
+                                                            <div className={`tag ${tags.includes(String(tag.tagId)) ? 'checked' : ''}`} key={tag.tagId}>
+                                                                <Input
+                                                                    type="checkbox"
+                                                                    id={`${tag.tagId}`}
+                                                                    label={tag.tagName}
+                                                                    value={newItemTags?.includes(String(tag.tagId))}
+                                                                    onChange={e => {
+                                                                        let updatedTags = [];
+                                                                        const tagId = e.target.id;
+                                                                        if (newItemTags?.includes(tagId)) {
+                                                                            updatedTags = newItemTags?.filter(tag => tag !== tagId);
+                                                                        }
+                                                                        else {
+                                                                            updatedTags = [...newItemTags, tagId];
+                                                                        }
+                                                                        setNewItemTags(updatedTags);
+                                                                    }}
+                                                                />
+                                                                <div className="tag-color" style={{ backgroundColor: tag.tagColor }}></div>
+                                                            </div>
+                                                        ))
+                                                    }
+                                                </div>
+                                            </div>
+                                        )
+                                    ))
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div className="modal-options">
+                        <button onClick={closeTagsModal}>Done</button>
+                    </div>
+                </>
+            </Modal>
+            <Modal
+                open={categoryModalOpen}
+                closeFn={closeCategoryModal}
             >
                 <div className="modal-title">Change Category</div>
                 <DropdownContainer>
-                    <p className="curr-category">Current category: <span className="large category-name">{currentCategory.name}</span></p>
+                    <p className="curr-category">Current category: <span className="large category-name">{getCategoryName(modalItem.categoryId)}</span></p>
                     <p className="new-category">New Category</p>
-                    <SwapDropdown options={categoryOptions} onChange={handleSelectCategory} value={currCategorySelected} />
+                    <SwapDropdown 
+                        options={categoryOptions} 
+                        onChange={(selection) => setCategorySelected(selection)} 
+                        value={categorySelected} 
+                    />
                 </DropdownContainer>
                 <div className="modal-content">
-                    <p className="medium bold underline">{itemToSwapCategory.fileName}</p>
+                    <p className="medium bold underline">{modalItem.fileName}</p>
                     <img
-                        src={itemToSwapCategory.smallFileUrl}
-                        alt={itemToSwapCategory.fileName}
+                        src={modalItem.smallFileUrl}
+                        alt={modalItem.fileName}
                         className="delete-img"
                     />
                 </div>
                 <div className="modal-options">
-                    <button onClick={handleSwapCategoryClose}>Cancel</button>
-                    <button onClick={handleSwapCategorySubmit}>Save</button>
+                    <button onClick={closeCategoryModal}>Cancel</button>
+                    <button onClick={swapCategory}>Save</button>
                 </div>
             </Modal>
-            <Loading open={loading} />
+            <Modal
+                open={deleteModalOpen}
+                closeFn={closeDeleteModal}
+            >
+                <>
+                    <h2 className="modal-title">Delete Item</h2>
+                    <div className="modal-content">
+                        <p className="medium">Are you sure you want to delete this item?</p>
+                        <p className="large bold underline">{modalItem.fileName}</p>
+                        <img
+                            src={modalItem.smallFileUrl}
+                            alt={modalItem.fileName}
+                            className="delete-img"
+                        />
+                    </div>
+                    <div className="modal-options">
+                        <button onClick={closeDeleteModal}>Cancel</button>
+                        <button onClick={deleteItem}>Delete</button>
+                    </div>
+                </>
+            </Modal>
         </>
         
     );

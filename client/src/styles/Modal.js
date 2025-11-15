@@ -11,8 +11,8 @@ export const ModalContentContainer = styled.div`
         height: 100%;
         
         & img {
-            max-width: 80%;
-            max-height: 80%;
+            max-width: 90%;
+            max-height: 90%;
             width: auto;
             height: auto;
             position: relative;

@@ -4,19 +4,17 @@ import { useSidebar } from '../contexts/SidebarContext';
 import cuid from 'cuid';
 import { CategoriesSidebarContainer } from '../styles/CategoriesSidebar';
 import { Tooltip } from '@mui/material';
-import ClothingCard from './ClothingCard';
+import Clothes from './Clothes';
 
-export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOutfitsByItem, canvasItems }) {
+export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOutfitsByItem, canvasItems, setClothesClosetMode }) {
     const { categories, files, currentCategory, setCurrentCategory } = useData();
     const { sidebarOpen, setSidebarOpen, mobileMode, setCurrCategoryClicked } = useSidebar();
 
     const [categoryGroups, setCategoryGroups] = useState([]);
     const [stickyCategory, setStickyCategory] = useState(null);
-    const [currOpenIndex, setCurrOpenIndex] = useState(null);
 
     const ref = useRef();
-    const expandRef = useRef();
-    const collapseRef = useRef();
+    const toggleRef = useRef();
 
     useEffect(() => {
         const theseCategories = categories.filter(category => category._id !== 0);
@@ -31,7 +29,6 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
             const numItems = files.filter(file => file.categoryId === category._id).length;
             groupMap[category.group].push({ ...category, numItems: numItems });
         }
-
         for (const category of categoriesWithoutGroups) {
             if (!groupMap[0]) {
                 groupMap[0] = [];
@@ -64,27 +61,6 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
         }
     }
 
-    // clothing modal functionality
-    function prevClothingModal() {
-        if (currOpenIndex > 0) {
-            setCurrOpenIndex(current => current - 1);
-        }
-    }
-
-    function nextClothingModal() {
-        if (stickyCategory && (currOpenIndex < stickyCategory?.items?.length - 1)) {
-            setCurrOpenIndex(current => current + 1);
-        }
-    }
-
-    function openClothingModal(index) {
-        setCurrOpenIndex(index);
-    }
-
-    function closeClothingModal() {
-        setCurrOpenIndex(null);
-    }
-
     return (
         <>
             <CategoriesSidebarContainer id="sidebar" className={`${sidebarOpen ? 'open' : ''}`} ref={sidebarRef}>
@@ -114,14 +90,12 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
                                                 key={cuid()}
                                             >
                                                 <button
-                                                    onClick={(e) => {                                                     
-                                                        const target = e.target.className;
-                                                        const expand = expandRef.current.className;
-                                                        const collapse = collapseRef.current.className;
-                                                        if (mobileMode && !(target === expand || target === collapse)) {
+                                                    onClick={(e) => {                                                 
+                                                        const toggleSelected = toggleRef?.current?.contains(e.target) && category.numItems > 0;
+                                                        if (mobileMode && !toggleSelected) {
                                                             setSidebarOpen(false);
                                                         }
-                                                        if (target === expand || target === collapse) {
+                                                        if (toggleSelected) {
                                                             toggleStickyCategory(category);
                                                         }
                                                         else if (category?._id !== currentCategory?._id) {
@@ -134,45 +108,38 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
                                                         else {
                                                             setCurrentCategory(category);
                                                         }
+
+                                                        if (!toggleSelected) {
+                                                            setClothesClosetMode();
+                                                        }
+                                                        toggleRef.current = null;
                                                     }}
                                                     className="category-button"
                                                 >
                                                     <p className={`category-name ${(categoryGroup.group === -1 || categoryGroup.group === 0) ? 'prominent' : ''}`}>{category.name}</p>
-                                                    <p 
-                                                        className="num-items" 
-                                                        onClick={() => {
-                                                            toggleStickyCategory(category);
+                                                    <div
+                                                        className={`num-items ${category.numItems > 0 ? 'can-hover': ''}`}
+                                                        onClick={(e) => {
+                                                            toggleRef.current = e.target;
                                                         }}
                                                     >
+                                                        { category.numItems > 0 &&
+                                                            <>
+                                                                <span className="material-icons cat-expand">expand_more</span>
+                                                                <span className="material-icons cat-collapse">expand_less</span>
+                                                            </>
+                                                        }
                                                         <span className="cat-count">{category.numItems}</span>
-                                                        <span className="material-icons cat-expand" ref={expandRef}>expand_more</span>
-                                                        <span className="material-icons cat-collapse" ref={collapseRef}>expand_less</span>
-                                                    </p>
+                                                    </div>
                                                 </button>
                                                 { stickyCategory === category &&
-                                                <>
-                                                    <div className="category-items-container">
-                                                    {
-                                                        files
-                                                            .filter(file => file?.categoryId === category?._id || currentCategory._id === -1)
-                                                            .map((item, index) => (
-                                                            <ClothingCard
-                                                                item={item}
-                                                                onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === item.gcsId)}
-                                                                addCanvasItem={() => addCanvasItem(item, "image")}
-                                                                searchOutfitsByItem={() => searchOutfitsByItem(item)}
-                                                                prevClothingModal={prevClothingModal}
-                                                                nextClothingModal={nextClothingModal}
-                                                                openClothingModal={() => openClothingModal(index)}
-                                                                closeClothingModal={closeClothingModal}
-                                                                isOpen={currOpenIndex === index}
-                                                                fromSidebar={true}
-                                                                key={cuid()}
-                                                            />
-                                                        ))
-                                                    }
-                                                    </div>
-                                                </>
+                                                    <Clothes
+                                                        display={true}
+                                                        addCanvasItem={addCanvasItem}
+                                                        canvasItems={canvasItems}
+                                                        searchOutfitsByItem={searchOutfitsByItem}
+                                                        onSidebar={true}
+                                                    />
                                                 }
                                             </div>
                                         ))

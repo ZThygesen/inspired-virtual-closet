@@ -7,7 +7,18 @@ import Input from './Input';
 import { DropdownContainer, SwapDropdown } from '../styles/Dropdown';
 import invalidImg from '../images/invalid.png';
 
-export default function FileCard({ file, uploadFile, removeFile, profileCategories, clothesCategories, allTags, massOption, activateMassOption, setActivateMassOption, updateFiles }) {
+export default function FileCard({ 
+    file, 
+    uploadFile, 
+    removeFile, 
+    profileCategories, 
+    clothesCategories, 
+    allTags, 
+    massOption, 
+    activateMassOption, 
+    setActivateMassOption, 
+    updateItems 
+}) {
     const { user } = useUser();
     const { client } = useClient();
 
@@ -142,8 +153,8 @@ export default function FileCard({ file, uploadFile, removeFile, profileCategori
             file.incomplete = false;
             setIncompleteMessage('');
         }
-        updateFiles(current => !current);
-    }, [file, tab, category, name, updateFiles]);
+        updateItems(current => !current);
+    }, [file, tab, category, name, updateItems]);
 
     return (
         <>

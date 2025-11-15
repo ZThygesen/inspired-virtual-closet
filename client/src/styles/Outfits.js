@@ -10,7 +10,7 @@ export const OutfitsContainer = styled.div`
         width: 100%;
         display: flex;
         flex-direction: column;
-        /* align-items: flex-start; */
+        align-items: flex-start;
         align-items: center;
         justify-content: center;
         gap: 8px;
@@ -22,6 +22,15 @@ export const OutfitsContainer = styled.div`
             & input {
                 padding-right: 32px;
             }
+        }
+
+        & .search-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         & .search-box {
@@ -44,6 +53,47 @@ export const OutfitsContainer = styled.div`
                 &:hover {
                     background-color: var(--material-btn-bg);
                 }
+            }
+        }
+
+        & .item-search-container {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+
+            & .item-to-search-text {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                position: relative;
+                border-radius: 24px;
+                box-shadow: var(--box-shadow);
+                padding: 8px 16px;
+
+                span {
+                    font-weight: 600;
+                    color: var(--primary);
+                }
+            }
+
+            & .clear-search-by-item {
+                background: none;
+                cursor: pointer;
+                transition: 0.1s;
+                border-radius: 50%;
+                font-size: 24px !important;
+                padding: 4px;
+
+                &:hover {
+                    background-color: var(--material-btn-bg);
+                }
+            }
+        }
+
+        & .item-to-search {
+            img {
+                height: 100px;
+                width: auto;
             }
         }
     }
