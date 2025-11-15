@@ -82,6 +82,17 @@ export const schemaHelpers = {
                 if (fieldData.pattern) {
                     joiFragment.pattern(new RegExp(fieldData.pattern));
                 }
+                if (fieldData.parseJSON) {
+                    joiFragment = joiFragment.custom((value, utils) => {
+                        try {
+                            const parsedString = JSON.parse(value);
+                            return parsedString;
+                        }
+                        catch (err) {
+                            return utils.error('any.invalid', { message: `${field} is not a valid JSON string` });
+                        }
+                    });
+                }
             }
             else if (type === 'number') {
                 joiFragment = Joi.number();
@@ -109,12 +120,12 @@ export const schemaHelpers = {
             else if (type === 'array') {
                 const items = this.createSchema({ items: fieldData.items });
                 joiFragment = Joi.alternatives().try(
-                        Joi.array().items(items.extract('items')),
+                        Joi.array().items(items.extract('items')).sparse(fieldData.optional),
                         Joi.string().trim().custom((value, utils) => {
                             try {
                                 const parsedArray = JSON.parse(value);
                                 if (Array.isArray(parsedArray)) {
-                                    return Joi.attempt(parsedArray, Joi.array().items(items.extract('items')));
+                                    return Joi.attempt(parsedArray, Joi.array().items(items.extract('items')).sparse(fieldData.optional));
                                 }
                                 else {
                                     return utils.error('any.invalid', { message: `${field} is not an array or a JSON array` });
@@ -128,7 +139,10 @@ export const schemaHelpers = {
                     .messages({ 'any.invalid': '{{#message}}' });
             }
 
-            if (!fieldData.optional) {
+            if (fieldData.optional) {
+                joiFragment = joiFragment.allow('', null);
+            }
+            else {
                 joiFragment = joiFragment.required();
             }
             joiFragments[field] = joiFragment;

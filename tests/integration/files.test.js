@@ -80,6 +80,7 @@ describe('files', () => {
         it('should add new file', async () => {
             body.rmbg = true;
             const response = await request(params, body);
+            
             expect(response.status).toBe(201);
             expect(response.body.message).toBe('Success!');
             expect(mockRemoveBackground).toHaveBeenCalledWith(body.fileSrc, body.crop);

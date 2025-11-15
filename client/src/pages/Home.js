@@ -1,19 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useError } from '../components/ErrorContext';
-import { useUser } from '../components/UserContext';
+import { useError } from '../contexts/ErrorContext';
+import { useUser } from '../contexts/UserContext';
 import axios from 'axios';
 import { HomeContainer } from '../styles/Home';
 import ActionButton from '../components/ActionButton'
 import homeLogo from '../images/home-logo.png';
-import Loading from '../components/Loading';
 import { GoogleLogin } from '@react-oauth/google';
 
 export default function Home() {
     const { setError } = useError();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
-    const { user, setUser, loading } = useUser();
+    const { user, setUser } = useUser();
 
     const navigate = useNavigate();
 
@@ -46,7 +45,8 @@ export default function Home() {
             const user = response?.data?.user;
             if (user) {
                 setUser(user);
-            } else {
+            } 
+            else {
                 setUser(null);
             }
         } catch (err) {
@@ -80,7 +80,6 @@ export default function Home() {
                 }
             </HomeContainer>
             <p className="copyright">© 2025 Edie Styles, LLC</p>
-            <Loading open={loading} />
         </>
     );
 }

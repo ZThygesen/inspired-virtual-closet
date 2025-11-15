@@ -18,7 +18,9 @@ export const testHelpers = {
             else {
                 goodData.push('valid string'); 
             }
-            
+            if (fieldData.parseJSON) {
+                goodData = goodData.map(value => JSON.stringify(value));
+            }
         }
         else if (type === 'number') {
             if (optional) {
@@ -67,6 +69,9 @@ export const testHelpers = {
             if (!isFormData) {
                 badData.push(0, 123, true, false);
             }
+            if (fieldData.parseJSON) {
+                badData.push('not a json string', '{ "invalid": json }', '["invalid", "json",]');
+            }
             badData.push([], {});
         }
         else if (type === 'number') {
@@ -85,7 +90,10 @@ export const testHelpers = {
             if (!fieldData.otherAllowed) {
                 badData.push('0', 0);
             }
-            badData.push('invalid_id', {}, null, undefined, 123, true, false, []);
+            if (!optional) {
+                badData.push(null, undefined)
+            }
+            badData.push('invalid_id', {}, 123, true, false, []);
         }
         else if (type === 'object') {
 

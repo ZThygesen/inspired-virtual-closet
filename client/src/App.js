@@ -1,7 +1,10 @@
 import { Route, Routes } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { ErrorModalProvider } from './components/ErrorContext';
-import { UserProvider } from './components/UserContext';
+import { ErrorModalProvider } from './contexts/ErrorContext';
+import { UserProvider } from './contexts/UserContext';
+import { ClientProvider } from './contexts/ClientContext';
+import { DataProvider } from './contexts/DataContext';
+import { SidebarProvider } from './contexts/SidebarContext';
 import ErrorModal from './components/ErrorModal';
 import styled from 'styled-components';
 import Header from './components/Header';
@@ -23,19 +26,25 @@ export default function App() {
         <GoogleOAuthProvider clientId={process.env.REACT_APP_OAUTH_CLIENT_ID}>
             <ErrorModalProvider>
                 <UserProvider>
-                    <AppContainer>
-                        <Header />
-                        <Routes>
-                            <Route index element={<Home />} />
-                            <Route element={<ProtectedRoute adminOnly />}>
-                                <Route path="clients/*" element={<Router />} />
-                            </Route>
-                            <Route element={<ProtectedRoute />}>
-                                <Route path=":client" element={<VirtualCloset />} />
-                            </Route>
-                        </Routes>
-                    </AppContainer>
-                    <ErrorModal />
+                    <ClientProvider>
+                        <DataProvider>
+                            <AppContainer>
+                                <SidebarProvider>
+                                    <Header />
+                                    <Routes>
+                                        <Route index element={<Home />} />
+                                        <Route element={<ProtectedRoute adminOnly />}>
+                                            <Route path="clients/*" element={<Router />} />
+                                        </Route>
+                                        <Route element={<ProtectedRoute />}>
+                                            <Route path=":client" element={<VirtualCloset />} />
+                                        </Route>
+                                    </Routes>
+                                </SidebarProvider>
+                            </AppContainer>
+                            <ErrorModal />
+                        </DataProvider>
+                    </ClientProvider>
                 </UserProvider>
             </ErrorModalProvider>
         </GoogleOAuthProvider>

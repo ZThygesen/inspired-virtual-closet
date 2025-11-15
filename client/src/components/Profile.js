@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { useError } from './ErrorContext';
+import { useError } from '../contexts/ErrorContext';
 import api from '../api';
 import Loading from './Loading';
 import cuid from 'cuid';
 import Modal from './Modal';
-import { useUser } from './UserContext';
-import { useClient } from './ClientContext';
+import { useUser } from '../contexts/UserContext';
+import { useClient } from '../contexts/ClientContext';
 import { ProfileContainer } from '../styles/Profile';
 import { Tooltip } from '@mui/material';
 import StyleProfile from './StyleProfile';

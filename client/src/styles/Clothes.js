@@ -61,6 +61,11 @@ export const ClothesContainer = styled.div`
         flex-wrap: wrap;
         align-items: stretch;
         justify-content: center;
+
+        &.on-sidebar {
+            gap: 12px;
+            padding: 12px 0;
+        }
     }
 `;
 
@@ -87,7 +92,22 @@ export const ClothingCardContainer = styled.div`
         color: var(--primary) !important;
         position: absolute;
         top: 6px;
+        left: 12px;
+    }
+
+    .search-outfits-icon {
+        font-size: 36px !important;
+        color: var(--primary) !important;
+        position: absolute;
+        top: 6px;
         right: 12px;
+
+        & .num-outfits {
+            color: var(--primary);
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
     }
 
     .file-name {
@@ -115,6 +135,9 @@ export const ClothingCardContainer = styled.div`
         max-height: 200px;
         width: auto;
         height: auto;
+    }
+
+    :not(.view-only) img {
         cursor: pointer;
     }
 
@@ -148,8 +171,8 @@ export const ClothingCardContainer = styled.div`
         color: var(--primary);
     }
 
-    &.from-sidebar {
-        padding: 16px;
+    &.on-sidebar {
+        padding: 48px 4px 4px 4px;
         margin: 0;
         gap: 0;
         background-color: var(--white);

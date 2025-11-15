@@ -33,7 +33,6 @@ describe('files', () => {
             mockDeleteFromGCS,
             mockParse,
             mockCreateId,
-            mockBucket,
         } = unitHelpers);
     });
 
@@ -468,7 +467,7 @@ describe('files', () => {
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
         });
 
-        it('should handle updateOne failure', async () => {
+        it('should handle updateOne error', async () => {
             err = new Error('updateOne error');
             mockCollection.updateOne.mockRejectedValueOnce(err);
             await makeFunctionCall();
@@ -486,7 +485,7 @@ describe('files', () => {
         });
     });
 
-    describe('update category', () => {
+    describe('patchCategory', () => {
         let params, body, req;
         beforeEach(async () => {
             params = {
@@ -675,8 +674,8 @@ describe('files', () => {
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);           
         });
 
-        it('should handle first deleteFromGcsDest error', async () => {
-            err = new Error('deleteFromGcsDest error');
+        it('should handle first deleteFromGcs error', async () => {
+            err = new Error('deleteFromGcs error');
             mockDeleteFromGCS.mockRejectedValueOnce(err);
             await makeFunctionCall();
 
@@ -684,8 +683,8 @@ describe('files', () => {
             expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle second deleteFromGcsDest error', async () => {
-            err = new Error('deleteFromGcsDest error');
+        it('should handle second deleteFromGcs error', async () => {
+            err = new Error('deleteFromGcs error');
             mockDeleteFromGCS.mockResolvedValueOnce();
             mockDeleteFromGCS.mockRejectedValueOnce(err);
             await makeFunctionCall();

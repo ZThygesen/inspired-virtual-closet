@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
-import { useError } from './ErrorContext';
-import { useUser } from './UserContext';
-import { useClient } from './ClientContext';
-import { useData } from './DataContext';
+import { useError } from '../contexts/ErrorContext';
+import { useUser } from '../contexts/UserContext';
+import { useClient } from '../contexts/ClientContext';
+import { useData } from '../contexts/DataContext';
 import { AddItemsContainer, UploadOptionsContainer, FileContainer } from '../styles/AddItems';
 import { DropdownContainer, SwapDropdown } from '../styles/Dropdown';
 import Dropzone from './Dropzone';
@@ -42,33 +42,51 @@ function CircularProgressWithLabel(props) {
     )
 }
 
-export default function AddItems({ display, updateItems }) {
+export default function AddItems({ display }) {
     const { setError } = useError();
     const { user } = useUser();
     const { client, updateClient } = useClient();
-    const { profileCategories, clothesCategories, tags } = useData();
+    const { categories, tags, updateFiles, profile } = useData();
 
     const [clothesOptions, setClothesOptions] = useState([]);
 
     useEffect(() => {
-        const options = [];
-        clothesCategories.forEach(group => {
+        const theseCategories = categories.filter(category => category._id !== 0);
+        const categoriesWithGroups = theseCategories.filter(category => category.group);
+        const categoriesWithoutGroups = theseCategories.filter(category => !category.group);
+
+        const groupMap = {};
+        for (const category of categoriesWithGroups) {
+            if (!groupMap[category.group]) {
+                groupMap[category.group] = [];
+            }
+            groupMap[category.group].push(category);
+        }
+        for (const category of categoriesWithoutGroups) {
+            if (!groupMap['Other']) {
+                groupMap['Other'] = [];
+            }
+            groupMap['Other'].push(category);
+        }
+
+        const options = [{ value: 0, label: 'Other' }];
+        for (const group of Object.keys(groupMap)) {
             const categoryOptions = [];
-            group.categories.forEach(category => {
+            const groupCategories = groupMap[group];
+            for (const category of groupCategories) {
                 categoryOptions.push({
                     value: category._id,
-                    label: category.name
+                    label: category.name,
                 });
-            });
+            }
             options.push({
                 type: 'group',
-                name: group.group,
-                items: categoryOptions
+                name: group,
+                items: categoryOptions,
             });
-        });
-
+        }
         setClothesOptions(options);
-    }, [clothesCategories]);
+    }, [categories]);
 
     const [allFiles, setAllFiles] = useState([]);
     const [invalidFiles, setInvalidFiles] = useState([]);
@@ -79,7 +97,7 @@ export default function AddItems({ display, updateItems }) {
     const [numFilesUploaded, setNumFilesUploaded] = useState(0);
     const [resultModalOpen, setResultModalOpen] = useState(false);
     const [hasCredits, setHasCredits] = useState(false);
-    const [updateFiles, setUpdateFiles] = useState(false);
+    const [updateItems, setUpdateItems] = useState(false);
     const [activateMassOption, setActivateMassOption] = useState(0);
 
     useEffect(() => {
@@ -88,7 +106,7 @@ export default function AddItems({ display, updateItems }) {
 
         badFiles = allFiles.filter(file => file.incomplete && !file.invalid);
         setIncompleteFiles([...badFiles]);
-    }, [allFiles, updateFiles, activateMassOption]);
+    }, [allFiles, updateItems, activateMassOption]);
 
     function removeFile(file) {
         // remove image from DOM immediately to prevent delay
@@ -109,14 +127,15 @@ export default function AddItems({ display, updateItems }) {
         for (const file of allFiles) {
             try {
                 await uploadFile(file);
-            } catch (err) {
+            } 
+            catch (err) {
                 setError({
                     message: 'There was an error uploading the files.',
-                    status: err.response.status
+                    status: err?.response?.status,
                 });
                 setUploadModalOpen(false);
                 setNumFilesUploaded(0);
-                updateItems(true);
+                await updateFiles();
                 removeFile(file);
                 return;
             }
@@ -124,11 +143,11 @@ export default function AddItems({ display, updateItems }) {
             setNumFilesUploaded(current => current + 1);
         }
 
-        setTimeout(() => {
+        setTimeout(async () => {
             setUploadModalOpen(false);
             setNumFilesUploaded(0);
             setResultModalOpen(true);
-            updateItems(true);
+            await updateFiles();
             setAllFiles([]);
         }, 750);
     }
@@ -137,25 +156,26 @@ export default function AddItems({ display, updateItems }) {
         setUploadOneModalOpen(true);
         try {
             await uploadFile(file);
-        } catch (err) {
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error uploading the file.',
-                status: err.response.status
+                status: err?.response?.status,
             });
             setUploadOneModalOpen(false);
             setNumFilesUploaded(0);
-            updateItems(true);
+            await updateFiles();
             removeFile(file);
             return;
         }
         
         setNumFilesUploaded(current => current + 1);
 
-        setTimeout(() => {
+        setTimeout(async () => {
             setUploadOneModalOpen(false);
             setNumFilesUploaded(0);
             setResultModalOpen(true);
-            updateItems(true);
+            await updateFiles();
             removeFile(file);
         }, 750);
     }
@@ -173,7 +193,8 @@ export default function AddItems({ display, updateItems }) {
                     await api.post(`/files/${client._id}/${file.category.value}`, formData, {
                         headers: { 'Content-Type': 'multipart/form-data' },
                     });
-                } catch (err) {
+                } 
+                catch (err) {
                     reject(err);
                 }
 
@@ -326,7 +347,6 @@ export default function AddItems({ display, updateItems }) {
                     <Dropzone 
                         category={category} 
                         disabled={category._id === -1} 
-                        updateItems={updateItems} 
                         setFiles={setAllFiles}
                     />
                 </div>
@@ -358,13 +378,13 @@ export default function AddItems({ display, updateItems }) {
                                         file={file}
                                         uploadFile={uploadOneFile}
                                         removeFile={removeFile}
-                                        profileCategories={profileCategories}
+                                        profileCategories={profile}
                                         clothesCategories={clothesOptions}
                                         allTags={tags}
                                         massOption={massOption}
                                         activateMassOption={activateMassOption}
                                         setActivateMassOption={setActivateMassOption}
-                                        updateFiles={setUpdateFiles}
+                                        updateItems={setUpdateItems}
                                     />
                                 ))
                             }

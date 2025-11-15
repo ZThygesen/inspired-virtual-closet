@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useError } from '../components/ErrorContext';
+import { useError } from '../contexts/ErrorContext';
 import api from '../api'
 import cuid from 'cuid';
 import Loading from '../components/Loading';

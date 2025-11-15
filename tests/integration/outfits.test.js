@@ -1,67 +1,38 @@
 import { jest } from '@jest/globals';
-import { app, bucket } from '../../server';
-import { agent as supertest } from 'supertest';
-import { MongoClient } from 'mongodb';
+import { bucket } from '../../server';
 import { ObjectId } from 'mongodb';
 import { helpers } from '../../helpers';
 import cuid2 from '@paralleldrive/cuid2';
-import jwt from 'jsonwebtoken';
+import { integrationHelpers } from './helpers';
+import { schema } from '../../schema/outfits.schema';
 
 describe('outfits', () => {
-    let user;
-    let token;
-    let cookie;
-    async function createUser(db) {
-        user = {
-            _id: new ObjectId(),
-            firstName: 'Jane',
-            lastName: 'Deer',
-            email: 'janedeer11@gmail.com',
-            credits: 350,
-            isAdmin: true,
-            isSuperAdmin: true
-        };
+    let user, client, db, collection, clientCollection;
+    beforeAll(async () => {
+        await integrationHelpers.beforeAll('outfits');
 
-        const collection = db.collection('clients');
-        await collection.insertOne(user);
-
-        token = jwt.sign({ id: user._id, isAdmin: user.isAdmin, isSuperAdmin: user.isSuperAdmin }, process.env.JWT_SECRET);
-        cookie = `token=${token}`;
-    }
-
-    async function removeUser(db) {
-        const collection = db.collection('clients');
-
-        await collection.deleteOne({ _id: user._id });
-    }
-
-    let clientId;
-    let client;
-    async function createClient(db) {
-        clientId = new ObjectId();
-        client = {
-            _id: clientId,
-            firstName: 'Jane',
-            lastName: 'Deer',
-            email: 'janedeer11@gmail.com',
-            credits: 350,
-            isAdmin: false,
-            isSuperAdmin: false
-        };
-
-        const collection = db.collection('clients');
-        await collection.insertOne(client);
-    }
-
-    async function removeClient(db) {
-        const collection = db.collection('clients');
-
-        await collection.deleteOne({ _id: client._id });
-    }
-
-    async function clearCollection(collection) {
-        await collection.deleteMany({ });
-    }
+        expect(bucket.id).toBe('edie-styles-virtual-closet-test');
+        const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+        expect(files).toHaveLength(0);
+    });
+    afterAll(async () => {
+        await integrationHelpers.afterAll();
+        await clearBucket();
+    });
+    beforeEach(async () => {
+        await integrationHelpers.beforeEach();
+        ({
+            user,
+            client,
+            db,
+            collection,
+            clientCollection,
+        } = integrationHelpers);
+        expect(bucket.id).toBe('edie-styles-virtual-closet-test');
+    });
+    afterEach(async () => {
+        await integrationHelpers.afterEach();
+    });
 
     async function clearBucket() {
         expect(bucket.id).toBe('edie-styles-virtual-closet-test');
@@ -71,84 +42,38 @@ describe('outfits', () => {
         expect(files).toHaveLength(0);
     }
 
-    let mongoClient;
-    let db;
-    let collection;
-    let clientCollection;
-
-    beforeAll(async () => {
-        mongoClient = new MongoClient(process.env.DB_URI);
-        await mongoClient.connect();
-        db = mongoClient.db(process.env.DB_NAME_TEST);
-        collection = db.collection('outfits');
-        clientCollection = db.collection('clients');
-
-        expect(bucket.id).toBe('edie-styles-virtual-closet-test');
-
-        const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-        expect(files).toHaveLength(0);
-    });
-
-    afterAll(async () => {
-        await mongoClient.close();
-        await clearBucket();
-    });
-
-    beforeEach(async () => {
-        expect(process.env.NODE_ENV).toBe('test');
-
-        expect(bucket.id).toBe('edie-styles-virtual-closet-test');
-
-        await createUser(db);
-        await createClient(db);
-    });
-
-    afterEach(async () => {
-        await clearCollection(collection);
-        await removeUser(db);
-        await removeClient(db);
-
-        jest.resetAllMocks();
-        jest.restoreAllMocks();
-    });
-
-    function agent(app) {
-        return supertest(app).set('Cookie', cookie);
-    }
-
-    describe('create', () => {
-        afterAll(async () => {
+    describe('post', () => {
+        let params, body;
+        beforeEach(async () => {
             await clearBucket();
-        });
-
-        let data;
-        beforeEach(() => {
-            data = {
+            params = [client._id.toString()];
+            body = {
                 fileSrc: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==',
-                stageItemsStr: '{"stageItems":11.13}',
+                stageItems: JSON.stringify({ "stageItems": 11.13 }),
                 outfitName: 'Epic Party Outfit',
-                clientId: clientId
+                filesUsed: JSON.stringify([cuid2.createId(), cuid2.createId()]),
             };
         });
 
+        const request = (params, body) => integrationHelpers.executeRequest('post', '/outfits', params, body, {
+            isFormData: true,
+        });
+
         it('should create new outfit', async () => {    
-            // perform action to test
-            const response = await agent(app)
-                .post(`/outfits/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName);
-    
-            // perform checks
-            expect(response.status).toBe(201);
+            const response = await request(params, body);
+
             expect(response.body.message).toBe('Success!');
+            expect(response.status).toBe(201);
     
-            const outfit = await collection.findOne({ clientId: clientId.toString(), outfitName: 'Epic Party Outfit' });
+            const outfit = await collection.findOne({ clientId: client._id.toString(), outfitName: body.outfitName });
             expect(outfit).toBeTruthy();
             expect(outfit).toHaveProperty('_id');
-            expect(outfit.clientId).toBe(clientId.toString());
-            expect(outfit.stageItems).toEqual(JSON.parse(data.stageItemsStr));
-            expect(outfit.outfitName).toBe(data.outfitName);
+            expect(outfit).toMatchObject({
+                clientId: client._id.toString(),
+                stageItems: JSON.parse(body.stageItems),
+                outfitName: body.outfitName,
+                filesUsed: JSON.parse(body.filesUsed),
+            });
             expect(outfit.outfitUrl).toEqual(expect.stringContaining('https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Foutfits%2F'));
             expect(outfit.gcsDest).toEqual(expect.stringContaining('test/outfits/'));
 
@@ -156,870 +81,448 @@ describe('outfits', () => {
             expect(files).toHaveLength(1);
         });
 
-        it('should fail with missing file source', async () => {    
-            // perform action to test
-            const response = await agent(app)
-                .post(`/outfits/${clientId.toString()}`)
-                .field('fileSrc', '')
-                .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName);
-    
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('file source is required to create outfit');
+        it('should create new outfit with no files used', async () => {    
+            body.filesUsed = JSON.stringify([]);
+            const response = await request(params, body);
+
+            expect(response.body.message).toBe('Success!');
+            expect(response.status).toBe(201);
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
         });
 
-        it('should fail with invalid MIME file source', async () => {    
-            // perform action to test
-            const response = await agent(app)
-                .post(`/outfits/${clientId.toString()}`)
-                .field('fileSrc', 'data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==')
-                .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName);
-    
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('not a valid base64 image string');
+        it('should fail if client does not exist', async () => {
+            await integrationHelpers.removeClient();
+            const response = await request(params, body);
 
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-        });
-
-        it('should fail with invalid file source', async () => {    
-            // perform action to test
-            const response = await agent(app)
-                .post(`/outfits/${clientId.toString()}`)
-                .field('fileSrc', 'data:image/png;base64,')
-                .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName);
-    
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('arrayBuffer not successfully converted to buffer');
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-        });
-
-        it('should fail with missing stage items string', async () => {    
-            // perform action to test
-            const response = await agent(app)
-                .post(`/outfits/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('stageItemsStr', '')
-                .field('outfitName', data.outfitName);
-    
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('stage items string is missing or invalid');
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-        });
-
-        it('should fail with valid stage items string but invalid json', async () => {    
-            // perform action to test
-            const response = await agent(app)
-                .post(`/outfits/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('stageItemsStr', '{"stageItems":11.13')
-                .field('outfitName', data.outfitName);
-    
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toEqual(expect.stringContaining('Expected \',\' or \'}\' after property value in JSON'));
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-        });
-
-        it('should fail with missing outfit name', async () => {    
-            // perform action to test
-            const response = await agent(app)
-                .post(`/outfits/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', '');
-    
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('outfit name is required to create outfit');
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-        });
-
-        it('should fail with invalid client id', async () => {    
-            // perform action to test
-            const response = await agent(app)
-                .post('/outfits/not-valid-id')
-                .field('fileSrc', data.fileSrc)
-                .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName);
-    
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('client id is invalid or missing');
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-        });
-
-        it('should fail if client doesn\'t exist', async () => {    
-            // perform action to test
-            await removeClient(db);
-            const response = await agent(app)
-                .post(`/outfits/${clientId.toString()}`)
-                .field('fileSrc', data.fileSrc)
-                .field('stageItemsStr', data.stageItemsStr)
-                .field('outfitName', data.outfitName);
-    
-            // perform checks
-            expect(response.status).toBe(404);
             expect(response.body.message).toBe('client not found');
+            expect(response.status).toBe(404);
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
+            expect(files).toHaveLength(0);
         });
+
+        integrationHelpers.testParams(schema.post.params.fields, request, () => body, ['clientId'], {
+            checkPermissions: true,
+        });
+        integrationHelpers.testBody(schema.post.body.fields, request, () => params, {
+            isFormData: true,
+        });
+        integrationHelpers.testAuth({ admin: true, checkPermissions: true }, request, () => params, () => body, 201);
     });
     
-    describe('read', () => {
-        let data;
+    describe('get', () => {
+        let outfit1, outfit2, outfit3;
+        let params, body;
         beforeEach(async () => {
-            data = {
-                _id: new ObjectId(),
-                clientId: clientId.toString(),
+            outfit1 = {
+                _id: ObjectId(),
+                clientId: client._id.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
+                filesUsed: [cuid2.createId(), cuid2.createId()],
                 outfitUrl: 'outfit.url',
-                gcsDest: 'test/outfits/gcsdest.png'
+                gcsDest: 'test/outfits/gcsdest.png',
             };
-            await collection.insertOne(data);
+            outfit2 = {
+                ...outfit1,
+                _id: ObjectId(),
+            };
+            outfit3 = {
+                ...outfit1,
+                _id: ObjectId(),
+                clientId: ObjectId().toString(),
+            };
+            await collection.insertOne(outfit1);
+
+            params = [client._id.toString()];
+            body = {};
         });
 
-        it('should get outfit', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .get(`/outfits/${data.clientId}`);
+        const request = (params, body) => integrationHelpers.executeRequest('get', '/outfits', params, body);
+
+        it('should get outfits for client', async () => {
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(200);
-            expect(response.body).toHaveLength(1);
 
-            const outfit = response.body[0];
-            expect(outfit._id.toString()).toBe(data._id.toString());
-            expect(outfit.clientId).toBe(data.clientId);
-            expect(outfit.stageItems).toEqual(data.stageItems);
-            expect(outfit.outfitName).toBe(data.outfitName);
-            expect(outfit.outfitUrl).toBe(data.outfitUrl);
-            expect(outfit.gcsDest).toBe(data.gcsDest);
+            const outfits = response.body;
+            expect(outfits).toHaveLength(1);
+
+            const outfit = outfits[0];
+            expect(outfit._id).toBe(outfit1._id.toString());
         });
 
-        it('should handle multiple outfits', async () => {
-            // perform action to test
-            data._id = new ObjectId();
-            await collection.insertOne(data);
+        it('should handle no outfits for client', async () => {
+            const otherClientId = ObjectId();
+            await clientCollection.insertOne({ _id: otherClientId });
+            params = [otherClientId.toString()];
 
-            const response = await agent(app)
-                .get(`/outfits/${data.clientId}`);
-            
-            // perform checks
+            const response = await request(params, body);
+
             expect(response.status).toBe(200);
-            expect(response.body).toHaveLength(2);
+
+            const outfits = response.body;
+            expect(outfits).toHaveLength(0);
         });
 
-        it('should handle no outfits', async () => {
-            // perform action to test
-            await clearCollection(collection);
-            const response = await agent(app)
-                .get(`/outfits/${data.clientId}`);
+        it('should handle multiple outfits for client', async () => {
+            await collection.insertOne(outfit2);
+
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(200);
-            expect(response.body).toHaveLength(0);
+
+            const outfits = response.body;
+            expect(outfits).toHaveLength(2);
+            expect(outfits[0]._id).toBe(outfit1._id.toString());
+            expect(outfits[1]._id).toBe(outfit2._id.toString());
         });
 
-        it('should only return client\'s outfits', async () => {
-            // perform action to test
-            const otherOutfit = { ...data };
-            const otherClient = { ...client };
+        it('should only return outfits for client', async () => {
+            await collection.insertOne(outfit3);
 
-            otherOutfit._id = new ObjectId();
-            otherOutfit.clientId = (new ObjectId()).toString();
-            otherClient._id = ObjectId(otherOutfit.clientId);
-
-            await collection.insertOne(otherOutfit);
-            await clientCollection.insertOne(otherClient);
-
-            let response = await agent(app)
-                .get(`/outfits/${data.clientId}`);
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(200);
-            expect(response.body).toHaveLength(1);
-            
-            let outfit = response.body[0];
-            expect(outfit._id.toString()).toBe(data._id.toString());
-            expect(outfit.clientId).toBe(data.clientId);
 
-
-            response = await agent(app)
-                .get(`/outfits/${otherOutfit.clientId}`);
-            
-            // perform checks
-            expect(response.status).toBe(200);
-            expect(response.body).toHaveLength(1);
-            
-            outfit = response.body[0];
-            expect(outfit._id.toString()).toBe(otherOutfit._id.toString());
-            expect(outfit.clientId).toBe(otherOutfit.clientId);
+            const outfits = response.body;
+            expect(outfits).toHaveLength(1);
+            expect(outfits[0]._id).toBe(outfit1._id.toString());
         });
 
-        it('should fail with invalid client id', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .get(`/outfits/not-valid-id`);
+        it('should fail if client does not exist', async () => {
+            await integrationHelpers.removeClient();
+            const response = await request(params, body);
             
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('client id is invalid or missing');
-        });
-
-        it('should fail if client doesn\'t exist', async () => {
-            // perform action to test
-            await removeClient(db);
-            const response = await agent(app)
-                .get(`/outfits/${data.clientId}`);
-            
-            // perform checks
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('client not found');
         });
+
+        integrationHelpers.testParams(schema.get.params.fields, request, () => body, ['clientId'], {
+            checkPermissions: true,
+        });
+        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body);
     });
     
-    describe('update full', () => {
-        let fileSrc;
-        let fileBuffer;
-        let gcsId;
-        let gcsDest;
-        let url;
-        beforeAll(async () => {
-            expect(bucket.id).toBe('edie-styles-virtual-closet-test');
+    describe('patchFull', () => {
+        let outfit;
+        let params, body;
+        beforeEach(async () => {
+            await clearBucket();
 
-            let [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(0);
-
-            fileSrc = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==',
-            fileBuffer = await helpers.b64ToBuffer(fileSrc);
-            gcsId = cuid2.createId();
-            gcsDest = `test/outfits/${gcsId}.png`
-
+            // upload existing file into GCS
+            const fileSrc = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==';
+            const fileBuffer = await helpers.b64ToBuffer(fileSrc);
+            const gcsId = cuid2.createId();
+            const gcsDest = `test/outfits/${gcsId}.png`;
             const file = bucket.file(gcsDest);
             await file.save(fileBuffer);
-            url = await file.publicUrl();
-
-            [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            const url = await file.publicUrl();
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
             expect(files[0].name).toBe(gcsDest);
             expect(files[0].metadata.contentType).toBe('image/png');
-        });
 
-        afterAll(async () => {
-            await clearBucket();
-        });
-
-        let data;
-        let patchData;
-        beforeEach(async () => {
-            data = {
-                _id: new ObjectId(),
-                clientId: clientId.toString(),
+            outfit = {
+                _id: ObjectId(),
+                clientId: client._id.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
+                filesUsed: [cuid2.createId(), cuid2.createId()],
                 outfitUrl: url,
-                gcsDest: gcsDest
+                gcsDest: gcsDest,
             };
-            await collection.insertOne(data);
+            await collection.insertOne(outfit);
 
-            patchData = {
+            params = [client._id.toString(), outfit._id.toString()];
+            body = {
                 fileSrc: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD7AP8+AD8fAB9eAF99AH/0nKUYAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==',
-                stageItemsStr: '{"stageItems":{"anotherLayer":13.11}}',
+                stageItems: JSON.stringify({ stageItems: { anotherLayer: 13.11 } }),
                 outfitName: 'Formal Wedding Attire',
-                gcsDest: data.gcsDest
+                filesUsed: JSON.stringify([cuid2.createId(), cuid2.createId()]),
+                gcsDest: outfit.gcsDest,
             };
         });
 
-        let newGcsDest;
+        const request = (params, body) => integrationHelpers.executeRequest('patch', '/outfits', params, body, {
+            isFormData: true,
+        });
 
-        it('should update outfit content', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
-                .field('fileSrc', patchData.fileSrc)
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', patchData.gcsDest);
+        it('should update outfit', async () => {
+            const response = await request(params, body);
 
-            // perform checks
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
-            expect(outfit._id.toString()).toBe(data._id.toString());
-            expect(outfit.clientId).toBe(data.clientId);
-            expect(outfit.stageItems).toEqual(JSON.parse(patchData.stageItemsStr));
-            expect(outfit.outfitName).toBe(patchData.outfitName);
-            expect(outfit.outfitUrl).not.toBe(data.outfitUrl);
-            expect(outfit.outfitUrl).toEqual(expect.stringContaining('https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Foutfits%2F'));
-            expect(outfit.gcsDest).not.toBe(data.gcsDest);
-            expect(outfit.gcsDest).toEqual(expect.stringContaining('test/outfits'));
+            const newOutfit = await collection.findOne({ _id: outfit._id });
+            expect(newOutfit).toMatchObject({
+                _id: outfit._id,
+                clientId: outfit.clientId,
+                stageItems: JSON.parse(body.stageItems),
+                outfitName: body.outfitName,
+                filesUsed: JSON.parse(body.filesUsed),
+            });
+            expect(newOutfit.outfitUrl).not.toBe(outfit.outfitUrl);
+            expect(newOutfit.outfitUrl).toEqual(expect.stringContaining('https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Foutfits%2F'));
+            expect(newOutfit.gcsDest).not.toBe(outfit.gcsDest);
+            expect(newOutfit.gcsDest).toEqual(expect.stringContaining('test/outfits'));
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
-            expect(files[0].name).not.toBe(gcsDest);
+            expect(files[0].name).not.toBe(outfit.gcsDest);
+            expect(files[0].name).toBe(newOutfit.gcsDest);
             expect(files[0].metadata.contentType).toBe('image/png');
+        });
 
-            newGcsDest = files[0].name;
-            expect(outfit.gcsDest).toBe(newGcsDest);
-        });  
+        it('should fail if outfit does not exist', async () => {
+            const badOutfitId = ObjectId().toString();
+            params = [client._id.toString(), badOutfitId];
+            const response = await request(params, body);
 
-        it('should fail with missing file source', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
-                .field('fileSrc', '')
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', patchData.gcsDest);
-
-            // perform checks
             expect(response.status).toBe(400);
-            expect(response.body.message).toBe('file source is required to update outfit');
+            expect(response.body.message).toBe(`cannot update outfit: no outfit with the id "${badOutfitId}" exists`);
 
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toStrictEqual(data);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
-        });  
-
-        it('should fail with invalid MIME file source', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
-                .field('fileSrc', 'data:image/gif;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD7AP8+AD8fAB9eAF99AH/0nKUYAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==')
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', patchData.gcsDest);
-
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('not a valid base64 image string');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toStrictEqual(data);
+            const newOutfit = await collection.findOne({ _id: outfit._id });
+            expect(newOutfit).toStrictEqual(outfit);
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
-        });  
-
-        it('should fail with invalid file source', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
-                .field('fileSrc', 'data:image/png;base64,')
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', patchData.gcsDest);
-
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe('arrayBuffer not successfully converted to buffer');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toStrictEqual(data);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
-        });  
-
-        it('should fail with missing stage items string', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
-                .field('fileSrc', patchData.fileSrc)
-                .field('stageItemsStr', '')
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', patchData.gcsDest);
-
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('stage items string is required to update outfit');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toStrictEqual(data);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
-        });  
-
-        it('should fail with valid stage items string but invalid json', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
-                .field('fileSrc', patchData.fileSrc)
-                .field('stageItemsStr', '{"stageItems":11.13')
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', patchData.gcsDest);
-
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toEqual(expect.stringContaining('Expected \',\' or \'}\' after property value in JSON'));
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toStrictEqual(data);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
+            expect(files[0].name).toBe(outfit.gcsDest);
         }); 
 
-        it('should fail with missing outfit name', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
-                .field('fileSrc', patchData.fileSrc)
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', '')
-                .field('gcsDest', patchData.gcsDest);
+        it('should fail if client does not exist', async () => {
+            await integrationHelpers.removeClient();
+            const response = await request(params, body);
 
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('outfit name is required to update outfit');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toStrictEqual(data);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
-        });  
-
-        it('should fail with missing gcs dest', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
-                .field('fileSrc', patchData.fileSrc)
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', '');
-
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('gcsDest is required to update outfit');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toStrictEqual(data);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
-        });  
-
-        it('should fail with invalid gcs dest', async () => {
-            // perform action to test
-            const invalidGcsDest = `test/outfits/${gcsId}.jpg`
-            const response = await agent(app)
-                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
-                .field('fileSrc', patchData.fileSrc)
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', invalidGcsDest);
-
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe(`No such object: edie-styles-virtual-closet-test/${invalidGcsDest}`);
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toStrictEqual(data);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
-        });  
-
-        it('should fail with nonexistent gcs dest', async () => {
-            // perform action to test
-            const invalidGcsDest = 'test/outfits/not-valid-gcs-dest.png'
-            const response = await agent(app)
-                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
-                .field('fileSrc', patchData.fileSrc)
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', invalidGcsDest);
-
-            // perform checks
-            expect(response.status).toBe(500);
-            expect(response.body.message).toBe(`No such object: edie-styles-virtual-closet-test/${invalidGcsDest}`);
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toStrictEqual(data);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
-        });  
-
-        it('should fail with invalid outfit id', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/${data.clientId}/not-valid-id`)
-                .field('fileSrc', patchData.fileSrc)
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', patchData.gcsDest);
-
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('failed to update outfit content: invalid or missing outfit id');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toStrictEqual(data);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
-        });  
-
-        it('should fail with nonexistent outfit id', async () => {
-            // perform action to test
-            const newId = (new ObjectId()).toString();
-            const response = await agent(app)
-                .patch(`/outfits/${data.clientId}/${newId}`)
-                .field('fileSrc', patchData.fileSrc)
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', patchData.gcsDest);
-
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe(`cannot create outfit: no outfit or multiple outfits with the id "${newId}" exist`);
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
-        });
-
-        it('should fail with invalid client id', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/not-valid-id/${data._id.toString()}`)
-                .field('fileSrc', patchData.fileSrc)
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', patchData.gcsDest);
-
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('client id is invalid or missing');
-
-            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
-        });
-
-        it('should fail if client doesn\'t exist', async () => {
-            // perform action to test
-            await removeClient(db);
-            const response = await agent(app)
-                .patch(`/outfits/${data.clientId}/${data._id.toString()}`)
-                .field('fileSrc', patchData.fileSrc)
-                .field('stageItemsStr', patchData.stageItemsStr)
-                .field('outfitName', patchData.outfitName)
-                .field('gcsDest', patchData.gcsDest);
-
-            // perform checks
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('client not found');
 
+            const newOutfit = await collection.findOne({ _id: outfit._id });
+            expect(newOutfit).toStrictEqual(outfit);
+
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
-            expect(files[0].name).toBe(newGcsDest);
+            expect(files[0].name).toBe(outfit.gcsDest);
+        }); 
+
+        it('should fail to delete old file if gcsDest does not exist', async () => {
+            body.gcsDest = 'invalid-gcs-dest';
+            const response = await request(params, body);
+
+            expect(response.status).toBe(500);
+            expect(response.body.message).toBe(`No such object: edie-styles-virtual-closet-test/${body.gcsDest}`);
+
+            // still succeeds in db
+            const newOutfit = await collection.findOne({ _id: outfit._id });
+            expect(newOutfit).toMatchObject({
+                _id: outfit._id,
+                clientId: outfit.clientId,
+                stageItems: JSON.parse(body.stageItems),
+                outfitName: body.outfitName,
+                filesUsed: JSON.parse(body.filesUsed),
+            });
+            expect(newOutfit.outfitUrl).not.toBe(outfit.outfitUrl);
+            expect(newOutfit.outfitUrl).toEqual(expect.stringContaining('https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Foutfits%2F'));
+            expect(newOutfit.gcsDest).not.toBe(outfit.gcsDest);
+            expect(newOutfit.gcsDest).toEqual(expect.stringContaining('test/outfits'));
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(2);
+        }); 
+
+        integrationHelpers.testParams(schema.patchFull.params.fields, request, () => body, ['clientId', 'outfitId'], {
+            checkPermissions: true,
         });
+        integrationHelpers.testBody(schema.patchFull.body.fields, request, () => params, {
+            isFormData: true,
+        });
+        integrationHelpers.testAuth({ admin: true, checkPermissions: true }, request, () => params, () => body);
     });
 
-    describe('update partial', () => {  
-        let outfitId; 
-        let data;
-        let patchData;
+    describe('updatePartial', () => {  
+        let outfit;
+        let params, body;
         beforeEach(async () => {
-            outfitId = new ObjectId();
-            data = {
-                _id: outfitId,
-                clientId: clientId.toString(),
+            outfit = {
+                _id: ObjectId(),
+                clientId: client._id.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
+                filesUsed: [cuid2.createId(), cuid2.createId()],
                 outfitUrl: 'outfit.url',
-                gcsDest: 'test/outfits/gcsdest.png'
+                gcsDest: 'test/outfits/gcsdest.png',
             };
-            await collection.insertOne(data);
+            await collection.insertOne(outfit);
 
-            patchData = {
-                newName: 'Formal Wedding Attire'
+            params = [client._id.toString(), outfit._id.toString()];
+            body = {
+                outfitName: 'Formal Wedding Attire',
             };
         });
 
+        const request = (params, body) => integrationHelpers.executeRequest('patch', '/outfits/name', params, body);
+
         it('should update outfit name', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/name/${data.clientId}/${data._id.toString()}`)
-                .send(patchData);
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit._id.toString()).toBe(data._id.toString());
-            expect(outfit.clientId).toBe(data.clientId);
-            expect(outfit.stageItems).toEqual(data.stageItems);
-            expect(outfit.outfitName).toBe(patchData.newName);
-            expect(outfit.outfitUrl).toBe(data.outfitUrl);
-            expect(outfit.gcsDest).toBe(data.gcsDest);
+            const newOutfit = await collection.findOne({ _id: outfit._id });
+            expect(newOutfit).toMatchObject({
+                _id: outfit._id,
+                clientId: outfit.clientId,
+                stageItems: outfit.stageItems,
+                outfitName: body.outfitName,
+                filesUsed: outfit.filesUsed,
+                outfitUrl: outfit.outfitUrl,
+                gcsDest: outfit.gcsDest,
+           });
         });
 
-        it('should fail with missing outfit name', async () => {
-            // perform action to test
-            patchData.newName = '';
-            const response = await agent(app)
-                .patch(`/outfits/name/${data.clientId}/${data._id.toString()}`)
-                .send(patchData);
-            
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('outfit name is required to update outfit');
+        it('should fail if outfit does not exist', async () => {
+            params = [client._id.toString(), ObjectId().toString()];
+            const response = await request(params, body);
 
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit.outfitName).toBe(data.outfitName);
-        });
-
-        it('should fail with invalid outfit id', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/name/${data.clientId}/not-valid-id`)
-                .send(patchData);
-            
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('failed to update outfit name: invalid or missing outfit id');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit.outfitName).toBe(data.outfitName);
-        });
-
-        it('should fail with nonexistent outfit id', async () => {
-            // perform action to test
-            const newId = (new ObjectId()).toString();
-            const response = await agent(app)
-                .patch(`/outfits/name/${data.clientId}/${newId}`)
-                .send(patchData);
-            
-            // perform checks
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('update failed: outfit not found with given outfit id');
 
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit.outfitName).toBe(data.outfitName);
+            const newOutfit = await collection.findOne({ _id: outfit._id });
+            expect(newOutfit).toMatchObject(outfit);
         });
 
-        it('should fail with invalid client id', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .patch(`/outfits/name/not-valid-id/${data._id.toString()}`)
-                .send(patchData);
-            
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('client id is invalid or missing');
+        it('should fail if client does not exist', async () => {
+            await integrationHelpers.removeClient();
+            const response = await request(params, body);
 
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit.outfitName).toBe(data.outfitName);
-        });
-
-        it('should fail if client doesn\'t exist', async () => {
-            // perform action to test
-            await removeClient(db);
-            const response = await agent(app)
-                .patch(`/outfits/name/${data.clientId}/${data._id.toString()}`)
-                .send(patchData);
-            
-            // perform checks
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('client not found');
 
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit.outfitName).toBe(data.outfitName);
+            const newOutfit = await collection.findOne({ _id: outfit._id });
+            expect(newOutfit).toMatchObject(outfit);
         });
+
+        integrationHelpers.testParams(schema.patchPartial.params.fields, request, () => body, ['clientId', 'outfitId'], {
+            checkPermissions: true,
+        });
+        integrationHelpers.testBody(schema.patchPartial.body.fields, request, () => params);
+        integrationHelpers.testAuth({ admin: true, checkPermissions: true }, request, () => params, () => body);
     });
 
     describe('delete', () => {
-        let fileSrc;
-        let fileBuffer;
-        let gcsId;
-        let gcsDest;
-        let url;
-        beforeAll(async () => {
-            expect(bucket.id).toBe('edie-styles-virtual-closet-test');
+        let outfit;
+        let params, body;
+        beforeEach(async () => {
+            await clearBucket();
 
-            let [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
-            expect(files).toHaveLength(0);
-
-            fileSrc = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==',
-            fileBuffer = await helpers.b64ToBuffer(fileSrc);
-            gcsId = cuid2.createId();
-            gcsDest = `test/outfits/${gcsId}.png`
-
+            // upload existing file into GCS
+            const fileSrc = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==';
+            const fileBuffer = await helpers.b64ToBuffer(fileSrc);
+            const gcsId = cuid2.createId();
+            const gcsDest = `test/outfits/${gcsId}.png`;
             const file = bucket.file(gcsDest);
             await file.save(fileBuffer);
-            url = await file.publicUrl();
-
-            [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            const url = await file.publicUrl();
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(1);
             expect(files[0].name).toBe(gcsDest);
             expect(files[0].metadata.contentType).toBe('image/png');
-        });
 
-        afterAll(async () => {
-            await clearBucket();
-        });
-
-        let data;
-        beforeEach(async () => {
-            data = {
-                _id: new ObjectId(),
-                clientId: clientId.toString(),
+            outfit = {
+                _id: ObjectId(),
+                clientId: client._id.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
+                filesUsed: [cuid2.createId(), cuid2.createId()],
                 outfitUrl: url,
-                gcsDest: gcsDest
+                gcsDest: gcsDest,
             };
-            await collection.insertOne(data);
+            await collection.insertOne(outfit);
+
+            params = [client._id.toString(), outfit._id.toString()];
+            body = {};
         });
 
+        const request = (params, body) => integrationHelpers.executeRequest('delete', '/outfits', params, body);
+
         it('should delete outfit', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/outfits/${data.clientId}/${data._id.toString()}`);
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeFalsy();
+            const deletedOutfit = await collection.findOne({ _id: outfit._id });
+            expect(deletedOutfit).toBeFalsy();
 
             const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
             expect(files).toHaveLength(0);
         });
 
-        it('should fail with invalid outfit id', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/outfits/${data.clientId}/not-valid-id`);
+        it('should fail if outfit does not exist', async () => {
+            params = [client._id.toString(), ObjectId().toString()];
+            const response = await request(params, body);
             
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('failed to delete outfit: invalid or missing outfit id');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
-        });
-
-        it('should fail with nonexistent outfit id', async () => {
-            // perform action to test
-            const newId = (new ObjectId()).toString();
-            const response = await agent(app)
-                .delete(`/outfits/${data.clientId}/${newId}`);
-            
-            // perform checks
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('outfit not found with given outfit id or is missing gcs destination');
 
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
+            const deletedOutfit = await collection.findOne({ _id: outfit._id });
+            expect(deletedOutfit).toMatchObject(outfit);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
         });
 
-        it('should fail if outfit has no gcs dest', async () => {
-            // perform action to test
-            await clearCollection(collection);
-
-            const newOutfit = { ...data };
-            delete newOutfit.gcsDest;
-            await collection.insertOne(newOutfit);
-
-            const response = await agent(app)
-                .delete(`/outfits/${data.clientId}/${data._id.toString()}`);
+        it('should fail if outfit has no gcsDest', async () => {
+            await integrationHelpers.clearCollection();
+            delete outfit.gcsDest;
+            await collection.insertOne(outfit);
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('outfit not found with given outfit id or is missing gcs destination');
 
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
+            const deletedOutfit = await collection.findOne({ _id: outfit._id });
+            expect(deletedOutfit).toMatchObject(outfit);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
         });
 
-        it('should fail if outfit has invalid gcs dest', async () => {
-            // perform action to test
-            await clearCollection(collection);
-
-            const newOutfit = { ...data };
-            newOutfit.gcsDest = 'invalid-gest-dest';
-            await collection.insertOne(newOutfit);
-
-            const response = await agent(app)
-                .delete(`/outfits/${data.clientId}/${data._id.toString()}`);
+        it('should fail if gcsDest does not exist', async () => {
+            await integrationHelpers.clearCollection();
+            outfit.gcsDest = 'invalid-gcs-dest';
+            await collection.insertOne(outfit);
+            const response = await request(params, body);
             
-            // perform checks
             expect(response.status).toBe(500);
-            expect(response.body.message).toBe('No such object: edie-styles-virtual-closet-test/invalid-gest-dest');
+            expect(response.body.message).toBe(`No such object: edie-styles-virtual-closet-test/${outfit.gcsDest}`);
 
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
+            const deletedOutfit = await collection.findOne({ _id: outfit._id });
+            expect(deletedOutfit).toMatchObject(outfit);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
         });
 
-        it('should fail with invalid client id', async () => {
-            // perform action to test
-            const response = await agent(app)
-                .delete(`/outfits/not-valid-id/${data._id.toString()}`);
+        it('should fail if client does not exist', async () => {
+            await integrationHelpers.removeClient();
+            const response = await request(params, body);
             
-            // perform checks
-            expect(response.status).toBe(400);
-            expect(response.body.message).toBe('client id is invalid or missing');
-
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
-        });
-
-        it('should fail if outfit has invalid gcs dest', async () => {
-            // perform action to test
-            await removeClient(db);
-            const response = await agent(app)
-                .delete(`/outfits/${data.clientId}/${data._id.toString()}`);
-            
-            // perform checks
             expect(response.status).toBe(404);
             expect(response.body.message).toBe('client not found');
 
-            const outfit = await collection.findOne({ _id: data._id });
-            expect(outfit).toBeTruthy();
+            const deletedOutfit = await collection.findOne({ _id: outfit._id });
+            expect(deletedOutfit).toMatchObject(outfit);
+
+            const [files] = await bucket.getFiles({ prefix: 'test/outfits/' });
+            expect(files).toHaveLength(1);
         });
+
+        integrationHelpers.testParams(schema.delete.params.fields, request, () => body, ['clientId', 'outfitId'], {
+            checkPermissions: true,
+        });
+        integrationHelpers.testAuth({ admin: true, checkPermissions: true }, request, () => params, () => body);
     });
 });
