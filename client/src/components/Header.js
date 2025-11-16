@@ -123,7 +123,7 @@ export default function Header() {
                         }
                     </div>
                     <Tooltip title="Help">
-                        <a className="help" href="https://drive.google.com/file/d/1uWGYDyKMf6u1I4o0oHHxOFkqw7jpV73U/view?usp=sharing" target="_blank" rel="noreferrer">
+                        <a className="help" href="https://drive.google.com/file/d/14mXhkWNy0VFvizLMCzTMTO9eYCwZNCYw/view?ts=68b5f963" target="_blank" rel="noreferrer">
                             ?
                         </a>
                     </Tooltip>
@@ -133,3 +133,4 @@ export default function Header() {
         </>
     );
 }
+
