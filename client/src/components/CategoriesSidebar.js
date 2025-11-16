@@ -1,54 +1,64 @@
 import { useEffect, useRef, useState } from 'react';
+import { useData } from '../contexts/DataContext';
+import { useSidebar } from '../contexts/SidebarContext';
 import cuid from 'cuid';
 import { CategoriesSidebarContainer } from '../styles/CategoriesSidebar';
 import { Tooltip } from '@mui/material';
-import { useSidebar } from './SidebarContext';
-import ClothingCard from './ClothingCard';
+import Clothes from './Clothes';
 
-export default function CategoriesSidebar({ sidebarRef, categories, categoryGroups, activeCategory, setCategory, sendToCanvas, canvasItems }) {
-    const [stickyCategory, setStickyCategory] = useState(null);
-    const [currOpenIndex, setCurrOpenIndex] = useState(null);
-
+export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOutfitsByItem, canvasItems, setClothesClosetMode }) {
+    const { categories, files, currentCategory, setCurrentCategory } = useData();
     const { sidebarOpen, setSidebarOpen, mobileMode, setCurrCategoryClicked } = useSidebar();
 
-    const ref = useRef();
-    const expandRef = useRef();
-    const collapseRef = useRef();
+    const [categoryGroups, setCategoryGroups] = useState([]);
+    const [stickyCategory, setStickyCategory] = useState(null);
 
+    const ref = useRef();
+    const toggleRef = useRef();
+
+    useEffect(() => {
+        const theseCategories = categories.filter(category => category._id !== 0);
+        const categoriesWithGroups = theseCategories.filter(category => category.group);
+        const categoriesWithoutGroups = theseCategories.filter(category => !category.group);
+
+        const groupMap = {};
+        for (const category of categoriesWithGroups) {
+            if (!groupMap[category.group]) {
+                groupMap[category.group] = [];
+            }
+            const numItems = files.filter(file => file.categoryId === category._id).length;
+            groupMap[category.group].push({ ...category, numItems: numItems });
+        }
+        for (const category of categoriesWithoutGroups) {
+            if (!groupMap[0]) {
+                groupMap[0] = [];
+            }
+            const numItems = files.filter(file => file.categoryId === category._id).length;
+            groupMap[0].push({ ...category, numItems: numItems });
+        }
+
+        const categoriesByGroup = [];
+        for (const group of Object.keys(groupMap)) {
+            const groupCategories = groupMap[group];
+            categoriesByGroup.push({ group: group, categories: groupCategories });
+        }
+
+        const allCategory = { _id: -1, name: 'All', numItems: files.length };
+        let otherCategory = categories.filter(category => category._id === 0)[0];
+        const numOtherItems = files.filter(file => file.categoryId === 0).length;
+        otherCategory = { ...otherCategory, numItems: numOtherItems };
+        categoriesByGroup.unshift({ group: -1, categories: [allCategory, otherCategory] });
+
+        setCategoryGroups(categoriesByGroup);
+    }, [categories, files]);
+    
     function toggleStickyCategory(category) {
         if (category === stickyCategory) {
             setStickyCategory(null);
-        } else {
+        } 
+        else {
             setStickyCategory(category);
         }
-    }
-
-    // set category to 'All' on first render
-    useEffect(() => {
-        if (JSON.stringify(activeCategory) === '{}' && categories.length > 0) {
-            setCategory(categories[0]);
-        }
-    }, [activeCategory, categories, setCategory]);
-
-    // clothing modal functionality
-    function prevClothingModal() {
-        if (currOpenIndex > 0) {
-            setCurrOpenIndex(current => current - 1);
-        }
-    }
-
-    function nextClothingModal() {
-        if (stickyCategory && (currOpenIndex < stickyCategory?.items?.length - 1)) {
-            setCurrOpenIndex(current => current + 1);
-        }
-    }
-
-    function openClothingModal(index) {
-        setCurrOpenIndex(index);
-    }
-
-    function closeClothingModal() {
-        setCurrOpenIndex(null);
     }
 
     return (
@@ -64,70 +74,72 @@ export default function CategoriesSidebar({ sidebarRef, categories, categoryGrou
                     {
                         categoryGroups.map(categoryGroup => (
                             <div className="category-group" key={cuid()}>
-                                { categoryGroup.group !== -1 && <p className="group">{categoryGroup.group}</p> }
+                                { (categoryGroup.group !== -1 && categoryGroup.group !== 0) && 
+                                    <p className="group">{categoryGroup.group}</p> 
+                                }
                                 <div className="categories">
                                     {
                                         categoryGroup?.categories?.map(category => (
                                             <div className={
                                                 `
                                                     category-container 
-                                                    ${(category._id === stickyCategory?._id && category._id === activeCategory?._id) ? 'expanded' : ''}
-                                                    ${category._id === activeCategory?._id ? 'active' : ''}
+                                                    ${(category._id === stickyCategory?._id && category?._id === currentCategory?._id) ? 'expanded' : ''}
+                                                    ${category?._id === currentCategory?._id ? 'active' : ''}
                                                 `
                                                 } 
                                                 key={cuid()}
                                             >
                                                 <button
-                                                    onClick={(e) => {
-                                                        setCategory(category);
-                                    
-                                                        const target = e.target.className;
-                                                        const expand = expandRef.current.className;
-                                                        const collapse = collapseRef.current.className;
-                                                        if (mobileMode && !(target === expand || target === collapse)) {
+                                                    onClick={(e) => {                                                 
+                                                        const toggleSelected = toggleRef?.current?.contains(e.target) && category.numItems > 0;
+                                                        if (mobileMode && !toggleSelected) {
                                                             setSidebarOpen(false);
                                                         }
+                                                        if (toggleSelected) {
+                                                            toggleStickyCategory(category);
+                                                        }
+                                                        else if (category?._id !== currentCategory?._id) {
+                                                            setStickyCategory(null);
+                                                        }
 
-                                                        if (category._id === activeCategory?._id) {
+                                                        if (category?._id === currentCategory?._id) {
                                                             setCurrCategoryClicked(true);
                                                         }
+                                                        else {
+                                                            setCurrentCategory(category);
+                                                        }
+
+                                                        if (!toggleSelected) {
+                                                            setClothesClosetMode();
+                                                        }
+                                                        toggleRef.current = null;
                                                     }}
                                                     className="category-button"
                                                 >
-                                                    <p className={`category-name ${categoryGroup.group === -1 ? 'prominent' : ''}`}>{category.name}</p>
-                                                    <p 
-                                                        className="num-items" 
-                                                        onClick={() => {
-                                                            toggleStickyCategory(category);
+                                                    <p className={`category-name ${(categoryGroup.group === -1 || categoryGroup.group === 0) ? 'prominent' : ''}`}>{category.name}</p>
+                                                    <div
+                                                        className={`num-items ${category.numItems > 0 ? 'can-hover': ''}`}
+                                                        onClick={(e) => {
+                                                            toggleRef.current = e.target;
                                                         }}
                                                     >
-                                                        <span className="cat-count">{category.items.length}</span>
-                                                        <span className="material-icons cat-expand" ref={expandRef}>expand_more</span>
-                                                        <span className="material-icons cat-collapse" ref={collapseRef}>expand_less</span>
-                                                    </p>
+                                                        { category.numItems > 0 &&
+                                                            <>
+                                                                <span className="material-icons cat-expand">expand_more</span>
+                                                                <span className="material-icons cat-collapse">expand_less</span>
+                                                            </>
+                                                        }
+                                                        <span className="cat-count">{category.numItems}</span>
+                                                    </div>
                                                 </button>
                                                 { stickyCategory === category &&
-                                                <>
-                                                    <div className="category-items-container">
-                                                    {
-                                                        category.items.map((item, index) => (
-                                                            <ClothingCard
-                                                                item={item}
-                                                                editable={false}
-                                                                onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === item.gcsId)}
-                                                                sendToCanvas={() => sendToCanvas.current(item, "image")}
-                                                                prevClothingModal={prevClothingModal}
-                                                                nextClothingModal={nextClothingModal}
-                                                                openClothingModal={() => openClothingModal(index)}
-                                                                closeClothingModal={closeClothingModal}
-                                                                isOpen={currOpenIndex === index}
-                                                                fromSidebar={true}
-                                                                key={cuid()}
-                                                            />
-                                                        ))
-                                                    }
-                                                    </div>
-                                                </>
+                                                    <Clothes
+                                                        display={true}
+                                                        addCanvasItem={addCanvasItem}
+                                                        canvasItems={canvasItems}
+                                                        searchOutfitsByItem={searchOutfitsByItem}
+                                                        onSidebar={true}
+                                                    />
                                                 }
                                             </div>
                                         ))

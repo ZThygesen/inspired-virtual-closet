@@ -313,6 +313,29 @@ export const integrationHelpers = {
             });
         }
 
+        if (admin) {
+            it('auth: should succeed (super user)', async () => {
+                await this.setUserSuper();
+                const response = await request(resolveParams(), resolveBody());
+                expect(response.status).toBe(successStatus);
+            });
+            it('auth: should succeed (admin user)', async () => {
+                await this.setUserAdmin();
+                if (checkPermissions) {
+                    await this.setClientAdmin();
+                    await this.setUserAsClient();
+                }
+                const response = await request(resolveParams(), resolveBody());
+                expect(response.status).toBe(successStatus);
+            });
+            it('auth: should fail (normal user)', async () => {
+                await this.setUserNormal();
+                const response = await request(resolveParams(), resolveBody());
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('only admins are authorized for this action');
+            });
+        }
+
         if (checkPermissions) {
             it('auth: should succeed (super user, super client)', async () => {
                 await this.setUserSuper();
@@ -332,64 +355,69 @@ export const integrationHelpers = {
                 const response = await request(resolveParams(), resolveBody());
                 expect(response.status).toBe(successStatus);
             });
-            it('auth: should fail (admin user, super client)', async () => {
-                await this.setUserAdmin();
-                await this.setClientSuper();
-                const response = await request(resolveParams(), resolveBody());
-                expect(response.status).toBe(403);
-                expect(response.body.message).toBe('admins have no permissions over super admins');
-            });
-            it('auth: should fail (admin user, admin client: other)', async () => {
-                await this.setUserAdmin();
-                await this.setClientAdmin();
-                const response = await request(resolveParams(), resolveBody());
-                expect(response.status).toBe(403);
-                expect(response.body.message).toBe('admins have no permissions over other admins');
-            });
-            it('auth: should succeed (admin user, admin client: self)', async () => {
-                await this.setUserAdmin();
-                await this.setClientAdmin();
-                await this.setUserAsClient();
-                const response = await request(resolveParams(), resolveBody());
-                expect(response.status).toBe(successStatus);
-            });
-            it('auth: should succeed (admin user, normal client)', async () => {
-                await this.setUserAdmin();
-                await this.setClientNormal();
-                this.client._id = this.user._id;
-                const response = await request(resolveParams(), resolveBody());
-                expect(response.status).toBe(successStatus);
-            });
-            it('auth: should fail (normal user, super client)', async () => {
-                await this.setUserNormal();
-                await this.setClientSuper();
-                const response = await request(resolveParams(), resolveBody());
-                expect(response.status).toBe(403);
-                expect(response.body.message).toBe('non-admins have no permissions over any admins');
-            });
-            it('auth: should fail (normal user, admin client)', async () => {
-                await this.setUserNormal();
-                await this.setClientAdmin();
-                const response = await request(resolveParams(), resolveBody());
-                expect(response.status).toBe(403);
-                expect(response.body.message).toBe('non-admins have no permissions over any admins');
-            });
-            it('auth: should fail (normal user, normal client: other)', async () => {
-                await this.setUserNormal();
-                await this.setClientNormal();
-                const response = await request(resolveParams(), resolveBody());
-                expect(response.status).toBe(403);
-                expect(response.body.message).toBe('non-admins only have permissions over themselves');
-            });
-            it('auth: should succeed (normal user, normal client: self)', async () => {
-                await this.setUserNormal();
-                await this.setClientNormal();
-                await this.setUserAsClient();
-                const response = await request(resolveParams(), resolveBody());
-                const success = (response.status === successStatus)
-                    || (response.status === 403 && response.body.message === 'non-admins must remove background and crop image on file upload')
-                expect(success).toBe(true);
-            });
+            if (!superAdmin) {
+                it('auth: should fail (admin user, super client)', async () => {
+                    await this.setUserAdmin();
+                    await this.setClientSuper();
+                    const response = await request(resolveParams(), resolveBody());
+                    expect(response.status).toBe(403);
+                    expect(response.body.message).toBe('admins have no permissions over super admins');
+                });
+                it('auth: should fail (admin user, admin client: other)', async () => {
+                    await this.setUserAdmin();
+                    await this.setClientAdmin();
+                    const response = await request(resolveParams(), resolveBody());
+                    expect(response.status).toBe(403);
+                    expect(response.body.message).toBe('admins have no permissions over other admins');
+                });
+                it('auth: should succeed (admin user, admin client: self)', async () => {
+                    await this.setUserAdmin();
+                    await this.setClientAdmin();
+                    await this.setUserAsClient();
+                    const response = await request(resolveParams(), resolveBody());
+                    expect(response.status).toBe(successStatus);
+                });
+                it('auth: should succeed (admin user, normal client)', async () => {
+                    await this.setUserAdmin();
+                    await this.setClientNormal();
+                    this.client._id = this.user._id;
+                    const response = await request(resolveParams(), resolveBody());
+                    expect(response.status).toBe(successStatus);
+                });
+            }
+
+            if (!admin) {
+                it('auth: should fail (normal user, super client)', async () => {
+                    await this.setUserNormal();
+                    await this.setClientSuper();
+                    const response = await request(resolveParams(), resolveBody());
+                    expect(response.status).toBe(403);
+                    expect(response.body.message).toBe('non-admins have no permissions over any admins');
+                });
+                it('auth: should fail (normal user, admin client)', async () => {
+                    await this.setUserNormal();
+                    await this.setClientAdmin();
+                    const response = await request(resolveParams(), resolveBody());
+                    expect(response.status).toBe(403);
+                    expect(response.body.message).toBe('non-admins have no permissions over any admins');
+                });
+                it('auth: should fail (normal user, normal client: other)', async () => {
+                    await this.setUserNormal();
+                    await this.setClientNormal();
+                    const response = await request(resolveParams(), resolveBody());
+                    expect(response.status).toBe(403);
+                    expect(response.body.message).toBe('non-admins only have permissions over themselves');
+                });
+                it('auth: should succeed (normal user, normal client: self)', async () => {
+                    await this.setUserNormal();
+                    await this.setClientNormal();
+                    await this.setUserAsClient();
+                    const response = await request(resolveParams(), resolveBody());
+                    const success = (response.status === successStatus)
+                        || (response.status === 403 && response.body.message === 'non-admins must remove background and crop image on file upload')
+                    expect(success).toBe(true);
+                });
+            }
         }
 
         it('auth: should fail with missing token', async () => {

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { useError } from './ErrorContext';
+import { useError } from '../contexts/ErrorContext';
 import cuid from 'cuid';
 import styled from 'styled-components';
 import { DropContainer } from '../styles/Dropzone';

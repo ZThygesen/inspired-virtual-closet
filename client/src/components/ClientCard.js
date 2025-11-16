@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useClient } from '../contexts/ClientContext';
 import { ClientCardContainer } from '../styles/ClientCard';
 import { Tooltip } from '@mui/material';
 import Modal from './Modal';
 import Input from './Input';
-import { useUser } from './UserContext';
+import { useUser } from '../contexts/UserContext';
 
 export default function ClientCard({ client, editClient, deleteClient }) {
     const [editOpen, setEditOpen] = useState(false);
@@ -16,6 +17,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
     const { user } = useUser();
+    const { setClient } = useClient();
 
     const navigate = useNavigate();
 
@@ -68,7 +70,10 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                         <Tooltip title="Virtual Closet">
                             <button
                                 className="material-icons closet-icon"
-                                onClick={() => navigate(`${client.firstName.toLowerCase()}-${client.lastName.toLowerCase()}`, { state: { client: client } })}
+                                onClick={() => {
+                                    navigate(`${client.firstName.toLowerCase()}-${client.lastName.toLowerCase()}`);
+                                    setClient(client);
+                                }}
                             >
                                 checkroom
                             </button>

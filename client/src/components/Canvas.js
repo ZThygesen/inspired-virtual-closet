@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useError } from './ErrorContext';
+import { useError } from '../contexts/ErrorContext';
+import { useClient } from '../contexts/ClientContext';
+import { useData } from '../contexts/DataContext';
+import { useSidebar } from '../contexts/SidebarContext';
 import api from '../api';
 import { Layer, Rect, Stage, Transformer } from 'react-konva';
 import Modal from './Modal';
@@ -9,14 +12,16 @@ import CanvasImage from './CanvasImage';
 import CanvasTextbox from './CanvasTextbox';
 import { CanvasContainer } from '../styles/Canvas';
 import { Tooltip } from '@mui/material';
-import { useSidebar } from './SidebarContext';
+
 
 const initialWidth = 1000;
 const initialHeight = 800;
 const ASPECT_RATIO = initialWidth / initialHeight;
 
-export default function Canvas({ display, sidebarRef, client, images, textboxes, addCanvasItem, removeCanvasItems, updateOutfits, editMode, outfitToEdit, cancelEdit }) {
+export default function Canvas({ display, sidebarRef, images, textboxes, addCanvasItem, removeCanvasItems, editMode, outfitToEdit, cancelEdit }) {
     const { setError } = useError();
+    const { client } = useClient();
+    const { updateOutfits } = useData();
     
     const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
     const [scale, setScale] = useState({ x: 1, y: 1 });
@@ -29,7 +34,6 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
     const [singleTextboxSelected, setSingleTextboxSelected] = useState(false);
     const [textboxSelected, setTextboxSelected] = useState(null);
     const [fontAdjust, setFontAdjust] = useState(0);
-
     const { setMobileMode, setCanvasMode } = useSidebar();
 
     // outfit functionality
@@ -337,10 +341,14 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
 
         setLoading(true);
 
+        const uniqueFilesUsed = new Set(images.filter(image => image?.itemId !== undefined).map(image => image.itemId));
+        const filesUsed = Array.from(uniqueFilesUsed);
+
         const formData = new FormData();
         formData.append('fileSrc', outfitImageData);
-        formData.append('stageItemsStr', JSON.stringify(stageItems));
+        formData.append('stageItems', JSON.stringify(stageItems));
         formData.append('outfitName', outfitName);
+        formData.append('filesUsed', JSON.stringify(filesUsed));
 
         try {
             if (editMode) {
@@ -354,22 +362,25 @@ export default function Canvas({ display, sidebarRef, client, images, textboxes,
                 });
             }
     
-            await updateOutfits(true);
+            await updateOutfits();
         } catch (err) {
             if (editMode) {
                 setError({
                     message: 'There was an error editing the outfit.',
-                    status: err.response.status
+                    status: err?.response?.status
                 });
             } else {
                 setError({
                     message: 'There was an error adding the outfit.',
-                    status: err.response.status
+                    status: err?.response?.status
                 });
             }
         } finally {
             clearCanvas();
             handleSaveOutfitClose();
+            if (editMode) {
+                cancelEdit();
+            }
             setLoading(false);
         }
     }

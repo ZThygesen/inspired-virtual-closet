@@ -84,7 +84,7 @@ export const CategoriesSidebarContainer = styled.div`
         .category-button {
             width: 100%;
             max-width: 100%;
-            padding: 0 20px;
+            padding: 0 8px 0 20px;
             height: 50px;
             display: flex;
             align-items: center;
@@ -116,19 +116,18 @@ export const CategoriesSidebarContainer = styled.div`
                     font-size: 24px;
                 }
             }
-        }
 
-        & .category-items-container {
-            flex-direction: column;
-            gap: 12px;
-            padding: 12px 0;
-            align-items: center;
-            justify-content: center;
-            display: none;
-        }
+            & .num-items {
+                display: flex;
+                align-items: center;
+                padding: 4px;
+                border-radius: 12px;
+                transition: 0.1s;
 
-        &.expanded > .category-items-container {
-            display: flex;
+                &.can-hover:hover {
+                    background-color: var(--material-btn-bg);
+                }
+            }
         }
 
         &.expanded .category-button {
@@ -139,46 +138,27 @@ export const CategoriesSidebarContainer = styled.div`
 
         & .cat-expand,
         & .cat-collapse {
-            font-size: 32px !important;
-            border-radius: 50%;
-            display: none;
+            font-size: 16px !important;
+            display: block;
             transition: 0.1s;
+        }
 
-            &:hover {
-                background-color: var(--material-btn-bg);
-            }
+        & .cat-collapse {
+            display: none;
+        }
+
+        &.expanded .cat-expand {
+            display: none;
+        }
+
+        &.expanded .cat-collapse {
+            display: block;
         }
 
         &:hover,
         &.active {
             & .category-button {
                 background-color: var(--grey);
-            }
-
-            & .cat-count {
-                display: none;
-            }
-
-            & .cat-expand {
-                display: block;
-            }
-
-            & .cat-collapse {
-                display: none;
-            }
-        }
-
-        &.expanded {
-            & .cat-count {
-                display: none;
-            }
-
-            & .cat-expand {
-                display: none;
-            }
-
-            & .cat-collapse {
-                display: block;
             }
         }
     }

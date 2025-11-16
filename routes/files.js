@@ -14,6 +14,7 @@ const files = {
             const collection = db.collection('categories');
             const { clientId, categoryId } = req.params;
             const { fileSrc, fullFileName, tags, rmbg, crop } = req.body;
+            
             if ((await collection.find({ _id: categoryId }).toArray()).length !== 1) {
                 throw helpers.createError(`cannot add file: no category or multiple categories with the id "${categoryId.toString()}" exist`, 404);
             }

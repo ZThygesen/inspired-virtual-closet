@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useUser } from './UserContext';
 
 const SidebarContext = createContext();
@@ -8,6 +8,13 @@ export const SidebarProvider = ({ children }) => {
     const [mobileMode, setMobileMode] = useState(window.innerWidth <= 800 ? true : false);
     const [canvasMode, setCanvasMode] = useState(false);
     const [currCategoryClicked, setCurrCategoryClicked] = useState(false);
+
+    const resetSidebar = useCallback(() => {
+        setSidebarOpen(window.innerWidth > 800 ? true : false);
+        setMobileMode(window.innerWidth <= 800 ? true : false);
+        setCanvasMode(false);
+        setCurrCategoryClicked(false);
+    }, []);
 
     const { user } = useUser();
     useEffect(() => {
@@ -45,7 +52,17 @@ export const SidebarProvider = ({ children }) => {
     }, [canvasMode, user]);
 
     return (
-        <SidebarContext.Provider value={{ sidebarOpen, setSidebarOpen, mobileMode, setMobileMode, canvasMode, setCanvasMode, currCategoryClicked, setCurrCategoryClicked }}>
+        <SidebarContext.Provider value={{ 
+            sidebarOpen, 
+            setSidebarOpen, 
+            mobileMode, 
+            setMobileMode, 
+            canvasMode, 
+            setCanvasMode, 
+            currCategoryClicked, 
+            setCurrCategoryClicked,
+            resetSidebar,
+        }}>
             {children}
         </SidebarContext.Provider>
     );

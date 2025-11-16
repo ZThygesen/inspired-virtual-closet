@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useError } from '../components/ErrorContext';
+import { useError } from '../contexts/ErrorContext';
+import { useUser } from '../contexts/UserContext';
+import { useClient } from '../contexts/ClientContext';
+import { useData } from '../contexts/DataContext';
+import { useSidebar } from '../contexts/SidebarContext';
 import api from '../api'
 import cuid from 'cuid';
 import styled from 'styled-components';
@@ -12,7 +16,6 @@ import TheArchive from '../components/TheArchive';
 import ClosetSettings from '../components/ClosetSettings';
 import { CircularProgress, Tooltip } from '@mui/material';
 import { ManageClientsContainer } from '../styles/ManageClients';
-import { useUser } from '../components/UserContext';
 
 const CircleProgress = styled(CircularProgress)`
     & * {
@@ -44,6 +47,10 @@ function CircularProgressWithLabel(props) {
 
 export default function ManageClients() {
     const { setError } = useError();
+    const { user } = useUser();
+    const { resetClient } = useClient();
+    const { resetData } = useData();
+    const { resetSidebar } = useSidebar();
 
     const [superAdmins, setSuperAdmins] = useState([]);
     const [admins, setAdmins] = useState([]);
@@ -65,12 +72,22 @@ export default function ManageClients() {
     const [deleteProgressNumerator, setDeleteProgressNumerator] = useState(0)
     const [deleteProgressDenominator, setDeleteProgressDenominator] = useState(1);
 
-    const { user } = useUser();
-
     const [searchResultsSuperAdmin, setSearchResultsSuperAdmin] = useState(superAdmins || []);
     const [searchResultsAdmin, setSearchResultsAdmin] = useState(admins || []);
     const [searchResultsClients, setSearchResultsClients] = useState(clients || []);
     const [searchString, setSearchString] = useState('');
+
+    useEffect(() => {
+        resetClient();
+    }, [resetClient]);
+
+    useEffect(() => {
+        resetData();
+    }, [resetData]);
+
+    useEffect(() => {
+        resetSidebar();
+    }, [resetSidebar]);
     
     const filter = useCallback((clients, searchString) => {
         const words = searchString.toLowerCase().split(/\s+/).filter(Boolean);

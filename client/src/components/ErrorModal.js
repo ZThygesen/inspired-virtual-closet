@@ -1,4 +1,4 @@
-import { useError } from './ErrorContext';
+import { useError } from '../contexts/ErrorContext';
 import Modal from './Modal';
 
 export default function ErrorModal() {
@@ -12,12 +12,14 @@ export default function ErrorModal() {
             <div className="modal-title">Error</div>
             <div className="modal-content">
                 <p className="medium warning bold">{error?.message}</p>
-                <p 
-                    className="small warning" 
-                    style={{ whiteSpace: 'pre-line' }}
-                >
-                    <span className="small bold warning">Status:</span> {error?.status}
-                </p>
+                { error?.status &&
+                    <p 
+                        className="small warning" 
+                        style={{ whiteSpace: 'pre-line' }}
+                    >   
+                        <span className="small bold warning">Status:</span> {error?.status}
+                    </p>
+                }
                 <p className="small bold">Refresh the page or log out and sign in again.</p>
                 
             </div>

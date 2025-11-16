@@ -46,7 +46,8 @@ const auth = {
         try {
             const token = req?.cookies?.token;
             if (!token) {
-                throw helpers.createError('token required to verify authentication', 401);
+                // throw helpers.createError('token required to verify authentication', 401);
+                return res.status(200).json({ user: null });
             }
 
             const user = jwt.verify(token, process.env.JWT_SECRET);
