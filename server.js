@@ -44,8 +44,8 @@ app.use('/categories', injectDb, auth.authenticateJWT, categoriesRouter);
 import { clientsRouter } from './routes/clients.js';
 app.use('/api/clients', injectDb, auth.authenticateJWT, clientsRouter);
 
-import { filesRouter } from './routes/files.js';
-app.use('/files', injectDb, auth.authenticateJWT, filesRouter);
+import { itemsRouter } from './routes/items.js';
+app.use('/items', injectDb, auth.authenticateJWT, itemsRouter);
 
 import { outfitsRouter } from './routes/outfits.js';
 app.use('/outfits', injectDb, auth.authenticateJWT, outfitsRouter);

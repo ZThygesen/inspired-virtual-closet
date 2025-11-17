@@ -17,13 +17,14 @@ export const unitHelpers = {
     // categories
     mockMoveFilesToOther: null,
 
-    // files
+    // items
     creditsResponse: null,
     bufferResponse: null,
     thumbnailResponse: null,
     gcsResponse: null,
     idResponse: null,
 
+    mockCategoryExists: null,
     mockIsSuperAdmin: null,
     mockGetCredits: null,
     mockDeductCredits: null,
@@ -79,13 +80,14 @@ export const unitHelpers = {
         // categories
         this.mockMoveFilesToOther = jest.spyOn(helpers, 'moveFilesToOther').mockResolvedValue();
         
-        // files
+        // items
         this.creditsResponse = 321;
         this.bufferResponse = Buffer.from('this is a file source');
         this.thumbnailResponse = Buffer.from('this is a thumbnail');
         this.gcsResponse = 'file.url';
         this.idResponse = '4n_1d_f0r_f1l35';
 
+        this.mockCategoryExists = jest.spyOn(helpers, 'categoryExists').mockResolvedValue(true);
         this.mockIsSuperAdmin = jest.spyOn(helpers, 'isSuperAdmin').mockResolvedValue(false);
         this.mockGetCredits = jest.spyOn(helpers, 'getCredits').mockResolvedValue(this.creditsResponse);
         this.mockDeductCredits = jest.spyOn(helpers, 'deductCredits').mockResolvedValue();

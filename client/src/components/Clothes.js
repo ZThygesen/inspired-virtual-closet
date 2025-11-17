@@ -14,10 +14,10 @@ import { Pagination } from '@mui/material';
 export default function Clothes({ display, addCanvasItem, canvasItems, searchOutfitsByItem, onSidebar }) {
     const { setError } = useError();
     const { client } = useClient();
-    const { categories, tags, updateFiles, currentCategory, currentFiles, setLoading } = useData();
+    const { categories, tags, updateItems, currentCategory, currentItems, setLoading } = useData();
 
-    const [searchResults, setSearchResults] = useState(currentFiles || []);
-    const [resultsToShow, setResultsToShow] = useState(currentFiles || []);
+    const [searchResults, setSearchResults] = useState(currentItems || []);
+    const [resultsToShow, setResultsToShow] = useState(currentItems || []);
     const [searchString, setSearchString] = useState('');
     const [showPagination, setShowPagination] = useState(false);
     const [currPage, setCurrPage] = useState(1);
@@ -34,7 +34,7 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
 
     useEffect(() => {
         const words = searchString.toLowerCase().split(/\s+/).filter(Boolean);
-        const results = currentFiles.filter(item =>
+        const results = currentItems.filter(item =>
             words.every(word =>
                 item?.fileName?.toLowerCase()?.includes(word) || 
                 item?.tagNames?.some(tag => tag.toLowerCase().includes(word))
@@ -55,7 +55,7 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
             setShowPagination(false);
             setResultsToShow(results);
         }
-    }, [currPage, searchString, currentFiles]);
+    }, [currPage, searchString, currentItems]);
 
     // modal controls
     const [imageModalOpen, setImageModalOpen] = useState(false);
@@ -126,8 +126,8 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
 
         try {
             setLoading(true);
-            await api.patch(`/files/${client._id}/${modalItem.categoryId}/${modalItem.gcsId}`, { name: newItemName, tags: newItemTags });
-            await updateFiles();
+            await api.patch(`/items/${client._id}/${modalItem._id}`, { name: newItemName, tags: newItemTags });
+            await updateItems();
         } 
         catch (err) {
             setError({
@@ -197,11 +197,11 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
 
         try {
             setLoading(true);
-            await api.patch(`/files/category/${client._id}/${modalItem.categoryId}/${modalItem.gcsId}`, {
+            await api.patch(`/items/category/${client._id}/${modalItem._id}`, {
                 newCategoryId: categorySelected.value,
             });
-            await updateFiles();
-        } 
+            await updateItems();
+        }
         catch (err) {
             setError({
                 message: 'There was an error changing the item\'s category.',
@@ -217,9 +217,9 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
     async function deleteItem() {
         try {
             setLoading(true);
-            await api.delete(`/files/${client._id}/${modalItem.categoryId}/${modalItem.gcsId}`);
-            await updateFiles();
-        } 
+            await api.delete(`/items/${client._id}/${modalItem._id}`);
+            await updateItems();
+        }
         catch (err) {
             setError({
                 message: 'There was an error deleting the item.',
@@ -233,16 +233,16 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
     }
 
     function prevModalItem() {
-        const currIndex = currentFiles.findIndex(item => item.gcsId === modalItem.gcsId);
+        const currIndex = currentItems.findIndex(item => item._id === modalItem._id);
         if (currIndex > 0) {
-            setModalItem(currentFiles[currIndex - 1]);
+            setModalItem(currentItems[currIndex - 1]);
         }
     }
 
     function nextModalItem() {
-        const currIndex = currentFiles.findIndex(item => item.gcsId === modalItem.gcsId);
-        if (currIndex >= 0 && currIndex < (currentFiles.length - 1)) {
-            setModalItem(currentFiles[currIndex + 1]);
+        const currIndex = currentItems.findIndex(item => item._id === modalItem._id);
+        if (currIndex >= 0 && currIndex < (currentItems.length - 1)) {
+            setModalItem(currentItems[currIndex + 1]);
         }
     }
 
@@ -289,7 +289,7 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
                                 setDeleteModalOpen={setDeleteModalOpen}
                                 setModalItem={setModalItem}
                                 onSidebar={onSidebar}
-                                onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === item.gcsId)}
+                                onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === item._id)}
                                 key={cuid()}
                             />
                         ))
@@ -308,7 +308,7 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
                         addCanvasItem={addCanvasItem}
                         searchOutfitsByItem={searchOutfitsByItem}
                         onModal={true}
-                        onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === modalItem.gcsId)}
+                        onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === modalItem._id)}
                         prevModalItem={prevModalItem}
                         nextModalItem={nextModalItem}
                     />

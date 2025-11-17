@@ -25,7 +25,7 @@ export default function Outfits({ display, sendOutfitToCanvas, itemToSearch, cle
         );
         if (itemToSearch) {
             results = results.filter(outfit => 
-                outfit?.filesUsed?.includes(itemToSearch?.gcsId)
+                outfit?.itemsUsed?.includes(itemToSearch?._id)
             );
         }
         setSearchResults(results);

@@ -341,14 +341,14 @@ export default function Canvas({ display, sidebarRef, images, textboxes, addCanv
 
         setLoading(true);
 
-        const uniqueFilesUsed = new Set(images.filter(image => image?.itemId !== undefined).map(image => image.itemId));
-        const filesUsed = Array.from(uniqueFilesUsed);
+        const uniqueItemsUsed = new Set(images.filter(image => image?.itemId !== undefined).map(image => image.itemId));
+        const itemsUsed = Array.from(uniqueItemsUsed);
 
         const formData = new FormData();
         formData.append('fileSrc', outfitImageData);
         formData.append('stageItems', JSON.stringify(stageItems));
         formData.append('outfitName', outfitName);
-        formData.append('filesUsed', JSON.stringify(filesUsed));
+        formData.append('itemsUsed', JSON.stringify(itemsUsed));
 
         try {
             if (editMode) {

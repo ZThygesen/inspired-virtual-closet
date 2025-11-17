@@ -22,7 +22,7 @@ export default function ClothingCard({
     const { user } = useUser();
     const { outfits } = useData();
 
-    const numOutfits = outfits.filter(outfit => outfit?.filesUsed?.includes(item.gcsId)).length;
+    const numOutfits = outfits.filter(outfit => outfit?.itemsUsed?.includes(item._id)).length;
 
     return (
         <>
