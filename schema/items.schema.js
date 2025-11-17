@@ -8,13 +8,15 @@ const schema = {
                     type: 'objectID',
                     keepAsString: true,
                 },
-                categoryId: {
-                    type: 'objectID',
-                },
             },
         },
         body: {
             fields: {
+                categoryId: {
+                    type: 'objectID',
+                    otherAllowed: true,
+                    keepAsString: true,
+                },
                 fileSrc: {
                     type: 'string',
                     pattern: 'data:image/(png|jpg|jpeg);base64',
@@ -56,12 +58,8 @@ const schema = {
                 clientId: {
                     type: 'objectID',
                 },
-                categoryId: {
+                itemId: {
                     type: 'objectID',
-                    otherAllowed: true,
-                },
-                gcsId: {
-                    type: 'string',
                 },
             },
         },
@@ -88,12 +86,8 @@ const schema = {
                 clientId: {
                     type: 'objectID',
                 },
-                categoryId: {
+                itemId: {
                     type: 'objectID',
-                    otherAllowed: true,
-                },
-                gcsId: {
-                    type: 'string',
                 },
             },
         },
@@ -102,6 +96,7 @@ const schema = {
                 newCategoryId: {
                     type: 'objectID',
                     otherAllowed: true,
+                    keepAsString: true,
                 },
             },
         },
@@ -112,12 +107,8 @@ const schema = {
                 clientId: {
                     type: 'objectID',
                 },
-                categoryId: {
+                itemId: {
                     type: 'objectID',
-                    otherAllowed: true,
-                },
-                gcsId: {
-                    type: 'string',
                 },
             },
         },

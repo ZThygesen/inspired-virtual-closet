@@ -1,4 +1,4 @@
-import { schema } from '../../schema/files.schema';
+import { schema } from '../../schema/items.schema';
 import { schemaTestHelpers } from './helpers';
 
 describe('files', () => {

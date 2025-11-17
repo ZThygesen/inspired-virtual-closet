@@ -117,11 +117,13 @@ export const testHelpers = {
 
         // when params are passed into a request they are treated differently
         // we need to remove the "empty" cases as they cause 404s
-        if (isIntegrationParams) {
+        // they also behave the same as form data
+        if (isIntegrationParams || isFormData) {
             badData = badData.filter(value => (
                 value !== '' &&
                 value !== ' ' &&
                 JSON.stringify(value) !== JSON.stringify([]) &&
+                JSON.stringify(value) !== JSON.stringify({}) &&
                 value !== null &&
                 value !== undefined
             ));
@@ -131,7 +133,7 @@ export const testHelpers = {
     },
 
     getErrorMessage(field, fieldData, badValue, options = {}) {
-        const { isIntegrationParams, checkPermissions } = options;
+        const { isIntegrationParams, isFormData, checkPermissions } = options;
         if (fieldData.type === 'array' && Array.isArray(badValue)) {
             return this.getErrorMessage(field, fieldData.items, badValue[0], options);
         }
@@ -141,7 +143,7 @@ export const testHelpers = {
             if (checkPermissions && field === 'clientId') {
                 return new RegExp(/client id is invalid or missing/);
             }
-            else if (isIntegrationParams) {
+            else if (isIntegrationParams || isFormData) {
                 if (helpers.isOtherCategory(badValue) && !fieldData.otherAllowed) {
                     return new RegExp(/cannot be "Other" category/);
                 }
@@ -151,7 +153,7 @@ export const testHelpers = {
             }
             else {
                 if (badValue === 'invalid_id' 
-                    || (fieldData.otherAllowed && typeof badValue === 'number' && badValue !== 0)
+                    || (fieldData.otherAllowed && (((typeof badValue === 'number' && badValue !== 0) || (typeof badValue === 'string' && badValue !== '0'))))
                 ) {
                     return new RegExp(/invalid mongodb object id/);
                 }

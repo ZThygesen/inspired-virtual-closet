@@ -23,7 +23,7 @@ const schema = {
                 outfitName: {
                     type: 'string',
                 },
-                filesUsed: {
+                itemsUsed: {
                     type: 'array',
                     optional: true,
                     items: {
@@ -68,7 +68,7 @@ const schema = {
                 outfitName: {
                     type: 'string',
                 },
-                filesUsed: {
+                itemsUsed: {
                     type: 'array',
                     optional: true,
                     items: {

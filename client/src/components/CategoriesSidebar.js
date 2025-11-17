@@ -7,7 +7,7 @@ import { Tooltip } from '@mui/material';
 import Clothes from './Clothes';
 
 export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOutfitsByItem, canvasItems, setClothesClosetMode }) {
-    const { categories, files, currentCategory, setCurrentCategory } = useData();
+    const { categories, items, currentCategory, setCurrentCategory } = useData();
     const { sidebarOpen, setSidebarOpen, mobileMode, setCurrCategoryClicked } = useSidebar();
 
     const [categoryGroups, setCategoryGroups] = useState([]);
@@ -26,14 +26,14 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
             if (!groupMap[category.group]) {
                 groupMap[category.group] = [];
             }
-            const numItems = files.filter(file => file.categoryId === category._id).length;
+            const numItems = items.filter(file => file.categoryId === category._id).length;
             groupMap[category.group].push({ ...category, numItems: numItems });
         }
         for (const category of categoriesWithoutGroups) {
             if (!groupMap[0]) {
                 groupMap[0] = [];
             }
-            const numItems = files.filter(file => file.categoryId === category._id).length;
+            const numItems = items.filter(file => file.categoryId === category._id).length;
             groupMap[0].push({ ...category, numItems: numItems });
         }
 
@@ -43,14 +43,14 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
             categoriesByGroup.push({ group: group, categories: groupCategories });
         }
 
-        const allCategory = { _id: -1, name: 'All', numItems: files.length };
+        const allCategory = { _id: -1, name: 'All', numItems: items.length };
         let otherCategory = categories.filter(category => category._id === 0)[0];
-        const numOtherItems = files.filter(file => file.categoryId === 0).length;
+        const numOtherItems = items.filter(file => file.categoryId === 0).length;
         otherCategory = { ...otherCategory, numItems: numOtherItems };
         categoriesByGroup.unshift({ group: -1, categories: [allCategory, otherCategory] });
 
         setCategoryGroups(categoriesByGroup);
-    }, [categories, files]);
+    }, [categories, items]);
     
     function toggleStickyCategory(category) {
         if (category === stickyCategory) {

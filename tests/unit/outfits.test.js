@@ -45,7 +45,7 @@ describe('outfits', () => {
                 fileSrc: 'file source string',
                 stageItems: '"state items string"',
                 outfitName: 'Blazin Blazer Blast',
-                filesUsed: ['file1', 'file2'],
+                itemsUsed: ['file1', 'file2'],
             };
             req = { params, body, locals };
         });
@@ -69,7 +69,7 @@ describe('outfits', () => {
                 clientId: params.clientId.toString(),
                 stageItems: body.stageItems,
                 outfitName: body.outfitName,
-                filesUsed: body.filesUsed,
+                itemsUsed: body.itemsUsed,
                 outfitUrl: gcsResponse,
                 gcsDest: `test/outfits/${idResponse}.png`,
             });
@@ -158,7 +158,7 @@ describe('outfits', () => {
                 clientId: ObjectId().toString(),
                 stageItems: { stage: 'items', as: 'json' },
                 outfitName: 'Blazin Blazer Blast',
-                filesUsed: ['file1', 'file2'],
+                itemsUsed: ['file1', 'file2'],
                 outfitUrl: 'outfit.file.url',
                 gcsDest: 'dev/outfits/id.png',
             };
@@ -215,7 +215,7 @@ describe('outfits', () => {
                 fileSrc: 'file source string',
                 stageItems: 'stage items string',
                 outfitName: 'Blazin Blazer Blast',
-                filesUsed: ['file1', 'file2'],
+                itemsUsed: ['file1', 'file2'],
                 gcsDest: 'dev/outfits/id.png'
             };
             req = { params, body, locals };

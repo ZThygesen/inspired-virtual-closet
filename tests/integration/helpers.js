@@ -14,6 +14,7 @@ export const integrationHelpers = {
     db: null,
     collection: null,
     clientCollection: null,
+    categoryCollection: null,
 
     async createUser(_id = ObjectId()) {
         this.user = {
@@ -133,14 +134,20 @@ export const integrationHelpers = {
         await this.clientCollection.deleteMany({});
     },
 
+    async clearCategoryCollection() {
+        await this.categoryCollection.deleteMany({});
+    },
+
     async beforeAll(collectionToUse) {
         this.mongoClient = new MongoClient(process.env.DB_URI);
         await this.mongoClient.connect();
         this.db = this.mongoClient.db(process.env.DB_NAME_TEST);
         this.collection = this.db.collection(collectionToUse);
         this.clientCollection = this.db.collection('clients');
+        this.categoryCollection = this.db.collection('categories');
         await this.clearCollection();
         await this.clearClientCollection();
+        await this.clearCategoryCollection();
     },
 
     async afterAll() {
@@ -156,6 +163,7 @@ export const integrationHelpers = {
     async afterEach() {
         await this.clearCollection();
         await this.clearClientCollection();
+        await this.clearCategoryCollection();
         jest.resetAllMocks();
         jest.restoreAllMocks();
     },
@@ -240,7 +248,7 @@ export const integrationHelpers = {
                     }
                 }
                 body[field] = value;
-                const message = testHelpers.getErrorMessage(field, fieldData, value, {});
+                const message = testHelpers.getErrorMessage(field, fieldData, value, options);
                 it(`body: should fail with invalid ${field}: ${JSON.stringify(body)}: ${message}`, async () => {
                     const response = await request(resolveParams(), body);
                     expect(response.body.message).toMatch(message);
@@ -414,7 +422,7 @@ export const integrationHelpers = {
                     await this.setUserAsClient();
                     const response = await request(resolveParams(), resolveBody());
                     const success = (response.status === successStatus)
-                        || (response.status === 403 && response.body.message === 'non-admins must remove background and crop image on file upload')
+                        || (response.status === 403 && response.body.message === 'non-admins must remove background and crop image on item upload')
                     expect(success).toBe(true);
                 });
             }

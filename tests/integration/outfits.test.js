@@ -51,7 +51,7 @@ describe('outfits', () => {
                 fileSrc: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==',
                 stageItems: JSON.stringify({ "stageItems": 11.13 }),
                 outfitName: 'Epic Party Outfit',
-                filesUsed: JSON.stringify([cuid2.createId(), cuid2.createId()]),
+                itemsUsed: JSON.stringify([cuid2.createId(), cuid2.createId()]),
             };
         });
 
@@ -72,7 +72,7 @@ describe('outfits', () => {
                 clientId: client._id.toString(),
                 stageItems: JSON.parse(body.stageItems),
                 outfitName: body.outfitName,
-                filesUsed: JSON.parse(body.filesUsed),
+                itemsUsed: JSON.parse(body.itemsUsed),
             });
             expect(outfit.outfitUrl).toEqual(expect.stringContaining('https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Foutfits%2F'));
             expect(outfit.gcsDest).toEqual(expect.stringContaining('test/outfits/'));
@@ -82,7 +82,7 @@ describe('outfits', () => {
         });
 
         it('should create new outfit with no files used', async () => {    
-            body.filesUsed = JSON.stringify([]);
+            body.itemsUsed = JSON.stringify([]);
             const response = await request(params, body);
 
             expect(response.body.message).toBe('Success!');
@@ -121,7 +121,7 @@ describe('outfits', () => {
                 clientId: client._id.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
-                filesUsed: [cuid2.createId(), cuid2.createId()],
+                itemsUsed: [cuid2.createId(), cuid2.createId()],
                 outfitUrl: 'outfit.url',
                 gcsDest: 'test/outfits/gcsdest.png',
             };
@@ -230,7 +230,7 @@ describe('outfits', () => {
                 clientId: client._id.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
-                filesUsed: [cuid2.createId(), cuid2.createId()],
+                itemsUsed: [cuid2.createId(), cuid2.createId()],
                 outfitUrl: url,
                 gcsDest: gcsDest,
             };
@@ -241,7 +241,7 @@ describe('outfits', () => {
                 fileSrc: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD7AP8+AD8fAB9eAF99AH/0nKUYAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==',
                 stageItems: JSON.stringify({ stageItems: { anotherLayer: 13.11 } }),
                 outfitName: 'Formal Wedding Attire',
-                filesUsed: JSON.stringify([cuid2.createId(), cuid2.createId()]),
+                itemsUsed: JSON.stringify([cuid2.createId(), cuid2.createId()]),
                 gcsDest: outfit.gcsDest,
             };
         });
@@ -262,7 +262,7 @@ describe('outfits', () => {
                 clientId: outfit.clientId,
                 stageItems: JSON.parse(body.stageItems),
                 outfitName: body.outfitName,
-                filesUsed: JSON.parse(body.filesUsed),
+                itemsUsed: JSON.parse(body.itemsUsed),
             });
             expect(newOutfit.outfitUrl).not.toBe(outfit.outfitUrl);
             expect(newOutfit.outfitUrl).toEqual(expect.stringContaining('https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Foutfits%2F'));
@@ -321,7 +321,7 @@ describe('outfits', () => {
                 clientId: outfit.clientId,
                 stageItems: JSON.parse(body.stageItems),
                 outfitName: body.outfitName,
-                filesUsed: JSON.parse(body.filesUsed),
+                itemsUsed: JSON.parse(body.itemsUsed),
             });
             expect(newOutfit.outfitUrl).not.toBe(outfit.outfitUrl);
             expect(newOutfit.outfitUrl).toEqual(expect.stringContaining('https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Foutfits%2F'));
@@ -350,7 +350,7 @@ describe('outfits', () => {
                 clientId: client._id.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
-                filesUsed: [cuid2.createId(), cuid2.createId()],
+                itemsUsed: [cuid2.createId(), cuid2.createId()],
                 outfitUrl: 'outfit.url',
                 gcsDest: 'test/outfits/gcsdest.png',
             };
@@ -376,7 +376,7 @@ describe('outfits', () => {
                 clientId: outfit.clientId,
                 stageItems: outfit.stageItems,
                 outfitName: body.outfitName,
-                filesUsed: outfit.filesUsed,
+                itemsUsed: outfit.itemsUsed,
                 outfitUrl: outfit.outfitUrl,
                 gcsDest: outfit.gcsDest,
            });
@@ -435,7 +435,7 @@ describe('outfits', () => {
                 clientId: client._id.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
-                filesUsed: [cuid2.createId(), cuid2.createId()],
+                itemsUsed: [cuid2.createId(), cuid2.createId()],
                 outfitUrl: url,
                 gcsDest: gcsDest,
             };
