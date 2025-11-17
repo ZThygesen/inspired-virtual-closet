@@ -17,7 +17,7 @@ export default function FileCard({
     massOption, 
     activateMassOption, 
     setActivateMassOption, 
-    updateItems 
+    updateFiles
 }) {
     const { user } = useUser();
     const { client } = useClient();
@@ -153,8 +153,8 @@ export default function FileCard({
             file.incomplete = false;
             setIncompleteMessage('');
         }
-        updateItems(current => !current);
-    }, [file, tab, category, name, updateItems]);
+        updateFiles(current => !current);
+    }, [file, tab, category, name, updateFiles]);
 
     return (
         <>

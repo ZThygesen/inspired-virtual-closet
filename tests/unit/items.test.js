@@ -1,8 +1,8 @@
-import { files } from '../../routes/files.js';
+import { items } from '../../routes/items.js';
 import { ObjectId } from 'mongodb';
 import { unitHelpers } from './helpers.js';
 
-describe('files', () => {
+describe('items', () => {
     let err, mockRes, mockNext, mockCollection, mockDb, mockBucket, locals, mockCreateError;
     let creditsResponse, bufferResponse, thumbnailResponse, gcsResponse, idResponse;
     let mockIsSuperAdmin, mockGetCredits, mockDeductCredits, mockRemoveBackground, mockb64ToBuffer, mockCreateImageThumbnail, mockUploadToGCS, mockDeleteFromGCS, mockParse, mockCreateId;
@@ -23,6 +23,7 @@ describe('files', () => {
             gcsResponse,
             idResponse,
 
+            mockCategoryExists,
             mockIsSuperAdmin,
             mockGetCredits,
             mockDeductCredits,
@@ -45,9 +46,9 @@ describe('files', () => {
         beforeEach(() => {
             params = {
                 clientId: ObjectId().toString(),
-                categoryId: ObjectId().toString(),
             };
             body = {
+                categoryId: ObjectId().toString(),
                 fileSrc: 'file source string',
                 fullFileName: 'blaze-tastic.png',
                 tags: [ObjectId().toString(), ObjectId().toString()],
@@ -60,8 +61,6 @@ describe('files', () => {
                 isSuperAdmin: false,
             };
             req = { params, body, user, locals };
-
-            mockCollection.toArray.mockResolvedValue([{ category: '1' }]);
         });
 
         afterEach(() => {
@@ -69,14 +68,13 @@ describe('files', () => {
         });
 
         async function makeFunctionCall() {
-            await files.post(req, mockRes, mockNext);
+            await items.post(req, mockRes, mockNext);
         }
 
-        it('should create new file', async () => {
+        it('should create new item', async () => {
             await makeFunctionCall();
 
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: params.categoryId });
-            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockCategoryExists).toHaveBeenCalledWith(mockDb, body.categoryId);
             expect(mockIsSuperAdmin).toHaveBeenCalledWith(mockDb, params.clientId);
             expect(mockGetCredits).toHaveBeenCalledWith(mockDb, params.clientId);
             expect(mockCreateId).toHaveBeenCalled();
@@ -86,7 +84,7 @@ describe('files', () => {
             expect(mockParse).toHaveBeenCalledWith(body.fullFileName);
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${idResponse}/full.png`, bufferResponse);
             expect(mockUploadToGCS).toHaveBeenCalledWith(mockBucket, `test/items/${idResponse}/small.png`, thumbnailResponse);
-            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockCollection.insertOne).toHaveBeenCalled();
             expect(mockDeductCredits).toHaveBeenCalledWith(mockDb, params.clientId, creditsResponse);
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
@@ -202,7 +200,7 @@ describe('files', () => {
             req.body.rmbg = false;
             await makeFunctionCall();
 
-            expect(mockCreateError).toHaveBeenCalledWith('non-admins must remove background and crop image on file upload', 403);
+            expect(mockCreateError).toHaveBeenCalledWith('non-admins must remove background and crop image on item upload', 403);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
@@ -210,7 +208,7 @@ describe('files', () => {
             req.body.crop = false;
             await makeFunctionCall();
 
-            expect(mockCreateError).toHaveBeenCalledWith('non-admins must remove background and crop image on file upload', 403);
+            expect(mockCreateError).toHaveBeenCalledWith('non-admins must remove background and crop image on item upload', 403);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
@@ -219,41 +217,24 @@ describe('files', () => {
             req.body.crop = false;
             await makeFunctionCall();
 
-            expect(mockCreateError).toHaveBeenCalledWith('non-admins must remove background and crop image on file upload', 403);
+            expect(mockCreateError).toHaveBeenCalledWith('non-admins must remove background and crop image on item upload', 403);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
-        it('should handle find error', async () => {
-            err = new Error('Find error');
-            mockCollection.find.mockImplementationOnce(() => { throw err });
+        it('should handle categoryExists error', async () => {
+            err = new Error('categoryExists error');
+            mockCategoryExists.mockRejectedValueOnce(err);
             await makeFunctionCall();
 
-            expect(mockCollection.find).toHaveBeenCalledWith({ _id: params.categoryId });
-            expect(mockNext).toHaveBeenCalledWith(err);
-        });
-
-        it('should handle toArray error', async () => {
-            err = new Error('ToArray error');
-            mockCollection.toArray.mockRejectedValueOnce(err);
-            await makeFunctionCall();
-
-            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockCategoryExists).toHaveBeenCalledWith(mockDb, body.categoryId);
             expect(mockNext).toHaveBeenCalledWith(err);
         });
 
         it('should fail if no category found', async () => {
-            mockCollection.toArray.mockResolvedValueOnce([]);
+            mockCategoryExists.mockResolvedValueOnce(false);
             await makeFunctionCall();
 
-            expect(mockCreateError).toHaveBeenCalledWith(`cannot add file: no category or multiple categories with the id "${params.categoryId.toString()}" exist`, 404);
-            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
-        });
-
-        it('should fail if multiple categories found', async () => {
-            mockCollection.toArray.mockResolvedValueOnce([{ category: '1' }, { category: '2' }]);
-            await makeFunctionCall();
-
-            expect(mockCreateError).toHaveBeenCalledWith(`cannot add file: no category or multiple categories with the id "${params.categoryId.toString()}" exist`, 404);
+            expect(mockCreateError).toHaveBeenCalledWith(`cannot add item: no categories with the id "${body.categoryId}" exist`, 404);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
@@ -358,20 +339,20 @@ describe('files', () => {
             expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle updateOne error', async () => {
-            err = new Error('updateOne error');
-            mockCollection.updateOne.mockRejectedValueOnce(err);
+        it('should handle insertOne error', async () => {
+            err = new Error('insertOne error');
+            mockCollection.insertOne.mockRejectedValueOnce(err);
             await makeFunctionCall();
 
-            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockCollection.insertOne).toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalledWith(err);
         });
 
         it('should handle if nothing inserted', async () => {
-            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
+            mockCollection.insertOne.mockResolvedValueOnce({ });
             await makeFunctionCall();
 
-            expect(mockCreateError).toHaveBeenCalledWith('insertion of file failed: category not found with given category id', 404);
+            expect(mockCreateError).toHaveBeenCalledWith('item was not inserted into database', 500);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
@@ -387,10 +368,11 @@ describe('files', () => {
 
     describe('get', () => {
         let params, req;
-        let mockFiles;
+        let mockItems;
         beforeEach(() => {
-            const file = {
+            const item = {
                 clientId: ObjectId().toString(),
+                categoryId: ObjectId().toString(),
                 fileName: 'blaze-tastic',
                 fullFileUrl: 'full.file.url',
                 smallFileUrl: 'small.file.url',
@@ -399,35 +381,35 @@ describe('files', () => {
                 gcsId: idResponse,
                 tags: [ObjectId().toString(), ObjectId().toString()],
             };
-            mockFiles = [file, file];
+            mockItems = [item, item];
 
             params = {
-                clientId: file.clientId,
+                clientId: item.clientId,
             };
             req = { params, locals };
 
-            mockCollection.toArray.mockResolvedValue(mockFiles);
+            mockCollection.toArray.mockResolvedValue(mockItems);
         });
 
         async function makeFunctionCall() {
-            await files.get(req, mockRes, mockNext);
+            await items.get(req, mockRes, mockNext);
         }
 
-        it('should get files for client', async () => {
+        it('should get items for client', async () => {
             await makeFunctionCall();
 
-            expect(mockCollection.aggregate).toHaveBeenCalled();
+            expect(mockCollection.find).toHaveBeenCalled();
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.json).toHaveBeenCalledWith(mockFiles);
+            expect(mockRes.json).toHaveBeenCalledWith(mockItems);
         });
 
-        it('should handle aggregate error', async () => {
-            err = new Error('aggregate error');
-            mockCollection.aggregate.mockImplementationOnce(() => { throw err });
+        it('should handle find error', async () => {
+            err = new Error('find error');
+            mockCollection.find.mockImplementationOnce(() => { throw err });
             await makeFunctionCall();
 
-            expect(mockCollection.aggregate).toHaveBeenCalled();
+            expect(mockCollection.find).toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalledWith(err);
         });
 
@@ -445,8 +427,7 @@ describe('files', () => {
         let params, body, req;
         beforeEach(async () => {
             params = {
-                categoryId: ObjectId().toString(),
-                gcsId: idResponse,
+                itemId: ObjectId().toString(),
             }
             body = {
                 name: 'Blaze-Tastic',
@@ -456,10 +437,10 @@ describe('files', () => {
         });
 
         async function makeFunctionCall() {
-            await files.patchName(req, mockRes, mockNext);
+            await items.patchName(req, mockRes, mockNext);
         }
 
-        it('should update file name', async () => {
+        it('should update item name', async () => {
             await makeFunctionCall();
 
             expect(mockCollection.updateOne).toHaveBeenCalled();
@@ -476,11 +457,11 @@ describe('files', () => {
             expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should fail if not file updated', async () => {
+        it('should fail if not item updated', async () => {
             mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
             await makeFunctionCall();
 
-            expect(mockCreateError).toHaveBeenCalledWith('update of file name failed: category or file not found with given category or gcs id', 404);
+            expect(mockCreateError).toHaveBeenCalledWith('update of item failed: item not found with given item id', 404);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
     });
@@ -489,87 +470,59 @@ describe('files', () => {
         let params, body, req;
         beforeEach(async () => {
             params = {
-                categoryId: ObjectId().toString(),
-                gcsId: idResponse,
+                itemId: ObjectId().toString(),
             };
             body = {
                 newCategoryId: ObjectId().toString(),
             };
             req = { params, body, locals };
-
-            mockCollection.findOne.mockResolvedValue({ 
-                _id: ObjectId(params.categoryId),
-                items: [
-                    { gcsId: params.gcsId },
-                ],
-            });
         });
 
         async function makeFunctionCall() {
-            await files.patchCategory(req, mockRes, mockNext);
+            await items.patchCategory(req, mockRes, mockNext);
         }
 
-        it('should update file category', async () => {
+        it('should update item category', async () => {
             await makeFunctionCall();
 
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.categoryId });
-            expect(mockCollection.updateOne).toHaveBeenCalledTimes(2);
+            expect(mockCategoryExists).toHaveBeenCalledWith(mockDb, body.newCategoryId);
+            expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
         });
 
-        it('should handle findOne error', async () => {
-            err = new Error('findOne error');
-            mockCollection.findOne.mockRejectedValueOnce(err);
+        it('should handle categoryExists error', async () => {
+            err = new Error('categoryExists error');
+            mockCategoryExists.mockRejectedValueOnce(err);
             await makeFunctionCall();
 
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.categoryId });
+            expect(mockCategoryExists).toHaveBeenCalledWith(mockDb, body.newCategoryId);
             expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle no file found', async () => {
-            mockCollection.findOne.mockResolvedValueOnce();
+        it('should fail if no category found', async () => {
+            mockCategoryExists.mockResolvedValueOnce(false);
             await makeFunctionCall();
 
-            expect(mockCreateError).toHaveBeenCalledWith('failed to retrieve file from database', 500);
+            expect(mockCreateError).toHaveBeenCalledWith(`cannot change item category: no categories with the id "${body.newCategoryId}" exist`, 404);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
-        it('should handle first updateOne error', async () => {
+        it('should handle updateOne error', async () => {
             err = new Error('updateOne error');
             mockCollection.updateOne.mockRejectedValueOnce(err);
             await makeFunctionCall();
 
-            expect(mockCollection.updateOne).toHaveBeenCalledTimes(1);
+            expect(mockCollection.updateOne).toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle no first update', async () => {
+        it('should handle no update', async () => {
             mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
             await makeFunctionCall();
 
-            expect(mockCollection.updateOne).toHaveBeenCalledTimes(1);
-            expect(mockCreateError).toHaveBeenCalledWith('update of file category failed: file not added to new category', 404);
-            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
-        });
-
-        it('should handle second updateOne error', async () => {
-            err = new Error('updateOne error');
-            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 1 });
-            mockCollection.updateOne.mockRejectedValueOnce(err);
-            await makeFunctionCall();
-
-            expect(mockCollection.updateOne).toHaveBeenCalledTimes(2);
-            expect(mockNext).toHaveBeenCalledWith(err);
-        });
-
-        it('should handle no second update', async () => {
-            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 1 });
-            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
-            await makeFunctionCall();
-
-            expect(mockCollection.updateOne).toHaveBeenCalledTimes(2);
-            expect(mockCreateError).toHaveBeenCalledWith('update of file category failed: file not removed from current category', 404);
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockCreateError).toHaveBeenCalledWith('item category not updated', 404);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
     });
@@ -578,34 +531,28 @@ describe('files', () => {
         let params, req;
         beforeEach(async () => {
             params = {
-                categoryId: ObjectId().toString(),
-                gcsId: idResponse,
+                itemId: ObjectId().toString(),
             };
             req = { params, locals };
 
             mockCollection.findOne.mockResolvedValue({
-                _id: ObjectId(params.categoryId),
-                items: [
-                    { 
-                        gcsId: params.gcsId, 
-                        fullGcsDest: 'full/gcs/dest.png',
-                        smallGcsDest: 'small/gcs/dest.png',
-                    },
-                ],
+                _id: ObjectId(params.itemId),
+                fullGcsDest: 'full/gcs/dest.png',
+                smallGcsDest: 'small/gcs/dest.png',
             });
         });
 
         async function makeFunctionCall() {
-            await files.delete(req, mockRes, mockNext);
+            await items.delete(req, mockRes, mockNext);
         }
 
-        it('should delete file', async () => {
+        it('should delete item', async () => {
             await makeFunctionCall();
 
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.categoryId });
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.itemId });
             expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, 'full/gcs/dest.png');
             expect(mockDeleteFromGCS).toHaveBeenCalledWith(mockBucket, 'small/gcs/dest.png');
-            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: params.itemId });
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
         });
@@ -615,62 +562,47 @@ describe('files', () => {
             mockCollection.findOne.mockRejectedValueOnce(err);
             await makeFunctionCall();
 
-            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.categoryId });
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: params.itemId });
             expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle no file found', async () => {
+        it('should handle no item found', async () => {
             mockCollection.findOne.mockResolvedValueOnce();
             await makeFunctionCall();
 
-            expect(mockCreateError).toHaveBeenCalledWith('failed to retrieve file from database', 500);
+            expect(mockCreateError).toHaveBeenCalledWith('failed to retrieve item from database', 500);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);           
         });
 
-        it('should handle file without fullGcsDest', async () => {
+        it('should handle item without fullGcsDest', async () => {
             mockCollection.findOne.mockResolvedValueOnce({
-                _id: ObjectId(params.categoryId),
-                items: [
-                    {
-                        gcsId: idResponse,
-                        smallGcsDest: 'small/gcs/dest.png',
-                    },
-                ],
+                _id: ObjectId(params.itemId),
+                smallGcsDest: 'small/gcs/dest.png',
             });
             await makeFunctionCall();
 
-            expect(mockCreateError).toHaveBeenCalledWith('file does not have both a full and small gcs path', 500);
+            expect(mockCreateError).toHaveBeenCalledWith('item does not have both a full and small gcs path', 500);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);           
         });
 
-        it('should handle file without smallGcsDest', async () => {
+        it('should handle item without smallGcsDest', async () => {
             mockCollection.findOne.mockResolvedValueOnce({
-                _id: ObjectId(params.categoryId),
-                items: [
-                    {
-                        gcsId: idResponse,
-                        fullGcsDest: 'full/gcs/dest.png',
-                    },
-                ],
+                _id: ObjectId(params.itemId),
+                fullGcsDest: 'full/gcs/dest.png',
             });
             await makeFunctionCall();
 
-            expect(mockCreateError).toHaveBeenCalledWith('file does not have both a full and small gcs path', 500);
+            expect(mockCreateError).toHaveBeenCalledWith('item does not have both a full and small gcs path', 500);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);           
         });
 
-        it('should handle file without fullGcsDest and smallGcsDest', async () => {
+        it('should handle item without fullGcsDest and smallGcsDest', async () => {
             mockCollection.findOne.mockResolvedValueOnce({
-                _id: ObjectId(params.categoryId),
-                items: [
-                    {
-                        gcsId: idResponse,
-                    },
-                ],
+                _id: ObjectId(params.itemId),
             });
             await makeFunctionCall();
 
-            expect(mockCreateError).toHaveBeenCalledWith('file does not have both a full and small gcs path', 500);
+            expect(mockCreateError).toHaveBeenCalledWith('item does not have both a full and small gcs path', 500);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);           
         });
 
@@ -694,20 +626,20 @@ describe('files', () => {
             expect(mockNext).toHaveBeenCalledWith(err);
         });
 
-        it('should handle updateOne error', async () => {
-            err = new Error('updateOne error');
-            mockCollection.updateOne.mockRejectedValueOnce(err);
+        it('should handle deleteOne error', async () => {
+            err = new Error('deleteOne error');
+            mockCollection.deleteOne.mockRejectedValueOnce(err);
             await makeFunctionCall();
 
-            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockCollection.deleteOne).toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalledWith(err);
         });
 
         it('should handle no deletion', async () => {
-            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
+            mockCollection.deleteOne.mockResolvedValueOnce({ deletedCount: 0 });
             await makeFunctionCall();
 
-            expect(mockCreateError).toHaveBeenCalledWith('deletion of file failed: file not deleted from database', 404);
+            expect(mockCreateError).toHaveBeenCalledWith('deletion of item failed: item not deleted from database', 404);
             expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
     });

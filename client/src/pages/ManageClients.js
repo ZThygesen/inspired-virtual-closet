@@ -281,7 +281,7 @@ export default function ManageClients() {
     async function getClientItems(client) {
         const items = [];
         try {
-           const response = await api.get(`/files/${client._id}`);
+           const response = await api.get(`/items/${client._id}`);
            const categories = response.data;
             for (const category of categories) {
                 for (const item of category.items) {
@@ -319,7 +319,7 @@ export default function ManageClients() {
     async function deleteClientItems(client, items) {
         try {
             for (const item of items) {
-                await api.delete(`/files/${client._id}/${item.categoryId}/${item.gcsId}`);
+                await api.delete(`/items/${client._id}/${item._id}`);
                 setDeleteProgressNumerator(current => current + 1);
             }
         } catch (err) {

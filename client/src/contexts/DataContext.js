@@ -17,24 +17,24 @@ export const DataProvider = ({ children }) => {
     const [tags, setTags] = useState([]);
 
     // client data
-    const [files, setFiles] = useState([]);
+    const [items, setItems] = useState([]);
     const [outfits, setOutfits] = useState([]);
     const [shopping, setShopping] = useState([]);
     const [profile, setProfile] = useState([]);
 
     // closet states
     const [currentCategory, setCurrentCategory] = useState({ _id: -1, name: 'All' });
-    const [currentFiles, setCurrentFiles] = useState([]);
+    const [currentItems, setCurrentItems] = useState([]);
 
     const [loading, setLoading] = useState(false);
 
     const resetData = useCallback(() => {
-        setFiles([]);
+        setItems([]);
         setOutfits([]);
         setShopping([]);
         setProfile([]);
         setCurrentCategory({ _id: -1, name: 'All' });
-        setCurrentFiles([]);
+        setCurrentItems([]);
         setLoading(false);
     }, []);
 
@@ -101,22 +101,31 @@ export const DataProvider = ({ children }) => {
 
     }, [tags]);
 
-    const updateFiles = useCallback(async () => {
+    const updateItems = useCallback(async () => {
         if (client) {
             try {
-                const response = await api.get(`/files/${client._id}`);
-                const files = [];
-                for (const category of response.data) {
-                    const items = category.items;
-                    for (const item of items) {
-                        item.categoryId = category._id;
-                        const tags = resolveTagIds(item.tags).map(tag => tag.tagName);
-                        item.tagNamesPrefix = tags.join(' | ');
-                    }
-                    files.push(...items);
+                const response = await api.get(`/items/${client._id}`);
+
+                const theseItems = [];
+                for (const item of response.data) {
+                    const tags = resolveTagIds(item.tags).map(tag => tag.tagName);
+                    item.tagNamesPrefix = tags.join(' | ');
+                    theseItems.push(item);
                 }
-                files.sort((a, b) => a.fileName - b.fileName);
-                setFiles(files);
+                theseItems.sort((a, b) => a.fileName - b.fileName);
+                setItems(theseItems);
+                // const files = [];
+                // for (const category of response.data) {
+                //     const items = category.items;
+                //     for (const item of items) {
+                //         item.categoryId = category._id;
+                //         const tags = resolveTagIds(item.tags).map(tag => tag.tagName);
+                //         item.tagNamesPrefix = tags.join(' | ');
+                //     }
+                //     files.push(...items);
+                // }
+                // files.sort((a, b) => a.fileName - b.fileName);
+                // setFiles(files);
             }
             catch (err) {
                 setError({
@@ -165,12 +174,12 @@ export const DataProvider = ({ children }) => {
 
     useEffect(() => {
         if (currentCategory._id === -1) {
-            setCurrentFiles(files);
+            setCurrentItems(items);
         }
         else {
-            setCurrentFiles(files.filter(file => file.categoryId === currentCategory._id));
+            setCurrentItems(items.filter(item => item.categoryId === currentCategory._id));
         }
-    }, [files, currentCategory]);
+    }, [items, currentCategory]);
 
     useEffect(() => {
         if (user) {
@@ -180,11 +189,11 @@ export const DataProvider = ({ children }) => {
     }, [user, updateCategories, updateTags]);
 
     const updateAll = useCallback(async () => {
-        await updateFiles();
+        await updateItems();
         await updateOutfits();
         await updateShopping();
         await updateProfile();
-    }, [updateFiles, updateOutfits, updateShopping, updateProfile]);
+    }, [updateItems, updateOutfits, updateShopping, updateProfile]);
 
     useEffect(() => {
         if (user) {
@@ -201,8 +210,8 @@ export const DataProvider = ({ children }) => {
             resolveTagIds,
 
             updateAll, 
-            files,
-            updateFiles,
+            items,
+            updateItems,
             outfits,
             updateOutfits,
             shopping,
@@ -212,8 +221,8 @@ export const DataProvider = ({ children }) => {
 
             currentCategory,
             setCurrentCategory,
-            currentFiles,
-            setCurrentFiles,
+            currentItems,
+            setCurrentItems,
             
             loading,
             setLoading,

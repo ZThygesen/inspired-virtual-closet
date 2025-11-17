@@ -46,7 +46,7 @@ export default function AddItems({ display }) {
     const { setError } = useError();
     const { user } = useUser();
     const { client, updateClient } = useClient();
-    const { categories, tags, updateFiles, profile } = useData();
+    const { categories, tags, updateItems, profile } = useData();
 
     const [clothesOptions, setClothesOptions] = useState([]);
 
@@ -97,7 +97,7 @@ export default function AddItems({ display }) {
     const [numFilesUploaded, setNumFilesUploaded] = useState(0);
     const [resultModalOpen, setResultModalOpen] = useState(false);
     const [hasCredits, setHasCredits] = useState(false);
-    const [updateItems, setUpdateItems] = useState(false);
+    const [updateFiles, setUpdateFiles] = useState(false);
     const [activateMassOption, setActivateMassOption] = useState(0);
 
     useEffect(() => {
@@ -106,7 +106,7 @@ export default function AddItems({ display }) {
 
         badFiles = allFiles.filter(file => file.incomplete && !file.invalid);
         setIncompleteFiles([...badFiles]);
-    }, [allFiles, updateItems, activateMassOption]);
+    }, [allFiles, updateFiles, activateMassOption]);
 
     function removeFile(file) {
         // remove image from DOM immediately to prevent delay
@@ -135,7 +135,7 @@ export default function AddItems({ display }) {
                 });
                 setUploadModalOpen(false);
                 setNumFilesUploaded(0);
-                await updateFiles();
+                await updateItems();
                 removeFile(file);
                 return;
             }
@@ -147,7 +147,7 @@ export default function AddItems({ display }) {
             setUploadModalOpen(false);
             setNumFilesUploaded(0);
             setResultModalOpen(true);
-            await updateFiles();
+            await updateItems();
             setAllFiles([]);
         }, 750);
     }
@@ -164,7 +164,7 @@ export default function AddItems({ display }) {
             });
             setUploadOneModalOpen(false);
             setNumFilesUploaded(0);
-            await updateFiles();
+            await updateItems();
             removeFile(file);
             return;
         }
@@ -175,7 +175,7 @@ export default function AddItems({ display }) {
             setUploadOneModalOpen(false);
             setNumFilesUploaded(0);
             setResultModalOpen(true);
-            await updateFiles();
+            await updateItems();
             removeFile(file);
         }, 750);
     }
@@ -185,12 +185,13 @@ export default function AddItems({ display }) {
             return new Promise(async (resolve, reject) => {
                 try {
                     const formData = new FormData();
+                    formData.append('categoryId', file.category.value);
                     formData.append('fileSrc', file.src);
                     formData.append('fullFileName', file.name);
                     formData.append('tags', JSON.stringify(file.tags));
                     formData.append('rmbg', file.rmbg);
                     formData.append('crop', file.crop && file.rmbg);
-                    await api.post(`/files/${client._id}/${file.category.value}`, formData, {
+                    await api.post(`/items/${client._id}`, formData, {
                         headers: { 'Content-Type': 'multipart/form-data' },
                     });
                 } 
@@ -384,7 +385,7 @@ export default function AddItems({ display }) {
                                         massOption={massOption}
                                         activateMassOption={activateMassOption}
                                         setActivateMassOption={setActivateMassOption}
-                                        updateItems={setUpdateItems}
+                                        updateFiles={setUpdateFiles}
                                     />
                                 ))
                             }

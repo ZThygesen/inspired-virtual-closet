@@ -305,6 +305,25 @@ export const helpers = {
         return Promise.resolve();
     },
 
+    // checks if the given category exists
+    async categoryExists(db, categoryId) {
+        if (!db) {
+            throw this.createError('database instance required to check if category exists', 500);
+        }
+
+        if (this.isOtherCategory(categoryId)) {
+            return 1;
+        }
+
+        const collection = db.collection('categories');
+        if ((await collection.find({ _id: ObjectId(categoryId) }).toArray()).length > 0) {
+            return 1;
+        }
+        else {
+            return 0;
+        }
+    },
+
     // move all files from one category to the Other category
     async moveFilesToOther(db, categoryId) {
         if (!db) {

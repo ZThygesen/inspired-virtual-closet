@@ -12,7 +12,7 @@ const outfits = {
             const { db, bucket } = req.locals;
             const collection = db.collection('outfits');
             const { clientId } = req.params;
-            const { fileSrc, stageItems, outfitName, filesUsed } = req.body;
+            const { fileSrc, stageItems, outfitName, itemsUsed } = req.body;
 
             // create GCS destinations
             let gcsDest = `outfits/${cuid2.createId()}.png`;
@@ -34,9 +34,9 @@ const outfits = {
                 clientId: clientId,
                 stageItems: stageItems,
                 outfitName: outfitName,
-                filesUsed: filesUsed,
+                itemsUsed: itemsUsed,
                 outfitUrl: url,
-                gcsDest: gcsDest
+                gcsDest: gcsDest,
             };
     
             // insert outfit into db
@@ -70,7 +70,7 @@ const outfits = {
             const { db, bucket } = req.locals;
             const collection = db.collection('outfits');
             const { outfitId } = req.params;
-            const { fileSrc, stageItems, outfitName, filesUsed, gcsDest } = req.body;
+            const { fileSrc, stageItems, outfitName, itemsUsed, gcsDest } = req.body;
 
             // make sure outfit exists
             const outfit = await collection.findOne({ _id: outfitId });
@@ -101,7 +101,7 @@ const outfits = {
                         stageItems: stageItems,
                         outfitName: outfitName,
                         outfitUrl: url,
-                        filesUsed: filesUsed,
+                        itemsUsed: itemsUsed,
                         gcsDest: newGcsDest,
                     }
                 }
