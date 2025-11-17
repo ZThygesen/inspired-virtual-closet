@@ -87,7 +87,7 @@ export default function VirtualCloset() {
         if (type === 'image') {
             canvasItem = {
                 canvasId: cuid(),
-                itemId: item.gcsId,
+                itemId: item._id,
                 type: type,
                 src: item.fullFileUrl,
             };
@@ -126,7 +126,7 @@ export default function VirtualCloset() {
 
         const stageItems = outfit.stageItems;
         const items = [];
-        stageItems.forEach(stageItem => {
+        for (const stageItem of stageItems) {
             if (stageItem.className === 'Image') {
                 // get the image object from the stageItem
                 const existingItem = stageItem.attrs.item;
@@ -136,7 +136,8 @@ export default function VirtualCloset() {
                 existingItem.attrs = attrs;
 
                 items.push(existingItem)
-            } else {
+            } 
+            else {
                 // get the textbox object from the stageItem
                 const existingItem = stageItem.attrs.item;
                 // add the stage item canvas attrs but without the item attribute (bc we already have it)
@@ -149,7 +150,7 @@ export default function VirtualCloset() {
                 
                 items.push(existingItem);
             }
-        });
+        };
         setOutfitEditMode(true);
         setOutfitToEdit(outfit);
         setClosetMode(1);

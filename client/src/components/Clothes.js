@@ -289,7 +289,7 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
                                 setDeleteModalOpen={setDeleteModalOpen}
                                 setModalItem={setModalItem}
                                 onSidebar={onSidebar}
-                                onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === item.gcsId)}
+                                onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === item._id)}
                                 key={cuid()}
                             />
                         ))
@@ -308,7 +308,7 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
                         addCanvasItem={addCanvasItem}
                         searchOutfitsByItem={searchOutfitsByItem}
                         onModal={true}
-                        onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === modalItem.gcsId)}
+                        onCanvas={canvasItems.some(canvasItem => canvasItem.itemId === modalItem._id)}
                         prevModalItem={prevModalItem}
                         nextModalItem={nextModalItem}
                     />

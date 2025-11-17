@@ -114,18 +114,6 @@ export const DataProvider = ({ children }) => {
                 }
                 theseItems.sort((a, b) => a.fileName - b.fileName);
                 setItems(theseItems);
-                // const files = [];
-                // for (const category of response.data) {
-                //     const items = category.items;
-                //     for (const item of items) {
-                //         item.categoryId = category._id;
-                //         const tags = resolveTagIds(item.tags).map(tag => tag.tagName);
-                //         item.tagNamesPrefix = tags.join(' | ');
-                //     }
-                //     files.push(...items);
-                // }
-                // files.sort((a, b) => a.fileName - b.fileName);
-                // setFiles(files);
             }
             catch (err) {
                 setError({
@@ -189,17 +177,25 @@ export const DataProvider = ({ children }) => {
     }, [user, updateCategories, updateTags]);
 
     const updateAll = useCallback(async () => {
+        setLoading(true);
         await updateItems();
         await updateOutfits();
         await updateShopping();
         await updateProfile();
+        setLoading(false);
     }, [updateItems, updateOutfits, updateShopping, updateProfile]);
 
+    // useEffect(() => {
+    //     if (user) {
+    //         updateAll();
+    //     }
+    // }, [user, updateAll]);
+
     useEffect(() => {
-        if (user) {
+        if (client) {
             updateAll();
         }
-    }, [user, updateAll]);
+    }, [client, updateAll]);
 
     return (
         <DataContext.Provider value={{  

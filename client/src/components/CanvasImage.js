@@ -2,8 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import useImage from "use-image";
 import { Image } from "react-konva";
 
+const fallbackSrc = 'https://storage.googleapis.com/edie-styles-virtual-closet/canvas-img-unavailable.jpg';
 export default function CanvasImage({ imageObj, scale, handleSelectItems, canvasResized }) {
-    const [image] = useImage(imageObj.src, 'anonymous');
+    const [src, setSrc] = useState(imageObj.src);
+    const [image, status] = useImage(src, 'anonymous');
+    useEffect(() => {
+        if (status === 'failed') {
+            setSrc(fallbackSrc);
+        }
+    }, [status]);
+
     const imageRef = useRef();
 
     const [xPos, setXPos] = useState(null);
