@@ -393,6 +393,7 @@ export default function ManageClients() {
                             id="fuzzy-search"
                             label="Search"
                             value={searchString}
+                            size="small"
                             onChange={e => setSearchString(e.target.value)}
                         />
                         <button className='material-icons clear-search-button' onClick={() => setSearchString('')}>

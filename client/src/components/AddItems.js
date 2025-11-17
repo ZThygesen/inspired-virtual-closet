@@ -70,7 +70,24 @@ export default function AddItems({ display }) {
         }
 
         const options = [{ value: 0, label: 'Other' }];
-        for (const group of Object.keys(groupMap)) {
+        const groups = Object.keys(groupMap).sort((a, b) => {
+            if (a === 'Other' && b === 'Other') {
+                return 0;
+            }
+            else if (a === 'Other' || b === 'Other') {
+                return 1;
+            }
+            else if (a < b) { 
+                return -1; 
+            }
+            else if (a > b) { 
+                return 1; 
+            }
+            else { 
+                return 0; 
+            }
+        });
+        for (const group of groups) {
             const categoryOptions = [];
             const groupCategories = groupMap[group];
             for (const category of groupCategories) {
