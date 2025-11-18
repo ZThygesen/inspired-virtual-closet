@@ -98,9 +98,11 @@ export default function Header() {
             googleLogout();
             setUser(null);
             navigate('/');
-        } catch (err) {
+        } 
+        catch (err) {
             console.log(err)
-        } finally {
+        } 
+        finally {
             setTimeout(() => {
                 setLoading(false);
             }, 500);

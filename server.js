@@ -50,9 +50,6 @@ app.use('/items', injectDb, auth.authenticateJWT, itemsRouter);
 import { outfitsRouter } from './routes/outfits.js';
 app.use('/outfits', injectDb, auth.authenticateJWT, outfitsRouter);
 
-import { profileRouter } from './routes/profile.js';
-app.use('/profile', injectDb, auth.authenticateJWT, profileRouter);
-
 import { shoppingRouter } from './routes/shopping.js';
 app.use('/shopping', injectDb, auth.authenticateJWT, shoppingRouter);
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useError } from '../contexts/ErrorContext';
 import { useUser } from '../contexts/UserContext';
+import { useClient } from '../contexts/ClientContext';
 import axios from 'axios';
 import { HomeContainer } from '../styles/Home';
 import ActionButton from '../components/ActionButton'
@@ -10,9 +11,10 @@ import { GoogleLogin } from '@react-oauth/google';
 
 export default function Home() {
     const { setError } = useError();
+    const { user, setUser } = useUser();
+    const { setClient } = useClient();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
-    const { user, setUser } = useUser();
 
     const navigate = useNavigate();
 
@@ -64,7 +66,11 @@ export default function Home() {
                         :
                         <ActionButton 
                             variant={'primary'}
-                            onClick={() => navigate(`${user.firstName.toLowerCase()}-${user.lastName.toLowerCase()}`, { state: { client: user } })}
+                            // onClick={() => navigate(`${user.firstName.toLowerCase()}-${user.lastName.toLowerCase()}`, { state: { client: user } })}
+                            onClick={() => {
+                                navigate(`${user.firstName.toLowerCase()}-${user.lastName.toLowerCase()}`);
+                                setClient(user);
+                            }}
                         >
                             My Closet
                         </ActionButton>
