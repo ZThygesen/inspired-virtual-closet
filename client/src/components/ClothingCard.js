@@ -55,7 +55,7 @@ export default function ClothingCard({
                 <p className="file-name">{item.tagNamesPrefix !== '' ? `${item.tagNamesPrefix} | ` : ''}{item.fileName}</p>
                 <div className="clothing-card-img">
                     <img
-                        src={item.smallFileUrl}
+                        src={onModal ? item.fullFileUrl : item.smallFileUrl}
                         alt={item.fileName}
                         onClick={() => { 
                             if (viewOnly || onModal) {

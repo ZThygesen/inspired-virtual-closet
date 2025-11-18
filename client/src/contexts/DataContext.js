@@ -20,7 +20,6 @@ export const DataProvider = ({ children }) => {
     const [items, setItems] = useState([]);
     const [outfits, setOutfits] = useState([]);
     const [shopping, setShopping] = useState([]);
-    const [profile, setProfile] = useState([]);
 
     // closet states
     const [currentCategory, setCurrentCategory] = useState({ _id: -1, name: 'All' });
@@ -32,7 +31,6 @@ export const DataProvider = ({ children }) => {
         setItems([]);
         setOutfits([]);
         setShopping([]);
-        setProfile([]);
         setCurrentCategory({ _id: -1, name: 'All' });
         setCurrentItems([]);
         setLoading(false);
@@ -156,10 +154,6 @@ export const DataProvider = ({ children }) => {
         }
     }, [client, setError]);
 
-    const updateProfile = useCallback(async () => {
-        
-    }, []);
-
     useEffect(() => {
         if (currentCategory._id === -1) {
             setCurrentItems(items);
@@ -181,9 +175,8 @@ export const DataProvider = ({ children }) => {
         await updateItems();
         await updateOutfits();
         await updateShopping();
-        await updateProfile();
         setLoading(false);
-    }, [updateItems, updateOutfits, updateShopping, updateProfile]);
+    }, [updateItems, updateOutfits, updateShopping]);
 
     // useEffect(() => {
     //     if (user) {
@@ -212,8 +205,6 @@ export const DataProvider = ({ children }) => {
             updateOutfits,
             shopping,
             updateShopping,
-            profile, 
-            updateProfile,
 
             currentCategory,
             setCurrentCategory,

@@ -60,8 +60,8 @@ export const ManageClientsContainer = styled(PageContainer)`
         width: 100%;
         display: flex;
         justify-content: center;
-        margin-top: 20px;
         background: transparent;
+        padding: 20px 20px 0 20px;
 
         & .MuiFormControl-root {
             max-width: 500px;

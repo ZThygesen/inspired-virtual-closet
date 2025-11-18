@@ -13,7 +13,6 @@ import Clothes from '../components/Clothes';
 import Canvas from '../components/Canvas';
 import Outfits from '../components/Outfits';
 import Shopping from '../components/Shopping';
-import Profile from '../components/Profile';
 import AddItems from '../components/AddItems';
 
 const Container = styled.div`
@@ -170,7 +169,6 @@ export default function VirtualCloset() {
         { name: `Canvas (${canvasItems.length - 1})`, icon: 'swipe'},
         { name: `Outfits (${outfits.length})`, icon: 'dry_cleaning'},
         { name: `Shopping (${shopping.length})`, icon: 'sell'},
-        { name: 'Profile', icon: 'person'},
         { name: 'Add', icon: 'add_box'}
     ];
 
@@ -268,9 +266,6 @@ export default function VirtualCloset() {
                         />
                         <Shopping 
                             display={closetMode === 3}
-                        />
-                        <Profile 
-                            display={closetMode === 4}
                         />
                         <AddItems   
                             display={closetMode === 5}
