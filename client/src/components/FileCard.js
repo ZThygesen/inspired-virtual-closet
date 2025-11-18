@@ -11,7 +11,6 @@ export default function FileCard({
     file, 
     uploadFile, 
     removeFile, 
-    profileCategories, 
     clothesCategories, 
     allTags, 
     massOption, 

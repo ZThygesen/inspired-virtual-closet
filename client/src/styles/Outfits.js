@@ -59,7 +59,7 @@ export const OutfitsContainer = styled.div`
         & .item-search-container {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 20px;
 
             & .item-to-search-text {
                 display: flex;

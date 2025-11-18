@@ -46,7 +46,7 @@ export default function AddItems({ display }) {
     const { setError } = useError();
     const { user } = useUser();
     const { client, updateClient } = useClient();
-    const { categories, tags, updateItems, profile } = useData();
+    const { categories, tags, updateItems } = useData();
 
     const [clothesOptions, setClothesOptions] = useState([]);
 
@@ -396,7 +396,6 @@ export default function AddItems({ display }) {
                                         file={file}
                                         uploadFile={uploadOneFile}
                                         removeFile={removeFile}
-                                        profileCategories={profile}
                                         clothesCategories={clothesOptions}
                                         allTags={tags}
                                         massOption={massOption}
