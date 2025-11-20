@@ -36,8 +36,7 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
         const words = searchString.toLowerCase().split(/\s+/).filter(Boolean);
         const results = currentItems.filter(item =>
             words.every(word =>
-                item?.fileName?.toLowerCase()?.includes(word) || 
-                item?.tagNames?.some(tag => tag.toLowerCase().includes(word))
+                (new RegExp(`\\b${word}`, 'i')).test(item?.categoryName + ' ' + item?.tagNamesPrefix + ' ' + item?.fileName)
             )
         );
         setSearchResults(results);

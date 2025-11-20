@@ -21,7 +21,7 @@ export default function Outfits({ display, sendOutfitToCanvas, itemToSearch, cle
     useEffect(() => {
         const words = searchString.toLowerCase().split(/\s+/).filter(Boolean);
         let results = outfits.filter(outfit =>
-            words.every(word => outfit?.outfitName?.toLowerCase()?.includes(word))
+            words.every(word => (new RegExp(`\\b${word}`, 'i')).test(outfit?.outfitName))
         );
         if (itemToSearch) {
             results = results.filter(outfit => 
