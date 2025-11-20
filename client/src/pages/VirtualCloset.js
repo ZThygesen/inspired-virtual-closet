@@ -268,7 +268,7 @@ export default function VirtualCloset() {
                             display={closetMode === 3}
                         />
                         <AddItems   
-                            display={closetMode === 5}
+                            display={closetMode === 4}
                         />
                     </div>
                 </ClosetNavigationContainer>
