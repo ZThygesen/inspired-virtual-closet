@@ -39,7 +39,17 @@ export const DataProvider = ({ children }) => {
     const updateCategories = useCallback(async () => {
         try {
             const response = await api.get('/categories');
-            const categories = response.data.sort((a, b) => a.name - b.name);
+            const categories = response.data.sort((a, b) => {
+                if (a.name < b.name) {
+                    return -1;
+                }
+                else if (a.name > b.name) {
+                    return 1;
+                }
+                else {
+                    return 0;
+                }
+            });
             setCategories(categories);
         }
         catch (err) {
@@ -99,6 +109,15 @@ export const DataProvider = ({ children }) => {
 
     }, [tags]);
 
+    const getCategoryName = useCallback((categoryId) => {
+        const category = categories.filter(category => category._id === categoryId);
+        let categoryName = '';
+        if (category.length) {
+            categoryName = category[0]?.name;
+        }
+        return categoryName;
+    }, [categories]);
+
     const updateItems = useCallback(async () => {
         if (client) {
             try {
@@ -108,9 +127,22 @@ export const DataProvider = ({ children }) => {
                 for (const item of response.data) {
                     const tags = resolveTagIds(item.tags).map(tag => tag.tagName);
                     item.tagNamesPrefix = tags.join(' | ');
+                    item.categoryName = getCategoryName(item.categoryId);
                     theseItems.push(item);
                 }
-                theseItems.sort((a, b) => a.fileName - b.fileName);
+                theseItems.sort((a, b) => {
+                    const nameA = a?.tagNamesPrefix ? a.tagNamesPrefix + ' | ' + a.fileName : a.fileName;
+                    const nameB = b?.tagNamesPrefix ? b.tagNamesPrefix + ' | ' + b.fileName : b.fileName;
+                    if (nameA < nameB) {
+                        return -1;
+                    }
+                    else if (nameA > nameB) {
+                        return 1;
+                    }
+                    else {
+                        return 0;
+                    }
+                });
                 setItems(theseItems);
             }
             catch (err) {
@@ -120,7 +152,7 @@ export const DataProvider = ({ children }) => {
                 });
             }
         }
-    }, [client, resolveTagIds, setError]);
+    }, [client, resolveTagIds, getCategoryName, setError]);
 
     const updateOutfits = useCallback(async () => {
         if (client) {

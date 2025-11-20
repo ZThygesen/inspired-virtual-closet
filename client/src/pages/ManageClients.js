@@ -93,8 +93,7 @@ export default function ManageClients() {
         const words = searchString.toLowerCase().split(/\s+/).filter(Boolean);
         const results = clients.filter(client =>
             words.every(word => 
-                client?.firstName?.toLowerCase()?.includes(word) ||
-                client?.lastName?.toLowerCase()?.includes(word)
+                (new RegExp(`\\b${word}`, 'i')).test(client?.firstName + ' ' + client?.lastName)
             )
         );
         return results;
