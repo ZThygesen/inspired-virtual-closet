@@ -42,7 +42,8 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
         setSearchResults(results);
 
         // check if pagination is needed
-        if (results.length > itemsPerPage) {
+        // we want to show all results from sidebar
+        if ((results.length > itemsPerPage) && !onSidebar) {
             setShowPagination(true);
             setTotalPages(Math.ceil(results.length / itemsPerPage));
             const startIndex = (currPage - 1) * itemsPerPage;
@@ -54,7 +55,7 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
             setShowPagination(false);
             setResultsToShow(results);
         }
-    }, [currPage, searchString, currentItems]);
+    }, [currPage, searchString, currentItems, onSidebar]);
 
     // modal controls
     const [imageModalOpen, setImageModalOpen] = useState(false);

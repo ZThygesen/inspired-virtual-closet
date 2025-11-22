@@ -18,7 +18,7 @@ const initialWidth = 1000;
 const initialHeight = 800;
 const ASPECT_RATIO = initialWidth / initialHeight;
 
-export default function Canvas({ display, sidebarRef, images, textboxes, addCanvasItem, removeCanvasItems, editMode, outfitToEdit, cancelEdit }) {
+export default function Canvas({ display, sidebarRef, images, textboxes, addCanvasItem, removeCanvasItems, editMode, outfitToEdit, cancelEdit, setOutfitsClosetMode }) {
     const { setError } = useError();
     const { client } = useClient();
     const { updateOutfits } = useData();
@@ -381,6 +381,7 @@ export default function Canvas({ display, sidebarRef, images, textboxes, addCanv
             if (editMode) {
                 cancelEdit();
             }
+            setOutfitsClosetMode();
             setLoading(false);
         }
     }
