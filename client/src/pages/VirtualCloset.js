@@ -5,15 +5,15 @@ import { useData } from '../contexts/DataContext';
 import { useSidebar } from '../contexts/SidebarContext';
 import styled from 'styled-components';
 import CategoriesSidebar from '../components/CategoriesSidebar';
-import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
+import { ClosetNavigationContainer } from '../components/styles/ClosetNavigation';
 import { Tooltip } from '@mui/material';
 import { Link } from 'react-router-dom';
 import cuid from 'cuid';
-import Clothes from '../components/Clothes';
-import Canvas from '../components/Canvas';
-import Outfits from '../components/Outfits';
-import Shopping from '../components/Shopping';
-import AddItems from '../components/AddItems';
+import Clothes from '../components/Items/Clothes';
+import Canvas from '../components/Canvas/Canvas';
+import Outfits from '../components/Outfits/Outfits';
+import Shopping from '../components/Shopping/Shopping';
+import AddItems from '../components/Add Items/AddItems';
 
 const Container = styled.div`
     flex: 1;

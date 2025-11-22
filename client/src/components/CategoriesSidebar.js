@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import { useSidebar } from '../contexts/SidebarContext';
 import cuid from 'cuid';
-import { CategoriesSidebarContainer } from '../styles/CategoriesSidebar';
+import { CategoriesSidebarContainer } from './styles/CategoriesSidebar';
 import { Tooltip } from '@mui/material';
-import Clothes from './Clothes';
+import Clothes from './Items/Clothes';
 
 export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOutfitsByItem, canvasItems, setClothesClosetMode }) {
     const { categories, items, currentCategory, setCurrentCategory } = useData();

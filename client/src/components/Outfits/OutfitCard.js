@@ -1,7 +1,7 @@
-import { useError } from '../contexts/ErrorContext';
+import { useError } from '../../contexts/ErrorContext';
 import { Tooltip } from '@mui/material';
-import { OutfitCardContainer } from '../styles/Outfits';
-import { useUser } from '../contexts/UserContext';
+import { OutfitCardContainer } from './OutfitsStyles';
+import { useUser } from '../../contexts/UserContext';
 
 export default function OutfitCard({ 
     outfit,

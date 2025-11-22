@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useUser } from '../contexts/UserContext';
-import { useClient } from '../contexts/ClientContext';
-import { FileCardContainer } from '../styles/AddItems';
-import Modal from './Modal';
-import Input from './Input';
+import { useUser } from '../../contexts/UserContext';
+import { useClient } from '../../contexts/ClientContext';
+import { FileCardContainer } from './AddItemsStyles';
+import Modal from '../Modal';
+import Input from '../Input';
 import { DropdownContainer, SwapDropdown } from '../styles/Dropdown';
-import invalidImg from '../images/invalid.png';
+import invalidImg from '../../images/invalid.png';
 
 export default function FileCard({ 
     file, 

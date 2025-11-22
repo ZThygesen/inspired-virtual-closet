@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { Modal as MuiModal } from '@mui/material';
-import { ModalContentContainer } from '../styles/Modal';
+import { ModalContentContainer } from './styles/Modal';
 
 export default function Modal({ open, closeFn, isForm, submitFn, isImage, isLoading=false, children }) {
     const handleClick = useCallback((e) => {

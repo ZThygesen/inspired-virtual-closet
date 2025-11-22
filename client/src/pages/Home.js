@@ -4,7 +4,7 @@ import { useError } from '../contexts/ErrorContext';
 import { useUser } from '../contexts/UserContext';
 import { useClient } from '../contexts/ClientContext';
 import axios from 'axios';
-import { HomeContainer } from '../styles/Home';
+import { HomeContainer } from '../components/styles/Home';
 import ActionButton from '../components/ActionButton'
 import homeLogo from '../images/home-logo.png';
 import { GoogleLogin } from '@react-oauth/google';

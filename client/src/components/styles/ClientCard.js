@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 
-export const FileCardContainer = styled.div`
+export const ClientCardContainer = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -12,6 +12,7 @@ export const FileCardContainer = styled.div`
     background-color: var(--white);
     width: 300px;
     max-width: 300px;
+    max-height: 300px;
     position: relative;
 
     &.is-self {
@@ -82,7 +83,7 @@ export const FileCardContainer = styled.div`
 
     @media (min-width: 480px) {
         .client-name {
-            font-size: 36px;
+            font-size: 32px;
         }
     }
 `;

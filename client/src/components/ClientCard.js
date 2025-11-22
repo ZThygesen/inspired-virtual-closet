@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClient } from '../contexts/ClientContext';
-import { ClientCardContainer } from '../styles/ClientCard';
+import { ClientCardContainer } from './styles/ClientCard';
 import { Tooltip } from '@mui/material';
 import Modal from './Modal';
 import Input from './Input';

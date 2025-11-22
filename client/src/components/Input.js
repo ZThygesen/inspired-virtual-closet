@@ -1,4 +1,4 @@
-import { TextInput, Checkbox, Color, Radio } from "../styles/Input";
+import { TextInput, Checkbox, Color, Radio } from "./styles/Input";
 import { FormControlLabel, Radio as RD } from "@mui/material";
 import cuid from "cuid";
 

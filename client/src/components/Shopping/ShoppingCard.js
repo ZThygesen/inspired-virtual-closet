@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { useUser } from '../contexts/UserContext';
+import { useUser } from '../../contexts/UserContext';
 import { Tooltip } from '@mui/material';
-import { ShoppingCardContainer } from '../styles/Shopping';
+import { ShoppingCardContainer } from './ShoppingStyles';
 
 export default function ShoppingCard({ 
     shoppingItem,

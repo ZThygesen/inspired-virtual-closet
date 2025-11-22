@@ -5,7 +5,7 @@ import cuid from 'cuid';
 import Loading from '../components/Loading';
 import Modal from '../components/Modal';
 import { Tooltip } from '@mui/material';
-import { TheArchiveContainer } from '../styles/TheArchive';
+import { TheArchiveContainer } from './styles/TheArchive';
 
 export default function TheArchive() {
     const { setError } = useError();
