@@ -256,6 +256,7 @@ export default function VirtualCloset() {
                                 editMode={outfitEditMode}
                                 outfitToEdit={outfitToEdit}
                                 cancelEdit={cancelOutfitEdit}
+                                setOutfitsClosetMode={() => setClosetMode(2)}
                             />
                         }
                         <Outfits 
