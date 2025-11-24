@@ -1,4 +1,4 @@
-import { ActionButton as Button, ActionButtonLink as Link } from '../styles/ActionButton';
+import { ActionButton as Button, ActionButtonLink as Link } from './styles/ActionButton';
 
 export default function ActionButton({ variant, isLink, linkPath, onClick, children }) {
     

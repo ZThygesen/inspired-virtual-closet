@@ -2,7 +2,7 @@ import { TextInput, Checkbox, Color, Radio } from "./styles/Input";
 import { FormControlLabel, Radio as RD } from "@mui/material";
 import cuid from "cuid";
 
-export default function Input({ type, id, label, value, radioOptions = [], onChange, required = true, size = "medium" }) {
+export default function Input({ type, id, label, value, radioOptions = [], onChange, required = true, size = "small" }) {
     return (
         type === 'text' ?
         <TextInput

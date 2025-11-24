@@ -9,6 +9,20 @@ const schema = {
                 },
                 group: {
                     type: 'string',
+                    optional: true,
+                },
+                type: {
+                    type: 'string',
+                    pattern: '(clothes|profile)',
+                },
+                clientViewItems: {
+                    type: 'boolean',
+                },
+                clientAddItems: {
+                    type: 'boolean',
+                },
+                rmbgItems: {
+                    type: 'boolean',
                 },
             },
         },
@@ -28,6 +42,19 @@ const schema = {
                 },
                 group: {
                     type: 'string',
+                },
+                type: {
+                    type: 'string',
+                    pattern: '(clothes|profile)',
+                },
+                clientViewItems: {
+                    type: 'boolean',
+                },
+                clientAddItems: {
+                    type: 'boolean',
+                },
+                rmbgItems: {
+                    type: 'boolean',
                 },
             },
         },

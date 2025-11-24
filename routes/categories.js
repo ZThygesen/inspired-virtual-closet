@@ -9,7 +9,7 @@ const categories = {
         try {
             const { db } = req.locals;
             const collection = db.collection('categories');
-            const { name, group } = req.body;
+            const { name, group, type, clientViewItems, clientAddItems, rmbgItems } = req.body;
     
             if ((await collection.find({ name: name }).toArray()).length > 0) {
                 throw helpers.createError(`a category with the name "${name}" already exists`, 400);
@@ -17,15 +17,19 @@ const categories = {
     
             const categoryEntry = {
                 name: name,
-                group: group,
-                items: []
+                group: group || '',
+                type: type,
+                clientViewItems: clientViewItems,
+                clientAddItems: clientAddItems,
+                rmbgItems: rmbgItems,
             };
     
             const result = await collection.insertOne(categoryEntry);
             if (!result.insertedId) throw helpers.createError('category was not inserted into database', 500);
     
             res.status(201).json({ message: 'Success!' });
-        } catch (err) {
+        } 
+        catch (err) {
             next(err);
         }
     },
@@ -34,10 +38,11 @@ const categories = {
         try {
             const { db } = req.locals;
             const collection = db.collection('categories');
-            const categories = await collection.find({ }, { projection: { items: 0 } }).toArray();
+            const categories = await collection.find({ }).toArray();
 
             res.status(200).json(categories)
-        } catch (err) {
+        } 
+        catch (err) {
             next(err);
         }
     },
@@ -47,7 +52,7 @@ const categories = {
             const { db } = req.locals;
             const collection = db.collection('categories');
             const { categoryId } = req.params;
-            const { name, group } = req.body;
+            const { name, group, type, clientViewItems, clientAddItems, rmbgItems } = req.body;
 
             // if the new category name already exists, throw error
             const currCategory = await collection.findOne({ _id: categoryId });
@@ -63,7 +68,11 @@ const categories = {
                 {
                     $set: {
                         name: name,
-                        group: group,
+                        group: group || '',
+                        type: type,
+                        clientViewItems: clientViewItems,
+                        clientAddItems: clientAddItems,
+                        rmbgItems: rmbgItems,
                     }
                 }
             );
@@ -74,7 +83,8 @@ const categories = {
     
             res.status(200).json({ message: 'Success!' });
     
-        } catch (err) {
+        } 
+        catch (err) {
             next(err);
         }
     },
@@ -96,7 +106,8 @@ const categories = {
             }
     
             res.status(200).json({ message: 'Success!' });
-        } catch (err) {
+        } 
+        catch (err) {
             next(err);
         }
     }

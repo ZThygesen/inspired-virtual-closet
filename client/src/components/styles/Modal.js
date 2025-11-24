@@ -97,36 +97,6 @@ export const ModalContentContainer = styled.div`
         }
     }
 
-    .modal-content {
-        width: 100%;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 20px;
-        padding: 8px 0;
-
-        &.no-scroll {
-            height: 100vh;
-            overflow-y: hidden;
-        }
-
-        & .checkboxes {
-            & .checkboxes-field-name {
-                text-align: left;
-                font-size: 20px;
-                margin-bottom: 4px;
-            }
-            display: flex;
-            flex-direction: column;
-            align-self: flex-start;
-
-            & label {
-                margin-left: 0px;
-            }
-        }
-    }
-
     .modal-content p {
         text-align: center;
     }
@@ -161,6 +131,55 @@ export const ModalContentContainer = styled.div`
 
     .modal-content .warning {
         color: red;
+    }
+
+    .modal-content {
+        width: 100%;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        padding: 8px 0;
+
+        &.left {
+            align-items: flex-start;
+        }
+
+        &.no-scroll {
+            height: 100vh;
+            overflow-y: hidden;
+        }
+
+        & .checkboxes {
+            & .checkboxes-field-name {
+                text-align: left;
+                font-size: 20px;
+                margin-bottom: 4px;
+            }
+            display: flex;
+            flex-direction: column;
+            align-self: flex-start;
+
+            & label {
+                margin-left: 0px;
+            }
+        }
+
+        & .radio-selection {
+            display: flex;
+            flex-direction: column;
+            align-self: flex-start;
+
+            & p {
+                text-align: left;
+            }
+
+            &.disabled {
+                opacity: 0.3;
+                pointer-events: none;
+            }
+        }
     }
 
     .modal-options {

@@ -7,7 +7,7 @@ import Modal from '../components/Modal';
 import Input from '../components/Input';
 import { Tooltip } from '@mui/material';
 import { ClosetSettingsContainer } from './styles/ClosetSettings';
-import { DropdownContainer, SwapDropdown } from '../styles/Dropdown';
+import { DropdownContainer, SwapDropdown } from './styles/Dropdown';
 
 export default function ClosetSettings() {
     const { setError } = useError();
@@ -21,6 +21,10 @@ export default function ClosetSettings() {
     const [categoryGroups, setCategoryGroups] = useState([]);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [newCategoryGroup, setNewCategoryGroup] = useState('');
+    const [newCategoryType, setNewCategoryType] = useState('clothes');
+    const [newCategoryView, setNewCategoryView] = useState('no'); // permissions
+    const [newCategoryAdd, setNewCategoryAdd] = useState('no'); // permissions
+    const [newCategoryRmbg, setNewCategoryRmbg] = useState('no'); // permissions
     const [addCategoryOpen, setAddCategoryOpen] = useState(false);
     const [categoryToEdit, setCategoryToEdit] = useState({});
     const [editCategoryOpen, setEditCategoryOpen] = useState(false);
@@ -126,14 +130,23 @@ export default function ClosetSettings() {
 
         setLoading(true);
         try {
-            await api.post('/categories', { name: newCategoryName, group: newCategoryGroup });
+            await api.post('/categories', {
+                name: newCategoryName, 
+                group: newCategoryGroup,
+                type: newCategoryType,
+                clientViewItems: newCategoryView === 'yes' ? true : false,
+                clientAddItems: newCategoryAdd === 'yes' ? true : false,
+                rmbgItems: newCategoryRmbg === 'yes' ? true : false,
+            });
             await getCategories();
-        } catch (err) {
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error adding the category.',
                 status: err.response.status
             });
-        } finally {
+        } 
+        finally {
             setLoading(false);
         }
 
@@ -147,6 +160,10 @@ export default function ClosetSettings() {
     function handleCloseAddCategory() {
         setNewCategoryName('');
         setNewCategoryGroup('');
+        setNewCategoryType('clothes');
+        setNewCategoryView('no');
+        setNewCategoryAdd('no');
+        setNewCategoryRmbg('no');
         setAddCategoryOpen(false);
     }
 
@@ -155,7 +172,11 @@ export default function ClosetSettings() {
 
         setLoading(true);
         if (categoryToEdit.name === newCategoryName &&
-            categoryToEdit.group === newCategoryGroup
+            categoryToEdit.group === newCategoryGroup &&
+            categoryToEdit.type === newCategoryType &&
+            categoryToEdit.clientViewItems === (newCategoryView === 'yes' ? true : false) &&
+            categoryToEdit.clientAddItems === (newCategoryAdd === 'yes' ? true : false) &&
+            categoryToEdit.rmbgItems === (newCategoryRmbg === 'yes' ? true : false)
         ) {
             setLoading(false);
             handleCloseEditCategory();
@@ -163,14 +184,23 @@ export default function ClosetSettings() {
         }
 
         try {
-            await api.patch(`/categories/${categoryToEdit._id}`, { name: newCategoryName, group: newCategoryGroup });
+            await api.patch(`/categories/${categoryToEdit._id}`, { 
+                name: newCategoryName, 
+                group: newCategoryGroup,
+                type: newCategoryType,
+                clientViewItems: newCategoryView === 'yes' ? true : false,
+                clientAddItems: newCategoryAdd === 'yes' ? true : false,
+                rmbgItems: newCategoryRmbg === 'yes' ? true : false,
+            });
             await getCategories();
-        } catch (err) {
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error editing the category.',
                 status: err.response.status
             });
-        } finally {
+        } 
+        finally {
             setLoading(false);
         }
 
@@ -180,7 +210,11 @@ export default function ClosetSettings() {
     function handleOpenEditCategory(category) {
         setCategoryToEdit(category)
         setNewCategoryName(category.name);
-        setNewCategoryGroup(category.group);
+        setNewCategoryGroup(category.group || '');
+        setNewCategoryType(category.type || 'clothes');
+        setNewCategoryView(category.clientViewItems === true ? 'yes' : 'no');
+        setNewCategoryAdd(category.clientAddItems === true ? 'yes' : 'no');
+        setNewCategoryRmbg(category.rmbgItems === true ? 'yes' : 'no');
         setEditCategoryOpen(true);
     }
 
@@ -188,6 +222,10 @@ export default function ClosetSettings() {
         setCategoryToEdit({});
         setNewCategoryName('');
         setNewCategoryGroup('');
+        setNewCategoryType('clothes');
+        setNewCategoryView('no');
+        setNewCategoryAdd('no');
+        setNewCategoryRmbg('no');
         setEditCategoryOpen(false);
     }
 
@@ -679,7 +717,7 @@ export default function ClosetSettings() {
             >
                 <>
                     <h2 className="modal-title">Add Category</h2>
-                    <div className="modal-content">
+                    <div className="modal-content left">
                         <Input
                             type="text"
                             id="category-name"
@@ -694,6 +732,68 @@ export default function ClosetSettings() {
                             value={newCategoryGroup ?? ''}
                             onChange={e => setNewCategoryGroup(e.target.value)}
                         />
+                        <div className="radio-selection">
+                            <p>Category Location</p>
+                            <Input
+                                type="radio"
+                                value={newCategoryType}
+                                radioOptions={[
+                                    { value: 'clothes', label: 'Clothes' },
+                                    { value: 'profile', label: 'Profile' },
+                                ]}
+                                onChange={e => setNewCategoryType(e.target.value)}
+                            />
+                        </div>
+                        <div className="radio-selection">
+                            <p>Can clients view items in this category?</p>
+                            <Input
+                                type="radio"
+                                value={newCategoryView}
+                                radioOptions={[
+                                    { value: 'no', label: 'No' },
+                                    { value: 'yes', label: 'Yes' },
+                                ]}
+                                onChange={e => {
+                                    if (e.target.value === 'no') {
+                                        setNewCategoryAdd('no');
+                                    }
+                                    setNewCategoryView(e.target.value)
+                                }}
+                            />
+                        </div>
+                        <div className={`radio-selection ${newCategoryView === 'no' ? 'disabled' : ''}`}>
+                            <p>Can clients add items to this category?</p>
+                            <Input
+                                type="radio"
+                                value={newCategoryAdd}
+                                radioOptions={[
+                                    { value: 'no', label: 'No' },
+                                    { value: 'yes', label: 'Yes' },
+                                ]}
+                                onChange={e => {
+                                    if (!newCategoryView) {
+                                        setNewCategoryAdd(false);
+                                    }
+                                    else {
+                                        setNewCategoryAdd(e.target.value);
+                                    }
+                                }}
+                            />
+                        </div>
+                        <div className={`radio-selection`}>
+                            <p>Should the background be removed from items added to this category?</p>
+                            <Input
+                                type="radio"
+                                value={newCategoryRmbg}
+                                radioOptions={[
+                                    { value: 'no', label: 'No' },
+                                    { value: 'yes', label: 'Yes' },
+                                ]}
+                                onChange={e => {
+                                    setNewCategoryRmbg(e.target.value);
+                                }}
+                            />
+                        </div>
                     </div>
                     <div className="modal-options">
                         <button type="button" onClick={handleCloseAddCategory}>Cancel</button>
@@ -725,6 +825,68 @@ export default function ClosetSettings() {
                             value={newCategoryGroup ?? ''}
                             onChange={e => setNewCategoryGroup(e.target.value)}
                         />
+                        <div className="radio-selection">
+                            <p>Category Location</p>
+                            <Input
+                                type="radio"
+                                value={newCategoryType}
+                                radioOptions={[
+                                    { value: 'clothes', label: 'Clothes' },
+                                    { value: 'profile', label: 'Profile' },
+                                ]}
+                                onChange={e => setNewCategoryType(e.target.value)}
+                            />
+                        </div>
+                        <div className="radio-selection">
+                            <p>Can clients view items in this category?</p>
+                            <Input
+                                type="radio"
+                                value={newCategoryView}
+                                radioOptions={[
+                                    { value: 'no', label: 'No' },
+                                    { value: 'yes', label: 'Yes' },
+                                ]}
+                                onChange={e => {
+                                    if (e.target.value === 'no') {
+                                        setNewCategoryAdd('no');
+                                    }
+                                    setNewCategoryView(e.target.value)
+                                }}
+                            />
+                        </div>
+                        <div className={`radio-selection ${newCategoryView === 'no' ? 'disabled' : ''}`}>
+                            <p>Can clients add items to this category?</p>
+                            <Input
+                                type="radio"
+                                value={newCategoryAdd}
+                                radioOptions={[
+                                    { value: 'no', label: 'No' },
+                                    { value: 'yes', label: 'Yes' },
+                                ]}
+                                onChange={e => {
+                                    if (!newCategoryView) {
+                                        setNewCategoryAdd(false);
+                                    }
+                                    else {
+                                        setNewCategoryAdd(e.target.value);
+                                    }
+                                }}
+                            />
+                        </div>
+                        <div className={`radio-selection`}>
+                            <p>Should the background be removed from items added to this category?</p>
+                            <Input
+                                type="radio"
+                                value={newCategoryRmbg}
+                                radioOptions={[
+                                    { value: 'no', label: 'No' },
+                                    { value: 'yes', label: 'Yes' },
+                                ]}
+                                onChange={e => {
+                                    setNewCategoryRmbg(e.target.value);
+                                }}
+                            />
+                        </div>
                     </div>
                     <div className="modal-options">
                         <button type="button" onClick={handleCloseEditCategory}>Cancel</button>
