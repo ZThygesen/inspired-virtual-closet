@@ -280,10 +280,11 @@ export const integrationHelpers = {
         }
     },
 
-    testAuth(requirements, request, params, body, successStatus = 200) {
+    testAuth(requirements, request, params, body, successStatus = 200, cat = {}) {
         const resolveParams = typeof params === 'function' ? params : () => params;
         const resolveBody = typeof body === 'function' ? body : () => body;
-        const { noRequirements, superAdmin, admin, checkPermissions } = requirements;
+        const resolveCategory = typeof cat === 'function' ? cat : () => cat;
+        const { noRequirements, superAdmin, admin, checkPermissions, checkAddItems, category } = requirements;
         if (noRequirements) {
             it('auth: should succeed (super user)', async () => {
                 await this.setUserSuper();
@@ -420,12 +421,70 @@ export const integrationHelpers = {
                     await this.setUserNormal();
                     await this.setClientNormal();
                     await this.setUserAsClient();
+                    const category = resolveCategory();
                     const response = await request(resolveParams(), resolveBody());
                     const success = (response.status === successStatus)
-                        || (response.status === 403 && response.body.message === 'non-admins must remove background and crop image on item upload')
+                        || (response.status === 401 && response.body.message === `non-admins must remove background and crop for items in category ${category.name}`);
                     expect(success).toBe(true);
                 });
             }
+        }
+
+        if (checkAddItems) {
+            it('auth: should succeed (normal user, clientViewItems: true, clientAddItems: true)', async () => {
+                await this.setClientNormal();
+                await this.setUserAsClient();
+                const category = resolveCategory();
+                await this.categoryCollection.updateOne({ _id: category._id }, { $set: { clientViewItems: true, clientAddItems: true } });
+                
+                const response = await request(resolveParams(), resolveBody());
+                const success = (response.status === successStatus)
+                    || (response.status === 401 && response.body.message === `non-admins must remove background and crop for items in category ${category.name}`)
+                expect(success).toBe(true);
+            });
+
+            it('auth: should fail (normal user, clientViewItems: true, clientAddItems: false)', async () => {
+                await this.setClientNormal();
+                await this.setUserAsClient();
+                const category = resolveCategory();
+                await this.categoryCollection.updateOne({ _id: category._id }, { $set: { clientViewItems: true, clientAddItems: false } });
+                
+                const response = await request(resolveParams(), resolveBody());
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe(`non-admins do not have permissions to add or edit items in category ${category.name}`)
+            });
+
+            it('auth: should fail (normal user, clientViewItems: false, clientAddItems: true)', async () => {
+                await this.setClientNormal();
+                await this.setUserAsClient();
+                const category = resolveCategory();
+                await this.categoryCollection.updateOne({ _id: category._id }, { $set: { clientViewItems: false, clientAddItems: true } });
+                
+                const response = await request(resolveParams(), resolveBody());
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe(`non-admins do not have permissions to add or edit items in category ${category.name}`)
+            });
+
+            it('auth: should fail (normal user, clientViewItems: false, clientAddItems: false)', async () => {
+                await this.setClientNormal();
+                await this.setUserAsClient();
+                const category = resolveCategory();
+                await this.categoryCollection.updateOne({ _id: category._id }, { $set: { clientViewItems: false, clientAddItems: false } });
+                
+                const response = await request(resolveParams(), resolveBody());
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe(`non-admins do not have permissions to add or edit items in category ${category.name}`)
+            });
+
+            it('auth: should fail (normal user, category does not exist)', async () => {
+                await this.setClientNormal();
+                await this.setUserAsClient();
+                await this.clearCategoryCollection();
+                
+                const response = await request(resolveParams(), resolveBody());
+                expect(response.status).toBe(401);
+                expect(response.body.message).toBe('non-admins do not have permissions to add or edit items: category not found');
+            });
         }
 
         it('auth: should fail with missing token', async () => {

@@ -5,7 +5,7 @@ import { unitHelpers } from './helpers.js';
 describe('items', () => {
     let err, mockRes, mockNext, mockCollection, mockDb, mockBucket, locals, mockCreateError;
     let creditsResponse, bufferResponse, thumbnailResponse, gcsResponse, idResponse;
-    let mockIsSuperAdmin, mockGetCredits, mockDeductCredits, mockRemoveBackground, mockb64ToBuffer, mockCreateImageThumbnail, mockUploadToGCS, mockDeleteFromGCS, mockParse, mockCreateId;
+    let mockIsSuperAdmin, mockGetCredits, mockDeductCredits, mockRemoveBackground, mockb64ToBuffer, mockCreateImageThumbnail, mockUploadToGCS, mockDeleteFromGCS, mockParse, mockCreateId, mockGetViewableCategories;
     beforeEach(() => {
         unitHelpers.beforeEach();
         ({
@@ -34,6 +34,7 @@ describe('items', () => {
             mockDeleteFromGCS,
             mockParse,
             mockCreateId,
+            mockGetViewableCategories,
         } = unitHelpers);
     });
 
@@ -117,108 +118,6 @@ describe('items', () => {
             expect(mockDeductCredits).not.toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-        });
-
-        it('should allow super admin user to not rmbg', async () => {
-            req.user.isSuperAdmin = true;
-            req.body.rmbg = false;
-            await makeFunctionCall();
-
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-        });
-
-        it('should allow super admin user to not crop', async () => {
-            req.user.isSuperAdmin = true;
-            req.body.crop = false;
-            await makeFunctionCall();
-
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-        });
-
-        it('should allow super admin user to not rmbg and crop', async () => {
-            req.user.isSuperAdmin = true;
-            req.body.rmbg = false;
-            req.body.crop = false;
-            await makeFunctionCall();
-
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-        });
-
-        it('should allow admin user to not crop', async () => {
-            req.user.isAdmin = true;
-            req.body.rmbg = false;
-            await makeFunctionCall();
-
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-        });
-
-        it('should allow admin user to not crop', async () => {
-            req.user.isAdmin = true;
-            req.body.crop = false;
-            await makeFunctionCall();
-
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-        });
-
-        it('should allow admin user to not rmbg and crop', async () => {
-            req.user.isAdmin = true;
-            req.body.rmbg = false;
-            req.body.crop = false;
-            await makeFunctionCall();
-
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-        });
-
-        it('should not rmbg', async () => {
-            req.user.isSuperAdmin = true;
-            req.body.rmbg = false;
-            await makeFunctionCall();
-
-            expect(mockRemoveBackground).not.toHaveBeenCalled();
-            expect(mockb64ToBuffer).toHaveBeenCalledWith(body.fileSrc);
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-        });
-
-        it('should not crop', async () => {
-            req.user.isSuperAdmin = true;
-            req.body.crop = false;
-            await makeFunctionCall();
-
-            expect(mockRemoveBackground).toHaveBeenCalledWith(body.fileSrc, false);
-            expect(mockRes.status).toHaveBeenCalledWith(201);
-            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
-        });
-
-        it('should fail if non-admin user does not rmbg', async () => {
-            req.body.rmbg = false;
-            await makeFunctionCall();
-
-            expect(mockCreateError).toHaveBeenCalledWith('non-admins must remove background and crop image on item upload', 403);
-            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
-        });
-
-        it('should fail if non-admin user does not crop', async () => {
-            req.body.crop = false;
-            await makeFunctionCall();
-
-            expect(mockCreateError).toHaveBeenCalledWith('non-admins must remove background and crop image on item upload', 403);
-            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
-        });
-
-        it('should fail if non-admin user does not rmbg and crop', async () => {
-            req.body.rmbg = false;
-            req.body.crop = false;
-            await makeFunctionCall();
-
-            expect(mockCreateError).toHaveBeenCalledWith('non-admins must remove background and crop image on item upload', 403);
-            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
         });
 
         it('should handle categoryExists error', async () => {
@@ -367,7 +266,7 @@ describe('items', () => {
     });
 
     describe('get', () => {
-        let params, req;
+        let params, user, req;
         let mockItems;
         beforeEach(() => {
             const item = {
@@ -386,9 +285,16 @@ describe('items', () => {
             params = {
                 clientId: item.clientId,
             };
-            req = { params, locals };
+
+            user = {
+                id: params.clientId,
+                isAdmin: true,
+                isSuperAdmin: true,
+            };
+            req = { params, user, locals };
 
             mockCollection.toArray.mockResolvedValue(mockItems);
+            mockGetViewableCategories.mockResolvedValue([item.categoryId]);
         });
 
         async function makeFunctionCall() {
@@ -400,8 +306,34 @@ describe('items', () => {
 
             expect(mockCollection.find).toHaveBeenCalled();
             expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockGetViewableCategories).not.toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith(mockItems);
+        });
+
+        it('should get items for non-admin client', async () => {
+            user.isSuperAdmin = false;
+            user.isAdmin = false;
+            await makeFunctionCall();
+
+            expect(mockCollection.find).toHaveBeenCalled();
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockGetViewableCategories).toHaveBeenCalledWith(mockDb);
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith(mockItems);
+        });
+
+        it('should filter items not accessible to non-admin client', async () => {
+            user.isSuperAdmin = false;
+            user.isAdmin = false;
+            mockGetViewableCategories.mockResolvedValueOnce([]);
+            await makeFunctionCall();
+
+            expect(mockCollection.find).toHaveBeenCalled();
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockGetViewableCategories).toHaveBeenCalledWith(mockDb);
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith([]);
         });
 
         it('should handle find error', async () => {
@@ -419,6 +351,17 @@ describe('items', () => {
             await makeFunctionCall();
 
             expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+
+        it('should handle getViewableCategories error', async () => {
+            user.isSuperAdmin = false;
+            user.isAdmin = false;
+            err = new Error('getViewableCategories error');
+            mockGetViewableCategories.mockRejectedValueOnce(err);
+            await makeFunctionCall();
+
+            expect(mockGetViewableCategories).toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalledWith(err);
         });
     });

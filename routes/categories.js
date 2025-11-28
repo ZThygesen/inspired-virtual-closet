@@ -20,7 +20,7 @@ const categories = {
                 group: group || '',
                 type: type,
                 clientViewItems: clientViewItems,
-                clientAddItems: clientAddItems,
+                clientAddItems: clientAddItems && clientViewItems,
                 rmbgItems: rmbgItems,
             };
     
@@ -38,9 +38,18 @@ const categories = {
         try {
             const { db } = req.locals;
             const collection = db.collection('categories');
-            const categories = await collection.find({ }).toArray();
 
-            res.status(200).json(categories)
+            let categories;
+            if (!req?.user?.isSuperAdmin && !req?.user?.isAdmin) {
+                categories = await collection.find({ 
+                    clientViewItems: true,
+                }).toArray();
+            }
+            else {
+                categories = await collection.find({ }).toArray();
+            }
+
+            res.status(200).json(categories);
         } 
         catch (err) {
             next(err);
@@ -71,7 +80,7 @@ const categories = {
                         group: group || '',
                         type: type,
                         clientViewItems: clientViewItems,
-                        clientAddItems: clientAddItems,
+                        clientAddItems: clientAddItems && clientViewItems,
                         rmbgItems: rmbgItems,
                     }
                 }
@@ -95,7 +104,6 @@ const categories = {
 
             // move files to Other
             const { db } = req.locals;
-            await helpers.moveFilesToOther(db, categoryId.toString());
             
             // delete category
             const collection = db.collection('categories');
@@ -120,7 +128,7 @@ router.post('/',
     schemaHelpers.validateBody(schema.post.body.schema),
     categories.post,
 );
-router.get('/', 
+router.get('/',
     categories.get,
 );
 router.patch('/:categoryId', 

@@ -42,6 +42,7 @@ const schema = {
                 },
                 group: {
                     type: 'string',
+                    optional: true,
                 },
                 type: {
                     type: 'string',

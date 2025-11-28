@@ -728,9 +728,10 @@ export default function ClosetSettings() {
                         <Input
                             type="text"
                             id="category-group"
-                            label="Group"
+                            label="Group&nbsp;&nbsp;"
                             value={newCategoryGroup ?? ''}
                             onChange={e => setNewCategoryGroup(e.target.value)}
+                            required={false}
                         />
                         <div className="radio-selection">
                             <p>Category Location</p>
@@ -757,7 +758,7 @@ export default function ClosetSettings() {
                                     if (e.target.value === 'no') {
                                         setNewCategoryAdd('no');
                                     }
-                                    setNewCategoryView(e.target.value)
+                                    setNewCategoryView(e.target.value);
                                 }}
                             />
                         </div>
@@ -821,9 +822,10 @@ export default function ClosetSettings() {
                         <Input
                             type="text"
                             id="category-group"
-                            label="Group"
+                            label="Group&nbsp;&nbsp;"
                             value={newCategoryGroup ?? ''}
                             onChange={e => setNewCategoryGroup(e.target.value)}
+                            required={false}
                         />
                         <div className="radio-selection">
                             <p>Category Location</p>

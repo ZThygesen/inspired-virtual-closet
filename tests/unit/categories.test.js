@@ -4,7 +4,6 @@ import { unitHelpers } from './helpers';
 
 describe('categories', () => {
     let err, mockRes, mockNext, mockCollection, mockDb, locals, mockCreateError
-    let mockMoveFilesToOther;
     beforeEach(() => {
         unitHelpers.beforeEach();
         ({
@@ -14,7 +13,6 @@ describe('categories', () => {
             mockDb,
             locals,
             mockCreateError,
-            mockMoveFilesToOther,
         } = unitHelpers);
     });
 
@@ -28,6 +26,10 @@ describe('categories', () => {
             body = { 
                 name: 'Blazers',
                 group: 'Formal',
+                type: 'clothes',
+                clientViewItems: true,
+                clientAddItems: true,
+                rmbgItems: true,
             };
             req = { body, locals };
 
@@ -43,7 +45,17 @@ describe('categories', () => {
 
             expect(mockCollection.find).toHaveBeenCalledWith({ name: body.name });
             expect(mockCollection.toArray).toHaveBeenCalled();
-            expect(mockCollection.insertOne).toHaveBeenCalledWith({ ...body, items: [] });
+            expect(mockCollection.insertOne).toHaveBeenCalledWith({ ...body });
+            expect(mockRes.status).toHaveBeenCalledWith(201);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
+
+        it('should not allow add if view is not allowed', async () => {
+            body.clientViewItems = false;
+            body.clientAddItems = true;
+            await makeFunctionCall();
+
+            expect(mockCollection.insertOne).toHaveBeenCalledWith({ ...body, clientAddItems: false });
             expect(mockRes.status).toHaveBeenCalledWith(201);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
         });
@@ -86,7 +98,7 @@ describe('categories', () => {
 
             await makeFunctionCall();
 
-            expect(mockCollection.insertOne).toHaveBeenCalledWith({ ...body, items: [] });
+            expect(mockCollection.insertOne).toHaveBeenCalledWith({ ...body });
             expect(mockNext).toHaveBeenCalledWith(err);
         });
 
@@ -102,10 +114,15 @@ describe('categories', () => {
     });
 
     describe('get', () => {
-        let req;
+        let user, req;
         let cats;
         beforeEach(() => {
-            req = { locals };
+            user = {
+                id: ObjectId().toString(),
+                isAdmin: true,
+                isSuperAdmin: true,
+            };
+            req = { user, locals };
             
             cats = [
                 { _id: 0, name: 'Other', group: '1' },
@@ -120,10 +137,21 @@ describe('categories', () => {
             await categories.get(req, mockRes, mockNext);
         }
 
-        it('should get categories', async () => {
+        it('should get all categories', async () => {
             await makeFunctionCall();
 
             expect(mockCollection.find).toHaveBeenCalled();
+            expect(mockCollection.toArray).toHaveBeenCalled();
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith(cats);
+        });
+
+        it('should check user permissions', async () => {
+            req.user.isSuperAdmin = false;
+            req.user.isAdmin = false;
+            await makeFunctionCall();
+
+            expect(mockCollection.find).toHaveBeenCalledWith({ clientViewItems: true });
             expect(mockCollection.toArray).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith(cats);
@@ -161,12 +189,20 @@ describe('categories', () => {
             body = {
                 name: 'Blazers',
                 group: 'Formal',
+                type: 'clothes',
+                clientViewItems: false,
+                clientAddItems: false,
+                rmbgItems: false,
             };
             req = { params, body, locals };
 
             mockCollection.findOne.mockResolvedValue({
                 name: 'T-Shirts',
                 group: 'Formal',
+                type: 'clothes',
+                clientViewItems: true,
+                clientAddItems: true,
+                rmbgItems: true,
             });
             mockCollection.toArray.mockResolvedValue([]);
         });
@@ -272,21 +308,9 @@ describe('categories', () => {
         it('should delete category', async () => {
             await makeFunctionCall();
 
-            expect(mockMoveFilesToOther).toHaveBeenCalledWith(mockDb, params.categoryId);
             expect(mockCollection.deleteOne).toHaveBeenCalledWith({ _id: params.categoryId });
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!'});
-        });
-
-        it('should handle moveFilesToOther error', async () => {
-            // simulate error in moveFilesToOther
-            err = new Error('Move error');
-            mockMoveFilesToOther.mockRejectedValueOnce(err);
-
-            await makeFunctionCall();
-
-            expect(mockMoveFilesToOther).toHaveBeenCalledWith(mockDb, params.categoryId);
-            expect(mockNext).toHaveBeenCalledWith(err);
         });
 
         it('should handle deleteOne error', async () => {

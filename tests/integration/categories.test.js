@@ -22,7 +22,14 @@ describe('categories', () => {
     });
 
     async function insertOther() {
-        await collection.insertOne({ _id: 0, name: 'Other', items: [] });
+        await collection.insertOne({ 
+            _id: 0, 
+            name: 'Other',
+            type: 'clothes',
+            clientViewItems: true,
+            clientAddItems: true,
+            rmbgItems: true,
+        });
     }
 
     describe('post', () => {
@@ -32,6 +39,10 @@ describe('categories', () => {
             body = {
                 name: 'Blazers',
                 group: 'Formal',
+                type: 'clothes',
+                clientViewItems: true,
+                clientAddItems: true,
+                rmbgItems: true,
             };
         });
 
@@ -50,7 +61,32 @@ describe('categories', () => {
             expect(category).toMatchObject({
                 name: body.name,
                 group: body.group,
-                items: [],
+                type: body.type,
+                clientViewItems: body.clientViewItems,
+                clientAddItems: body.clientAddItems,
+                rmbgItems: body.rmbgItems,
+            });
+        });
+
+        it('should not allow add if view is not allowed', async () => {
+            body.clientViewItems = false;
+            body.clientAddItems = true;
+            const response = await request(params, body);
+            
+            expect(response.status).toBe(201);
+            expect(response.body.message).toBe('Success!');
+
+            const categories = await collection.find({ }).toArray();
+            expect(categories).toHaveLength(2);
+            const category = await collection.findOne({ name: body.name });
+            expect(ObjectId.isValid(category._id)).toBe(true);
+            expect(category).toMatchObject({
+                name: body.name,
+                group: body.group,
+                type: body.type,
+                clientViewItems: body.clientViewItems,
+                clientAddItems: false,
+                rmbgItems: body.rmbgItems,
             });
         });
 
@@ -74,7 +110,10 @@ describe('categories', () => {
                 _id: ObjectId(),
                 name: 'Blazers',
                 group: 'Formal',
-                items: [],
+                type: 'clothes',
+                clientViewItems: true,
+                clientAddItems: true,
+                rmbgItems: true,
             };
             await collection.insertOne(category);
 
@@ -84,7 +123,7 @@ describe('categories', () => {
 
         const request = (params, body) => integrationHelpers.executeRequest('get', '/categories', params, body);
 
-        it('should get categories', async () => {
+        it('should get all categories', async () => {
             const response = await request(params, body);
             
             expect(response.status).toBe(200);
@@ -96,13 +135,27 @@ describe('categories', () => {
             expect(category).not.toHaveProperty('items');
         });
 
-        it('handle no categories', async () => {
+        it('should handle no categories', async () => {
             await integrationHelpers.clearCollection();
             const response = await request(params, body);
             
             expect(response.status).toBe(200);
             const categories = response.body;
             expect(categories).toHaveLength(0);
+        });
+
+        it('should only get viewable categories for non-admin', async () => {
+            await integrationHelpers.setUserNormal();
+            await integrationHelpers.clearCollection();
+            await insertOther();
+            category.clientViewItems = false;
+            category.clientAddItems = false;
+            await collection.insertOne(category);
+
+            const response = await request(params, body);
+            const categories = response.body;
+            expect(categories).toHaveLength(1);
+            expect(categories[0]._id).toBe(0);
         });
 
         integrationHelpers.testAuth({ noRequirements: true }, request, () => params, () => body);
@@ -115,7 +168,10 @@ describe('categories', () => {
                 _id: ObjectId(),
                 name: 'Blazers',
                 group: 'Formal',
-                items: [],
+                type: 'clothes',
+                clientViewItems: true,
+                clientAddItems: true,
+                rmbgItems: true,
             };
             await collection.insertOne(data);
 
@@ -123,6 +179,10 @@ describe('categories', () => {
             body = {
                 name: 'T-Shirts',
                 group: 'Casual',
+                type: 'profile',
+                clientViewItems: true,
+                clientAddItems: false,
+                rmbgItems: false,
             };
         });
 
@@ -139,7 +199,10 @@ describe('categories', () => {
                 _id: data._id,
                 name: body.name,
                 group: body.group,
-                items: data.items,
+                type: body.type,
+                clientViewItems: body.clientViewItems,
+                clientAddItems: body.clientAddItems,
+                rmbgItems: body.rmbgItems,
             });
         });
 
@@ -155,7 +218,30 @@ describe('categories', () => {
                 _id: data._id,
                 name: body.name,
                 group: body.group,
-                items: data.items,
+                type: body.type,
+                clientViewItems: body.clientViewItems,
+                clientAddItems: body.clientAddItems,
+                rmbgItems: body.rmbgItems,
+            });
+        });
+
+        it('should not allow add if view is not allowed', async () => {
+            body.clientViewItems = false;
+            body.clientAddItems = true;
+            const response = await request(params, body);
+
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Success!');
+
+            const updatedCategory = await collection.findOne({ _id: data._id });
+            expect(updatedCategory).toMatchObject({
+                _id: data._id,
+                name: body.name,
+                group: body.group,
+                type: body.type,
+                clientViewItems: body.clientViewItems,
+                clientAddItems: false,
+                rmbgItems: body.rmbgItems,
             });
         });
 
@@ -194,7 +280,10 @@ describe('categories', () => {
                 _id: ObjectId(),
                 name: 'Blazers',
                 group: 'Formal',
-                items: [{ item: 1 }, { item: 2 }, { item: 3 }],
+                type: 'clothes',
+                clientViewItems: true,
+                clientAddItems: true,
+                rmbgItems: true,
             };
             await collection.insertOne(data);
 
@@ -205,47 +294,16 @@ describe('categories', () => {
         const request = (params, body) => integrationHelpers.executeRequest('delete', '/categories', params, body);
 
         it('should delete category', async () => {
-            let otherCategory = await collection.findOne({ _id: 0, name: 'Other' });
-            expect(otherCategory.items).toHaveLength(0);
-
-            let category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(3);
-            expect(category.items).toEqual(data.items);
-
             const response = await request(params, body);
 
             expect(response.status).toBe(200);
             expect(response.body.message).toBe('Success!');
 
-            category = await collection.findOne({ _id: data._id });
+            const category = await collection.findOne({ _id: data._id });
             expect(category).toBeFalsy();
 
-            otherCategory = await collection.findOne({ _id: 0, name: 'Other' });
-            expect(otherCategory.items).toHaveLength(3);
-            expect(otherCategory.items).toEqual(data.items);
-        });
-
-        it('should delete category with no files to move', async () => {
-            await integrationHelpers.clearCollection();
-            await insertOther();
-            await collection.insertOne({ _id: data._id, name: data.name, items: [] });
-
-            let otherCategory = await collection.findOne({ _id: 0, name: 'Other' });
-            expect(otherCategory.items).toHaveLength(0);
-
-            let category = await collection.findOne({ _id: data._id });
-            expect(category.items).toHaveLength(0);
-
-            const response = await request(params, body);
-            
-            expect(response.status).toBe(200);
-            expect(response.body.message).toBe('Success!');
-
-            category = await collection.findOne({ _id: data._id });
-            expect(category).toBeFalsy();
-
-            otherCategory = await collection.findOne({ _id: 0, name: 'Other' });
-            expect(otherCategory.items).toHaveLength(0);
+            const otherCategory = await collection.findOne({ _id: 0, name: 'Other' });
+            expect(otherCategory).toBeTruthy();
         });
 
         it('should fail given category that does not exist', async () => {
@@ -253,7 +311,7 @@ describe('categories', () => {
             const response = await request(params, body);
             
             expect(response.status).toBe(404);
-            expect(response.body.message).toBe('category does not exist');
+            expect(response.body.message).toBe('deletion failed: category not found with given category id');
 
             const categories = await collection.find({ }).toArray();
             expect(categories).toHaveLength(2);

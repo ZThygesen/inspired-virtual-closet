@@ -19,12 +19,6 @@ const items = {
                 throw helpers.createError(`cannot add item: no categories with the id "${categoryId}" exist`, 404);
             }
 
-            if (!req?.user?.isSuperAdmin && !req?.user?.isAdmin) {
-                if (!rmbg || !crop) {
-                    throw helpers.createError('non-admins must remove background and crop image on item upload', 403);
-                }
-            }
-
             let clientCredits;
             const isSuperAdmin = await helpers.isSuperAdmin(db, clientId);
             if (!isSuperAdmin) {
@@ -101,7 +95,11 @@ const items = {
             const { db } = req.locals;
             const collection = db.collection('items');
             const { clientId } = req.params;
-            const items = await collection.find({ clientId: clientId }).toArray();
+            let items = await collection.find({ clientId: clientId }).toArray();
+            if (!req?.user?.isSuperAdmin && !req?.user?.isAdmin) {
+                const viewableCategories = await helpers.getViewableCategories(db);
+                items = items.filter(item => viewableCategories.includes(item.categoryId));
+            }
             res.status(200).json(items);
         } 
         catch (err) {
@@ -209,6 +207,8 @@ router.post('/:clientId',
     ExpressFormidable(),
     schemaHelpers.validateParams(schema.post.params.schema),
     schemaHelpers.validateFields(schema.post.body.schema),
+    auth.checkAddItems,
+    auth.checkRmbg,
     items.post,
 );
 router.get('/:clientId',
@@ -220,17 +220,20 @@ router.patch('/:clientId/:itemId',
     auth.checkPermissions, 
     schemaHelpers.validateParams(schema.patchName.params.schema),
     schemaHelpers.validateBody(schema.patchName.body.schema),
+    auth.checkAddItems,
     items.patchName,
 );
 router.patch('/category/:clientId/:itemId', 
     auth.checkPermissions,
     schemaHelpers.validateParams(schema.patchCategory.params.schema),
     schemaHelpers.validateBody(schema.patchCategory.body.schema),
+    auth.checkAddItems,
     items.patchCategory,
 );
 router.delete('/:clientId/:itemId', 
     auth.checkPermissions,
     schemaHelpers.validateParams(schema.delete.params.schema),
+    auth.checkAddItems,
     items.delete,
 );
 
