@@ -14,6 +14,8 @@ export const DataProvider = ({ children }) => {
 
     // high level data
     const [categories, setCategories] = useState([]);
+    const [clothesOptions, setClothesOptions] = useState([]);
+    const [profileOptions, setProfileOptions] = useState([]);
     const [tags, setTags] = useState([]);
 
     // client data
@@ -36,6 +38,7 @@ export const DataProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
+    // === categories ---------------------------------------------
     const updateCategories = useCallback(async () => {
         try {
             const response = await api.get('/categories');
@@ -60,6 +63,119 @@ export const DataProvider = ({ children }) => {
         }
     }, [setError]);
 
+    const getCategoryName = useCallback((categoryId) => {
+        const category = categories.filter(category => category._id === categoryId);
+        let categoryName = '';
+        if (category.length) {
+            categoryName = category[0]?.name;
+        }
+        return categoryName;
+    }, [categories]);
+
+    const getCategoryType = useCallback((categoryId) => {
+        const category = categories.filter(category => category._id === categoryId);
+        let categoryType = 'clothes';
+        if (category.length && (category[0]?.type === 'profile')) {
+            categoryType = 'profile';
+        }
+        return categoryType;
+    }, [categories]);
+
+    const getCategoryPermissions = useCallback((categoryId) => {
+        const category = categories.filter(category => category._id === categoryId)[0];
+        return {
+            clientViewItems: Boolean(category?.clientViewItems),
+            clientAddItems: Boolean(category?.clientAddItems),
+            rmbgItems: Boolean(category?.rmbgItems),
+        };
+    }, [categories]);
+
+    const getCategoryDropdownOptions = useCallback((type) => {
+        let theseCategories = categories.filter(category => category._id !== 0);
+        if (!user?.isSuperAdmin && !user?.isAdmin) {
+            theseCategories = theseCategories.filter(category => category.clientViewItems && category.clientAddItems);
+        }
+        if (type === 'profile') {
+            theseCategories = theseCategories.filter(category => category.type === 'profile');
+        }
+        else {
+            theseCategories = theseCategories.filter(category => category.type !== 'profile');
+        }
+
+        const categoriesWithGroups = theseCategories.filter(category => category.group);
+        const categoriesWithoutGroups = theseCategories.filter(category => !category.group);
+
+        const groupMap = {};
+        for (const category of categoriesWithGroups) {
+            if (!groupMap[category.group]) {
+                groupMap[category.group] = [];
+            }
+            groupMap[category.group].push(category);
+        }
+        for (const category of categoriesWithoutGroups) {
+            if (!groupMap['Other']) {
+                groupMap['Other'] = [];
+            }
+            groupMap['Other'].push(category);
+        }
+
+        if (type !== 'profile') {
+            if (!groupMap['Other']) {
+                groupMap['Other'] = [];
+            }
+            groupMap['Other'].unshift({ _id: 0, name: 'Other' });
+        }
+
+        const groups = Object.keys(groupMap).sort((a, b) => {
+            if (a === 'Other' && b === 'Other') {
+                return 0;
+            }
+            else if (a === 'Other' && b !== 'Other') {
+                return 1;
+            }
+            else if (a !== 'Other' && b === 'Other') {
+                return -1;
+            }
+            else if (a < b) { 
+                return -1; 
+            }
+            else if (a > b) { 
+                return 1; 
+            }
+            else { 
+                return 0; 
+            }
+        });
+
+        const options = [];
+        for (const group of groups) {
+            const categoryOptions = [];
+            const groupCategories = groupMap[group];
+            for (const category of groupCategories) {
+                categoryOptions.push({
+                    value: category._id,
+                    label: category.name,
+                });
+            }
+            options.push({
+                type: 'group',
+                name: group,
+                items: categoryOptions,
+            });
+        }
+
+        return options;
+    }, [user, categories]);
+
+    useEffect(() => {
+        const clothes = getCategoryDropdownOptions('clothes');
+        const profile = getCategoryDropdownOptions('profile');
+
+        setClothesOptions(clothes);
+        setProfileOptions(profile);
+    }, [categories, getCategoryDropdownOptions]);
+
+    // === tags ---------------------------------------------
     const updateTags = useCallback(async () => {
         try {
             const response = await api.get('/tags/active');
@@ -109,15 +225,7 @@ export const DataProvider = ({ children }) => {
 
     }, [tags]);
 
-    const getCategoryName = useCallback((categoryId) => {
-        const category = categories.filter(category => category._id === categoryId);
-        let categoryName = '';
-        if (category.length) {
-            categoryName = category[0]?.name;
-        }
-        return categoryName;
-    }, [categories]);
-
+    // === items ---------------------------------------------
     const updateItems = useCallback(async () => {
         if (client) {
             try {
@@ -128,6 +236,7 @@ export const DataProvider = ({ children }) => {
                     const tags = resolveTagIds(item.tags).map(tag => tag.tagName);
                     item.tagNamesPrefix = tags.join(' | ');
                     item.categoryName = getCategoryName(item.categoryId);
+                    item.categoryType = getCategoryType(item.categoryId);
                     theseItems.push(item);
                 }
                 theseItems.sort((a, b) => {
@@ -152,8 +261,19 @@ export const DataProvider = ({ children }) => {
                 });
             }
         }
-    }, [client, resolveTagIds, getCategoryName, setError]);
+    }, [client, resolveTagIds, getCategoryName, getCategoryType, setError]);
 
+        // current category's items
+        useEffect(() => {
+            if (currentCategory._id === -1) {
+                setCurrentItems(items);
+            }
+            else {
+                setCurrentItems(items.filter(item => item.categoryId === currentCategory._id));
+            }
+        }, [items, currentCategory]);
+
+    // === outfits ---------------------------------------------
     const updateOutfits = useCallback(async () => {
         if (client) {
             try {
@@ -171,6 +291,7 @@ export const DataProvider = ({ children }) => {
         }
     }, [client, setError]);
 
+    // === shopping ---------------------------------------------
     const updateShopping = useCallback(async () => {
         if (client) {
             try {
@@ -186,15 +307,7 @@ export const DataProvider = ({ children }) => {
         }
     }, [client, setError]);
 
-    useEffect(() => {
-        if (currentCategory._id === -1) {
-            setCurrentItems(items);
-        }
-        else {
-            setCurrentItems(items.filter(item => item.categoryId === currentCategory._id));
-        }
-    }, [items, currentCategory]);
-
+    // === updates on user/client change ---------------------------------------------
     useEffect(() => {
         if (user) {
             updateCategories();
@@ -210,12 +323,6 @@ export const DataProvider = ({ children }) => {
         setLoading(false);
     }, [updateItems, updateOutfits, updateShopping]);
 
-    // useEffect(() => {
-    //     if (user) {
-    //         updateAll();
-    //     }
-    // }, [user, updateAll]);
-
     useEffect(() => {
         if (client) {
             updateAll();
@@ -224,8 +331,12 @@ export const DataProvider = ({ children }) => {
 
     return (
         <DataContext.Provider value={{  
-            categories, 
+            categories,
+            clothesOptions,
+            profileOptions,
             updateCategories,
+            getCategoryPermissions,
+
             tags,
             updateTags,
             resolveTagIds,

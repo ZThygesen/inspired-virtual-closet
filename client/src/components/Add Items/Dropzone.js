@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useError } from '../../contexts/ErrorContext';
 import cuid from 'cuid';
 import styled from 'styled-components';
-import { DropContainer } from '../styles/Dropzone';
+import { DropContainer } from './DropzoneStyles';
 import Modal from '../Modal';
 import { CircularProgress } from '@mui/material';
 import { resizeImage } from '../../resizeImage';
@@ -35,18 +35,18 @@ function CircularProgressWithLabel(props) {
     )
 }
 
-export default function Dropzone({ setFiles }) {
+export default function Dropzone({ setFiles, closeAddItemsModal }) {
     const { setError } = useError();
 
-    const [borderColor, setBorderColor] = useState('#231f20');
-    const [processModalOpen, setProcessModelOpen] = useState(false);
+    const [dragActive, setDragActive] = useState(false);
+    const [processModalOpen, setProcessModalOpen] = useState(false);
     const [numFilesProcessed, setNumFilesProcessed] = useState(0);
     const [numProcessFiles, setNumProcessFiles] = useState(0);
     const fileInputRef = useRef();
 
     function dragOver(e) {
         e.preventDefault();
-        setBorderColor('#8cc640')
+        setDragActive(true);
     }
 
     function dragEnter(e) {
@@ -55,12 +55,12 @@ export default function Dropzone({ setFiles }) {
 
     function dragLeave(e) {
         e.preventDefault();
-        setBorderColor('#231f20');
+        setDragActive(false);
     }
 
     function fileDrop(e) {
         e.preventDefault();
-        setBorderColor('#231f20');
+        setDragActive(false);
         const files = e.dataTransfer.files;
         if (files.length) {
             handleFiles(files);
@@ -69,7 +69,7 @@ export default function Dropzone({ setFiles }) {
 
     async function handleFiles(files) {
         setNumProcessFiles(files.length);
-        setProcessModelOpen(true);
+        setProcessModalOpen(true);
 
         const allFiles = [];
         for (let i = 0; i < files.length; i++) {
@@ -90,11 +90,10 @@ export default function Dropzone({ setFiles }) {
 
             allFiles.push({
                 id: cuid(),
-                tab: 'clothes',
                 category: '',
                 tags: [],
-                rmbg: true,
-                crop: true,
+                rmbg: false,
+                crop: false,
                 name: file.name,
                 src: file.src,
                 type: file.type,
@@ -110,7 +109,8 @@ export default function Dropzone({ setFiles }) {
         fileInputRef.current.value = null;
 
         setTimeout(() => {
-            setProcessModelOpen(false);
+            setProcessModalOpen(false);
+            closeAddItemsModal();
             setNumProcessFiles(0);
             setNumFilesProcessed(0);
         }, 750);
@@ -173,30 +173,25 @@ export default function Dropzone({ setFiles }) {
 
     return (
         <>
-            <DropContainer style={{ border: `4px dashed ${borderColor}` }}
+            <DropContainer
+                className={`${dragActive ? 'drag-active' : ''}`}
                 onDragOver={dragOver}
                 onDragEnter={dragEnter}
                 onDragLeave={dragLeave}
                 onDrop={fileDrop}
             >
-                <div className="upload-icon" onClick={fileInputClicked}></div>
-                <p>
-                    <span
-                        className="click-upload"
-                        onClick={fileInputClicked}
-                    >
-                        <input
-                            ref={fileInputRef}
-                            className="file-input"
-                            type="file"
-                            onChange={fileSelected}
-                            multiple
-                        />
-                        Choose file(s)
-                    </span>
-                    &nbsp;or drag & drop here
-                </p>
-            </ DropContainer>
+                <div className="click-upload" onClick={fileInputClicked}>
+                    <input
+                        ref={fileInputRef}
+                        className="file-input"
+                        type="file"
+                        onChange={fileSelected}
+                        multiple
+                    />
+                    Choose File(s)
+                </div>
+                <div>or Drag & Drop Here</div>
+            </DropContainer>
             <Modal
                 open={processModalOpen}
             >

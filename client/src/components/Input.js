@@ -90,6 +90,7 @@ export default function Input({ type, id, label, value, radioOptions = [], onCha
             onChange={onChange}
             InputLabelProps={{ required: false }}
             variant="outlined"
+            size={size}
             fullWidth
             required
             inputProps={{

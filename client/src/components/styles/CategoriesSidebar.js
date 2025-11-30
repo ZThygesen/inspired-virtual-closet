@@ -28,8 +28,12 @@ export const CategoriesSidebarContainer = styled.div`
         gap: 12px;
         padding: 0 12px;
         background-color: var(--black);
-        /* box-shadow: var(--box-shadow); */
         z-index: 49;
+    }
+
+    .categories-header-title-container {
+        display: flex;
+        gap: 8px;
     }
 
     .categories-header button {
@@ -111,7 +115,6 @@ export const CategoriesSidebarContainer = styled.div`
                 word-break: break-word;
 
                 &.prominent {
-                    font-weight: 600;
                     margin-left: 0;
                     font-size: 24px;
                 }

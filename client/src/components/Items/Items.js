@@ -1,20 +1,28 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useError } from '../../contexts/ErrorContext';
 import { useClient } from '../../contexts/ClientContext';
 import { useData } from '../../contexts/DataContext';
 import api from '../../api';
-import ClothingCard from './ClothingCard';
-import { ClothesContainer } from './ClothesStyles';
+import ItemCard from './ItemCard';
+import { ItemsContainer } from './ItemsStyles';
 import { DropdownContainer, SwapDropdown } from '../styles/Dropdown';
 import Modal from '../Modal';
 import Input from '../Input';
 import cuid from 'cuid';
 import { Pagination } from '@mui/material';
 
-export default function Clothes({ display, addCanvasItem, canvasItems, searchOutfitsByItem, onSidebar }) {
+export default function Items({ display, addCanvasItem, canvasItems, searchOutfitsByItem, onSidebar }) {
     const { setError } = useError();
     const { client } = useClient();
-    const { categories, tags, updateItems, currentCategory, currentItems, setLoading } = useData();
+    const {
+        clothesOptions, 
+        profileOptions, 
+        tags, 
+        updateItems, 
+        currentCategory, 
+        currentItems, 
+        setLoading 
+    } = useData();
 
     const [searchResults, setSearchResults] = useState(currentItems || []);
     const [resultsToShow, setResultsToShow] = useState(currentItems || []);
@@ -68,8 +76,9 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
     const [newItemName, setNewItemName] = useState('');
     const [newItemTags, setNewItemTags] = useState([]);
     const [newItemTagObjects, setNewItemTagObjects] = useState([]);
+    const [categoriesToShow, setCategoriesToShow] = useState([]);
+    const [categoryTypeSelected, setCategoryTypeSelected] = useState('clothes');
     const [categorySelected, setCategorySelected] = useState('');
-    const [categoryOptions, setCategoryOptions] = useState([]);
 
     function closeImageModal() {
         setImageModalOpen(false);
@@ -91,6 +100,7 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
     function closeCategoryModal() {
         setCategoryModalOpen(false);
         setModalItem({});
+        setCategoryTypeSelected('clothes');
         setCategorySelected('');
     }
 
@@ -142,69 +152,14 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
     }
 
     useEffect(() => {
-        const theseCategories = categories.filter(category => category._id !== 0);
-        const categoriesWithGroups = theseCategories.filter(category => category.group);
-        const categoriesWithoutGroups = theseCategories.filter(category => !category.group);
-
-        const groupMap = {};
-        for (const category of categoriesWithGroups) {
-            if (!groupMap[category.group]) {
-                groupMap[category.group] = [];
-            }
-            groupMap[category.group].push(category);
-        }
-        for (const category of categoriesWithoutGroups) {
-            if (!groupMap['Other']) {
-                groupMap['Other'] = [];
-            }
-            groupMap['Other'].push(category);
-        }
-
-        const options = [{ value: 0, label: 'Other' }];
-        const groups = Object.keys(groupMap).sort((a, b) => {
-            if (a === 'Other' && b === 'Other') {
-                return 0;
-            }
-            else if (a === 'Other' || b === 'Other') {
-                return 1;
-            }
-            else if (a < b) { 
-                return -1; 
-            }
-            else if (a > b) { 
-                return 1; 
-            }
-            else { 
-                return 0; 
-            }
-        });
-        for (const group of groups) {
-            const categoryOptions = [];
-            const groupCategories = groupMap[group];
-            for (const category of groupCategories) {
-                categoryOptions.push({
-                    value: category._id,
-                    label: category.name,
-                });
-            }
-            options.push({
-                type: 'group',
-                name: group,
-                items: categoryOptions,
-            });
-        }
-        setCategoryOptions(options);
-    }, [categories]);
-
-    const getCategoryName = useCallback((categoryId) => {
-        if (categoryId || categoryId === 0) {
-            const category = categories.filter(category => category._id === categoryId)[0];
-            return category.name;
+        setCategorySelected('');
+        if (categoryTypeSelected === 'profile') {
+            setCategoriesToShow(profileOptions);
         }
         else {
-            return '';
+            setCategoriesToShow(clothesOptions);
         }
-    }, [categories]);
+    }, [categoryTypeSelected, clothesOptions, profileOptions]);
 
     async function swapCategory() {
         if (categorySelected.value === modalItem.categoryId || categorySelected === '') {
@@ -265,7 +220,7 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
 
     return (
         <>
-            <ClothesContainer style={{ display: display ? 'flex' : 'none' }}>
+            <ItemsContainer style={{ display: display ? 'flex' : 'none' }}>
                 { !onSidebar &&
                     <div className="title-search">
                         <h2 className="category-title">{currentCategory.name} ({searchResults.length})</h2>
@@ -296,7 +251,7 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
                 <div className={`items ${onSidebar ? 'on-sidebar': ''}`}>
                     {
                         resultsToShow?.map(item => (
-                            <ClothingCard
+                            <ItemCard
                                 item={item}
                                 addCanvasItem={addCanvasItem}
                                 searchOutfitsByItem={searchOutfitsByItem}
@@ -312,7 +267,7 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
                         ))
                     }
                 </div>
-            </ClothesContainer>
+            </ItemsContainer>
             <Modal
                 open={imageModalOpen}
                 closeFn={closeImageModal}
@@ -320,7 +275,7 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
             >
                 <>  
                     <button className="material-icons close-modal" onClick={closeImageModal}>close</button>
-                    <ClothingCard 
+                    <ItemCard 
                         item={modalItem}
                         addCanvasItem={addCanvasItem}
                         searchOutfitsByItem={searchOutfitsByItem}
@@ -439,10 +394,19 @@ export default function Clothes({ display, addCanvasItem, canvasItems, searchOut
             >
                 <div className="modal-title">Change Category</div>
                 <DropdownContainer>
-                    <p className="curr-category">Current category: <span className="large category-name">{getCategoryName(modalItem.categoryId)}</span></p>
-                    <p className="new-category">New Category</p>
+                    <p className="curr-category">Current category: <span className="large category-name">{modalItem.categoryName}</span></p>
+                    <p className="new-category">Which category would you like to move this item to?</p>
+                    <Input 
+                        type="radio"
+                        value={categoryTypeSelected}
+                        radioOptions={[
+                            { value: 'clothes', label: 'Clothes' },
+                            { value: 'profile', label: 'Profile' },
+                        ]}
+                        onChange={e => setCategoryTypeSelected(e.target.value)}
+                    />
                     <SwapDropdown 
-                        options={categoryOptions} 
+                        options={categoriesToShow} 
                         onChange={(selection) => setCategorySelected(selection)} 
                         value={categorySelected} 
                     />

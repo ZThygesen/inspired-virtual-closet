@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useError } from '../contexts/ErrorContext';
+import { useData } from '../contexts/DataContext';
 import api from '../api'
 import cuid from 'cuid';
-import Loading from '../components/Loading';
 import Modal from '../components/Modal';
 import Input from '../components/Input';
 import { Tooltip } from '@mui/material';
@@ -11,11 +11,17 @@ import { DropdownContainer, SwapDropdown } from './styles/Dropdown';
 
 export default function ClosetSettings() {
     const { setError } = useError();
+    const { categories, updateCategories, tags, updateTags, setLoading } = useData();
 
     const [activeSettingsTab, setActiveSettingsTab] = useState(0);
     const settingsTabs = [
         { name: 'Categories' },
         { name: 'Tags' },
+    ];
+    const [activeCategoryTab, setActiveCategoryTab] = useState(0);
+    const categoryTabs = [
+        { name: 'Clothes' },
+        { name: 'Profile' },
     ];
 
     const [categoryGroups, setCategoryGroups] = useState([]);
@@ -31,7 +37,6 @@ export default function ClosetSettings() {
     const [categoryToDelete, setCategoryToDelete] = useState({});
     const [deleteCategoryOpen, setDeleteCategoryOpen] = useState(false);
 
-    const [tagGroups, setTagGroups] = useState([]);
     const [tagGroupOptions, setTagGroupOptions] = useState([]);
 
     const [newTagGroupName, setNewTagGroupName] = useState('');
@@ -55,81 +60,64 @@ export default function ClosetSettings() {
     const [newTagGroup, setNewTagGroup] = useState({});
     const [swapTagGroupOpen, setSwapTagGroupOpen] = useState(false);
 
-    const [loading, setLoading] = useState(false);
-
     // Category management
-    const getCategories = useCallback(async () => {
-        setLoading(true);
+    useEffect(() => {
+        let theseCategories = categories.filter(category => category._id !== 0);
+        if (activeCategoryTab === 1) {
+            theseCategories = theseCategories.filter(category => category.type === 'profile');
+        }
+        else {
+            theseCategories = theseCategories.filter(category => category.type !== 'profile');
+        }
+        const categoriesWithGroups = theseCategories.filter(category => category.group);
+        const categoriesWithoutGroups = theseCategories.filter(category => !category.group);
 
-        try {
-            const response = await api.get('/categories');
-
-            const groupMap = {};
-            response.data.forEach(category => {
-                // don't add Other category
-                if (category._id !== 0) {
-                    if (!groupMap[category.group]) {
-                        groupMap[category.group] = [];
-                    }
-                    groupMap[category.group].push(category);
-                }
-            });
-
-            const categoriesByGroup = [];
-            const groups = Object.keys(groupMap);
-            groups.forEach(group => {
-                const groupCategories = groupMap[group];
-                
-                // sort group's categories alphabetically
-                categoriesByGroup.sort(function(a, b) {
-                    if (a.name < b.name) {
-                        return -1;
-                    } 
-                    else if (a.name > b.name) {
-                        return 1;
-                    }
-                    else {
-                        return 0;
-                    }
-                });
-
-                categoriesByGroup.push({ group: group, categories: groupCategories });
-            });
-
-            // sort group names alphabetically
-            categoriesByGroup.sort(function(a, b) {
-                if (a.group < b.group) {
-                    return -1;
-                }
-                else if (a.group > b.group) {
-                    return 1;
-                }
-                else {
-                    return 0;
-                }
-            });
-
-            setCategoryGroups(categoriesByGroup); 
-        } catch (err) {
-            setError({
-                message: 'There was an error fetching categories.',
-                status: err?.response?.status || 'N/A'
-            });
-            setLoading(false);
+        const groupMap = {};
+        for (const category of categoriesWithGroups) {
+            if (!groupMap[category.group]) {
+                groupMap[category.group] = [];
+            }
+            groupMap[category.group].push(category);
+        }
+        for (const category of categoriesWithoutGroups) {
+            if (!groupMap['0']) {
+                groupMap['0'] = [];
+            }
+            groupMap['0'].push(category);
         }
 
-        setLoading(false);
-    }, [setError]);
-
-    useEffect(() => {
-        getCategories();
-    }, [getCategories]);
+        const categoriesByGroup = [];
+        const groups = Object.keys(groupMap).sort((a, b) => {
+            if (a === '0' && b === '0') {
+                return 0;
+            }
+            else if (a === '0' && b !== '0') {
+                return 1;
+            }
+            else if (a !== '0' && b === '0') {
+                return -1;
+            }
+            else if (a < b) { 
+                return -1; 
+            }
+            else if (a > b) { 
+                return 1; 
+            }
+            else { 
+                return 0; 
+            }
+        });
+        for (const group of groups) {
+            const groupCategories = groupMap[group];
+            categoriesByGroup.push({ group: group, categories: groupCategories });
+        }
+        setCategoryGroups(categoriesByGroup);
+    }, [categories, activeCategoryTab]);
 
     async function addCategory(e) {
         e.preventDefault();
-
-        setLoading(true);
         try {
+            setLoading(true);
             await api.post('/categories', {
                 name: newCategoryName, 
                 group: newCategoryGroup,
@@ -138,12 +126,12 @@ export default function ClosetSettings() {
                 clientAddItems: newCategoryAdd === 'yes' ? true : false,
                 rmbgItems: newCategoryRmbg === 'yes' ? true : false,
             });
-            await getCategories();
+            await updateCategories();
         } 
         catch (err) {
             setError({
                 message: 'There was an error adding the category.',
-                status: err.response.status
+                status: err?.response?.status
             });
         } 
         finally {
@@ -169,8 +157,6 @@ export default function ClosetSettings() {
 
     async function editCategory(e) {
         e.preventDefault();
-
-        setLoading(true);
         if (categoryToEdit.name === newCategoryName &&
             categoryToEdit.group === newCategoryGroup &&
             categoryToEdit.type === newCategoryType &&
@@ -178,12 +164,12 @@ export default function ClosetSettings() {
             categoryToEdit.clientAddItems === (newCategoryAdd === 'yes' ? true : false) &&
             categoryToEdit.rmbgItems === (newCategoryRmbg === 'yes' ? true : false)
         ) {
-            setLoading(false);
             handleCloseEditCategory();
             return;
         }
 
         try {
+            setLoading(true);
             await api.patch(`/categories/${categoryToEdit._id}`, { 
                 name: newCategoryName, 
                 group: newCategoryGroup,
@@ -192,12 +178,12 @@ export default function ClosetSettings() {
                 clientAddItems: newCategoryAdd === 'yes' ? true : false,
                 rmbgItems: newCategoryRmbg === 'yes' ? true : false,
             });
-            await getCategories();
+            await updateCategories();
         } 
         catch (err) {
             setError({
                 message: 'There was an error editing the category.',
-                status: err.response.status
+                status: err?.response?.status
             });
         } 
         finally {
@@ -230,17 +216,18 @@ export default function ClosetSettings() {
     }
 
     async function deleteCategory() {
-        setLoading(true);
-        
         try {
+            setLoading(true);
             await api.delete(`/categories/${categoryToDelete._id}`);
-            await getCategories();
-        } catch (err) {
+            await updateCategories();
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error deleting the category.',
-                status: err.response.status
+                status: err?.response?.status
             });
-        } finally {
+        } 
+        finally {
             setLoading(false);
         }
 
@@ -258,74 +245,33 @@ export default function ClosetSettings() {
     }
 
     // Tag group management
-    const getTagGroups = useCallback(async () => {
-        setLoading(true);
-
-        try {
-            const response = await api.get('/tags/active');
-            const tagData = response.data;
-
-            tagData.forEach(tagGroup => {
-                tagGroup.tags.sort(function(a, b) {
-                    if (a.tagName < b.tagName) {
-                        return -1;
-                    }
-                    else if (a.tagName > b.tagName) {
-                        return 1;
-                    }
-                    else {
-                        return 0;
-                    }
-                });
-            });
-
-            tagData.sort(function(a, b) {
-                if (a?.sortOrder === undefined) return 1;
-                if (b?.sortOrder === undefined) return -1;
-
-                return a.sortOrder - b.sortOrder;
-            });
-
-            const options = [];
-            for (const tagGroup of tagData) {
-                const option = {
-                    value: tagGroup._id,
-                    label: tagGroup.tagGroupName
-                };
-
-                options.push(option);
-            }
-
-            setTagGroups(tagData);
-            setTagGroupOptions(options);
-        } catch (err) {
-            setError({
-                message: 'There was an error fetching tags.',
-                status: err?.response?.status || 'N/A'
-            });
-            setLoading(false);
-        }
-
-        setLoading(false);
-    }, [setError]);
-
     useEffect(() => {
-        getTagGroups();
-    }, [getTagGroups]);
+        const options = [];
+        for (const tagGroup of tags) {
+            const option = {
+                value: tagGroup._id,
+                label: tagGroup.tagGroupName
+            };
+
+            options.push(option);
+        }
+        setTagGroupOptions(options);
+    }, [tags]);
 
     async function addTagGroup(e) {
         e.preventDefault();
-
-        setLoading(true);
         try {
+            setLoading(true);
             await api.post('/tags/group', { tagGroupName: newTagGroupName });
-            await getTagGroups();
-        } catch (err) {
+            await updateTags();
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error adding the tag group.',
-                status: err.response.status
+                status: err?.response?.status,
             });
-        } finally {
+        } 
+        finally {
             setLoading(false);
         }
 
@@ -343,23 +289,23 @@ export default function ClosetSettings() {
 
     async function editTagGroup(e) {
         e.preventDefault();
-
-        setLoading(true);
         if (tagGroupToEdit.tagGroupName === newTagGroupName) {
-            setLoading(false);
             handleCloseEditTagGroup();
             return;
         }
 
         try {
+            setLoading(true);
             await api.patch(`/tags/group/${tagGroupToEdit._id}`, { tagGroupName: newTagGroupName });
-            await getTagGroups();
-        } catch (err) {
+            await updateTags();
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error editing the tag group.',
-                status: err.response.status
+                status: err?.response?.status,
             });
-        } finally {
+        } 
+        finally {
             setLoading(false);
         }
 
@@ -379,17 +325,18 @@ export default function ClosetSettings() {
     }
 
     async function deleteTagGroup() {
-        setLoading(true);
-        
         try {
+            setLoading(true);
             await api.delete(`/tags/group/${tagGroupToDelete._id}`);
-            await getTagGroups();
-        } catch (err) {
+            await updateTags();
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error deleting the tag group.',
-                status: err.response.status
+                status: err?.response?.status,
             });
-        } finally {
+        } 
+        finally {
             setLoading(false);
         }
 
@@ -409,17 +356,18 @@ export default function ClosetSettings() {
     // Tag management
     async function addTag(e) {
         e.preventDefault();
-
-        setLoading(true);
         try {
+            setLoading(true);
             await api.post(`/tags/tag/${owningTagGroup._id}`, { tagName: newTagName, tagColor: newTagColor });
-            await getTagGroups();
-        } catch (err) {
+            await updateTags();
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error adding the tag.',
-                status: err.response.status
+                status: err?.response?.status,
             });
-        } finally {
+        } 
+        finally {
             setLoading(false);
         }
 
@@ -441,24 +389,24 @@ export default function ClosetSettings() {
 
     async function editTag(e) {
         e.preventDefault();
-
-        setLoading(true);
         if (tagToEdit.tagName === newTagName &&
             tagToEdit.tagColor === newTagColor) {
-            setLoading(false);
             handleCloseEditTag();
             return;
         }
 
         try {
+            setLoading(true);
             await api.patch(`/tags/tag/${owningTagGroup._id}/${tagToEdit.tagId}`, { tagName: newTagName, tagColor: newTagColor });
-            await getTagGroups();
-        } catch (err) {
+            await updateTags();
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error editing the tag.',
-                status: err.response.status
+                status: err?.response?.status,
             });
-        } finally {
+        } 
+        finally {
             setLoading(false);
         }
 
@@ -484,17 +432,18 @@ export default function ClosetSettings() {
     }
 
     async function archiveTag() {
-        setLoading(true);
-        
         try {
+            setLoading(true);
             await api.patch(`/tags/archive-tag/${owningTagGroup._id}/${tagToArchive.tagId}`);
-            await getTagGroups();
-        } catch (err) {
+            await updateTags();
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error archiving the tag.',
-                status: err.response.status
+                status: err?.response?.status,
             });
-        } finally {
+        } 
+        finally {
             setLoading(false);
         }
 
@@ -514,22 +463,23 @@ export default function ClosetSettings() {
     }
 
     async function swapTagGroup() {
-        setLoading(true);
         if (owningTagGroup._id === newTagGroup.value) {
-            setLoading(false);
             handleCloseSwapTagGroup();
             return;
         }
 
         try {
+            setLoading(true);
             await api.patch(`/tags/tag-group/${owningTagGroup._id}/${tagToSwap.tagId}`, { newTagGroupId: newTagGroup.value });
-            await getTagGroups();
-        } catch (err) {
+            await updateTags();
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error changing the tag\'s group.',
-                status: err.response.status
+                status: err?.response?.status,
             });
-        } finally {
+        } 
+        finally {
             setLoading(false);
         }
 
@@ -560,8 +510,8 @@ export default function ClosetSettings() {
     }
 
     async function handleReorderGroup(tagGroup) {
-        const tagGroupsCopy = [...tagGroups];
-        const index = tagGroups.findIndex(group => group._id === tagGroup._id);
+        const tagGroupsCopy = [...tags];
+        const index = tags.findIndex(group => group._id === tagGroup._id);
         if (index === 0) {
             return;
         }
@@ -570,14 +520,17 @@ export default function ClosetSettings() {
         const tagGroupIds = tagGroupsCopy.map(group => group._id);
 
         try {
+            setLoading(true);
             await api.patch('/tags/group-order', { tagGroups: tagGroupIds });
-            await getTagGroups();
-        } catch (err) {
+            await updateTags();
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error reordering the tag groups.',
-                status: err.response.status
+                status: err?.response?.status,
             });
-        } finally {
+        } 
+        finally {
             setLoading(false);
         }
     }
@@ -601,18 +554,36 @@ export default function ClosetSettings() {
                         }
                     </ul>
                 </div>
-                <div className="settings-container">
+                <div className={`settings-container ${activeSettingsTab === 0 ? 'categories-tab' : 'tags-tab'}`}>
                     <div className="category-settings" style={{ display: activeSettingsTab === 0 ? 'flex' : 'none' }}>
+                        <div className="settings-tabs category-tabs">
+                            <ul>
+                                {
+                                    categoryTabs.map((tab, index) => (
+                                        <li key={cuid()} className={ index === activeCategoryTab ? 'active' : '' }>
+                                            <button
+                                                className={ index === activeCategoryTab ? 'settings-tab active' : 'settings-tab' }
+                                                onClick={() => setActiveCategoryTab(index)}
+                                            >
+                                                <p className="settings-tab-text">{tab.name}</p>
+                                            </button>
+                                        </li>
+                                    ))
+                                }
+                            </ul>
+                        </div>
                         <div className="groups">
                             {
                                 categoryGroups.map(categoryGroup => (
                                     <div className="category-group" key={cuid()}>
-                                        <p className="group">{categoryGroup.group}</p>
+                                        { (categoryGroup.group !== '0') &&
+                                            <p className="group">{categoryGroup.group}</p>
+                                        }
                                         <div className="categories">
                                             {
                                                 categoryGroup?.categories?.map(category => (
                                                     ( category._id !== 0 &&
-                                                        <div className="category-setting" key={cuid()}>
+                                                        <div className={`category-setting ${(categoryGroup.group === '0') ? 'prominent' : ''}`} key={cuid()}>
                                                             <p className="category">{category.name}</p>
                                                             <Tooltip title="Edit" placement="left">
                                                                 <button className="material-icons category-option-btn" onClick={() => handleOpenEditCategory(category)}>edit</button>
@@ -644,7 +615,7 @@ export default function ClosetSettings() {
                     <div className="tag-settings" style={{ display: activeSettingsTab === 1 ? 'flex' : 'none' }}>
                         <div className="tag-groups">
                             {
-                                tagGroups.map((tagGroup, index) => (
+                                tags.map((tagGroup, index) => (
                                     <div className="tag-group-container" key={index}>
                                         <div className="tag-group-setting">
                                             <div className="tag-group-name">
@@ -708,7 +679,6 @@ export default function ClosetSettings() {
                     </div>
                 </div>
             </ClosetSettingsContainer>
-            <Loading open={loading} />
             <Modal
                 open={addCategoryOpen}
                 closeFn={handleCloseAddCategory}

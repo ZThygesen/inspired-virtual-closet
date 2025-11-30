@@ -4,6 +4,8 @@ const AddItemsContainer = styled.div`
     flex-direction: column;
     align-items: center;
     width: 100%;
+    position: relative;
+    overflow-y: hidden;
 
     & .add-items-title {
         font-size: 32px;
@@ -18,6 +20,34 @@ const AddItemsContainer = styled.div`
         gap: 20px;
     }
 
+    .mass-options-btn,
+    .add-items-btn {
+        font-size: 40px !important;
+        background-color: var(--white);
+        border-radius: 50%;
+        padding: 4px;
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        cursor: pointer;
+        transition: 0.1s;
+
+        &:hover {
+            background-color: var(--material-btn-bg);
+        }
+    }
+
+    .mass-options-btn {
+        right: unset;
+        left: 0px;
+    }
+
+    .upload-credits {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 24px;
+    }
+
     @media (min-width: 769px) {
         & .add-action-area {
             flex-direction: row;
@@ -25,66 +55,39 @@ const AddItemsContainer = styled.div`
     }
 `;
 
-const UploadOptionsContainer = styled.div`
+const FileOptionsContainer = styled.div`
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    border-radius: 12px;
-    box-shadow: var(--box-shadow);
-    padding: 20px;
 
-    & .mass-options {
+    & .file-options {
         width: 100%;
         display: flex;
         flex-direction: column;
         gap: 8px;
 
-        & .mass-options-title {
+        & .options-prompt {
             font-size: 20px;
             font-weight: 600;
-            margin-bottom: 8px;
         }
 
-        & .tab-selection,
         & .category-selection,
         & .rmbg-selection,
         & .crop-selection {
-            display: grid;
-            grid-template-columns: 1fr 100px;
-            justify-items: start;
-            align-items: center;
-        }
-
-        & .apply-mass-option {
             display: flex;
-            padding: 12px 16px;
-            justify-self: end;
-            background-color: var(--white);
-            box-shadow: var(--box-shadow);
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.1s;
-
-            &:hover {
-                background-color: var(--primary);
-                color: var(--white);
-            }
+            flex-direction: column;
+            align-items: flex-start;
         }
-    }
 
-    .separator {
-        width: 100%;
-        height: 1px;
-        background-color: var(--black);
-        margin: 20px 0;
-    }
+        & .crop-selection.disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
 
-    .upload-credits {
-        font-size: 20px;
-        font-weight: 600;
-        margin-bottom: 24px;
+        & .prompt {
+            text-align: left;
+        }
     }
 `;
 
@@ -95,14 +98,9 @@ const FileContainer = styled.div`
     padding: 20px;
     margin-top: 20px;
     width: 100%;
-    border-radius: 20px;
-    box-shadow: var(--box-shadow);
-
-    h2 {
-        font-family: 'Prata';
-        font-size: 32px;
-        margin-bottom: 20px;
-    }
+    overflow-y: scroll;
+    /* border-radius: 20px;
+    box-shadow: var(--box-shadow); */
 
     .file-preview-container {
         width: 100%;
@@ -165,18 +163,6 @@ const FileCardContainer = styled.div`
         width: 100%;
         display: flex;
         gap: 12px;
-    }
-
-    & .file-options {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-
-        & .options-prompt {
-            font-size: 20px;
-            font-weight: 600;
-        }
     }
 
     & .file-info {
@@ -305,4 +291,4 @@ const FileCardContainer = styled.div`
     }
 `;
 
-export { AddItemsContainer, UploadOptionsContainer, FileContainer, FileCardContainer }; 
+export { AddItemsContainer, FileOptionsContainer, FileContainer, FileCardContainer }; 

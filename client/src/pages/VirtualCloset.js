@@ -9,7 +9,7 @@ import { ClosetNavigationContainer } from '../components/styles/ClosetNavigation
 import { Tooltip } from '@mui/material';
 import { Link } from 'react-router-dom';
 import cuid from 'cuid';
-import Clothes from '../components/Items/Clothes';
+import Items from '../components/Items/Items';
 import Canvas from '../components/Canvas/Canvas';
 import Outfits from '../components/Outfits/Outfits';
 import Shopping from '../components/Shopping/Shopping';
@@ -165,7 +165,7 @@ export default function VirtualCloset() {
     // closet controls
     const [closetMode, setClosetMode] = useState(0);
     const closetModes = [
-        { name: 'Clothes', icon: 'checkroom'},
+        { name: 'Items', icon: 'checkroom'},
         { name: `Canvas (${canvasItems.length - 1})`, icon: 'swipe'},
         { name: `Outfits (${outfits.length})`, icon: 'dry_cleaning'},
         { name: `Shopping (${shopping.length})`, icon: 'sell'},
@@ -197,7 +197,7 @@ export default function VirtualCloset() {
                     <div className={`closet-title ${optionsExpanded ? 'expanded' : ''}`} ref={closetTitleRef}>
                         {!sidebarOpen &&
                             <Tooltip title="Open Sidebar">
-                                <button className="material-icons open-sidebar-icon" onClick={() => setSidebarOpen(true)}>chevron_right</button>
+                                <button className="material-icons open-sidebar-icon" onClick={() => setSidebarOpen(true)}>menu</button>
                             </Tooltip>
                         }
                         <h1 className="client-closet">
@@ -239,7 +239,7 @@ export default function VirtualCloset() {
                         </ul>
                     </div>
                     <div ref={ref} className="closet-container">
-                        <Clothes
+                        <Items
                             display={closetMode === 0} 
                             addCanvasItem={addCanvasItem}
                             canvasItems={canvasItems}

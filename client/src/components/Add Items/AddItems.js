@@ -4,8 +4,8 @@ import { useError } from '../../contexts/ErrorContext';
 import { useUser } from '../../contexts/UserContext';
 import { useClient } from '../../contexts/ClientContext';
 import { useData } from '../../contexts/DataContext';
-import { AddItemsContainer, UploadOptionsContainer, FileContainer } from './AddItemsStyles';
-import { DropdownContainer, SwapDropdown } from '../styles/Dropdown';
+import { AddItemsContainer, FileOptionsContainer, FileContainer } from './AddItemsStyles';
+import { SwapDropdown } from '../styles/Dropdown';
 import Dropzone from './Dropzone';
 import FileCard from './FileCard';
 import Modal from '../Modal';
@@ -13,6 +13,7 @@ import Input from '../Input';
 import { ActionButton } from '../styles/ActionButton';
 import styled from 'styled-components';
 import { CircularProgress } from '@mui/material';
+import { Tooltip } from '@mui/material';
 
 const CircleProgress = styled(CircularProgress)`
     & * {
@@ -46,64 +47,7 @@ export default function AddItems({ display }) {
     const { setError } = useError();
     const { user } = useUser();
     const { client, updateClient } = useClient();
-    const { categories, tags, updateItems } = useData();
-
-    const [clothesOptions, setClothesOptions] = useState([]);
-
-    useEffect(() => {
-        const theseCategories = categories.filter(category => category._id !== 0);
-        const categoriesWithGroups = theseCategories.filter(category => category.group);
-        const categoriesWithoutGroups = theseCategories.filter(category => !category.group);
-
-        const groupMap = {};
-        for (const category of categoriesWithGroups) {
-            if (!groupMap[category.group]) {
-                groupMap[category.group] = [];
-            }
-            groupMap[category.group].push(category);
-        }
-        for (const category of categoriesWithoutGroups) {
-            if (!groupMap['Other']) {
-                groupMap['Other'] = [];
-            }
-            groupMap['Other'].push(category);
-        }
-
-        const options = [{ value: 0, label: 'Other' }];
-        const groups = Object.keys(groupMap).sort((a, b) => {
-            if (a === 'Other' && b === 'Other') {
-                return 0;
-            }
-            else if (a === 'Other' || b === 'Other') {
-                return 1;
-            }
-            else if (a < b) { 
-                return -1; 
-            }
-            else if (a > b) { 
-                return 1; 
-            }
-            else { 
-                return 0; 
-            }
-        });
-        for (const group of groups) {
-            const categoryOptions = [];
-            const groupCategories = groupMap[group];
-            for (const category of groupCategories) {
-                categoryOptions.push({
-                    value: category._id,
-                    label: category.name,
-                });
-            }
-            options.push({
-                type: 'group',
-                name: group,
-                items: categoryOptions,
-            });
-        }
-        setClothesOptions(options);
-    }, [categories]);
+    const { clothesOptions, profileOptions, getCategoryPermissions, tags, updateItems } = useData();
 
     const [allFiles, setAllFiles] = useState([]);
     const [invalidFiles, setInvalidFiles] = useState([]);
@@ -115,7 +59,10 @@ export default function AddItems({ display }) {
     const [resultModalOpen, setResultModalOpen] = useState(false);
     const [hasCredits, setHasCredits] = useState(false);
     const [updateFiles, setUpdateFiles] = useState(false);
-    const [activateMassOption, setActivateMassOption] = useState(0);
+
+    const [addItemsModalOpen, setAddItemsModalOpen] = useState(false);
+    const [massOptionsModalOpen, setMassOptionsModalOpen] = useState(false);
+    const [activateMassOptions, setActivateMassOptions] = useState(0);
 
     useEffect(() => {
         let badFiles = allFiles.filter(file => file.invalid);
@@ -123,7 +70,7 @@ export default function AddItems({ display }) {
 
         badFiles = allFiles.filter(file => file.incomplete && !file.invalid);
         setIncompleteFiles([...badFiles]);
-    }, [allFiles, updateFiles, activateMassOption]);
+    }, [allFiles, updateFiles, activateMassOptions]);
 
     function removeFile(file) {
         // remove image from DOM immediately to prevent delay
@@ -198,34 +145,26 @@ export default function AddItems({ display }) {
     }
 
     async function uploadFile(file) {
-        if (file.tab === 'clothes' || file.tab === 'profile') {
-            return new Promise(async (resolve, reject) => {
-                try {
-                    const formData = new FormData();
-                    formData.append('categoryId', file.category.value);
-                    formData.append('fileSrc', file.src);
-                    formData.append('fullFileName', file.name);
-                    formData.append('tags', JSON.stringify(file.tags));
-                    formData.append('rmbg', file.rmbg);
-                    formData.append('crop', file.crop && file.rmbg);
-                    await api.post(`/items/${client._id}`, formData, {
-                        headers: { 'Content-Type': 'multipart/form-data' },
-                    });
-                } 
-                catch (err) {
-                    reject(err);
-                }
+        return new Promise(async (resolve, reject) => {
+            try {
+                const formData = new FormData();
+                formData.append('categoryId', file.category.value);
+                formData.append('fileSrc', file.src);
+                formData.append('fullFileName', file.name);
+                formData.append('tags', JSON.stringify(file.tags));
+                formData.append('rmbg', file.rmbg);
+                formData.append('crop', file.crop && file.rmbg);
+                await api.post(`/items/${client._id}`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+            } 
+            catch (err) {
+                reject(err);
+            }
 
-                await updateClient();
-                resolve();
-            });
-        }
-        else if (file.tab === 'profile') {
-
-        }
-        else {
-
-        }
+            await updateClient();
+            resolve();
+        });
     }
 
     useEffect(() => {
@@ -245,132 +184,115 @@ export default function AddItems({ display }) {
                 return;
             } 
 
-            setHasCredits(true)
-            
+            setHasCredits(true);
         }
 
         checkCredits();
     }, [allFiles, client, numFilesUploaded]);
 
     // mass options
-    const [tab, setTab] = useState('clothes');
+    const [categoriesToShow, setCategoriesToShow] = useState([]);
+    const [categoryType, setCategoryType] = useState('clothes');
     const [category, setCategory] = useState('');
-    const [rmbg, setRmbg] = useState(true);
-    const [crop, setCrop] = useState(true);
-    const [massOption, setMassOption] = useState({});
+    const [rmbg, setRmbg] = useState(false);
+    const [crop, setCrop] = useState(false);
+    const [massOptions, setMassOptions] = useState({
+        categoryType: 'clothes',
+        category: '',
+        rmbg: false,
+        crop: false,
+    });
 
-    function changeTab(tab) {
-        setTab(tab);
+    function changeCategoryType(type) {
+        changeCategory('');
+        setCategoryType(type);
+        setMassOptions(current => ({ ...current, categoryType: type === 'profile' ? 'profile' : 'clothes' }));
     }
 
     function changeCategory(category) {
         setCategory(category);
+        setMassOptions(current => ({ ...current, category: category }));
     }
 
-    function toggleRmbg() {
-        setRmbg(current => !current);
+    function changeRmbg(rmbg) {
+        setRmbg(rmbg);
+        setMassOptions(current => ({ ...current, rmbg: rmbg }));
     }
 
-    function toggleCrop() {
-        setCrop(current => !current);
+    function changeCrop(crop) {
+        setCrop(crop);
+        setMassOptions(current => ({ ...current, crop: crop }));
     }
 
-    function applyMassOption(option) {
-        switch (option) {
-            case 'tab':
-                setMassOption({'name': 'tab', 'option': tab});
-                break;
-            case 'category':
-                setMassOption({'name': 'category', 'option': category});
-                break;
-            case 'rmbg':
-                setMassOption({'name': 'rmbg', 'option': rmbg});
-                break;
-            case 'crop':
-                setMassOption({'name': 'crop', 'option': crop});
-                break;
-            default:
-                break;
+    function applyMassOptions() {
+        setActivateMassOptions(1);
+    }
+
+    useEffect(() => {
+        if (!activateMassOptions) {
+            closeMassOptionsModal();
         }
-        setActivateMassOption(1);
+    }, [activateMassOptions]);
+
+    useEffect(() => {
+        if (categoryType === 'profile') {
+            setCategoriesToShow(profileOptions);
+        }
+        else {
+            setCategoriesToShow(clothesOptions);
+        }
+    }, [categoryType, clothesOptions, profileOptions]);
+
+    useEffect(() => {
+        const { rmbgItems } = getCategoryPermissions(category?.value);
+        if (rmbgItems) {
+            changeRmbg(true);
+            changeCrop(true);
+        }
+        else {
+            changeRmbg(false);
+            changeCrop(false);
+        }
+    }, [category, getCategoryPermissions]);
+
+    function closeMassOptionsModal() {
+        setMassOptionsModalOpen(false);
+        setCategoryType('clothes');
+        setCategory('');
+        setRmbg(false);
+        setCrop(false);
+        setMassOptions({
+            categoryType: 'clothes',
+            category: '',
+            rmbg: false,
+            crop: false,
+        });
     }
     return (
         <>
             <AddItemsContainer style={{ display: display ? 'flex' : 'none' }}>
-                <h2 className="add-items-title">Add Files</h2>
+                <Tooltip title="Mass Options">
+                    <button className="material-icons mass-options-btn" onClick={() => setMassOptionsModalOpen(true)}>settings</button>
+                </Tooltip>
+                <Tooltip title="Add Items">
+                    <button className="material-icons add-items-btn" onClick={() => setAddItemsModalOpen(true)}>add_circle</button>
+                </Tooltip>
+                <h2 className="add-items-title">Add Items ({allFiles.length})</h2>
                 <div className="add-action-area">
-                    <UploadOptionsContainer>
-                        <div className="mass-options">
-                            <p className="mass-options-title">Mass Options</p>
-                            <div className="tab-selection">
-                                <div>
-                                    <p className="tab-prompt">What tab do these items belong in?</p>
-                                    <Input
-                                        type="radio"
-                                        value={tab}
-                                        radioOptions={[
-                                            { value: 'clothes', label: 'Clothes' },
-                                            { value: 'profile', label: 'Profile' },
-                                        ]}
-                                        onChange={e => changeTab(e.target.value)}
-                                    />
-                                </div>
-                                <button className="apply-mass-option" onClick={() => applyMassOption('tab')}>Apply</button>
-                            </div>
-                            <DropdownContainer className="category-selection">
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    <p className="prompt">What category do these items belong in?</p>
-                                    <SwapDropdown options={clothesOptions} onChange={changeCategory} value={category} />
-                                </div>
-                                <button className="apply-mass-option" onClick={() => applyMassOption('category')}>Apply</button>
-                            </DropdownContainer>
-                            { (user?.isAdmin || user?.isSuperAdmin) &&
-                                <div className="rmbg-selection">
-                                    <Input
-                                        type="checkbox"
-                                        id="remove-background"
-                                        label="Remove Background"
-                                        onChange={toggleRmbg}
-                                        value={rmbg}
-                                    />
-                                    <button className="apply-mass-option" onClick={() => applyMassOption('rmbg')}>Apply</button>
-                                </div>
-                            }
-                            { ((user?.isAdmin || user?.isSuperAdmin) && rmbg) &&
-                                <div className="crop-selection">
-                                    <Input
-                                        type="checkbox"
-                                        id="crop-image"
-                                        label="Crop Image"
-                                        onChange={toggleCrop}
-                                        value={crop}
-                                    />
-                                    <button className="apply-mass-option" onClick={() => applyMassOption('crop')}>Apply</button>
-                                </div>
-                            }
-                        </div>
-                        <div className="separator"></div>
-                        { !client?.isSuperAdmin &&
-                            <p className="upload-credits">Upload Credits Left: {client?.credits}</p>
-                        }
-                        <ActionButton
-                                className="tertiary small"
-                                onClick={() => setConfirmModalOpen(true)}
-                                disabled={!(invalidFiles.length === 0 && incompleteFiles.length === 0 && allFiles.length && hasCredits)}
-                                style={{ fontFamily: 'unset', letterSpacing: 'unset', fontSize: '20px', fontWeight: 600 }}
-                            >
-                                Upload All Files
-                        </ActionButton>
-                    </UploadOptionsContainer>
-                    <Dropzone 
-                        category={category} 
-                        disabled={category._id === -1} 
-                        setFiles={setAllFiles}
-                    />
                 </div>
+                { !client?.isSuperAdmin &&
+                    <p className="upload-credits">Upload Credits Left: {client?.credits}</p>
+                }
+                <ActionButton
+                    className="tertiary small"
+                    onClick={() => setConfirmModalOpen(true)}
+                    disabled={!(invalidFiles.length === 0 && incompleteFiles.length === 0 && allFiles.length && hasCredits)}
+                    style={{ fontFamily: 'unset', letterSpacing: 'unset', fontSize: '20px', fontWeight: 600 }}
+                >
+                    Upload All Files
+                </ActionButton>
                 { allFiles.length > 0 &&
                     <FileContainer>
-                        <h2 className="title">Current Files ({allFiles.length})</h2>
                         { (!hasCredits) ?
                             <p className="file-error-message">
                                 You do not have enough credits to upload these files.
@@ -397,10 +319,11 @@ export default function AddItems({ display }) {
                                         uploadFile={uploadOneFile}
                                         removeFile={removeFile}
                                         clothesCategories={clothesOptions}
+                                        profileCategories={profileOptions}
                                         allTags={tags}
-                                        massOption={massOption}
-                                        activateMassOption={activateMassOption}
-                                        setActivateMassOption={setActivateMassOption}
+                                        massOptions={massOptions}
+                                        activateMassOptions={activateMassOptions}
+                                        setActivateMassOptions={setActivateMassOptions}
                                         updateFiles={setUpdateFiles}
                                     />
                                 ))
@@ -409,6 +332,83 @@ export default function AddItems({ display }) {
                     </FileContainer>
                 }
             </AddItemsContainer>
+            <Modal
+                open={massOptionsModalOpen}
+                closeFn={closeMassOptionsModal}
+            >
+                <h2 className="modal-title">Mass Options</h2>
+                <div className="modal-content" style={{ overflowY: 'unset' }}>
+                    <FileOptionsContainer>
+                        <div className="file-options">
+                            <div className="category-selection">
+                                <p className="prompt">What category would you like to add all the items to?</p>
+                                <Input
+                                    type="radio"
+                                    value={categoryType}
+                                    radioOptions={[
+                                        { value: 'clothes', label: 'Clothes' },
+                                        { value: 'profile', label: 'Profile' },
+                                    ]}
+                                    onChange={e => changeCategoryType(e.target.value)}
+                                />
+                                <SwapDropdown options={categoriesToShow} onChange={changeCategory} value={category} />
+                            </div>
+                            { (user?.isAdmin || user?.isSuperAdmin) &&
+                                <div className="rmbg-selection">
+                                    <Input
+                                        type="checkbox"
+                                        id="remove-background"
+                                        label="Remove Background"
+                                        onChange={() => {
+                                            if (rmbg) {
+                                                changeCrop(false);
+                                            }
+                                            changeRmbg(!rmbg);
+                                        }}
+                                        value={rmbg}
+                                    />
+                                </div>
+                            }
+                            { (user?.isAdmin || user?.isSuperAdmin) &&
+                                <div className={`crop-selection ${rmbg ? '' : 'disabled'}`}>
+                                    <Input
+                                        type="checkbox"
+                                        id="crop-image"
+                                        label="Crop Image"
+                                        onChange={() => {
+                                            if (!rmbg) {
+                                                changeCrop(false);
+                                            }
+                                            else {
+                                                changeCrop(!crop);
+                                            }
+                                        }}
+                                        value={crop}
+                                    />
+                                </div>
+                            }
+                        </div>
+                    </FileOptionsContainer>
+                </div>
+                <div className="modal-options">
+                    <button onClick={applyMassOptions}>Apply</button>
+                </div>
+            </Modal>
+            <Modal
+                open={addItemsModalOpen}
+                closeFn={() => setAddItemsModalOpen(false)}
+            >
+                <h2 className="modal-title">Add Items</h2>
+                <div className="modal-content">
+                    <Dropzone 
+                        setFiles={setAllFiles}
+                        closeAddItemsModal={() => setAddItemsModalOpen(false)}
+                    />
+                </div>
+                <div className="modal-options">
+                    <button onClick={() => setAddItemsModalOpen(false)}>Done</button>
+                </div>
+            </Modal>
             <Modal
                 open={confirmModalOpen}
                 closeFn={() => setConfirmModalOpen(false)}

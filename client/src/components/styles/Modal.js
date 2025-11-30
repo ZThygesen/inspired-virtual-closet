@@ -201,7 +201,7 @@ export const ModalContentContainer = styled.div`
         text-decoration: underline;
     }
 
-    & button:not(.material-icons, .settings-tab, .archive-tab) {
+    & button:not(.material-icons, .settings-tab, .archive-tab, .apply-mass-option) {
         font-size: 20px;
         font-family: 'Prata';
         background: none;
@@ -330,6 +330,104 @@ export const ModalContentContainer = styled.div`
             &:hover {
                 background-color: var(--primary-light);
                 color: unset;
+            }
+        }
+    }
+
+    // for adding items in modal
+    & .add-items-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: var(--white);
+        position: relative;
+        z-index: 250;
+
+        & .add-items-tabs {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+
+            & ul {
+                display: flex;
+                list-style: none;
+            }
+
+            & li {
+                padding: 15px;
+                transition: all 0.3s;
+
+                &.active {
+                    background-color: var(--white);
+                    box-shadow: var(--tab-shadow);
+                }
+            }
+
+            & .add-items-tab {
+                background: none;
+                width: 100%;
+                cursor: pointer;
+                position: relative;
+
+                &:after {
+                    content: '';
+                    position: absolute;
+                    width: 100%;
+                    transform: scaleX(0);
+                    height: 2px;
+                    bottom: 0;
+                    left: 0;
+                    background-color: var(--black);
+                    transform-origin: bottom right;
+                    transition: transform 0.15s ease-out;
+                }
+
+                &.active {
+                    &:after {
+                        transform: scaleX(1);
+                    }
+                }
+
+                &:not(.active):hover:after {
+                    transform: scaleX(1);
+                    transform-origin: bottom left;
+                }
+
+                & .add-items-tab-text {
+                    font-family: 'Prata';
+                    color: var(--black);
+                    font-size: 28px;
+                }
+            }
+        }
+    }
+
+    & .add-items {
+        display: flex;
+        width: calc(100% - 4px);
+        height: 100%;
+        box-shadow: var(--top-shadow);
+        overflow-y: hidden;
+
+        & .add-item {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            position: relative;
+
+            & .add-item-file {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                overflow-y: auto;
+                padding: 6px 0;
             }
         }
     }

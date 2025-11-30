@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import Dropdown from 'react-dropdown';
 import 'react-dropdown/style.css';
 
-export const ClothesContainer = styled.div`
+export const ItemsContainer = styled.div`
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -69,7 +69,7 @@ export const ClothesContainer = styled.div`
     }
 `;
 
-export const ClothingCardContainer = styled.div`
+export const ItemCardContainer = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;

@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 
 const categoryFooterHeight = 50;
+const categoryTabsHeight = 65;
 
 export const ClosetSettingsContainer = styled.div`
     width: 100%;
@@ -73,6 +74,19 @@ export const ClosetSettingsContainer = styled.div`
         }
     }
 
+    .category-tabs {
+        align-items: flex-end;
+        min-height: ${categoryTabsHeight}px;
+
+        & li {
+            padding: 10px;
+        }
+
+        & .settings-tab-text {
+            font-size: 24px;
+        }
+    }
+
     .settings-container {
         display: flex;
         width: calc(100% - 4px);
@@ -80,9 +94,14 @@ export const ClosetSettingsContainer = styled.div`
         box-shadow: var(--top-shadow);
         overflow-y: hidden;
 
+        &.categories-tab {
+            padding: 0 20px;
+        }
+
         & .category-settings,
         & .tag-settings {
             display: flex;
+            flex-direction: column;
             width: 100%;
             height: 100%;
             position: relative;
@@ -137,6 +156,10 @@ export const ClosetSettingsContainer = styled.div`
                     margin-left: 20px;
                     justify-items: start;
                     align-items: center;
+
+                    &.prominent {
+                        margin-left: 0;
+                    }
                 }
 
                 & .tag-group-setting,
@@ -245,6 +268,11 @@ export const ClosetSettingsContainer = styled.div`
                         transform-origin: bottom left;
                     }
                 }
+            }
+
+            & .groups {
+                box-shadow: var(--top-shadow);
+                max-height: calc(100% - ${categoryFooterHeight}px - ${categoryTabsHeight}px);
             }
         }
     }

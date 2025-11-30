@@ -1,33 +1,20 @@
 import styled from 'styled-components';
-import uploadImg from '../../images/upload.png';
 
 const DropContainer = styled.div`
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 20px;
-    width: 100%;
+    gap: 8px;
     padding: 30px;
+    border: 2px dashed var(--black);
 
-    & .upload-icon {
-        width: 80px;
-        height: 80px;
-        background: url(${uploadImg}) no-repeat center center;
-        background-size: 100%;
-        cursor: pointer;
-        transition: all 0.1s;
-
-        &:hover {
-            transform: scale(1.05);
+    &.drag-active {
+            color: var(--primary);
+            border-color: var(--primary);
         }
-    }
 
-    & p,
-    & p > * {
-        text-align: center;
-        margin-bottom: 10px;
-        font-size: 24px;
+    div {
+        font-size: 20px;
     }
 
     .click-upload {
@@ -35,7 +22,6 @@ const DropContainer = styled.div`
         font-weight: 600;
         background: none;
         border: none;
-        width: 100%;
         cursor: pointer;
         position: relative;
 
@@ -60,10 +46,6 @@ const DropContainer = styled.div`
 
     .file-input {
         display: none;
-    }
-
-    .upload-credits {
-        font-size: 24px;
     }
 `;
 

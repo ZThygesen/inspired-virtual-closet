@@ -1,9 +1,9 @@
 import { useUser } from '../../contexts/UserContext';
 import { useData } from '../../contexts/DataContext';
 import { Tooltip } from '@mui/material';
-import { ClothingCardContainer } from './ClothesStyles';
+import { ItemCardContainer } from './ItemsStyles';
 
-export default function ClothingCard({ 
+export default function ItemCard({ 
     item, 
     addCanvasItem,
     searchOutfitsByItem, 
@@ -26,7 +26,7 @@ export default function ClothingCard({
 
     return (
         <>
-            <ClothingCardContainer className={`
+            <ItemCardContainer className={`
                 ${viewOnly ? 'view-only' : ''}
                 ${onSidebar ? 'on-sidebar' : ''}
                 ${onModal ? 'on-modal' : ''}
@@ -141,7 +141,7 @@ export default function ClothingCard({
                         }
                     </div>
                 }
-            </ClothingCardContainer>
+            </ItemCardContainer>
         </>
     );
 }
