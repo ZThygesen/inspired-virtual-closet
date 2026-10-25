@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useError } from '../../contexts/ErrorContext';
+import { useUser } from '../../contexts/UserContext';
 import { useClient } from '../../contexts/ClientContext';
 import { useData } from '../../contexts/DataContext';
 import api from '../../api';
@@ -13,6 +14,7 @@ import invalidImg from '../../images/invalid.png';
 
 export default function Items({ display, addCanvasItem, canvasItems, searchOutfitsByItem, onSidebar }) {
     const { setError } = useError();
+    const { user } = useUser();
     const { client } = useClient();
     const {
         clothesOptions, 
@@ -23,6 +25,17 @@ export default function Items({ display, addCanvasItem, canvasItems, searchOutfi
         currentItems, 
         setLoading 
     } = useData();
+
+    const [canEdit, setCanEdit] = useState(false);
+
+    useEffect(() => {
+        if (user?.isAdmin || user?.isSuperAdmin || currentCategory?.clientAddItems) {
+            setCanEdit(true);
+        }
+        else {
+            setCanEdit(false);
+        }
+    }, [user, currentCategory]);
 
     const [searchResults, setSearchResults] = useState(currentItems || []);
     const [resultsToShow, setResultsToShow] = useState(currentItems || []);
@@ -303,6 +316,7 @@ export default function Items({ display, addCanvasItem, canvasItems, searchOutfi
                         resultsToShow?.map(item => (
                             <ItemCard
                                 item={item}
+                                canEdit={canEdit}
                                 addCanvasItem={addCanvasItem}
                                 searchOutfitsByItem={searchOutfitsByItem}
                                 setImageModalOpen={setImageModalOpen}
@@ -319,6 +333,15 @@ export default function Items({ display, addCanvasItem, canvasItems, searchOutfi
                         ))
                     }
                 </div>
+                { showPagination && 
+                    <Pagination 
+                        count={totalPages} 
+                        page={currPage} 
+                        onChange={handlePageChange}
+                        variant='outlined'
+                        shape='rounded'
+                    />
+                }
             </ItemsContainer>
             <Modal
                 open={imageModalOpen}
@@ -329,6 +352,7 @@ export default function Items({ display, addCanvasItem, canvasItems, searchOutfi
                     <button className="material-icons close-modal" onClick={closeImageModal}>close</button>
                     <ItemCard 
                         item={modalItem}
+                        canEdit={canEdit}
                         addCanvasItem={addCanvasItem}
                         searchOutfitsByItem={searchOutfitsByItem}
                         onModal={true}
@@ -347,6 +371,7 @@ export default function Items({ display, addCanvasItem, canvasItems, searchOutfi
                     <button className="material-icons close-modal" onClick={closeIframeModal}>close</button>
                     <ItemCard
                         item={modalItem}
+                        canEdit={canEdit}
                         onModal={true}
                         prevModalItem={prevModalItem}
                         nextModalItem={nextModalItem}

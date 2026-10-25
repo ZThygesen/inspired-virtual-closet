@@ -274,7 +274,7 @@ export default function VirtualCloset() {
                     </div>
                 </ClosetNavigationContainer>
             </Container>
-            <p className="copyright">© 2025 Edie Styles, LLC</p>
+            <p className="copyright">© 2026 Edie Styles, LLC</p>
         </>
     )
 }

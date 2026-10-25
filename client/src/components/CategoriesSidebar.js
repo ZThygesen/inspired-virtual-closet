@@ -7,8 +7,8 @@ import { Tooltip } from '@mui/material';
 import Items from './Items/Items';
 
 export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOutfitsByItem, canvasItems, setClothesClosetMode }) {
-    const { categories, items, currentCategory, setCurrentCategory } = useData();
-    const { sidebarOpen, setSidebarOpen, mobileMode, setCurrCategoryClicked, currTab, toggleCurrTab } = useSidebar();
+    const { categories, items, currentCategory, setCurrentCategory, currentTab, toggleCurrentTab } = useData();
+    const { sidebarOpen, setSidebarOpen, mobileMode, setCurrCategoryClicked, } = useSidebar();
 
     const [categoryGroups, setCategoryGroups] = useState([]);
     const [stickyCategory, setStickyCategory] = useState(null);
@@ -17,8 +17,9 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
     const toggleRef = useRef();
 
     useEffect(() => {
+        const itemsToUse = items.filter(item => item.categoryType === currentTab);
         let theseCategories = categories.filter(category => category._id !== 0);
-        if (currTab === 'profile') {
+        if (currentTab === 'profile') {
             theseCategories = theseCategories.filter(category => category.type === 'profile');
         }
         else {
@@ -32,14 +33,14 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
             if (!groupMap[category.group]) {
                 groupMap[category.group] = [];
             }
-            const numItems = items.filter(file => file.categoryId === category._id).length;
+            const numItems = itemsToUse.filter(file => file.categoryId === category._id).length;
             groupMap[category.group].push({ ...category, numItems: numItems });
         }
         for (const category of categoriesWithoutGroups) {
             if (!groupMap['0']) {
                 groupMap['0'] = [];
             }
-            const numItems = items.filter(file => file.categoryId === category._id).length;
+            const numItems = itemsToUse.filter(file => file.categoryId === category._id).length;
             groupMap['0'].push({ ...category, numItems: numItems });
         }
 
@@ -69,16 +70,16 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
             categoriesByGroup.push({ group: group, categories: groupCategories });
         }
 
-        if (currTab !== 'profile') {
-            const allCategory = { _id: -1, name: 'All', numItems: items.length };
+        if (currentTab !== 'profile') {
+            const allCategory = { _id: -1, name: 'All', type: 'clothes', numItems: itemsToUse.length };
             let otherCategory = categories.filter(category => category._id === 0)[0];
-            const numOtherItems = items.filter(file => file.categoryId === 0).length;
+            const numOtherItems = itemsToUse.filter(file => file.categoryId === 0).length;
             otherCategory = { ...otherCategory, numItems: numOtherItems };
             categoriesByGroup.unshift({ group: -1, categories: [allCategory, otherCategory] });
         }
 
         setCategoryGroups(categoriesByGroup);
-    }, [categories, items, currTab]);
+    }, [categories, items, currentTab]);
     
     function toggleStickyCategory(category) {
         if (category === stickyCategory) {
@@ -94,10 +95,10 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
             <CategoriesSidebarContainer id="sidebar" className={`${sidebarOpen ? 'open' : ''}`} ref={sidebarRef}>
                 <div className="categories-header">
                     <div className="categories-header-title-container">
-                        <Tooltip title={currTab === 'profile' ? 'Switch to Clothes' : 'Switch to Profile'}>
-                            <button className="material-icons switch-sidebar-tab-icon" onClick={toggleCurrTab}>swap_vert</button>
+                        <Tooltip title={currentTab === 'profile' ? 'Switch to Clothes' : 'Switch to Profile'}>
+                            <button className="material-icons switch-sidebar-tab-icon" onClick={toggleCurrentTab}>swap_vert</button>
                         </Tooltip>
-                        <h2 className="header-title">{currTab === 'profile' ? 'Profile' : 'Clothes'}</h2>
+                        <h2 className="header-title">{currentTab === 'profile' ? 'Profile' : 'Clothes'}</h2>
                     </div>
                     <Tooltip title="Close Sidebar">
                         <button className="material-icons close-sidebar-icon" onClick={() => setSidebarOpen(false)}>chevron_left</button>

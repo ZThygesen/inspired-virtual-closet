@@ -8,24 +8,13 @@ export const SidebarProvider = ({ children }) => {
     const [mobileMode, setMobileMode] = useState(window.innerWidth <= 800 ? true : false);
     const [canvasMode, setCanvasMode] = useState(false);
     const [currCategoryClicked, setCurrCategoryClicked] = useState(false);
-    const [currTab, setCurrTab] = useState('clothes');
 
     const resetSidebar = useCallback(() => {
         setSidebarOpen(window.innerWidth > 800 ? true : false);
         setMobileMode(window.innerWidth <= 800 ? true : false);
         setCanvasMode(false);
         setCurrCategoryClicked(false);
-        setCurrTab('clothes');
     }, []);
-
-    const toggleCurrTab = useCallback(() => {
-        if (currTab === 'profile') {
-            setCurrTab('clothes');
-        }
-        else {
-            setCurrTab('profile');
-        }
-    }, [currTab]);
 
     const { user } = useUser();
     useEffect(() => {
@@ -75,9 +64,6 @@ export const SidebarProvider = ({ children }) => {
 
             currCategoryClicked, 
             setCurrCategoryClicked,
-
-            currTab,
-            toggleCurrTab,
 
             resetSidebar,
         }}>

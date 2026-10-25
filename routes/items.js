@@ -290,6 +290,7 @@ router.post('/link/:clientId',
     auth.requireAdmin,
     schemaHelpers.validateParams(schema.postLink.params.schema),
     schemaHelpers.validateBody(schema.postLink.body.schema),
+    auth.checkAddItems,
     items.postLink,
 );
 router.get('/:clientId',
@@ -308,6 +309,7 @@ router.patch('/link/:clientId/:itemId',
     auth.requireAdmin,
     schemaHelpers.validateParams(schema.patchLink.params.schema),
     schemaHelpers.validateBody(schema.patchLink.body.schema),
+    auth.checkAddItems,
     items.patchLink,
 )
 router.patch('/category/:clientId/:itemId', 
@@ -326,6 +328,7 @@ router.delete('/:clientId/:itemId',
 router.delete('/link/:clientId/:itemId', 
     auth.requireAdmin,
     schemaHelpers.validateParams(schema.deleteLink.params.schema),
+    auth.checkAddItems,
     items.deleteLink,
 );
 

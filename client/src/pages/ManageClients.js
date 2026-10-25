@@ -378,12 +378,16 @@ export default function ManageClients() {
             <ManageClientsContainer>
                 <div className="clients-header">
                     <h1 className="title">Clients</h1>
-                    <Tooltip title="The Archive">
-                        <button className="material-icons the-archive-button" onClick={handleOpenArchive}>inventory_2</button>
-                    </Tooltip>
-                    <Tooltip title="Closet Settings">
-                        <button className="material-icons closet-settings-button" onClick={handleOpenSettings}>settings</button>
-                    </Tooltip>
+                    { user?.isSuperAdmin &&
+                        <>
+                        <Tooltip title="The Archive">
+                            <button className="material-icons the-archive-button" onClick={handleOpenArchive}>inventory_2</button>
+                        </Tooltip>
+                        <Tooltip title="Closet Settings">
+                            <button className="material-icons closet-settings-button" onClick={handleOpenSettings}>settings</button>
+                        </Tooltip>
+                        </>
+                    }
                 </div>
                 <div className="title-search">
                     <div className="search-box">

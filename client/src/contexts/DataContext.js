@@ -24,7 +24,8 @@ export const DataProvider = ({ children }) => {
     const [shopping, setShopping] = useState([]);
 
     // closet states
-    const [currentCategory, setCurrentCategory] = useState({ _id: -1, name: 'All' });
+    const [currentCategory, setCurrentCategory] = useState({ _id: -1, name: 'All', type: 'clothes' });
+    const [currentTab, setCurrentTab] = useState('clothes');
     const [currentItems, setCurrentItems] = useState([]);
 
     const [loading, setLoading] = useState(false);
@@ -33,10 +34,20 @@ export const DataProvider = ({ children }) => {
         setItems([]);
         setOutfits([]);
         setShopping([]);
-        setCurrentCategory({ _id: -1, name: 'All' });
+        setCurrentCategory({ _id: -1, name: 'All', type: 'clothes' });
+        setCurrentTab('clothes');
         setCurrentItems([]);
         setLoading(false);
     }, []);
+
+    const toggleCurrentTab = useCallback(() => {
+        if (currentTab === 'profile') {
+            setCurrentTab('clothes');
+        }
+        else {
+            setCurrentTab('profile');
+        }
+    }, [currentTab]);
 
     // === categories ---------------------------------------------
     const updateCategories = useCallback(async () => {
@@ -231,27 +242,14 @@ export const DataProvider = ({ children }) => {
             return '';
         }
         else {
-            let newUrl = url?.split('?')[0];
-            const parts = newUrl?.split('/');
-            // google doc
-            if (parts.includes('document')) {
-                if (!parts?.includes('pub')) {
-                    newUrl = newUrl + '/pub';
-                }
-                return newUrl + '?embedded=true';
-            }
-            // google slide
-            else {
-                if (!parts?.includes('pubembed')) {
-                    if (parts?.includes('pub')) {
-                        newUrl = newUrl?.replace('/pub', '/pubembed');
-                    }
-                    else {
-                        newUrl = newUrl + '/pubembed';
-                    }
-                }
-                return newUrl + '?start=false&loop=false&delayms=3000&rm=minimal';
-            }
+            let path = url?.split('?')[0];
+            path = path.replace('https://', '');
+
+            let partsToRemove = ['e', 'edit', 'preview', 'pub', 'pubembed'];
+            let parts = path?.split('/');
+            parts = parts.filter(part => !partsToRemove?.includes(part));
+
+            return 'https://' + parts.join('/');
         }
     }, []);
 
@@ -297,11 +295,12 @@ export const DataProvider = ({ children }) => {
 
     // current category's items
     useEffect(() => {
+        const itemsToUse = items.filter(item => item.categoryType === currentCategory.type);
         if (currentCategory._id === -1) {
-            setCurrentItems(items);
+            setCurrentItems(itemsToUse);
         }
         else {
-            setCurrentItems(items.filter(item => item.categoryId === currentCategory._id));
+            setCurrentItems(itemsToUse.filter(item => item.categoryId === currentCategory._id));
         }
     }, [items, currentCategory]);
 
@@ -383,6 +382,8 @@ export const DataProvider = ({ children }) => {
 
             currentCategory,
             setCurrentCategory,
+            currentTab,
+            toggleCurrentTab,
             currentItems,
             setCurrentItems,
             

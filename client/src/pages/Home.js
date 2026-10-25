@@ -85,7 +85,7 @@ export default function Home() {
                     />
                 }
             </HomeContainer>
-            <p className="copyright">© 2025 Edie Styles, LLC</p>
+            <p className="copyright">© 2026 Edie Styles, LLC</p>
         </>
     );
 }

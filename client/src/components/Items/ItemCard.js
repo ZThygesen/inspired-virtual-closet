@@ -5,7 +5,8 @@ import { ItemCardContainer } from './ItemsStyles';
 import invalidImg from '../../images/invalid.png';
 
 export default function ItemCard({ 
-    item, 
+    item,
+    canEdit,
     addCanvasItem,
     searchOutfitsByItem, 
     setImageModalOpen,
@@ -42,10 +43,10 @@ export default function ItemCard({
                         { item.urlToDisplay ? 
                             <div className="iframe-container">
                                 <iframe
-                                    src={item.urlToDisplay}
+                                    src={item.urlToDisplay + '/preview'}
                                     title={item.fileName}
                                 />
-                                <div className="iframe-overlay"
+                                {/* <div className="iframe-overlay"
                                     onClick={() => {
                                         if (viewOnly || onModal) {
                                             return;
@@ -53,7 +54,7 @@ export default function ItemCard({
                                         setModalItem(item);
                                         setIframeModalOpen(true);
                                     }}
-                                ></div>
+                                ></div> */}
                             </div>
                             :
                             <div className='invalid-link-container'>
@@ -111,7 +112,7 @@ export default function ItemCard({
                                             </a>
                                         </Tooltip>
                                     }
-                                    { !onSidebar && (user?.isAdmin || user?.isSuperAdmin) &&
+                                    { !onSidebar && (user?.isAdmin || user?.isSuperAdmin) && canEdit &&
                                         <>
                                             <Tooltip title="Change Category">
                                                 <button
@@ -228,7 +229,7 @@ export default function ItemCard({
                                             </button>
                                         </Tooltip>
                                     }
-                                    { !onSidebar &&
+                                    { !onSidebar && canEdit &&
                                         <>
                                             <Tooltip title="Change Category">
                                                 <button
