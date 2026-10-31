@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useLoading } from './LoadingContext';
 import axios from 'axios';
-import Loading from '../components/Loading';
 
 const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
+    const { setLoading } = useLoading();
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [userLoading, setUserLoading] = useState(true);
 
     useEffect(() => {
         async function verifyToken() {
@@ -18,17 +19,17 @@ export const UserProvider = ({ children }) => {
             } finally {
                 setTimeout(() => {
                     setLoading(false);
+                    setUserLoading(false);
                 }, 500);
             }
         }
         
         verifyToken();
-    }, []);
+    }, [setLoading]);
 
     return (
-        <UserContext.Provider value={{ user, setUser, loading }}>
+        <UserContext.Provider value={{ user, setUser, userLoading }}>
             {children}
-            <Loading open={loading} />
         </UserContext.Provider>
     );
 };

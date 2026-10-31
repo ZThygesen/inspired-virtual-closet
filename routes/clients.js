@@ -164,7 +164,7 @@ const router = express.Router();
 
 router.post('/', auth.requireSuperAdmin, clients.post);
 router.get('/', auth.requireAdmin, clients.get);
-router.get('/:clientId', clients.getClient);
+router.get('/:clientId', auth.checkPermissions, clients.getClient);
 router.patch('/:clientId',  auth.requireSuperAdmin, clients.patch);
 router.delete('/:clientId', auth.requireSuperAdmin, clients.delete);
 

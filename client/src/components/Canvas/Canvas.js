@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLoading } from '../../contexts/LoadingContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useClient } from '../../contexts/ClientContext';
 import { useData } from '../../contexts/DataContext';
@@ -7,7 +8,6 @@ import api from '../../api';
 import { Layer, Rect, Stage, Transformer } from 'react-konva';
 import Modal from '../Modal';
 import Input from '../Input';
-import Loading from '../Loading';
 import CanvasImage from './CanvasImage';
 import CanvasTextbox from './CanvasTextbox';
 import { CanvasContainer } from './CanvasStyles';
@@ -19,6 +19,7 @@ const initialHeight = 800;
 const ASPECT_RATIO = initialWidth / initialHeight;
 
 export default function Canvas({ display, sidebarRef, images, textboxes, addCanvasItem, removeCanvasItems, editMode, outfitToEdit, cancelEdit, setOutfitsClosetMode }) {
+    const { setLoading } = useLoading();
     const { setError } = useError();
     const { client } = useClient();
     const { updateOutfits } = useData();
@@ -41,7 +42,6 @@ export default function Canvas({ display, sidebarRef, images, textboxes, addCanv
     const [saveOutfitOpen, setSaveOutfitOpen] = useState(false);
     const [outfitName, setOutfitName] = useState('');
     const [outfitImageData, setOutfitImageData] = useState('');
-    const [loading, setLoading] = useState(false);
 
     const containerRef = useRef();
     const headerRef = useRef();
@@ -612,7 +612,6 @@ export default function Canvas({ display, sidebarRef, images, textboxes, addCanv
                     </div>
                 </>
             </Modal>
-            <Loading open={loading} />
         </>
     );
 }

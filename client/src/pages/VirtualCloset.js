@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
 import { useClient } from '../contexts/ClientContext';
 import { useData } from '../contexts/DataContext';
@@ -29,9 +30,16 @@ const logoCanvasItem = {
 
 export default function VirtualCloset() {
     const { user } = useUser();
-    const { client } = useClient();
+    const { client, setClientId } = useClient();
     const { outfits, shopping, currentCategory } = useData();
     const { sidebarOpen, setSidebarOpen, mobileMode } = useSidebar();
+
+    const { clientId } = useParams();
+    useEffect(() => {
+        if (clientId) {
+            setClientId(clientId);
+        }
+    }, [clientId, setClientId]);
 
     const ref = useRef();
     const sidebarRef = useRef();
@@ -65,7 +73,7 @@ export default function VirtualCloset() {
                 }
             }
 
-            setClosetTitleHeight(closetTitleRef.current.offsetHeight);
+            setClosetTitleHeight(closetTitleRef?.current?.offsetHeight);
         }
 
         handleResize();
@@ -177,13 +185,14 @@ export default function VirtualCloset() {
     }, [currentCategory, closetMode]);
 
     function scrollToRef(ref) {
-        ref.current.scroll({
+        ref?.current?.scroll({
             top: 0,
             behavior: 'smooth'
         });
     }
 
     return (
+        ( client ?
         <>
             <Container>
                 <CategoriesSidebar
@@ -201,7 +210,7 @@ export default function VirtualCloset() {
                             </Tooltip>
                         }
                         <h1 className="client-closet">
-                            {`${client.firstName} ${client.lastName}`}
+                            {`${client?.firstName} ${client?.lastName}`}
                             { closetMode === 1 &&
                                 <Tooltip title="Expand Options" placement="top">
                                     <button className="material-icons expand-closet-options" onClick={handleExpandOptions}>expand_more</button>
@@ -276,5 +285,8 @@ export default function VirtualCloset() {
             </Container>
             <p className="copyright">© 2026 Edie Styles, LLC</p>
         </>
+        :
+        <></>
+        )
     )
 }

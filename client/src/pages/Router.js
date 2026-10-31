@@ -7,7 +7,7 @@ export default function Router() {
         <>
             <Routes>
                 <Route index element={<ManageClients />} />
-                <Route path=":client" element={<VirtualCloset />} />
+                <Route path=":clientId" element={<VirtualCloset />} />
             </Routes>
         </>
     );

@@ -1,11 +1,10 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Tooltip } from '@mui/material';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import { useLoading } from '../contexts/LoadingContext';
 import { useUser } from '../contexts/UserContext';
 import { googleLogout } from '@react-oauth/google';
-import Loading from './Loading';
 import api from '../api';
 import headerLogo from '../images/header-logo.png';
 
@@ -85,7 +84,7 @@ const AppHeader = styled.header`
 `;
 
 export default function Header() {
-    const [loading, setLoading] = useState(false);
+    const { setLoading } = useLoading();
 
     const navigate = useNavigate();
     const { user, setUser } = useUser();
@@ -131,7 +130,6 @@ export default function Header() {
                     </Tooltip>
                 </div>
             </AppHeader>
-            <Loading open={loading} />
         </>
     );
 }

@@ -1,13 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useLoading } from '../contexts/LoadingContext';
 import { useError } from './ErrorContext';
 import { useUser } from './UserContext';
 import { useClient } from './ClientContext';
 import api from '../api';
-import Loading from '../components/Loading';
 
 const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {
+    const { loading, setLoading } = useLoading();
     const { setError } = useError();
     const { user } = useUser();
     const { client } = useClient();
@@ -28,8 +29,6 @@ export const DataProvider = ({ children }) => {
     const [currentTab, setCurrentTab] = useState('clothes');
     const [currentItems, setCurrentItems] = useState([]);
 
-    const [loading, setLoading] = useState(false);
-
     const resetData = useCallback(() => {
         setItems([]);
         setOutfits([]);
@@ -38,7 +37,7 @@ export const DataProvider = ({ children }) => {
         setCurrentTab('clothes');
         setCurrentItems([]);
         setLoading(false);
-    }, []);
+    }, [setLoading]);
 
     const toggleCurrentTab = useCallback(() => {
         if (currentTab === 'profile') {
@@ -352,7 +351,7 @@ export const DataProvider = ({ children }) => {
         await updateOutfits();
         await updateShopping();
         setLoading(false);
-    }, [updateItems, updateOutfits, updateShopping]);
+    }, [updateItems, updateOutfits, updateShopping, setLoading]);
 
     useEffect(() => {
         if (client) {
@@ -393,7 +392,6 @@ export const DataProvider = ({ children }) => {
             resetData,
         }}>
             {children}
-            <Loading open={loading} />
         </DataContext.Provider>
     );
 };
