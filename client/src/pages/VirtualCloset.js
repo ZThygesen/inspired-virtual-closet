@@ -46,7 +46,6 @@ export default function VirtualCloset() {
     const closetTitleRef = useRef();
 
     const [showIcons, setShowIcons] = useState(window.innerWidth > 740 ? false : true);
-    const [closetTitleHeight, setClosetTitleHeight] = useState(closetTitleRef?.current?.offsetHeight || 0);
 
     const [canvasItems, setCanvasItems] = useState([logoCanvasItem]);
 
@@ -72,8 +71,6 @@ export default function VirtualCloset() {
                     setShowIcons(false);
                 }
             }
-
-            setClosetTitleHeight(closetTitleRef?.current?.offsetHeight);
         }
 
         handleResize();
@@ -223,7 +220,7 @@ export default function VirtualCloset() {
                             </Tooltip>
                         }
                     </div>
-                    <div className={`closet-options ${closetMode === 1 ? 'canvas-mode' : ''} ${optionsExpanded ? 'expanded' : ''}`} style={{ top: `${closetMode === 1 ? `${closetTitleHeight}px` : 'unset'}` }}>
+                    <div className={`closet-options ${closetMode === 1 ? 'canvas-mode' : ''} ${optionsExpanded ? 'expanded' : ''}`} style={{ top: `${closetMode === 1 ? `${closetTitleRef?.current?.offsetHeight || 0}px` : 'unset'}` }}>
                         <ul>
                             {
                                 closetModes.map((mode, index) => (
