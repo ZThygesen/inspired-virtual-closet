@@ -255,7 +255,7 @@ describe('clients', () => {
                 .get('/api/clients/not-valid-id');
 
             expect(response.status).toBe(400);
-            expect(response.body.message).toBe('failed to get client: invalid or missing client id');
+            expect(response.body.message).toBe('client id is invalid or missing');
         });
 
         it('should fail if client doesn\'t exist', async () => {

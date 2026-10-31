@@ -46,15 +46,17 @@ export default function ItemCard({
                                     src={item.urlToDisplay + '/preview'}
                                     title={item.fileName}
                                 />
-                                {/* <div className="iframe-overlay"
-                                    onClick={() => {
-                                        if (viewOnly || onModal) {
-                                            return;
-                                        }
-                                        setModalItem(item);
-                                        setIframeModalOpen(true);
-                                    }}
-                                ></div> */}
+                                { !onModal &&
+                                    <div className="iframe-overlay"
+                                        onClick={() => {
+                                            if (viewOnly || onModal) {
+                                                return;
+                                            }
+                                            setModalItem(item);
+                                            setIframeModalOpen(true);
+                                        }}
+                                    ></div>
+                                }
                             </div>
                             :
                             <div className='invalid-link-container'>
@@ -79,7 +81,7 @@ export default function ItemCard({
                                             chevron_left
                                         </button>
                                     </Tooltip>
-                                    <Tooltip title="View Item">
+                                    <Tooltip title="Open Link">
                                         <a
                                             className='material-icons item-option important'
                                             href={item.url}
@@ -101,7 +103,7 @@ export default function ItemCard({
                                 :
                                 <>
                                     { item.urlToDisplay &&
-                                        <Tooltip title="View Item">
+                                        <Tooltip title="Open Link">
                                             <a
                                                 className='material-icons item-option important'
                                                 href={item.url}
