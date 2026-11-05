@@ -1,21 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useLoading } from '../contexts/LoadingContext';
 import { useError } from '../contexts/ErrorContext';
 import { useUser } from '../contexts/UserContext';
-import { useClient } from '../contexts/ClientContext';
 import { useData } from '../contexts/DataContext';
 import { useSidebar } from '../contexts/SidebarContext';
 import api from '../api'
 import cuid from 'cuid';
 import styled from 'styled-components';
 import ClientCard from '../components/ClientCard';
-import Loading from '../components/Loading';
 import ActionButton from '../components/ActionButton';
 import Modal from '../components/Modal';
 import Input from '../components/Input';
 import TheArchive from '../components/TheArchive';
 import ClosetSettings from '../components/ClosetSettings';
 import { CircularProgress, Tooltip } from '@mui/material';
-import { ManageClientsContainer } from '../styles/ManageClients';
+import { ManageClientsContainer } from '../components/styles/ManageClients';
 
 const CircleProgress = styled(CircularProgress)`
     & * {
@@ -46,9 +45,9 @@ function CircularProgressWithLabel(props) {
 }
 
 export default function ManageClients() {
+    const { setLoading } = useLoading();
     const { setError } = useError();
     const { user } = useUser();
-    const { resetClient } = useClient();
     const { resetData } = useData();
     const { resetSidebar } = useSidebar();
 
@@ -65,8 +64,6 @@ export default function ManageClients() {
     const [archiveOpen, setArchiveOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
 
-    const [loading, setLoading] = useState(false);
-
     const [deleteProgressOpen, setDeleteProgressOpen] = useState(false);
     const [deleteProgressMessage, setDeleteProgressMessage] = useState('');
     const [deleteProgressNumerator, setDeleteProgressNumerator] = useState(0)
@@ -76,10 +73,6 @@ export default function ManageClients() {
     const [searchResultsAdmin, setSearchResultsAdmin] = useState(admins || []);
     const [searchResultsClients, setSearchResultsClients] = useState(clients || []);
     const [searchString, setSearchString] = useState('');
-
-    useEffect(() => {
-        resetClient();
-    }, [resetClient]);
 
     useEffect(() => {
         resetData();
@@ -142,7 +135,7 @@ export default function ManageClients() {
         } finally {
             setLoading(false);
         }
-    }, [setError]);
+    }, [setLoading, setError]);
 
     useEffect(() => {
         getClients();
@@ -378,12 +371,16 @@ export default function ManageClients() {
             <ManageClientsContainer>
                 <div className="clients-header">
                     <h1 className="title">Clients</h1>
-                    <Tooltip title="The Archive">
-                        <button className="material-icons the-archive-button" onClick={handleOpenArchive}>inventory_2</button>
-                    </Tooltip>
-                    <Tooltip title="Closet Settings">
-                        <button className="material-icons closet-settings-button" onClick={handleOpenSettings}>settings</button>
-                    </Tooltip>
+                    { user?.isSuperAdmin &&
+                        <>
+                        <Tooltip title="The Archive">
+                            <button className="material-icons the-archive-button" onClick={handleOpenArchive}>inventory_2</button>
+                        </Tooltip>
+                        <Tooltip title="Closet Settings">
+                            <button className="material-icons closet-settings-button" onClick={handleOpenSettings}>settings</button>
+                        </Tooltip>
+                        </>
+                    }
                 </div>
                 <div className="title-search">
                     <div className="search-box">
@@ -424,7 +421,6 @@ export default function ManageClients() {
                     </div>
                 }
             </ManageClientsContainer>
-            <Loading open={loading} />
             { user?.isSuperAdmin &&
             <>
                 <Modal
@@ -509,7 +505,7 @@ export default function ManageClients() {
                 >
                     <>
                         <button className="material-icons close-modal" onClick={handleCloseSettings}>close</button>
-                        <h2 className="modal-title">Closet Settings</h2>
+                        {/* <h2 className="modal-title">Closet Settings</h2> */}
                         <div className="modal-content no-scroll">
                             <ClosetSettings 
                                 handleOpenSettings={handleOpenSettings}

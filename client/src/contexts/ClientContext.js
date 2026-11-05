@@ -1,25 +1,34 @@
-import { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useLoading } from '../contexts/LoadingContext';
 import axios from 'axios';
-import Loading from '../components/Loading';
 
 const ClientContext = createContext();
 
 export const ClientProvider = ({ children }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { setLoading } = useLoading();
+
     const [client, setClient] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [clientId, setClientId] = useState(null);
 
     const resetClient = useCallback(() => {
         setClient(null);
-    }, []);
+        setClientId(null);
+        if (location.pathname !== '/clients') {
+            navigate('/clients');
+        }
+    }, [location.pathname, navigate]);
 
     const updateClient = useCallback(async () => {
-        if (client) {
+        if (clientId) {
             try {
-                const response = await axios.get(`/api/clients/${client._id}`, { withCredentials: true });
+                const response = await axios.get(`/api/clients/${clientId}`, { withCredentials: true });
                 setClient(response?.data);
             } 
             catch (err) {
-                setClient(null);
+                resetClient();
             } 
             finally {
                 setTimeout(() => {
@@ -27,12 +36,25 @@ export const ClientProvider = ({ children }) => {
                 }, 500);
             }
         }
-    }, [client]);
+    }, [clientId, resetClient, setLoading]);
+
+    useEffect(() => {
+        if (location.pathname === '/clients') {
+            setClient(null);
+            setClientId(null);
+        }
+    }, [location.pathname]);
+
+
+    useEffect(() => {
+        if (clientId && (location.pathname !== '/clients')) {
+            updateClient();
+        }
+    }, [clientId, location.pathname, resetClient, updateClient]);
 
     return (
-        <ClientContext.Provider value={{ client, setClient, updateClient, resetClient }}>
+        <ClientContext.Provider value={{ client, setClient, setClientId, updateClient, resetClient }}>
             {children}
-            <Loading open={loading} />
         </ClientContext.Provider>
     );
 };

@@ -53,6 +53,10 @@ describe('items', () => {
                 _id: ObjectId(),
                 name: 'Blazers',
                 group: 'Formal',
+                type: 'clothes',
+                clientViewItems: true,
+                clientAddItems: true,
+                rmbgItems: true,
             };
             await categoryCollection.insertOne(category);
 
@@ -249,14 +253,53 @@ describe('items', () => {
             expect(files).toHaveLength(2);
         });
 
-        it('should fail if non-admin user does not rmbg', async () => {
+        it('should allow non-admin user to rmbg and crop when required', async () => {
+            await categoryCollection.updateOne({ _id: category._id }, { $set: { rmbgItems: true } });
+            await integrationHelpers.setUserNormal();
+            params = [user._id.toString()];
+            body.rmbg = true;
+            body.crop = true;
+            const response = await request(params, body);
+
+            expect(response.status).toBe(201);
+            expect(response.body.message).toBe('Success!');
+
+            expect(mockRemoveBackground).toHaveBeenCalled();
+
+            const items = await collection.find({ }).toArray();
+            expect(items).toHaveLength(1);
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(2);
+        });
+
+        it('should allow non-admin user to NOT rmbg and crop when not allowed', async () => {
+            await categoryCollection.updateOne({ _id: category._id }, { $set: { rmbgItems: false } });
             await integrationHelpers.setUserNormal();
             params = [user._id.toString()];
             body.rmbg = false;
+            body.crop = false;
             const response = await request(params, body);
 
-            expect(response.status).toBe(403);
-            expect(response.body.message).toBe('non-admins must remove background and crop image on item upload');
+            expect(response.status).toBe(201);
+            expect(response.body.message).toBe('Success!');
+
+            expect(mockRemoveBackground).not.toHaveBeenCalled();
+
+            const items = await collection.find({ }).toArray();
+            expect(items).toHaveLength(1);
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(2);
+        });
+
+        it('should fail if non-admin user DOES rmbg when not allowed', async () => {
+            await categoryCollection.updateOne({ _id: category._id }, { $set: { rmbgItems: false } });
+            await integrationHelpers.setUserNormal();
+            params = [user._id.toString()];
+            body.rmbg = true;
+            const response = await request(params, body);
+
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe(`non-admins cannot remove background or crop for items in category ${category.name}`);
 
             const items = await collection.find({ }).toArray();
             expect(items).toHaveLength(0);
@@ -264,15 +307,48 @@ describe('items', () => {
             expect(files).toHaveLength(0);
         });
 
-        it('should fail if non-admin user does not crop', async () => {
+        it('should fail if non-admin user does NOT rmbg when required', async () => {
+            await categoryCollection.updateOne({ _id: category._id }, { $set: { rmbgItems: true } });
+            await integrationHelpers.setUserNormal();
+            params = [user._id.toString()];
+            body.rmbg = false;
+            const response = await request(params, body);
+
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe(`non-admins must remove background and crop for items in category ${category.name}`);
+
+            const items = await collection.find({ }).toArray();
+            expect(items).toHaveLength(0);
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(0);
+        });
+
+        it('should fail if non-admin user DOES crop when not allowed', async () => {
+            await categoryCollection.updateOne({ _id: category._id }, { $set: { rmbgItems: false } });
+            await integrationHelpers.setUserNormal();
+            params = [user._id.toString()];
+            body.crop = true;
+            const response = await request(params, body);
+
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe(`non-admins cannot remove background or crop for items in category ${category.name}`);
+
+            const items = await collection.find({ }).toArray();
+            expect(items).toHaveLength(0);
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(0);
+        });
+
+        it('should fail if non-admin user does NOT crop when required', async () => {
+            await categoryCollection.updateOne({ _id: category._id }, { $set: { rmbgItems: true } });
             await integrationHelpers.setUserNormal();
             params = [user._id.toString()];
             body.rmbg = true;
             body.crop = false;
             const response = await request(params, body);
 
-            expect(response.status).toBe(403);
-            expect(response.body.message).toBe('non-admins must remove background and crop image on item upload');
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe(`non-admins must remove background and crop for items in category ${category.name}`);
 
             const items = await collection.find({ }).toArray();
             expect(items).toHaveLength(0);
@@ -280,15 +356,33 @@ describe('items', () => {
             expect(files).toHaveLength(0);
         });
 
-        it('should fail if non-admin user does not rmbg and crop', async () => {
+        it('should fail if non-admin user DOES rmbg and crop when not allowed', async () => {
+            await categoryCollection.updateOne({ _id: category._id }, { $set: { rmbgItems: false } });
+            await integrationHelpers.setUserNormal();
+            params = [user._id.toString()];
+            body.rmbg = true;
+            body.crop = true;
+            const response = await request(params, body);
+
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe(`non-admins cannot remove background or crop for items in category ${category.name}`);
+
+            const items = await collection.find({ }).toArray();
+            expect(items).toHaveLength(0);
+            const [files] = await bucket.getFiles({ prefix: 'test/items/' });
+            expect(files).toHaveLength(0);
+        });
+
+        it('should fail if non-admin user does NOT rmbg and crop when required', async () => {
+            await categoryCollection.updateOne({ _id: category._id }, { $set: { rmbgItems: true } });
             await integrationHelpers.setUserNormal();
             params = [user._id.toString()];
             body.rmbg = false;
             body.crop = false;
             const response = await request(params, body);
 
-            expect(response.status).toBe(403);
-            expect(response.body.message).toBe('non-admins must remove background and crop image on item upload');
+            expect(response.status).toBe(401);
+            expect(response.body.message).toBe(`non-admins must remove background and crop for items in category ${category.name}`);
 
             const items = await collection.find({ }).toArray();
             expect(items).toHaveLength(0);
@@ -342,24 +436,40 @@ describe('items', () => {
         integrationHelpers.testBody(schema.post.body.fields, request, () => params, {
             isFormData: true,
         });
-        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body, 201);
+        integrationHelpers.testAuth({ checkPermissions: true, checkAddItems: true }, request, () => params, () => body, 201, () => category);
     });
     
     describe('get', () => {
+        let category1, category2;
         let item1, item2, item3;
         let params, body;
         beforeEach(async () => {
+            category1 = {
+                _id: ObjectId(),
+                clientViewItems: true,
+                clientAddItems: true,
+            };
+            category2 = {
+                _id: ObjectId(),
+                clientViewItems: false,
+                clientAddItems: false,
+            };
+            await categoryCollection.insertMany([category1, category2]);
+
             item1 = {
                 _id: ObjectId(),
                 clientId: client._id.toString(),
+                categoryId: category1._id.toString(),
             };
             item2 = {
                 _id: ObjectId(),
                 clientId: client._id.toString(),
+                categoryId: category2._id.toString(),
             };
             item3 = {
                 _id: ObjectId(),
                 clientId: ObjectId().toString(),
+                categoryId: category1._id.toString(),
             };
             await collection.insertOne(item1);
 
@@ -391,6 +501,22 @@ describe('items', () => {
 
             const items = response.body;
             expect(items).toHaveLength(0);
+        });
+
+        it('should only get viewable items for non-admin client', async () => {
+            await integrationHelpers.setClientNormal();
+            await integrationHelpers.setUserAsClient();
+            await collection.insertOne(item2);
+
+            const response = await request(params, body);
+            expect(response.status).toBe(200);
+            
+            const items = response.body;
+            expect(items).toHaveLength(1);
+            expect(items[0]._id.toString()).toBe(item1._id.toString());
+
+            const allItems = await collection.find({ clientId: client._id.toString() }).toArray();
+            expect(allItems).toHaveLength(2);
         });
 
         it('should handle multiple items for client', async () => {
@@ -433,13 +559,22 @@ describe('items', () => {
     });
 
     describe('patchName', () => {
-        let item;
+        let category, item;
         let params, body;
         beforeEach(async () => {
+            category = {
+                _id: ObjectId(),
+                name: 'Blazers',
+                type: 'clothes',
+                clientViewItems: true,
+                clientAddItems: true,
+                rmbgItems: true,
+            };
+            await categoryCollection.insertOne(category);
             item = {
                 _id: ObjectId(),
                 clientId: client._id.toString(),
-                categoryId: ObjectId().toString(),
+                categoryId: category._id.toString(),
                 fileName: 'Blazin Blazer',
                 tags: [ObjectId().toString()],
                 gcsId: cuid2.createId(),
@@ -538,7 +673,7 @@ describe('items', () => {
             checkPermissions: true,
         });
         integrationHelpers.testBody(schema.patchName.body.fields, request, () => params);
-        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body);
+        integrationHelpers.testAuth({ checkPermissions: true, checkAddItems: true }, request, () => params, () => body, undefined, () => category);
     });
 
     describe('patchCategory', () => {
@@ -548,6 +683,10 @@ describe('items', () => {
             category1 = {
                 _id: ObjectId(),
                 name: 'Blazers',
+                type: 'clothes',
+                clientViewItems: true,
+                clientAddItems: true,
+                rmbgItems: true,
             };
             category2 = {
                 _id: ObjectId(),
@@ -624,11 +763,11 @@ describe('items', () => {
             checkPermissions: true,
         });
         integrationHelpers.testBody(schema.patchCategory.body.fields, request, () => params);
-        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body);
+        integrationHelpers.testAuth({ checkPermissions: true, checkAddItems: true }, request, () => params, () => body, undefined, () => category1);
     });
 
     describe('delete', () => {
-        let item;
+        let category, item;
         let params, body;
         beforeEach(async () => {
             await clearBucket();
@@ -643,9 +782,19 @@ describe('items', () => {
             const [files] = await bucket.getFiles({ prefix: 'test/items/' });
             expect(files).toHaveLength(2);
 
+            category = {
+                _id: ObjectId(),
+                name: 'Blazers',
+                type: 'clothes',
+                clientViewItems: true,
+                clientAddItems: true,
+                rmbgItems: true,
+            };
+            await categoryCollection.insertOne(category);
+
             item = {
                 clientId: client._id.toString(),
-                categoryId: ObjectId().toString(),
+                categoryId: category._id.toString(),
                 fileName: 'Blazin Blazer',
                 fullFileUrl: fullFileUrl,
                 smallFileUrl: smallFileUrl,
@@ -774,6 +923,6 @@ describe('items', () => {
         integrationHelpers.testParams(schema.delete.params.fields, request, () => body, ['clientId', 'itemId'], {
             checkPermissions: true,
         });
-        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body);
+        integrationHelpers.testAuth({ checkPermissions: true, checkAddItems: true }, request, () => params, () => body, undefined, () => category);
     });
 });

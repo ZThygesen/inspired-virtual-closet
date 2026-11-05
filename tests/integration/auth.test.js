@@ -264,44 +264,133 @@ describe('auth', () => {
         });
 
         describe('read client', () => {
-            let data;
             beforeAll(async () => {
-                data = {
-                    _id: new ObjectId(),
-                    firstName: 'John',
-                    lastName: 'Doe',
-                    email: 'jdoe@gmail.com',
-                    credits: 350,
-                    isAdmin: false
-                };
-                await collection.insertOne(data);
+                await createClient(db);
             });
 
-            it('should succeed (super user)', async () => {
+            it('should succeed (super user, super client)', async () => {
                 await setUserSuper(db);
+                await setClientSuper(db);
                 // perform action to test
                 const response = await agent(app)
-                    .get(`/api/clients/${data._id.toString()}`);
+                    .get(`/api/clients/${client._id.toString()}`);
 
                 // perform checks
                 expect(response.status).toBe(200);
             });
 
-            it('should succeed (admin user)', async () => {
+            it('should succeed (super user, admin client)', async () => {
+                await setUserSuper(db);
+                await setClientAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/api/clients/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should succeed (super user, normal client)', async () => {
+                await setUserSuper(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/api/clients/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should fail (admin user, super client)', async () => {
                 await setUserAdmin(db);
+                await setClientSuper(db);
                 // perform action to test
                 const response = await agent(app)
-                    .get(`/api/clients/${data._id.toString()}`);
+                    .get(`/api/clients/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('admins have no permissions over super admins');
+            });
+
+            it('should fail (admin user, admin client - other)', async () => {
+                await setUserAdmin(db);
+                await setClientAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/api/clients/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('admins have no permissions over other admins');
+            });
+
+            it('should succeed (admin user, admin client - self)', async () => {
+                await setUserAdmin(db);
+                await setClientAdmin(db);
+                client._id = user._id;
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/api/clients/${client._id.toString()}`);
 
                 // perform checks
                 expect(response.status).toBe(200);
             });
 
-            it('should succeed (normal user)', async () => {
-                await setUserNormal(db);
+            it('should succeed (admin user, normal client)', async () => {
+                await setUserAdmin(db);
+                await setClientNormal(db);
                 // perform action to test
                 const response = await agent(app)
-                    .get(`/api/clients/${data._id.toString()}`);
+                    .get(`/api/clients/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(200);
+            });
+
+            it('should fail (normal user, super client)', async () => {
+                await setUserNormal(db);
+                await setClientSuper(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/api/clients/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('non-admins have no permissions over any admins');
+            });
+
+            it('should fail (normal user, admin client)', async () => {
+                await setUserNormal(db);
+                await setClientAdmin(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/api/clients/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('non-admins have no permissions over any admins');
+            });
+
+            it('should fail (normal user, normal client - other)', async () => {
+                await setUserNormal(db);
+                await setClientNormal(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/api/clients/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('non-admins only have permissions over themselves');
+            });
+
+            it('should fail (normal user, normal client - self)', async () => {
+                await setUserNormal(db);
+                await setClientNormal(db);
+                client._id = user._id;
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/api/clients/${client._id.toString()}`);
 
                 // perform checks
                 expect(response.status).toBe(200);
@@ -312,7 +401,7 @@ describe('auth', () => {
 
                 // perform action to test
                 const response = await agent(app)
-                    .get(`/api/clients/${data._id.toString()}`);
+                    .get(`/api/clients/${client._id.toString()}`);
 
                 // perform checks
                 expect(response.status).toBe(401);
@@ -324,7 +413,7 @@ describe('auth', () => {
 
                 // perform action to test
                 const response = await agent(app)
-                    .get(`/api/clients/${data._id.toString()}`);
+                    .get(`/api/clients/${client._id.toString()}`);
 
                 // perform checks
                 expect(response.status).toBe(500);

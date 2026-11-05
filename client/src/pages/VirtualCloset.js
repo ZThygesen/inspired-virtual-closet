@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
 import { useClient } from '../contexts/ClientContext';
 import { useData } from '../contexts/DataContext';
 import { useSidebar } from '../contexts/SidebarContext';
 import styled from 'styled-components';
 import CategoriesSidebar from '../components/CategoriesSidebar';
-import { ClosetNavigationContainer } from '../styles/ClosetNavigation';
+import { ClosetNavigationContainer } from '../components/styles/ClosetNavigation';
 import { Tooltip } from '@mui/material';
 import { Link } from 'react-router-dom';
 import cuid from 'cuid';
-import Clothes from '../components/Clothes';
-import Canvas from '../components/Canvas';
-import Outfits from '../components/Outfits';
-import Shopping from '../components/Shopping';
-import AddItems from '../components/AddItems';
+import Items from '../components/Items/Items';
+import Canvas from '../components/Canvas/Canvas';
+import Outfits from '../components/Outfits/Outfits';
+import Shopping from '../components/Shopping/Shopping';
+import AddItems from '../components/Add Items/AddItems';
 
 const Container = styled.div`
     flex: 1;
@@ -29,16 +30,22 @@ const logoCanvasItem = {
 
 export default function VirtualCloset() {
     const { user } = useUser();
-    const { client } = useClient();
+    const { client, setClientId } = useClient();
     const { outfits, shopping, currentCategory } = useData();
     const { sidebarOpen, setSidebarOpen, mobileMode } = useSidebar();
+
+    const { clientId } = useParams();
+    useEffect(() => {
+        if (clientId) {
+            setClientId(clientId);
+        }
+    }, [clientId, setClientId]);
 
     const ref = useRef();
     const sidebarRef = useRef();
     const closetTitleRef = useRef();
 
     const [showIcons, setShowIcons] = useState(window.innerWidth > 740 ? false : true);
-    const [closetTitleHeight, setClosetTitleHeight] = useState(closetTitleRef?.current?.offsetHeight || 0);
 
     const [canvasItems, setCanvasItems] = useState([logoCanvasItem]);
 
@@ -64,8 +71,6 @@ export default function VirtualCloset() {
                     setShowIcons(false);
                 }
             }
-
-            setClosetTitleHeight(closetTitleRef.current.offsetHeight);
         }
 
         handleResize();
@@ -165,7 +170,7 @@ export default function VirtualCloset() {
     // closet controls
     const [closetMode, setClosetMode] = useState(0);
     const closetModes = [
-        { name: 'Clothes', icon: 'checkroom'},
+        { name: 'Items', icon: 'checkroom'},
         { name: `Canvas (${canvasItems.length - 1})`, icon: 'swipe'},
         { name: `Outfits (${outfits.length})`, icon: 'dry_cleaning'},
         { name: `Shopping (${shopping.length})`, icon: 'sell'},
@@ -177,13 +182,14 @@ export default function VirtualCloset() {
     }, [currentCategory, closetMode]);
 
     function scrollToRef(ref) {
-        ref.current.scroll({
+        ref?.current?.scroll({
             top: 0,
             behavior: 'smooth'
         });
     }
 
     return (
+        ( client ?
         <>
             <Container>
                 <CategoriesSidebar
@@ -197,11 +203,11 @@ export default function VirtualCloset() {
                     <div className={`closet-title ${optionsExpanded ? 'expanded' : ''}`} ref={closetTitleRef}>
                         {!sidebarOpen &&
                             <Tooltip title="Open Sidebar">
-                                <button className="material-icons open-sidebar-icon" onClick={() => setSidebarOpen(true)}>chevron_right</button>
+                                <button className="material-icons open-sidebar-icon" onClick={() => setSidebarOpen(true)}>menu</button>
                             </Tooltip>
                         }
                         <h1 className="client-closet">
-                            {`${client.firstName} ${client.lastName}`}
+                            {`${client?.firstName} ${client?.lastName}`}
                             { closetMode === 1 &&
                                 <Tooltip title="Expand Options" placement="top">
                                     <button className="material-icons expand-closet-options" onClick={handleExpandOptions}>expand_more</button>
@@ -214,7 +220,7 @@ export default function VirtualCloset() {
                             </Tooltip>
                         }
                     </div>
-                    <div className={`closet-options ${closetMode === 1 ? 'canvas-mode' : ''} ${optionsExpanded ? 'expanded' : ''}`} style={{ top: `${closetMode === 1 ? `${closetTitleHeight}px` : 'unset'}` }}>
+                    <div className={`closet-options ${closetMode === 1 ? 'canvas-mode' : ''} ${optionsExpanded ? 'expanded' : ''}`} style={{ top: `${closetMode === 1 ? `${closetTitleRef?.current?.offsetHeight || 0}px` : 'unset'}` }}>
                         <ul>
                             {
                                 closetModes.map((mode, index) => (
@@ -239,7 +245,7 @@ export default function VirtualCloset() {
                         </ul>
                     </div>
                     <div ref={ref} className="closet-container">
-                        <Clothes
+                        <Items
                             display={closetMode === 0} 
                             addCanvasItem={addCanvasItem}
                             canvasItems={canvasItems}
@@ -274,7 +280,10 @@ export default function VirtualCloset() {
                     </div>
                 </ClosetNavigationContainer>
             </Container>
-            <p className="copyright">© 2025 Edie Styles, LLC</p>
+            <p className="copyright">© 2026 Edie Styles, LLC</p>
         </>
+        :
+        <></>
+        )
     )
 }

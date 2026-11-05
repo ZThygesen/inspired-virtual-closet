@@ -83,3 +83,7 @@ div[role="tooltip"] > * {
 .MuiFormControl-root * {
     font-family: 'Raleway' !important;
 }
+
+.doc-content {
+    padding: none !important;
+}

@@ -1,19 +1,22 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useLoading } from '../contexts/LoadingContext';
 import { useError } from './ErrorContext';
 import { useUser } from './UserContext';
 import { useClient } from './ClientContext';
 import api from '../api';
-import Loading from '../components/Loading';
 
 const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {
+    const { loading, setLoading } = useLoading();
     const { setError } = useError();
     const { user } = useUser();
     const { client } = useClient();
 
     // high level data
     const [categories, setCategories] = useState([]);
+    const [clothesOptions, setClothesOptions] = useState([]);
+    const [profileOptions, setProfileOptions] = useState([]);
     const [tags, setTags] = useState([]);
 
     // client data
@@ -22,20 +25,30 @@ export const DataProvider = ({ children }) => {
     const [shopping, setShopping] = useState([]);
 
     // closet states
-    const [currentCategory, setCurrentCategory] = useState({ _id: -1, name: 'All' });
+    const [currentCategory, setCurrentCategory] = useState({ _id: -1, name: 'All', type: 'clothes' });
+    const [currentTab, setCurrentTab] = useState('clothes');
     const [currentItems, setCurrentItems] = useState([]);
-
-    const [loading, setLoading] = useState(false);
 
     const resetData = useCallback(() => {
         setItems([]);
         setOutfits([]);
         setShopping([]);
-        setCurrentCategory({ _id: -1, name: 'All' });
+        setCurrentCategory({ _id: -1, name: 'All', type: 'clothes' });
+        setCurrentTab('clothes');
         setCurrentItems([]);
         setLoading(false);
-    }, []);
+    }, [setLoading]);
 
+    const toggleCurrentTab = useCallback(() => {
+        if (currentTab === 'profile') {
+            setCurrentTab('clothes');
+        }
+        else {
+            setCurrentTab('profile');
+        }
+    }, [currentTab]);
+
+    // === categories ---------------------------------------------
     const updateCategories = useCallback(async () => {
         try {
             const response = await api.get('/categories');
@@ -60,6 +73,119 @@ export const DataProvider = ({ children }) => {
         }
     }, [setError]);
 
+    const getCategoryName = useCallback((categoryId) => {
+        const category = categories.filter(category => category._id === categoryId);
+        let categoryName = '';
+        if (category.length) {
+            categoryName = category[0]?.name;
+        }
+        return categoryName;
+    }, [categories]);
+
+    const getCategoryType = useCallback((categoryId) => {
+        const category = categories.filter(category => category._id === categoryId);
+        let categoryType = 'clothes';
+        if (category.length && (category[0]?.type === 'profile')) {
+            categoryType = 'profile';
+        }
+        return categoryType;
+    }, [categories]);
+
+    const getCategoryPermissions = useCallback((categoryId) => {
+        const category = categories.filter(category => category._id === categoryId)[0];
+        return {
+            clientViewItems: Boolean(category?.clientViewItems),
+            clientAddItems: Boolean(category?.clientAddItems),
+            rmbgItems: Boolean(category?.rmbgItems),
+        };
+    }, [categories]);
+
+    const getCategoryDropdownOptions = useCallback((type) => {
+        let theseCategories = categories.filter(category => category._id !== 0);
+        if (!user?.isSuperAdmin && !user?.isAdmin) {
+            theseCategories = theseCategories.filter(category => category.clientViewItems && category.clientAddItems);
+        }
+        if (type === 'profile') {
+            theseCategories = theseCategories.filter(category => category.type === 'profile');
+        }
+        else {
+            theseCategories = theseCategories.filter(category => category.type !== 'profile');
+        }
+
+        const categoriesWithGroups = theseCategories.filter(category => category.group);
+        const categoriesWithoutGroups = theseCategories.filter(category => !category.group);
+
+        const groupMap = {};
+        for (const category of categoriesWithGroups) {
+            if (!groupMap[category.group]) {
+                groupMap[category.group] = [];
+            }
+            groupMap[category.group].push(category);
+        }
+        for (const category of categoriesWithoutGroups) {
+            if (!groupMap['Other']) {
+                groupMap['Other'] = [];
+            }
+            groupMap['Other'].push(category);
+        }
+
+        if (type !== 'profile') {
+            if (!groupMap['Other']) {
+                groupMap['Other'] = [];
+            }
+            groupMap['Other'].unshift({ _id: 0, name: 'Other' });
+        }
+
+        const groups = Object.keys(groupMap).sort((a, b) => {
+            if (a === 'Other' && b === 'Other') {
+                return 0;
+            }
+            else if (a === 'Other' && b !== 'Other') {
+                return 1;
+            }
+            else if (a !== 'Other' && b === 'Other') {
+                return -1;
+            }
+            else if (a < b) { 
+                return -1; 
+            }
+            else if (a > b) { 
+                return 1; 
+            }
+            else { 
+                return 0; 
+            }
+        });
+
+        const options = [];
+        for (const group of groups) {
+            const categoryOptions = [];
+            const groupCategories = groupMap[group];
+            for (const category of groupCategories) {
+                categoryOptions.push({
+                    value: category._id,
+                    label: category.name,
+                });
+            }
+            options.push({
+                type: 'group',
+                name: group,
+                items: categoryOptions,
+            });
+        }
+
+        return options;
+    }, [user, categories]);
+
+    useEffect(() => {
+        const clothes = getCategoryDropdownOptions('clothes');
+        const profile = getCategoryDropdownOptions('profile');
+
+        setClothesOptions(clothes);
+        setProfileOptions(profile);
+    }, [categories, getCategoryDropdownOptions]);
+
+    // === tags ---------------------------------------------
     const updateTags = useCallback(async () => {
         try {
             const response = await api.get('/tags/active');
@@ -109,14 +235,22 @@ export const DataProvider = ({ children }) => {
 
     }, [tags]);
 
-    const getCategoryName = useCallback((categoryId) => {
-        const category = categories.filter(category => category._id === categoryId);
-        let categoryName = '';
-        if (category.length) {
-            categoryName = category[0]?.name;
+    // === items ---------------------------------------------
+    const getLinkItemUrl = useCallback((url) => {
+        if (!url?.startsWith('https://docs.google.com')) {
+            return '';
         }
-        return categoryName;
-    }, [categories]);
+        else {
+            let path = url?.split('?')[0];
+            path = path.replace('https://', '');
+
+            let partsToRemove = ['e', 'edit', 'preview', 'pub', 'pubembed'];
+            let parts = path?.split('/');
+            parts = parts.filter(part => !partsToRemove?.includes(part));
+
+            return 'https://' + parts.join('/');
+        }
+    }, []);
 
     const updateItems = useCallback(async () => {
         if (client) {
@@ -128,6 +262,10 @@ export const DataProvider = ({ children }) => {
                     const tags = resolveTagIds(item.tags).map(tag => tag.tagName);
                     item.tagNamesPrefix = tags.join(' | ');
                     item.categoryName = getCategoryName(item.categoryId);
+                    item.categoryType = getCategoryType(item.categoryId);
+                    if (item.type === 'link') {
+                        item.urlToDisplay = getLinkItemUrl(item.url);
+                    }
                     theseItems.push(item);
                 }
                 theseItems.sort((a, b) => {
@@ -152,8 +290,20 @@ export const DataProvider = ({ children }) => {
                 });
             }
         }
-    }, [client, resolveTagIds, getCategoryName, setError]);
+    }, [client, resolveTagIds, getCategoryName, getCategoryType, getLinkItemUrl, setError]);
 
+    // current category's items
+    useEffect(() => {
+        const itemsToUse = items.filter(item => item.categoryType === currentCategory.type);
+        if (currentCategory._id === -1) {
+            setCurrentItems(itemsToUse);
+        }
+        else {
+            setCurrentItems(itemsToUse.filter(item => item.categoryId === currentCategory._id));
+        }
+    }, [items, currentCategory]);
+
+    // === outfits ---------------------------------------------
     const updateOutfits = useCallback(async () => {
         if (client) {
             try {
@@ -171,6 +321,7 @@ export const DataProvider = ({ children }) => {
         }
     }, [client, setError]);
 
+    // === shopping ---------------------------------------------
     const updateShopping = useCallback(async () => {
         if (client) {
             try {
@@ -186,15 +337,7 @@ export const DataProvider = ({ children }) => {
         }
     }, [client, setError]);
 
-    useEffect(() => {
-        if (currentCategory._id === -1) {
-            setCurrentItems(items);
-        }
-        else {
-            setCurrentItems(items.filter(item => item.categoryId === currentCategory._id));
-        }
-    }, [items, currentCategory]);
-
+    // === updates on user/client change ---------------------------------------------
     useEffect(() => {
         if (user) {
             updateCategories();
@@ -208,13 +351,7 @@ export const DataProvider = ({ children }) => {
         await updateOutfits();
         await updateShopping();
         setLoading(false);
-    }, [updateItems, updateOutfits, updateShopping]);
-
-    // useEffect(() => {
-    //     if (user) {
-    //         updateAll();
-    //     }
-    // }, [user, updateAll]);
+    }, [updateItems, updateOutfits, updateShopping, setLoading]);
 
     useEffect(() => {
         if (client) {
@@ -224,8 +361,12 @@ export const DataProvider = ({ children }) => {
 
     return (
         <DataContext.Provider value={{  
-            categories, 
+            categories,
+            clothesOptions,
+            profileOptions,
             updateCategories,
+            getCategoryPermissions,
+
             tags,
             updateTags,
             resolveTagIds,
@@ -240,6 +381,8 @@ export const DataProvider = ({ children }) => {
 
             currentCategory,
             setCurrentCategory,
+            currentTab,
+            toggleCurrentTab,
             currentItems,
             setCurrentItems,
             
@@ -249,7 +392,6 @@ export const DataProvider = ({ children }) => {
             resetData,
         }}>
             {children}
-            <Loading open={loading} />
         </DataContext.Provider>
     );
 };

@@ -33,7 +33,6 @@ export const SwapDropdown = styled(Dropdown)`
         font-size: 20px;
         color: var(--black);
         border: 1px solid var(--black);
-        padding: 16.5px 14px;
         border-radius: 4px;
         cursor: pointer;
 

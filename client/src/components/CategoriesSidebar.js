@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import { useSidebar } from '../contexts/SidebarContext';
 import cuid from 'cuid';
-import { CategoriesSidebarContainer } from '../styles/CategoriesSidebar';
+import { CategoriesSidebarContainer } from './styles/CategoriesSidebar';
 import { Tooltip } from '@mui/material';
-import Clothes from './Clothes';
+import Items from './Items/Items';
 
 export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOutfitsByItem, canvasItems, setClothesClosetMode }) {
-    const { categories, items, currentCategory, setCurrentCategory } = useData();
-    const { sidebarOpen, setSidebarOpen, mobileMode, setCurrCategoryClicked } = useSidebar();
+    const { categories, items, currentCategory, setCurrentCategory, currentTab, toggleCurrentTab } = useData();
+    const { sidebarOpen, setSidebarOpen, mobileMode, setCurrCategoryClicked, } = useSidebar();
 
     const [categoryGroups, setCategoryGroups] = useState([]);
     const [stickyCategory, setStickyCategory] = useState(null);
@@ -17,7 +17,14 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
     const toggleRef = useRef();
 
     useEffect(() => {
-        const theseCategories = categories.filter(category => category._id !== 0);
+        const itemsToUse = items.filter(item => item.categoryType === currentTab);
+        let theseCategories = categories.filter(category => category._id !== 0);
+        if (currentTab === 'profile') {
+            theseCategories = theseCategories.filter(category => category.type === 'profile');
+        }
+        else {
+            theseCategories = theseCategories.filter(category => category.type !== 'profile');
+        }
         const categoriesWithGroups = theseCategories.filter(category => category.group);
         const categoriesWithoutGroups = theseCategories.filter(category => !category.group);
 
@@ -26,24 +33,27 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
             if (!groupMap[category.group]) {
                 groupMap[category.group] = [];
             }
-            const numItems = items.filter(file => file.categoryId === category._id).length;
+            const numItems = itemsToUse.filter(file => file.categoryId === category._id).length;
             groupMap[category.group].push({ ...category, numItems: numItems });
         }
         for (const category of categoriesWithoutGroups) {
-            if (!groupMap[0]) {
-                groupMap[0] = [];
+            if (!groupMap['0']) {
+                groupMap['0'] = [];
             }
-            const numItems = items.filter(file => file.categoryId === category._id).length;
-            groupMap[0].push({ ...category, numItems: numItems });
+            const numItems = itemsToUse.filter(file => file.categoryId === category._id).length;
+            groupMap['0'].push({ ...category, numItems: numItems });
         }
 
         const categoriesByGroup = [];
         const groups = Object.keys(groupMap).sort((a, b) => {
-            if (a === 0 && b === 0) {
+            if (a === '0' && b === '0') {
                 return 0;
             }
-            else if (a === 0 || b === 0) {
+            else if (a === '0' && b !== '0') {
                 return 1;
+            }
+            else if (a !== '0' && b === '0') {
+                return -1;
             }
             else if (a < b) { 
                 return -1; 
@@ -60,14 +70,16 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
             categoriesByGroup.push({ group: group, categories: groupCategories });
         }
 
-        const allCategory = { _id: -1, name: 'All', numItems: items.length };
-        let otherCategory = categories.filter(category => category._id === 0)[0];
-        const numOtherItems = items.filter(file => file.categoryId === 0).length;
-        otherCategory = { ...otherCategory, numItems: numOtherItems };
-        categoriesByGroup.unshift({ group: -1, categories: [allCategory, otherCategory] });
+        if (currentTab !== 'profile') {
+            const allCategory = { _id: -1, name: 'All', type: 'clothes', numItems: itemsToUse.length };
+            let otherCategory = categories.filter(category => category._id === 0)[0];
+            const numOtherItems = itemsToUse.filter(file => file.categoryId === 0).length;
+            otherCategory = { ...otherCategory, numItems: numOtherItems };
+            categoriesByGroup.unshift({ group: -1, categories: [allCategory, otherCategory] });
+        }
 
         setCategoryGroups(categoriesByGroup);
-    }, [categories, items]);
+    }, [categories, items, currentTab]);
     
     function toggleStickyCategory(category) {
         if (category === stickyCategory) {
@@ -82,7 +94,12 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
         <>
             <CategoriesSidebarContainer id="sidebar" className={`${sidebarOpen ? 'open' : ''}`} ref={sidebarRef}>
                 <div className="categories-header">
-                    <h2 className="header-title">Categories</h2>
+                    <div className="categories-header-title-container">
+                        <Tooltip title={currentTab === 'profile' ? 'Switch to Clothes' : 'Switch to Profile'}>
+                            <button className="material-icons switch-sidebar-tab-icon" onClick={toggleCurrentTab}>swap_vert</button>
+                        </Tooltip>
+                        <h2 className="header-title">{currentTab === 'profile' ? 'Profile' : 'Clothes'}</h2>
+                    </div>
                     <Tooltip title="Close Sidebar">
                         <button className="material-icons close-sidebar-icon" onClick={() => setSidebarOpen(false)}>chevron_left</button>
                     </Tooltip>
@@ -91,7 +108,7 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
                     {
                         categoryGroups.map(categoryGroup => (
                             <div className="category-group" key={cuid()}>
-                                { (categoryGroup.group !== -1 && categoryGroup.group !== 0) && 
+                                { (categoryGroup.group !== -1 && categoryGroup.group !== '0') && 
                                     <p className="group">{categoryGroup.group}</p> 
                                 }
                                 <div className="categories">
@@ -133,7 +150,7 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
                                                     }}
                                                     className="category-button"
                                                 >
-                                                    <p className={`category-name ${(categoryGroup.group === -1 || categoryGroup.group === 0) ? 'prominent' : ''}`}>{category.name}</p>
+                                                    <p className={`category-name ${(categoryGroup.group === -1 || categoryGroup.group === '0') ? 'prominent' : ''}`}>{category.name}</p>
                                                     <div
                                                         className={`num-items ${category.numItems > 0 ? 'can-hover': ''}`}
                                                         onClick={(e) => {
@@ -150,7 +167,7 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
                                                     </div>
                                                 </button>
                                                 { stickyCategory === category &&
-                                                    <Clothes
+                                                    <Items
                                                         display={true}
                                                         addCanvasItem={addCanvasItem}
                                                         canvasItems={canvasItems}

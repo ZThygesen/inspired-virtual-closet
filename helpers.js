@@ -442,6 +442,19 @@ export const helpers = {
         }
     },
 
+    async getViewableCategories(db) {
+        if (!db) {
+            throw this.createError('database instance required to get viewable categories', 500);
+        }
+
+        const collection = db.collection('categories');
+        const categories = await collection.find({ 
+            clientViewItems: true,
+        }).toArray();
+        const categoryIds = categories.map(category => category._id.toString());
+        return categoryIds;
+    },
+
     // determines if given client is a super admin
     async isSuperAdmin(db, clientId) {
         if (!db) {

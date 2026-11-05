@@ -14,8 +14,6 @@ export const unitHelpers = {
     mockCreateError: null,
 
     // === route specifics ==================
-    // categories
-    mockMoveFilesToOther: null,
 
     // items
     creditsResponse: null,
@@ -36,6 +34,7 @@ export const unitHelpers = {
     mockParse: null,
     mockCreateId: null,
     mockBucket: null,
+    mockGetViewableCategories: null,
 
     // outfits
     whiteBgResponse: null,
@@ -77,9 +76,6 @@ export const unitHelpers = {
         });
 
         // === route specific functions ==================
-        // categories
-        this.mockMoveFilesToOther = jest.spyOn(helpers, 'moveFilesToOther').mockResolvedValue();
-        
         // items
         this.creditsResponse = 321;
         this.bufferResponse = Buffer.from('this is a file source');
@@ -99,6 +95,7 @@ export const unitHelpers = {
         this.mockParse = jest.spyOn(path, 'parse').mockReturnValue({ name: 'blaze-tastic', extension: 'png' });
         this.mockCreateId = jest.spyOn(cuid2, 'createId').mockReturnValue(this.idResponse);
         this.mockBucket = { bucket: 'head' };
+        this.mockGetViewableCategories = jest.spyOn(helpers, 'getViewableCategories').mockResolvedValue();
 
         // outfits
         this.whiteBgResponse = Buffer.from('this is a white background image');

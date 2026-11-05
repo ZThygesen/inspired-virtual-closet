@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { Modal as MuiModal } from '@mui/material';
-import { ModalContentContainer } from '../styles/Modal';
+import { ModalContentContainer } from './styles/Modal';
 
 export default function Modal({ open, closeFn, isForm, submitFn, isImage, isLoading=false, children }) {
     const handleClick = useCallback((e) => {
@@ -8,7 +8,8 @@ export default function Modal({ open, closeFn, isForm, submitFn, isImage, isLoad
         if (isImage && 
             !isLoading && 
             open && 
-            e.target.tagName !== 'IMG' && 
+            e.target.tagName !== 'IMG' &&
+            !classList.includes('iframe-overlay') &&
             !classList.includes('send-to-canvas') &&
             !classList.includes('prev-card') &&
             !classList.includes('next-card')

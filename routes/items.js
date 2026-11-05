@@ -19,12 +19,6 @@ const items = {
                 throw helpers.createError(`cannot add item: no categories with the id "${categoryId}" exist`, 404);
             }
 
-            if (!req?.user?.isSuperAdmin && !req?.user?.isAdmin) {
-                if (!rmbg || !crop) {
-                    throw helpers.createError('non-admins must remove background and crop image on item upload', 403);
-                }
-            }
-
             let clientCredits;
             const isSuperAdmin = await helpers.isSuperAdmin(db, clientId);
             if (!isSuperAdmin) {
@@ -69,6 +63,7 @@ const items = {
             const item = {
                 clientId: clientId,
                 categoryId: categoryId,
+                type: 'file',
                 fileName: fileName,
                 fullFileUrl: fullFileUrl,
                 smallFileUrl: smallFileUrl,
@@ -96,12 +91,43 @@ const items = {
         }
     },
 
+    async postLink(req, res, next) {
+        try {
+            const { db } = req.locals;
+            const collection = db.collection('items');
+            const { clientId } = req.params;
+            const { categoryId, name, url } = req.body;
+
+            const item = {
+                clientId: clientId,
+                categoryId: categoryId,
+                type: 'link',
+                fileName: name,
+                url: url,
+            };
+
+            const result = await collection.insertOne(item);
+            if (!result.insertedId) {
+                throw helpers.createError('item was not inserted into database', 500);
+            }
+
+            res.status(201).json({ message: 'Success!'});
+        }
+        catch (err) {
+            next(err);
+        }
+    },
+
     async get(req, res, next) {
         try {
             const { db } = req.locals;
             const collection = db.collection('items');
             const { clientId } = req.params;
-            const items = await collection.find({ clientId: clientId }).toArray();
+            let items = await collection.find({ clientId: clientId }).toArray();
+            if (!req?.user?.isSuperAdmin && !req?.user?.isAdmin) {
+                const viewableCategories = await helpers.getViewableCategories(db);
+                items = items.filter(item => viewableCategories.includes(item.categoryId));
+            }
             res.status(200).json(items);
         } 
         catch (err) {
@@ -133,6 +159,34 @@ const items = {
             res.status(200).json({ message: 'Success!' });
         } 
         catch (err) {
+            next(err);
+        }
+    },
+
+    async patchLink(req, res, next) {
+        try {
+            const { db } = req.locals;
+            const collection = db.collection('items');
+            const { itemId } = req.params;
+            const { name, url } = req.body;
+
+            const result = await collection.updateOne(
+                { _id: itemId },
+                {
+                    $set: {
+                        fileName: name,
+                        url : url,
+                    }
+                }
+            );
+
+            if (result.modifiedCount === 0) {
+                throw helpers.createError('update of link item failed: item not found with given item id', 404);
+            }
+    
+            res.status(200).json({ message: 'Success!' });
+        }
+        catch(err) {
             next(err);
         }
     },
@@ -199,6 +253,25 @@ const items = {
         catch (err) {
             next(err);
         }
+    },
+
+    async deleteLink(req, res, next) {
+        try {
+            const { db } = req.locals;
+            const collection = db.collection('items');
+            const { itemId } = req.params;
+
+            const result = await collection.deleteOne({ _id: itemId });
+
+            if (result.deletedCount === 0) {
+                throw helpers.createError('deletion of item failed: item not deleted from database', 404);
+            }
+    
+            res.status(200).json({ message: 'Success!' });
+        } 
+        catch (err) {
+            next(err);
+        }
     }
 };
 
@@ -209,7 +282,16 @@ router.post('/:clientId',
     ExpressFormidable(),
     schemaHelpers.validateParams(schema.post.params.schema),
     schemaHelpers.validateFields(schema.post.body.schema),
+    auth.checkAddItems,
+    auth.checkRmbg,
     items.post,
+);
+router.post('/link/:clientId',
+    auth.requireAdmin,
+    schemaHelpers.validateParams(schema.postLink.params.schema),
+    schemaHelpers.validateBody(schema.postLink.body.schema),
+    auth.checkAddItems,
+    items.postLink,
 );
 router.get('/:clientId',
     auth.checkPermissions,
@@ -220,18 +302,34 @@ router.patch('/:clientId/:itemId',
     auth.checkPermissions, 
     schemaHelpers.validateParams(schema.patchName.params.schema),
     schemaHelpers.validateBody(schema.patchName.body.schema),
+    auth.checkAddItems,
     items.patchName,
 );
+router.patch('/link/:clientId/:itemId',
+    auth.requireAdmin,
+    schemaHelpers.validateParams(schema.patchLink.params.schema),
+    schemaHelpers.validateBody(schema.patchLink.body.schema),
+    auth.checkAddItems,
+    items.patchLink,
+)
 router.patch('/category/:clientId/:itemId', 
     auth.checkPermissions,
     schemaHelpers.validateParams(schema.patchCategory.params.schema),
     schemaHelpers.validateBody(schema.patchCategory.body.schema),
+    auth.checkAddItems,
     items.patchCategory,
 );
 router.delete('/:clientId/:itemId', 
     auth.checkPermissions,
     schemaHelpers.validateParams(schema.delete.params.schema),
+    auth.checkAddItems,
     items.delete,
+);
+router.delete('/link/:clientId/:itemId', 
+    auth.requireAdmin,
+    schemaHelpers.validateParams(schema.deleteLink.params.schema),
+    auth.checkAddItems,
+    items.deleteLink,
 );
 
 export { items, router as itemsRouter };

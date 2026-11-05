@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useLoading } from '../contexts/LoadingContext';
 import { useError } from '../contexts/ErrorContext';
 import api from '../api'
 import cuid from 'cuid';
-import Loading from '../components/Loading';
 import Modal from '../components/Modal';
 import { Tooltip } from '@mui/material';
-import { TheArchiveContainer } from '../styles/TheArchive';
+import { TheArchiveContainer } from './styles/TheArchive';
 
 export default function TheArchive() {
+    const { setLoading } = useLoading();
     const { setError } = useError();
 
     const [activeArchiveTab, setActiveArchiveTab] = useState(0);
@@ -22,8 +23,6 @@ export default function TheArchive() {
     const [tagToDelete, setTagToDelete] = useState({});
     const [unarchiveTagOpen, setUnarchiveTagOpen] = useState(false);
     const [deleteTagOpen, setDeleteTagOpen] = useState(false);
-
-    const [loading, setLoading] = useState(false);
 
     // Tag management
     const getTagGroups = useCallback(async () => {
@@ -64,7 +63,7 @@ export default function TheArchive() {
         }
 
         setLoading(false);
-    }, [setError]);
+    }, [setLoading, setError]);
 
     useEffect(() => {
         getTagGroups();
@@ -186,7 +185,6 @@ export default function TheArchive() {
                     </div>
                 </div>
             </TheArchiveContainer>
-            <Loading open={loading} />
             <Modal
                 open={unarchiveTagOpen}
                 closeFn={handleCloseUnarchiveTag}

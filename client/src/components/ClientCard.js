@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useClient } from '../contexts/ClientContext';
-import { ClientCardContainer } from '../styles/ClientCard';
+import { ClientCardContainer } from './styles/ClientCard';
 import { Tooltip } from '@mui/material';
 import Modal from './Modal';
 import Input from './Input';
@@ -17,7 +16,6 @@ export default function ClientCard({ client, editClient, deleteClient }) {
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
     const { user } = useUser();
-    const { setClient } = useClient();
 
     const navigate = useNavigate();
 
@@ -71,8 +69,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                             <button
                                 className="material-icons closet-icon"
                                 onClick={() => {
-                                    navigate(`${client.firstName.toLowerCase()}-${client.lastName.toLowerCase()}`);
-                                    setClient(client);
+                                    navigate(client._id);
                                 }}
                             >
                                 checkroom

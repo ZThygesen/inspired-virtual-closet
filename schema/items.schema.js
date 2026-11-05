@@ -19,7 +19,6 @@ const schema = {
                 },
                 fileSrc: {
                     type: 'string',
-                    pattern: 'data:image/(png|jpg|jpeg);base64',
                 },
                 fullFileName: {
                     type: 'string',
@@ -38,6 +37,31 @@ const schema = {
                 },
                 crop: {
                     type: 'boolean',
+                },
+            },
+        },
+    },
+    postLink: {
+        params: {
+            fields: {
+                clientId: {
+                    type: 'objectID',
+                    keepAsString: true,
+                },
+            },
+        },
+        body: {
+            fields: {
+                categoryId: {
+                    type: 'objectID',
+                    otherAllowed: true,
+                    keepAsString: true,
+                },
+                name: {
+                    type: 'string',
+                },
+                url: {
+                    type: 'string',
                 },
             },
         },
@@ -80,6 +104,29 @@ const schema = {
             },
         },
     },
+    patchLink: {
+        params: {
+            fields: {
+                clientId: {
+                    type: 'objectID',
+                },
+                itemId: {
+                    type: 'objectID',
+                },
+            },
+        },
+        body: {
+            fields: {
+                name: {
+                    type: 'string',
+                },
+                url: {
+                    type: 'string',
+                    pattern: 'https://docs.google.com',
+                },
+            },
+        },
+    },
     patchCategory: {
         params: {
             fields: {
@@ -102,6 +149,18 @@ const schema = {
         },
     },
     delete: {
+        params: {
+            fields: {
+                clientId: {
+                    type: 'objectID',
+                },
+                itemId: {
+                    type: 'objectID',
+                },
+            },
+        },
+    },
+    deleteLink: {
         params: {
             fields: {
                 clientId: {

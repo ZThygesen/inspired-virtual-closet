@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useError } from '../contexts/ErrorContext';
-import { useUser } from '../contexts/UserContext';
-import { useClient } from '../contexts/ClientContext';
-import { useData } from '../contexts/DataContext';
-import api from '../api';
+import { useError } from '../../contexts/ErrorContext';
+import { useUser } from '../../contexts/UserContext';
+import { useClient } from '../../contexts/ClientContext';
+import { useData } from '../../contexts/DataContext';
+import api from '../../api';
 import { Tooltip } from '@mui/material';
 import ShoppingCard from './ShoppingCard';
-import { ShoppingContainer } from '../styles/Shopping';
-import cuid from 'cuid';
-import Input from './Input';
-import Modal from './Modal';
+import { ShoppingContainer } from './ShoppingStyles';
+import Input from '../Input';
+import Modal from '../Modal';
 
 export default function Shopping({ display }) {
     const { setError } = useError();
@@ -206,7 +205,7 @@ export default function Shopping({ display }) {
                                         setEditModalOpen={setEditModalOpen}
                                         setDeleteModalOpen={setDeleteModalOpen}
                                         setModalShoppingItem={setModalShoppingItem}
-                                        key={cuid()}
+                                        key={shoppingItem._id}
                                     />
                                 ))
                             }
@@ -231,7 +230,7 @@ export default function Shopping({ display }) {
                                         setEditModalOpen={setEditModalOpen}
                                         setDeleteModalOpen={setDeleteModalOpen}
                                         setModalShoppingItem={setModalShoppingItem}
-                                        key={cuid()}
+                                        key={shoppingItem._id}
                                     />
                                 ))
                             }

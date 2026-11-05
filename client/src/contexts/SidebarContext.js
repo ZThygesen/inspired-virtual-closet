@@ -54,13 +54,17 @@ export const SidebarProvider = ({ children }) => {
     return (
         <SidebarContext.Provider value={{ 
             sidebarOpen, 
-            setSidebarOpen, 
+            setSidebarOpen,
+
             mobileMode, 
             setMobileMode, 
+
             canvasMode, 
             setCanvasMode, 
+
             currCategoryClicked, 
             setCurrCategoryClicked,
+
             resetSidebar,
         }}>
             {children}

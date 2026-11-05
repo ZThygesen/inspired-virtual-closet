@@ -1,21 +1,27 @@
+import { useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
+import { useLoading } from '../contexts/LoadingContext';
 import { useUser } from '../contexts/UserContext';
-// import Loading from './Loading';
 
 export default function ProtectedRoute({ adminOnly = false }) {
-    const { user } = useUser();
+    const { setLoading } = useLoading();
+    const { user, userLoading } = useUser();
 
-    // if (!loading) {
-        if (!user) {
-            return <Navigate to="/" />;
-        }
+    useEffect(() => {
+        setLoading(userLoading);
+    }, [userLoading, setLoading]);
 
-        if (adminOnly && !user?.isAdmin) {
-            return <Navigate to="/" />
-        }
+    if (userLoading) {
+        return null;
+    }
+
+    if (!user) {
+        return <Navigate to="/" />;
+    }
+
+    if (adminOnly && !user?.isAdmin) {
+        return <Navigate to="/" />
+    }
         
-        return <Outlet />;
-    // } else {
-    //     return <Loading open={loading} />;
-    // }
+    return <Outlet />;
 }

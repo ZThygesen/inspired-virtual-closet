@@ -152,6 +152,67 @@ const auth = {
         }
     },
 
+    async checkAddItems(req, res, next) {
+        try {
+            const { db } = req.locals;
+            const { itemId } = req.params;
+            const { categoryId } = req.body;
+            const collection = db.collection('categories');
+
+            if (!req?.user?.isSuperAdmin && !req?.user?.isAdmin) {
+                let catId;
+                if (!categoryId) {
+                    const item = await db.collection('items').findOne({ _id: itemId });
+                    catId = item?.categoryId?.toString();
+                }
+                else {
+                    catId = categoryId;
+                }
+
+                const category = await collection.findOne({ _id: ObjectId(catId) });
+                if (!category) {
+                    throw helpers.createError('non-admins do not have permissions to add or edit items: category not found', 401);
+                }
+                else if (!category.clientViewItems || !category.clientAddItems) {
+                    throw helpers.createError(`non-admins do not have permissions to add or edit items in category ${category.name}`, 401);
+                }
+            }
+            next();
+        }
+        catch (err) {
+            next(err);
+        }
+    },
+
+    async checkRmbg(req, res, next) {
+        try {
+            const { db } = req.locals;
+            const { categoryId, rmbg, crop } = req.body;
+            const collection = db.collection('categories');
+
+            if (!req?.user?.isSuperAdmin && !req?.user?.isAdmin) {
+                const category = await collection.findOne({ _id: ObjectId(categoryId) });
+                if (!category) {
+                    throw helpers.createError('cannot determine permissions for category: category not found', 401);
+                }
+                else if (category.rmbgItems) {
+                    if (!rmbg || !crop) {
+                        throw helpers.createError(`non-admins must remove background and crop for items in category ${category.name}`, 401);
+                    }
+                }
+                else {
+                    if (rmbg || crop) {
+                        throw helpers.createError(`non-admins cannot remove background or crop for items in category ${category.name}`, 401);
+                    }
+                }
+            }
+            next();
+        }
+        catch (err) {
+            next(err);
+        }
+    }, 
+
     requireAdmin(req, res, next) {
         if (!req?.user?.isAdmin) {
             return next(helpers.createError('only admins are authorized for this action', 401));
