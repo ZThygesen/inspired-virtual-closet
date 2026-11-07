@@ -75,7 +75,8 @@ export default function CategoriesSidebar({ sidebarRef, addCanvasItem, searchOut
             let otherCategory = categories.filter(category => category._id === 0)[0];
             const numOtherItems = itemsToUse.filter(file => file.categoryId === 0).length;
             otherCategory = { ...otherCategory, numItems: numOtherItems };
-            categoriesByGroup.unshift({ group: -1, categories: [allCategory, otherCategory] });
+            categoriesByGroup.unshift({ group: -1, categories: [allCategory] });
+            categoriesByGroup.push({ group: -1, categories: [otherCategory] });
         }
 
         setCategoryGroups(categoriesByGroup);

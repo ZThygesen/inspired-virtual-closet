@@ -174,6 +174,8 @@ export default function VirtualCloset() {
             logoItem.src = logoCanvasItem.src;
             delete logoItem?.attrs?.width;
             delete logoItem?.attrs?.height;
+            delete logoItem?.attrs?.scaleX;
+            delete logoItem?.attrs?.scaleY;
             setRedrawCanvas(current => !current);
         }
     }
