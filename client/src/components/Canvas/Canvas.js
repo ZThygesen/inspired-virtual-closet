@@ -18,7 +18,7 @@ const initialWidth = 1000;
 const initialHeight = 800;
 const ASPECT_RATIO = initialWidth / initialHeight;
 
-export default function Canvas({ display, sidebarRef, images, textboxes, addCanvasItem, removeCanvasItems, editMode, outfitToEdit, cancelEdit, setOutfitsClosetMode }) {
+export default function Canvas({ display, sidebarRef, images, textboxes, addCanvasItem, removeCanvasItems, editMode, outfitToEdit, cancelEdit, fixCanvasLogo, setOutfitsClosetMode }) {
     const { setLoading } = useLoading();
     const { setError } = useError();
     const { client } = useClient();
@@ -466,6 +466,16 @@ export default function Canvas({ display, sidebarRef, images, textboxes, addCanv
                         <p className="sub-title">{editMode && outfitToEdit ? "(editing)" : ""}</p> {/* <span>{outfitToEdit.outfitName}</span></p>} */}
                     </div>
                     <div className="canvas-options">
+                        <Tooltip title="Fix Logo">
+                            <span>
+                                <button
+                                    className="material-icons fix-logo-btn"
+                                    onClick={fixCanvasLogo}
+                                >
+                                    auto_fix_high
+                                </button>
+                            </span>
+                        </Tooltip>
                         <Tooltip title="Remove Selected Items">
                             <span>
                                 <button

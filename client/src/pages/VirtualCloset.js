@@ -51,6 +51,7 @@ export default function VirtualCloset() {
 
     const [outfitEditMode, setOutfitEditMode] = useState(false);
     const [outfitToEdit, setOutfitToEdit] = useState(null);
+    const [redrawCanvas, setRedrawCanvas] = useState(false);
 
     const [itemToSearch, setItemToSearch] = useState(null);
 
@@ -166,6 +167,16 @@ export default function VirtualCloset() {
         setOutfitToEdit(null);
         setCanvasItems([logoCanvasItem]);
     }
+
+    function fixCanvasLogo() {
+        const logoItem = canvasItems.find(item => item.canvasId === 0);
+        if (logoItem) {
+            logoItem.src = logoCanvasItem.src;
+            delete logoItem?.attrs?.width;
+            delete logoItem?.attrs?.height;
+            setRedrawCanvas(current => !current);
+        }
+    }
     
     // closet controls
     const [closetMode, setClosetMode] = useState(0);
@@ -262,7 +273,9 @@ export default function VirtualCloset() {
                                 editMode={outfitEditMode}
                                 outfitToEdit={outfitToEdit}
                                 cancelEdit={cancelOutfitEdit}
+                                fixCanvasLogo={fixCanvasLogo}
                                 setOutfitsClosetMode={() => setClosetMode(2)}
+                                redraw={redrawCanvas}
                             />
                         }
                         <Outfits 
