@@ -51,10 +51,13 @@ const items = {
 
             const smallImgBuffer = await helpers.createImageThumbnail(fullImgBuffer, 300, 300);
             
-            // create file object 
-            const fileName = path.parse(fullFileName)?.name;
-            if (!fileName) {
-                throw helpers.createError('error parsing file name', 500);
+            // create file object
+            let fileName = '';
+            if (fullFileName) {
+                fileName = path.parse(fullFileName)?.name;
+                if (!fileName) {
+                    throw helpers.createError('error parsing file name', 500);
+                }
             }
 
             const fullFileUrl = await helpers.uploadToGCS(bucket, fullGcsDest, fullImgBuffer);

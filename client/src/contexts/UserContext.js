@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useLoading } from './LoadingContext';
-import axios from 'axios';
+import api from '../api';
 
 const UserContext = createContext();
 
@@ -12,7 +12,7 @@ export const UserProvider = ({ children }) => {
     useEffect(() => {
         async function verifyToken() {
             try {
-                const response = await axios.post(`/google-auth/verify-token`, { withCredentials: true });
+                const response = await api.post(`/google-auth/verify-token`);
                 setUser(response?.data?.user);
             } catch (err) {
                 setUser(null);

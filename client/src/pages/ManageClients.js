@@ -54,12 +54,14 @@ export default function ManageClients() {
     const [superAdmins, setSuperAdmins] = useState([]);
     const [admins, setAdmins] = useState([]);
     const [clients, setClients] = useState([]);
+    const [disabled, setDisabled] = useState([]);
     const [openModal, setOpenModal] = useState(false);
     const [newClientFName, setNewClientFName] = useState('');
     const [newClientLName, setNewClientLName] = useState('');
     const [newClientEmail, setNewClientEmail] = useState('');
     const [newClientRole, setNewClientRole] = useState(false);
     const [newClientCredits, setNewClientCredits] = useState(350);
+    const [newDisabled, setNewDisabled] = useState(false);
 
     const [archiveOpen, setArchiveOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -72,6 +74,7 @@ export default function ManageClients() {
     const [searchResultsSuperAdmin, setSearchResultsSuperAdmin] = useState(superAdmins || []);
     const [searchResultsAdmin, setSearchResultsAdmin] = useState(admins || []);
     const [searchResultsClients, setSearchResultsClients] = useState(clients || []);
+    const [searchResultsDisabled, setSearchResultsDisabled] = useState(disabled || []);
     const [searchString, setSearchString] = useState('');
 
     useEffect(() => {
@@ -96,11 +99,13 @@ export default function ManageClients() {
         const superAdminResults = filter(superAdmins, searchString);
         const adminResults = filter(admins, searchString);
         const clientResults = filter(clients, searchString);
+        const disabledResults = filter(disabled, searchString);
 
         setSearchResultsSuperAdmin(superAdminResults);
         setSearchResultsAdmin(adminResults);
         setSearchResultsClients(clientResults);
-    }, [filter, searchString, superAdmins, admins, clients]);
+        setSearchResultsDisabled(disabledResults);
+    }, [filter, searchString, superAdmins, admins, clients, disabled]);
 
     const getClients = useCallback(async () => {
         setLoading(true);
@@ -122,11 +127,13 @@ export default function ManageClients() {
 
             const superAdmins = allClients.filter(client => client?.isSuperAdmin);
             const admins = allClients.filter(client => client?.isAdmin && !client?.isSuperAdmin);
-            const clients = allClients.filter(client => !client?.isSuperAdmin && !client?.isAdmin);
+            const clients = allClients.filter(client => !client?.isSuperAdmin && !client?.isAdmin && !client?.disabled);
+            const disabled = allClients.filter(client => !client?.isSuperAdmin && !client?.isAdmin && client?.disabled);
             
             setSuperAdmins(superAdmins);
             setAdmins(admins);
             setClients(clients);
+            setDisabled(disabled);
         } catch (err) {
             setError({
                 message: 'There was an error fetching clients.',
@@ -148,6 +155,7 @@ export default function ManageClients() {
         setNewClientEmail('');
         setNewClientCredits(350);
         setNewClientRole(false);
+        setNewDisabled(false);
     }
 
     async function addClient(e) {
@@ -160,7 +168,8 @@ export default function ManageClients() {
                 lastName: newClientLName,
                 email: newClientEmail,
                 credits: newClientCredits,
-                isAdmin: newClientRole
+                isAdmin: newClientRole,
+                disabled: newDisabled && !newClientRole
             });
             handleClose();
             await getClients();
@@ -174,24 +183,26 @@ export default function ManageClients() {
         }
     }
 
-    async function editClient(client, newFirstName, newLastName, newEmail, newCredits, newIsAdmin) {
+    async function editClient(client, newFirstName, newLastName, newEmail, newCredits, newIsAdmin, newDisabled) {
         setLoading(true);
         if (client.firstName === newFirstName && 
             client.lastName === newLastName &&
             client.email === newEmail &&
             client.credits === newCredits &&
-            client.isAdmin === newIsAdmin
+            client.isAdmin === newIsAdmin &&
+            client.disabled === newDisabled
         ) {
             setLoading(false);
             return;
         }
         try {
-            await api.patch(`/api/clients/${client._id}`, { 
+            await api.patch(`/api/clients/${client._id}`, {
                 newFirstName: newFirstName, 
                 newLastName: newLastName,
                 newEmail: newEmail,
                 newCredits: newCredits,
-                newIsAdmin: newIsAdmin
+                newIsAdmin: newIsAdmin,
+                newDisabled: newDisabled && !newIsAdmin,
             });  
             await getClients();
         } catch (err) {
@@ -414,6 +425,11 @@ export default function ManageClients() {
                             <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
                         ))
                     }
+                    { 
+                        searchResultsDisabled?.map(client => (
+                            <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
+                        ))
+                    }
                 </div>
                 { user?.isSuperAdmin &&
                     <div className="footer">
@@ -466,7 +482,18 @@ export default function ManageClients() {
                                 label="Admin"
                                 value={newClientRole}
                                 onChange={e => setNewClientRole(e.target.checked)}
+                                classList="flex-align-start"
                             />
+                            { !newClientRole &&
+                                <Input 
+                                    type="checkbox"
+                                    id="disabled"
+                                    label="Disabled"
+                                    value={newDisabled}
+                                    onChange={e => setNewDisabled(e.target.checked)}
+                                    classList="flex-align-start"
+                                />
+                            }
                         </div>
                         <div className="modal-options">
                             <button type="button" onClick={handleClose}>Cancel</button>

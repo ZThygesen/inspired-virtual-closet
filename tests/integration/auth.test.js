@@ -20,7 +20,8 @@ describe('auth', () => {
             email: 'janedeer11@gmail.com',
             credits: 350,
             isAdmin: true,
-            isSuperAdmin: true
+            isSuperAdmin: true,
+            disabled: false,
         };
 
         const collection = db.collection('clients');
@@ -35,21 +36,28 @@ describe('auth', () => {
 
     async function setUserSuper(db) {
         const collection = db.collection('clients');
-        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: true, isSuperAdmin: true } });
+        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: true, isSuperAdmin: true, disabled: false } });
         token = jwt.sign({ id: user._id, isAdmin: true, isSuperAdmin: true }, process.env.JWT_SECRET);
         cookie = `token=${token}`;
     }
 
     async function setUserAdmin(db) {
         const collection = db.collection('clients');
-        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: true, isSuperAdmin: false } });
+        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: true, isSuperAdmin: false, disabled: false } });
         token = jwt.sign({ id: user._id, isAdmin: true, isSuperAdmin: false }, process.env.JWT_SECRET);
         cookie = `token=${token}`;
     }
 
     async function setUserNormal(db) {
         const collection = db.collection('clients');
-        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: false, isSuperAdmin: false } });
+        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: false, isSuperAdmin: false, disabled: false } });
+        token = jwt.sign({ id: user._id, isAdmin: false, isSuperAdmin: false }, process.env.JWT_SECRET);
+        cookie = `token=${token}`;
+    }
+
+    async function setUserDisabled(db) {
+        const collection = db.collection('clients');
+        await collection.updateOne({ _id: user._id }, { $set: { isAdmin: false, isSuperAdmin: false, disabled: true } });
         token = jwt.sign({ id: user._id, isAdmin: false, isSuperAdmin: false }, process.env.JWT_SECRET);
         cookie = `token=${token}`;
     }
@@ -65,7 +73,8 @@ describe('auth', () => {
             email: 'janedeer11@gmail.com',
             credits: 350,
             isAdmin: true,
-            isSuperAdmin: true
+            isSuperAdmin: true,
+            disabled: false,
         };
 
         const collection = db.collection('clients');
@@ -139,7 +148,8 @@ describe('auth', () => {
                     lastName: 'Doe',
                     email: 'jdoe@gmail.com',
                     credits: 350,
-                    isAdmin: false
+                    isAdmin: false,
+                    disabled: false,
                 };
             });
 
@@ -177,6 +187,18 @@ describe('auth', () => {
                 // perform checks
                 expect(response.status).toBe(401);
                 expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail if user disabled', async () => {
+                await setUserDisabled(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post('/api/clients')
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('user is disabled');
             });
 
             it('should fail with missing token', async () => {
@@ -236,6 +258,17 @@ describe('auth', () => {
                 // perform checks
                 expect(response.status).toBe(401);
                 expect(response.body.message).toBe('only admins are authorized for this action')
+            });
+
+            it('should fail if user disabled', async () => {
+                await setUserDisabled(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get('/api/clients');
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('user is disabled')
             });
 
             it('should fail with missing token', async () => {
@@ -396,6 +429,17 @@ describe('auth', () => {
                 expect(response.status).toBe(200);
             });
 
+            it('should fail if user disabled', async () => {
+                await setUserDisabled(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/api/clients/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('user is disabled')
+            });
+
             it('should fail with missing token', async () => {
                 cookie = '';
 
@@ -431,7 +475,8 @@ describe('auth', () => {
                     lastName: 'Doe',
                     email: 'jdoe@gmail.com',
                     credits: 350,
-                    isAdmin: false
+                    isAdmin: false,
+                    disabled: false,
                 };
                 await collection.insertOne(data);
 
@@ -440,7 +485,8 @@ describe('auth', () => {
                     newLastName: 'Deer',
                     newEmail: 'jdeer@gmail.com',
                     newCredits: 450,
-                    newIsAdmin: true
+                    newIsAdmin: true,
+                    newDisabled: false,
                 };
             });
 
@@ -478,6 +524,18 @@ describe('auth', () => {
                 // perform checks
                 expect(response.status).toBe(401);
                 expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail if user disabled', async () => {
+                await setUserDisabled(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/api/clients/${data._id.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('user is disabled')
             });
 
             it('should fail with missing token', async () => {
@@ -516,7 +574,8 @@ describe('auth', () => {
                     lastName: 'Doe',
                     email: 'jdoe@gmail.com',
                     credits: 350,
-                    isAdmin: false
+                    isAdmin: false,
+                    disabled: false,
                 };
                 await collection.insertOne(data);
             });
@@ -552,6 +611,17 @@ describe('auth', () => {
                 // perform checks
                 expect(response.status).toBe(401);
                 expect(response.body.message).toBe('only super admins are authorized for this action');
+            });
+
+            it('should fail if user disabled', async () => {
+                await setUserDisabled(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/api/clients/${data._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('user is disabled')
             });
 
             it('should fail with missing token', async () => {
@@ -757,6 +827,18 @@ describe('auth', () => {
                 expect(response.body.message).toBe('only admins are authorized for this action');
             });
 
+            it('should fail if user disabled', async () => {
+                await setUserDisabled(db);
+                // perform action to test
+                const response = await agent(app)
+                    .post(`/shopping/${client._id.toString()}`)
+                    .send(data);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('user is disabled')
+            });
+
             it('should fail with missing token', async () => {
                 cookie = '';
 
@@ -912,6 +994,17 @@ describe('auth', () => {
 
                 // perform checks
                 expect(response.status).toBe(200);
+            });
+
+            it('should fail if user disabled', async () => {
+                await setUserDisabled(db);
+                // perform action to test
+                const response = await agent(app)
+                    .get(`/shopping/${client._id.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('user is disabled')
             });
 
             it('should fail with missing token', async () => {
@@ -1110,6 +1203,18 @@ describe('auth', () => {
                 expect(response.body.message).toBe('only admins are authorized for this action');
             });
 
+            it('should fail if user disabled', async () => {
+                await setUserDisabled(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('user is disabled')
+            });
+
             it('should fail with missing token', async () => {
                 cookie = '';
 
@@ -1302,6 +1407,18 @@ describe('auth', () => {
                 expect(response.body.message).toBe('Success!');
             });
 
+            it('should fail if user disabled', async () => {
+                await setUserDisabled(db);
+                // perform action to test
+                const response = await agent(app)
+                    .patch(`/shopping/purchased/${client._id.toString()}/${shoppingId.toString()}`)
+                    .send(patchData);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('user is disabled')
+            });
+
             it('should fail with missing token', async () => {
                 cookie = '';
 
@@ -1478,6 +1595,17 @@ describe('auth', () => {
                 // perform checks
                 expect(response.status).toBe(401);
                 expect(response.body.message).toBe('only admins are authorized for this action');
+            });
+
+            it('should fail if user disabled', async () => {
+                await setUserDisabled(db);
+                // perform action to test
+                const response = await agent(app)
+                    .delete(`/shopping/${client._id.toString()}/${shoppingId.toString()}`);
+
+                // perform checks
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('user is disabled')
             });
 
             it('should fail with missing token', async () => {

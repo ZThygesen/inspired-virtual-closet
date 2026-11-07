@@ -61,7 +61,8 @@ describe('clients', () => {
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
                 credits: 350,
-                isAdmin: false
+                isAdmin: false,
+                disabled: false,
             };
         });
 
@@ -227,6 +228,24 @@ describe('clients', () => {
             expect(err.status).toBe(400);
             expect(err.message).toBe('a role status is required for client creation');
         });
+
+        it('should fail with missing disabled status', async () => {
+            // perform action to test
+            delete data.disabled;
+            const req = { body: data, locals: { db: mockDb } };
+
+            await clients.post(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.insertOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('a disabled status is required for client creation');
+        });
     });
 
     describe('read', () => {
@@ -238,7 +257,8 @@ describe('clients', () => {
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
                 credits: 350,
-                isAdmin: false
+                isAdmin: false,
+                disabled: false,
             };
         });
 
@@ -311,7 +331,8 @@ describe('clients', () => {
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
                 credits: 350,
-                isAdmin: false
+                isAdmin: false,
+                disabled: false,
             };
         });
 
@@ -413,7 +434,8 @@ describe('clients', () => {
                 newLastName: 'Doe',
                 newEmail: 'jdoe@gmail.com',
                 newCredits: 450,
-                newIsAdmin: false
+                newIsAdmin: false,
+                newDisabled: false,
             };
 
             clientId = (new ObjectId()).toString();
@@ -615,6 +637,24 @@ describe('clients', () => {
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(400);
             expect(err.message).toBe('a role status is required for client update');
+        });
+
+        it('should fail with missing disabled status', async () => {
+            // perform action to test
+            delete data.newDisabled;
+            const req = { body: data, params: { clientId: clientId }, locals: { db: mockDb } };
+
+            await clients.patch(req, mockRes, mockNext);
+
+            // perform checks
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.updateOne).not.toHaveBeenCalled();
+            expect(mockRes.status).not.toHaveBeenCalled();
+            expect(mockRes.json).not.toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalled();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(400);
+            expect(err.message).toBe('a disabled status is required for client update');
         });
     });
 

@@ -13,6 +13,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
     const [newEmail, setNewEmail] = useState(client.email);
     const [newCredits, setNewCredits] = useState(client.credits);
     const [newRole, setNewRole] = useState(client.isAdmin);
+    const [newDisabled, setNewDisabled] = useState(client.disabled);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
     const { user } = useUser();
@@ -22,7 +23,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
     function handleSubmitEdit(e) {
         e.preventDefault();
         setEditOpen(false);
-        editClient(client, newFirstName, newLastName, newEmail, newCredits, newRole);
+        editClient(client, newFirstName, newLastName, newEmail, newCredits, newRole, newDisabled);
     }
 
     function handleCloseEdit() {
@@ -32,6 +33,7 @@ export default function ClientCard({ client, editClient, deleteClient }) {
         setNewEmail(client.email);
         setNewRole(client.isAdmin);
         setNewCredits(client.credits);
+        setNewDisabled(client.disabled);
     }
 
     return (
@@ -50,6 +52,11 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                     client?.isAdmin ?
                     <Tooltip title="Admin">
                         <span className="material-icons admin-icon">star_border</span>
+                    </Tooltip>
+                    :
+                    client?.disabled ?
+                    <Tooltip title="Disabled">
+                        <span className="material-icons admin-icon">block</span>
                     </Tooltip>
                     :
                     <></>
@@ -132,7 +139,18 @@ export default function ClientCard({ client, editClient, deleteClient }) {
                         label="Admin"
                         value={newRole}
                         onChange={e => setNewRole(e.target.checked)}
+                        classList="flex-align-start"
                     />
+                    { !newRole && 
+                        <Input 
+                            type="checkbox"
+                            id="disabled"
+                            label="Disabled"
+                            value={newDisabled}
+                            onChange={e => setNewDisabled(e.target.checked)}
+                            classList="flex-align-start"
+                        />
+                    }
                     <div className="modal-options">
                         <button type="button" onClick={handleCloseEdit}>Cancel</button>
                         <button type="submit">Save</button>
