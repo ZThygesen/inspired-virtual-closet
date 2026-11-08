@@ -25,6 +25,7 @@ export const integrationHelpers = {
             credits: 350,
             isAdmin: true,
             isSuperAdmin: true,
+            disabled: false,
         };
         const collection = this.db.collection('clients');
         await collection.insertOne(this.user);
@@ -62,7 +63,7 @@ export const integrationHelpers = {
         this.user.isAdmin = true;
         this.user.isSuperAdmin = true;
         const collection = this.db.collection('clients');
-        await collection.updateOne({ _id: this.user._id }, { $set: { isAdmin: true, isSuperAdmin: true } });
+        await collection.updateOne({ _id: this.user._id }, { $set: { isAdmin: true, isSuperAdmin: true, disabled: false } });
         const token = jwt.sign({ id: this.user._id, isAdmin: true, isSuperAdmin: true }, process.env.JWT_SECRET);
         this.cookie = `token=${token}`;
     },
@@ -71,7 +72,7 @@ export const integrationHelpers = {
         this.user.isAdmin = true;
         this.user.isSuperAdmin = false;
         const collection = this.db.collection('clients');
-        await collection.updateOne({ _id: this.user._id }, { $set: { isAdmin: true, isSuperAdmin: false } });
+        await collection.updateOne({ _id: this.user._id }, { $set: { isAdmin: true, isSuperAdmin: false, disabled: false } });
         const token = jwt.sign({ id: this.user._id, isAdmin: true, isSuperAdmin: false }, process.env.JWT_SECRET);
         this.cookie = `token=${token}`;
     },
@@ -80,7 +81,16 @@ export const integrationHelpers = {
         this.user.isAdmin = false;
         this.user.isSuperAdmin = false;
         const collection = this.db.collection('clients');
-        await collection.updateOne({ _id: this.user._id }, { $set: { isAdmin: false, isSuperAdmin: false } });
+        await collection.updateOne({ _id: this.user._id }, { $set: { isAdmin: false, isSuperAdmin: false, disabled: false } });
+        const token = jwt.sign({ id: this.user._id, isAdmin: false, isSuperAdmin: false }, process.env.JWT_SECRET);
+        this.cookie = `token=${token}`;
+    },
+
+    async setUserDisabled() {
+        this.user.isAdmin = false;
+        this.user.isSuperAdmin = false;
+        const collection = this.db.collection('clients');
+        await collection.updateOne({ _id: this.user._id }, { $set: { isAdmin: false, isSuperAdmin: false, disabled: true } });
         const token = jwt.sign({ id: this.user._id, isAdmin: false, isSuperAdmin: false }, process.env.JWT_SECRET);
         this.cookie = `token=${token}`;
     },
@@ -93,7 +103,8 @@ export const integrationHelpers = {
             email: 'janedeer11@gmail.com',
             credits: 350,
             isAdmin: isAdmin,
-            isSuperAdmin: isAdmin
+            isSuperAdmin: isAdmin,
+            disabled: false,
         };
 
         const collection = this.db.collection('clients');
@@ -486,7 +497,13 @@ export const integrationHelpers = {
                 expect(response.body.message).toBe('non-admins do not have permissions to add or edit items: category not found');
             });
         }
-
+        it('auth: should fail if user disabled', async () => {
+            await this.setUserDisabled();
+            
+            const response = await request(resolveParams(), resolveBody());
+            expect(response.status).toBe(403);
+            expect(response.body.message).toBe('user is disabled');
+        });
         it('auth: should fail with missing token', async () => {
             this.cookie = '';
             const response = await request(resolveParams(), resolveBody());
