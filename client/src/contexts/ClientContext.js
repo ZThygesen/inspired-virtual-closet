@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLoading } from '../contexts/LoadingContext';
-import axios from 'axios';
+import api from '../api';
 
 const ClientContext = createContext();
 
@@ -24,7 +24,7 @@ export const ClientProvider = ({ children }) => {
     const updateClient = useCallback(async () => {
         if (clientId) {
             try {
-                const response = await axios.get(`/api/clients/${clientId}`, { withCredentials: true });
+                const response = await api.get(`/api/clients/${clientId}`);
                 setClient(response?.data);
             } 
             catch (err) {

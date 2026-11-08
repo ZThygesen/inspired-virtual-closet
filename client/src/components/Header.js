@@ -124,7 +124,7 @@ export default function Header() {
                         }
                     </div>
                     <Tooltip title="Help">
-                        <a className="help" href="https://drive.google.com/file/d/14mXhkWNy0VFvizLMCzTMTO9eYCwZNCYw/view?ts=68b5f963" target="_blank" rel="noreferrer">
+                        <a className="help" href="https://docs.google.com/presentation/d/1FLpOMK0_H3671OLtMMUrQz-sryksIHKPaZvC7XyGcyI/edit?slide=id.h4abba8342bc697eb_0_0#slide=id.h4abba8342bc697eb_0_0" target="_blank" rel="noreferrer">
                             ?
                         </a>
                     </Tooltip>

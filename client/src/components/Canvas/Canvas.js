@@ -18,7 +18,7 @@ const initialWidth = 1000;
 const initialHeight = 800;
 const ASPECT_RATIO = initialWidth / initialHeight;
 
-export default function Canvas({ display, sidebarRef, images, textboxes, addCanvasItem, removeCanvasItems, editMode, outfitToEdit, cancelEdit, setOutfitsClosetMode }) {
+export default function Canvas({ display, sidebarRef, images, textboxes, addCanvasItem, removeCanvasItems, editMode, outfitToEdit, cancelEdit, fixCanvasLogo, setOutfitsClosetMode }) {
     const { setLoading } = useLoading();
     const { setError } = useError();
     const { client } = useClient();
@@ -41,6 +41,7 @@ export default function Canvas({ display, sidebarRef, images, textboxes, addCanv
     const [cancelEditOpen, setCancelEditOpen] = useState(false);
     const [saveOutfitOpen, setSaveOutfitOpen] = useState(false);
     const [outfitName, setOutfitName] = useState('');
+    const [outfitNotes, setOutfitNotes] = useState('');
     const [outfitImageData, setOutfitImageData] = useState('');
 
     const containerRef = useRef();
@@ -301,6 +302,7 @@ export default function Canvas({ display, sidebarRef, images, textboxes, addCanv
 
     useEffect(() => {
         setOutfitName(outfitToEdit?.outfitName || '');
+        setOutfitNotes(outfitToEdit?.outfitNotes || '');
     }, [editMode, outfitToEdit]);
 
     async function handleAddOutfitOpen() {
@@ -329,6 +331,7 @@ export default function Canvas({ display, sidebarRef, images, textboxes, addCanv
     function handleSaveOutfitClose() {
         setSaveOutfitOpen(false);
         setOutfitName(outfitToEdit?.outfitName || '');
+        setOutfitNotes(outfitToEdit?.outfitNotes || '');
         setOutfitImageData('');
     }
 
@@ -348,6 +351,7 @@ export default function Canvas({ display, sidebarRef, images, textboxes, addCanv
         formData.append('fileSrc', outfitImageData);
         formData.append('stageItems', JSON.stringify(stageItems));
         formData.append('outfitName', outfitName);
+        formData.append('outfitNotes', outfitNotes);
         formData.append('itemsUsed', JSON.stringify(itemsUsed));
 
         try {
@@ -466,6 +470,16 @@ export default function Canvas({ display, sidebarRef, images, textboxes, addCanv
                         <p className="sub-title">{editMode && outfitToEdit ? "(editing)" : ""}</p> {/* <span>{outfitToEdit.outfitName}</span></p>} */}
                     </div>
                     <div className="canvas-options">
+                        <Tooltip title="Fix Logo">
+                            <span>
+                                <button
+                                    className="material-icons fix-logo-btn"
+                                    onClick={fixCanvasLogo}
+                                >
+                                    auto_fix_high
+                                </button>
+                            </span>
+                        </Tooltip>
                         <Tooltip title="Remove Selected Items">
                             <span>
                                 <button
@@ -575,13 +589,20 @@ export default function Canvas({ display, sidebarRef, images, textboxes, addCanv
                 <>
                     <h2 className="modal-title">{editMode ? "Save Outfit" : "Add Outfit"}</h2>
                     <div className="modal-content">
-                        <p className="medium">Provide a name for this outfit:</p>
                         <Input
                             type="text"
                             id="outfit-name"
                             label="Outfit Name"
                             value={outfitName}
                             onChange={e => setOutfitName(e.target.value)}
+                        />
+                        <Input 
+                            type="textarea"
+                            id="outfit-notes"
+                            label="Notes &nbsp;"
+                            value={outfitNotes}
+                            onChange={e => setOutfitNotes(e.target.value)}
+                            required={false}
                         />
                         <img
                             src={outfitImageData}

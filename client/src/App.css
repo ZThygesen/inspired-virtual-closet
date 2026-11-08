@@ -84,6 +84,6 @@ div[role="tooltip"] > * {
     font-family: 'Raleway' !important;
 }
 
-.doc-content {
-    padding: none !important;
+.flex-align-start {
+    align-self: flex-start;
 }

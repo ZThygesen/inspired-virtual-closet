@@ -23,6 +23,10 @@ const schema = {
                 outfitName: {
                     type: 'string',
                 },
+                outfitNotes: {
+                    type: 'string',
+                    optional: true,
+                },
                 itemsUsed: {
                     type: 'array',
                     optional: true,
@@ -68,6 +72,10 @@ const schema = {
                 outfitName: {
                     type: 'string',
                 },
+                outfitNotes: {
+                    type: 'string',
+                    optional: true,
+                },
                 itemsUsed: {
                     type: 'array',
                     optional: true,
@@ -97,6 +105,29 @@ const schema = {
             fields: {
                 outfitName: {
                     type: 'string',
+                },
+                outfitNotes: {
+                    type: 'string',
+                    optional: true,
+                },
+            },
+        },
+    },
+    patchLiked: {
+        params: {
+            fields: {
+                clientId: {
+                    type: 'objectID',
+                },
+                outfitId: {
+                    type: 'objectID',
+                },
+            },
+        },
+        body: {
+            fields: {
+                liked: {
+                    type: 'boolean',
                 },
             },
         },

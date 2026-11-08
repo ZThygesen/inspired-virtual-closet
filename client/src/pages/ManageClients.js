@@ -54,12 +54,14 @@ export default function ManageClients() {
     const [superAdmins, setSuperAdmins] = useState([]);
     const [admins, setAdmins] = useState([]);
     const [clients, setClients] = useState([]);
+    const [disabled, setDisabled] = useState([]);
     const [openModal, setOpenModal] = useState(false);
     const [newClientFName, setNewClientFName] = useState('');
     const [newClientLName, setNewClientLName] = useState('');
     const [newClientEmail, setNewClientEmail] = useState('');
     const [newClientRole, setNewClientRole] = useState(false);
     const [newClientCredits, setNewClientCredits] = useState(350);
+    const [newDisabled, setNewDisabled] = useState(false);
 
     const [archiveOpen, setArchiveOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -72,6 +74,7 @@ export default function ManageClients() {
     const [searchResultsSuperAdmin, setSearchResultsSuperAdmin] = useState(superAdmins || []);
     const [searchResultsAdmin, setSearchResultsAdmin] = useState(admins || []);
     const [searchResultsClients, setSearchResultsClients] = useState(clients || []);
+    const [searchResultsDisabled, setSearchResultsDisabled] = useState(disabled || []);
     const [searchString, setSearchString] = useState('');
 
     useEffect(() => {
@@ -96,11 +99,13 @@ export default function ManageClients() {
         const superAdminResults = filter(superAdmins, searchString);
         const adminResults = filter(admins, searchString);
         const clientResults = filter(clients, searchString);
+        const disabledResults = filter(disabled, searchString);
 
         setSearchResultsSuperAdmin(superAdminResults);
         setSearchResultsAdmin(adminResults);
         setSearchResultsClients(clientResults);
-    }, [filter, searchString, superAdmins, admins, clients]);
+        setSearchResultsDisabled(disabledResults);
+    }, [filter, searchString, superAdmins, admins, clients, disabled]);
 
     const getClients = useCallback(async () => {
         setLoading(true);
@@ -122,15 +127,17 @@ export default function ManageClients() {
 
             const superAdmins = allClients.filter(client => client?.isSuperAdmin);
             const admins = allClients.filter(client => client?.isAdmin && !client?.isSuperAdmin);
-            const clients = allClients.filter(client => !client?.isSuperAdmin && !client?.isAdmin);
+            const clients = allClients.filter(client => !client?.isSuperAdmin && !client?.isAdmin && !client?.disabled);
+            const disabled = allClients.filter(client => !client?.isSuperAdmin && !client?.isAdmin && client?.disabled);
             
             setSuperAdmins(superAdmins);
             setAdmins(admins);
             setClients(clients);
+            setDisabled(disabled);
         } catch (err) {
             setError({
                 message: 'There was an error fetching clients.',
-                status: err.response.status
+                status: err?.response?.status
             });
         } finally {
             setLoading(false);
@@ -148,6 +155,7 @@ export default function ManageClients() {
         setNewClientEmail('');
         setNewClientCredits(350);
         setNewClientRole(false);
+        setNewDisabled(false);
     }
 
     async function addClient(e) {
@@ -160,44 +168,47 @@ export default function ManageClients() {
                 lastName: newClientLName,
                 email: newClientEmail,
                 credits: newClientCredits,
-                isAdmin: newClientRole
+                isAdmin: newClientRole,
+                disabled: newDisabled && !newClientRole
             });
             handleClose();
             await getClients();
         } catch(err) {
             setError({
                 message: 'There was an error adding the client.',
-                status: err.response.status
+                status: err?.response?.status
             });
         } finally {
            setLoading(false);
         }
     }
 
-    async function editClient(client, newFirstName, newLastName, newEmail, newCredits, newIsAdmin) {
+    async function editClient(client, newFirstName, newLastName, newEmail, newCredits, newIsAdmin, newDisabled) {
         setLoading(true);
         if (client.firstName === newFirstName && 
             client.lastName === newLastName &&
             client.email === newEmail &&
             client.credits === newCredits &&
-            client.isAdmin === newIsAdmin
+            client.isAdmin === newIsAdmin &&
+            client.disabled === newDisabled
         ) {
             setLoading(false);
             return;
         }
         try {
-            await api.patch(`/api/clients/${client._id}`, { 
+            await api.patch(`/api/clients/${client._id}`, {
                 newFirstName: newFirstName, 
                 newLastName: newLastName,
                 newEmail: newEmail,
                 newCredits: newCredits,
-                newIsAdmin: newIsAdmin
+                newIsAdmin: newIsAdmin,
+                newDisabled: newDisabled && !newIsAdmin,
             });  
             await getClients();
         } catch (err) {
             setError({
                 message: 'There was an error editing the client.',
-                status: err.response.status
+                status: err?.response?.status
             });
         } finally {
             setLoading(false);
@@ -216,16 +227,17 @@ export default function ManageClients() {
         setLoading(true);
         const items = await getClientItems(client);
         const outfits = await getClientOutfits(client);
+        const shopping = await getClientShopping(client);
         setLoading(false);
 
-        if (!items || !outfits) {
+        if (!items || !outfits || !shopping) {
             return;
         }
         
         setDeleteProgressOpen(true);
 
         // delete client items
-        if (items.length > 1) {
+        if (items.length > 0) {
             setDeleteProgressDenominator(items.length);
             setDeleteProgressMessage('Deleting client items...');
 
@@ -250,6 +262,20 @@ export default function ManageClients() {
             }
             await pause(750);
         }
+
+        // delete client shopping
+        if (shopping.length > 0) {
+            setDeleteProgressDenominator(shopping.length);
+            setDeleteProgressNumerator(0);
+            setDeleteProgressMessage('Deleting client shopping items...');
+
+            const finished = await deleteClientShopping(client, shopping);
+            if (!finished) {
+                handleDeleteProgressClose();
+                return;
+            }
+            await pause(750);
+        }
         
         // delete client
         setLoading(true);
@@ -260,31 +286,28 @@ export default function ManageClients() {
             
             // update
             await getClients();
-        } catch (err) {
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error deleting the client.',
-                status: err.response.status
+                status: err?.response?.status
             });
-        } finally {
+        } 
+        finally {
             setLoading(false);
         }   
     }
 
     async function getClientItems(client) {
-        const items = [];
+        let items = [];
         try {
            const response = await api.get(`/items/${client._id}`);
-           const categories = response.data;
-            for (const category of categories) {
-                for (const item of category.items) {
-                    item.categoryId = category._id;
-                    items.push(item);
-                }
-            }
-        } catch (err) {
+           items = response.data;
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error fetching client items.',
-                status: err.response.status
+                status: err?.response?.status
             });
             return;
         }
@@ -297,27 +320,51 @@ export default function ManageClients() {
         try {
             const response = await api.get(`/outfits/${client._id}`);
             outfits = response.data;
-        } catch (err) {
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error fetching client outfits.',
-                status: err.response.status
+                status: err?.response?.status
             });
             return;
         }
         
         return outfits;
-    }       
+    }
+    
+    async function getClientShopping(client) {
+        let shopping = [];
+        try {
+           const response = await api.get(`/shopping/${client._id}`);
+           shopping = response.data;
+        } 
+        catch (err) {
+            setError({
+                message: 'There was an error fetching client items.',
+                status: err?.response?.status
+            });
+            return;
+        }
+
+        return shopping;
+    }
 
     async function deleteClientItems(client, items) {
         try {
             for (const item of items) {
-                await api.delete(`/items/${client._id}/${item._id}`);
+                if (item.type === 'link') {
+                    await api.delete(`/items/link/${client._id}/${item._id}`);
+                }
+                else {
+                    await api.delete(`/items/${client._id}/${item._id}`);
+                }
                 setDeleteProgressNumerator(current => current + 1);
             }
-        } catch (err) {
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error deleting client items.',
-                status: err.response.status
+                status: err?.response?.status
             });
             return;
         }
@@ -331,10 +378,29 @@ export default function ManageClients() {
                 await api.delete(`/outfits/${client._id}/${outfit._id}`);
                 setDeleteProgressNumerator(current => current + 1);
             }
-        } catch (err) {
+        } 
+        catch (err) {
             setError({
                 message: 'There was an error deleting client outfits.',
-                status: err.response.status
+                status: err?.response?.status
+            });
+            return;
+        }
+        
+        return true;
+    }
+
+    async function deleteClientShopping(client, shopping) {
+        try {
+            for (const shop of shopping) {
+                await api.delete(`/shopping/${client._id}/${shop._id}`);
+                setDeleteProgressNumerator(current => current + 1);
+            }
+        } 
+        catch (err) {
+            setError({
+                message: 'There was an error deleting client outfits.',
+                status: err?.response?.status
             });
             return;
         }
@@ -414,6 +480,11 @@ export default function ManageClients() {
                             <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
                         ))
                     }
+                    { 
+                        searchResultsDisabled?.map(client => (
+                            <ClientCard client={client} editClient={editClient} deleteClient={deleteClient} key={cuid()} />
+                        ))
+                    }
                 </div>
                 { user?.isSuperAdmin &&
                     <div className="footer">
@@ -466,7 +537,18 @@ export default function ManageClients() {
                                 label="Admin"
                                 value={newClientRole}
                                 onChange={e => setNewClientRole(e.target.checked)}
+                                classList="flex-align-start"
                             />
+                            { !newClientRole &&
+                                <Input 
+                                    type="checkbox"
+                                    id="disabled"
+                                    label="Disabled"
+                                    value={newDisabled}
+                                    onChange={e => setNewDisabled(e.target.checked)}
+                                    classList="flex-align-start"
+                                />
+                            }
                         </div>
                         <div className="modal-options">
                             <button type="button" onClick={handleClose}>Cancel</button>

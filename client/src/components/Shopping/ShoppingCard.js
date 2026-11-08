@@ -19,31 +19,25 @@ export default function ShoppingCard({
 
     useEffect(() => {
         const notesCurr = notesRef.current;
-
         function handleAnimationStart() {
             if (notesCurr) {
                 notesCurr.style.position = 'unset';
             }
         }
-
         function handleAnimationEnd() {
             if (notesCurr && !notesExpanded) {
                 notesCurr.style.position = 'absolute';
             }
-            
         }
-
         if (notesCurr) {
             notesCurr.addEventListener('animationstart', handleAnimationStart);
             notesCurr.addEventListener('animationend', handleAnimationEnd);
         }
-        
         return () => {
             if (notesCurr) {
                 notesCurr.removeEventListener('animationstart', handleAnimationStart);
                 notesCurr.removeEventListener('animationend', handleAnimationEnd);
             }
-            
         }
     }, [notesExpanded]);
 

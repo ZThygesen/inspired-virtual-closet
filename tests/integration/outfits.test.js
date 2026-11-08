@@ -51,6 +51,7 @@ describe('outfits', () => {
                 fileSrc: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAAA/2IAPxgAHwwAXyQAfzEwtqyjAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==',
                 stageItems: JSON.stringify({ "stageItems": 11.13 }),
                 outfitName: 'Epic Party Outfit',
+                outfitNotes: 'Amazing notes',
                 itemsUsed: JSON.stringify([cuid2.createId(), cuid2.createId()]),
             };
         });
@@ -72,6 +73,7 @@ describe('outfits', () => {
                 clientId: client._id.toString(),
                 stageItems: JSON.parse(body.stageItems),
                 outfitName: body.outfitName,
+                outfitNotes: body.outfitNotes,
                 itemsUsed: JSON.parse(body.itemsUsed),
             });
             expect(outfit.outfitUrl).toEqual(expect.stringContaining('https://storage.googleapis.com/edie-styles-virtual-closet-test/test%2Foutfits%2F'));
@@ -121,6 +123,7 @@ describe('outfits', () => {
                 clientId: client._id.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
+                outfitNotes: 'Amazing notes',
                 itemsUsed: [cuid2.createId(), cuid2.createId()],
                 outfitUrl: 'outfit.url',
                 gcsDest: 'test/outfits/gcsdest.png',
@@ -230,6 +233,7 @@ describe('outfits', () => {
                 clientId: client._id.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
+                outfitNotes: 'Amazing notes',
                 itemsUsed: [cuid2.createId(), cuid2.createId()],
                 outfitUrl: url,
                 gcsDest: gcsDest,
@@ -241,6 +245,7 @@ describe('outfits', () => {
                 fileSrc: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAElBMVEUAAAD7AP8+AD8fAB9eAF99AH/0nKUYAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAALklEQVQImWNgIBIYwxisMAZzAIRWZoAynBmCYXLOMAZUxACmJhimC2EO3GQQAADE0AOJ+VqhbQAAAABJRU5ErkJggg==',
                 stageItems: JSON.stringify({ stageItems: { anotherLayer: 13.11 } }),
                 outfitName: 'Formal Wedding Attire',
+                outfitNotes: 'Meh notes',
                 itemsUsed: JSON.stringify([cuid2.createId(), cuid2.createId()]),
                 gcsDest: outfit.gcsDest,
             };
@@ -262,6 +267,7 @@ describe('outfits', () => {
                 clientId: outfit.clientId,
                 stageItems: JSON.parse(body.stageItems),
                 outfitName: body.outfitName,
+                outfitNotes: body.outfitNotes,
                 itemsUsed: JSON.parse(body.itemsUsed),
             });
             expect(newOutfit.outfitUrl).not.toBe(outfit.outfitUrl);
@@ -321,6 +327,7 @@ describe('outfits', () => {
                 clientId: outfit.clientId,
                 stageItems: JSON.parse(body.stageItems),
                 outfitName: body.outfitName,
+                outfitNotes: body.outfitNotes,
                 itemsUsed: JSON.parse(body.itemsUsed),
             });
             expect(newOutfit.outfitUrl).not.toBe(outfit.outfitUrl);
@@ -350,6 +357,7 @@ describe('outfits', () => {
                 clientId: client._id.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
+                outfitNotes: 'Amazing notes',
                 itemsUsed: [cuid2.createId(), cuid2.createId()],
                 outfitUrl: 'outfit.url',
                 gcsDest: 'test/outfits/gcsdest.png',
@@ -359,6 +367,7 @@ describe('outfits', () => {
             params = [client._id.toString(), outfit._id.toString()];
             body = {
                 outfitName: 'Formal Wedding Attire',
+                outfitNotes: 'Meh notes',
             };
         });
 
@@ -376,6 +385,7 @@ describe('outfits', () => {
                 clientId: outfit.clientId,
                 stageItems: outfit.stageItems,
                 outfitName: body.outfitName,
+                outfitNotes: body.outfitNotes,
                 itemsUsed: outfit.itemsUsed,
                 outfitUrl: outfit.outfitUrl,
                 gcsDest: outfit.gcsDest,
@@ -408,7 +418,81 @@ describe('outfits', () => {
             checkPermissions: true,
         });
         integrationHelpers.testBody(schema.patchPartial.body.fields, request, () => params);
-        integrationHelpers.testAuth({ admin: true, checkPermissions: true }, request, () => params, () => body);
+        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body);
+    });
+
+    describe('updateLiked', () => {  
+        let outfit;
+        let params, body;
+        beforeEach(async () => {
+            outfit = {
+                _id: ObjectId(),
+                clientId: client._id.toString(),
+                stageItems: { stageItems: 11.13 },
+                outfitName: 'Epic Party Outfit',
+                outfitNotes: 'Amazing notes',
+                itemsUsed: [cuid2.createId(), cuid2.createId()],
+                outfitUrl: 'outfit.url',
+                gcsDest: 'test/outfits/gcsdest.png',
+                liked: false,
+            };
+            await collection.insertOne(outfit);
+
+            params = [client._id.toString(), outfit._id.toString()];
+            body = {
+                liked: true,
+            };
+        });
+
+        const request = (params, body) => integrationHelpers.executeRequest('patch', '/outfits/liked', params, body);
+
+        it('should like outfit', async () => {
+            const response = await request(params, body);
+            
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Success!');
+
+            const newOutfit = await collection.findOne({ _id: outfit._id });
+            expect(newOutfit).toMatchObject({
+                _id: outfit._id,
+                clientId: outfit.clientId,
+                stageItems: outfit.stageItems,
+                outfitName: outfit.outfitName,
+                outfitNotes: outfit.outfitNotes,
+                itemsUsed: outfit.itemsUsed,
+                outfitUrl: outfit.outfitUrl,
+                gcsDest: outfit.gcsDest,
+                liked: body.liked,
+           });
+        });
+
+        it('should fail if outfit does not exist', async () => {
+            params = [client._id.toString(), ObjectId().toString()];
+            const response = await request(params, body);
+
+            expect(response.status).toBe(404);
+            expect(response.body.message).toBe('update failed: outfit not found with given outfit id');
+
+            const newOutfit = await collection.findOne({ _id: outfit._id });
+            expect(newOutfit).toMatchObject(outfit);
+        });
+
+        it('should fail if client does not exist', async () => {
+            await integrationHelpers.removeClient();
+            const response = await request(params, body);
+
+            expect(response.status).toBe(404);
+            expect(response.body.message).toBe('client not found');
+
+            const newOutfit = await collection.findOne({ _id: outfit._id });
+            expect(newOutfit).toMatchObject(outfit);
+        });
+
+        integrationHelpers.testParams(schema.patchLiked.params.fields, request, () => body, ['clientId', 'outfitId'], {
+            checkPermissions: true,
+        });
+        integrationHelpers.testBody(schema.patchLiked.body.fields, request, () => params);
+        integrationHelpers.testAuth({ checkPermissions: true }, request, () => params, () => body);
     });
 
     describe('delete', () => {
@@ -435,6 +519,7 @@ describe('outfits', () => {
                 clientId: client._id.toString(),
                 stageItems: { stageItems: 11.13 },
                 outfitName: 'Epic Party Outfit',
+                outfitNotes: 'Amazing notes',
                 itemsUsed: [cuid2.createId(), cuid2.createId()],
                 outfitUrl: url,
                 gcsDest: gcsDest,
