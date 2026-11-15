@@ -131,10 +131,6 @@ export default function FileCard({
             file.incomplete = true;
             setIncompleteMessage('A category must be selected');
         }
-        else if (file.name === '') {
-            file.incomplete = true;
-            setIncompleteMessage('The item must have a name');
-        }
         else {
             file.incomplete = false;
             setIncompleteMessage('');
@@ -236,6 +232,7 @@ export default function FileCard({
                                 label="Name"
                                 value={name ?? ''}
                                 onChange={e => changeName(e.target.value)}
+                                required={false}
                             />
                             <div className="file-card-img">
                                 <img

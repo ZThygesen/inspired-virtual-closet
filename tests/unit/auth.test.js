@@ -437,33 +437,93 @@ describe('auth', () => {
 
     describe('authenticateJWT', () => {
         let data;
+        let user;
         let tokenUser;
         beforeEach(async () => {
-            data = { token: mockToken };
+            data = { token: mockToken, locals: { db: mockDb } };
+
+            user = {
+                _id: new ObjectId(),
+                firstName: 'John',
+                lastName: 'Doe',
+                isAdmin: false,
+                isSuperAdmin: false,
+                disabled: false,
+            };
 
             tokenUser = {
-                id: (new ObjectId()).toString(),
-                isAdmin: false
+                id: user._id.toString(),
+                isAdmin: user.isAdmin,
+                isSuperAdmin: user.isSuperAdmin,
             };
 
             mockVerify.mockReturnValue(tokenUser);
+            mockCollection.findOne.mockResolvedValue(user);
         });
 
         it('should authenticate jwt', async () => {
-            const req = { cookies: data };
+            const req = { cookies: data, locals: { db: mockDb } };
 
-            auth.authenticateJWT(req, mockRes, mockNext);
+            await auth.authenticateJWT(req, mockRes, mockNext);
 
             expect(req.user).toBe(tokenUser);
 
             expect(mockVerify).toHaveBeenCalledWith(data.token, process.env.JWT_SECRET);
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(tokenUser.id) });
             expect(mockNext).toHaveBeenCalledWith();
         });
 
-        it('should fail with missing token', async () => {
-            const req = { };
+        it('should authenticate jwt for super admin that is disabled', async () => {
+            user.disabled = true;
+            user.isSuperAdmin = true;
+            const req = { cookies: data, locals: { db: mockDb } };
 
-            auth.authenticateJWT(req, mockRes, mockNext);
+            await auth.authenticateJWT(req, mockRes, mockNext);
+
+            expect(req.user).toBe(tokenUser);
+
+            expect(mockVerify).toHaveBeenCalledWith(data.token, process.env.JWT_SECRET);
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(tokenUser.id) });
+            expect(mockNext).toHaveBeenCalledWith();
+        });
+
+        it('should authenticate jwt for admin that is disabled', async () => {
+            user.disabled = true;
+            user.isAdmin = true;
+            const req = { cookies: data, locals: { db: mockDb } };
+
+            await auth.authenticateJWT(req, mockRes, mockNext);
+
+            expect(req.user).toBe(tokenUser);
+
+            expect(mockVerify).toHaveBeenCalledWith(data.token, process.env.JWT_SECRET);
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(tokenUser.id) });
+            expect(mockNext).toHaveBeenCalledWith();
+        });
+
+        it('should fail with disabled user', async () => {
+            user.disabled = true;
+
+            const req = { cookies: data, locals: { db: mockDb } };
+
+            await auth.authenticateJWT(req, mockRes, mockNext);
+
+            expect(mockVerify).toHaveBeenCalledWith(data.token, process.env.JWT_SECRET);
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(tokenUser.id) });
+            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(403);
+            expect(err.message).toBe('user is disabled');
+        });
+
+        it('should fail with missing token', async () => {
+            const req = { locals: { db: mockDb } };
+
+            await auth.authenticateJWT(req, mockRes, mockNext);
 
             expect(mockVerify).not.toHaveBeenCalled();
             expect(mockNext).toHaveBeenCalledWith(err);
@@ -477,9 +537,9 @@ describe('auth', () => {
             error.status = 401;
             mockVerify.mockImplementation(() => { throw error });
 
-            const req = { cookies: data };
+            const req = { cookies: data, locals: { db: mockDb } };
 
-            auth.authenticateJWT(req, mockRes, mockNext);
+            await auth.authenticateJWT(req, mockRes, mockNext);
 
             expect(mockVerify).toHaveBeenCalledWith(data.token, process.env.JWT_SECRET);
             expect(mockNext).toHaveBeenCalledWith(err);
@@ -491,15 +551,33 @@ describe('auth', () => {
         it('should fail with no user found', async () => {
             mockVerify.mockReturnValue();
 
-            const req = { cookies: data };
+            const req = { cookies: data, locals: { db: mockDb } };
 
-            auth.authenticateJWT(req, mockRes, mockNext);
+            await auth.authenticateJWT(req, mockRes, mockNext);
 
             expect(mockVerify).toHaveBeenCalledWith(data.token, process.env.JWT_SECRET);
             expect(mockNext).toHaveBeenCalledWith(err);
             expect(err).toBeInstanceOf(Error);
             expect(err.status).toBe(401);
             expect(err.message).toBe('no user found from token');
+        });
+
+        it('should handle findOne failure', async () => {
+            const error = new Error('findOne failed');
+            error.status = 401;
+            mockCollection.findOne.mockRejectedValue(error);
+
+            const req = { cookies: data, locals: { db: mockDb } };
+
+            await auth.authenticateJWT(req, mockRes, mockNext);
+
+            expect(mockVerify).toHaveBeenCalledWith(data.token, process.env.JWT_SECRET);
+            expect(mockDb.collection).toHaveBeenCalledWith('clients');
+            expect(mockCollection.findOne).toHaveBeenCalledWith({ _id: ObjectId(tokenUser.id) });
+            expect(mockNext).toHaveBeenCalledWith(err);
+            expect(err).toBeInstanceOf(Error);
+            expect(err.status).toBe(401);
+            expect(err.message).toBe('findOne failed');
         });
     });
 

@@ -22,6 +22,7 @@ const schema = {
                 },
                 fullFileName: {
                     type: 'string',
+                    optional: true,
                 },
                 tags: {
                     type: 'array',
@@ -91,6 +92,7 @@ const schema = {
             fields: {
                 name: {
                     type: 'string',
+                    optional: true,
                 },
                 tags: {
                     type: 'array',

@@ -118,11 +118,30 @@ export const OutfitCardContainer = styled.div`
     align-items: center;
     justify-content: center;
     box-shadow: var(--box-shadow);
-    padding: 20px;
+    padding: 48px 20px 20px 20px;
     border-radius: 25px;
     width: 300px;
     max-width: 300px;
     margin: 12px;
+    position: relative;
+
+    .like-btn {
+        font-size: 38px !important;
+        color: var(--primary) !important;
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        background: none;
+
+        padding: 6px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.1s;
+
+        &:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+    }
 
     .outfit-name {
         display: flex;
@@ -150,6 +169,80 @@ export const OutfitCardContainer = styled.div`
         width: auto;
         height: auto;
         cursor: pointer;
+    }
+
+    .outfit-notes-container {
+        position: relative;
+        width: 100%;
+        height: 50px;
+        background-color: var(--white);
+
+        .outfit-notes {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            margin: 0 10px;
+            padding: 8px 0;
+            transition: 0.3s;
+            position: relative;
+            z-index: 1;
+        }
+
+        &.expanded .outfit-notes {
+            border-radius: 12px;
+            box-shadow: var(--box-shadow);
+            background-color: var(--white);
+        }
+
+        .outfit-notes-title {
+            width: 100%;
+            font-size: 20px;
+            padding: 8px;
+            cursor: pointer;
+
+            &.no-notes {
+                cursor: auto;
+                color: var(--material-btn);
+            }
+        }
+
+        .outfit-notes-details {
+            width: 100%;
+            padding: 0 8px 12px 8px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            position: absolute;
+
+            transform: translateY(-100%);
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        &.expanded .outfit-notes-details {
+            animation: showDropdown 0.3s forwards;
+        }
+
+        &.not-expanded .outfit-notes-details {
+            animation: hideDropdown 0.3s forwards;
+        }
+
+        .notes-dropdown-btn {
+            position: absolute;
+            left: -17px;
+            top: 14px;
+            background: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: 0.3s;
+
+            &:hover {
+                background-color: var(--material-btn-bg)
+            }
+        }
+
+        &.expanded .notes-dropdown-btn {
+            transform: rotate(180deg);
+        }
     }
 
     .outfit-options {

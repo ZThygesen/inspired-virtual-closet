@@ -90,6 +90,14 @@ const auth = {
                 throw helpers.createError('no user found from token', 401);
             }
 
+            const { db } = req.locals;
+            const collection = db.collection('clients');
+            const client = await collection.findOne({ _id: ObjectId(user.id) });
+            if (client?.disabled && !client?.isSuperAdmin && !client?.isAdmin) {
+                res.cookie('token', '', { httpOnly: true, secure: true, sameSite: 'strict', expires: new Date(1) });
+                return next(helpers.createError('user is disabled', 403));
+            }
+
             req.user = user;
             next();
         } catch (err) {

@@ -43,11 +43,13 @@ export default function Outfits({ display, sendOutfitToCanvas, itemToSearch, cle
 
     const [modalOutfit, setModalOutfit] = useState({});
     const [newOutfitName, setNewOutfitName] = useState('');
+    const [newOutfitNotes, setNewOutfitNotes] = useState('');
 
     function closeEditModal() {
         setEditModalOpen(false);
         setModalOutfit({});
         setNewOutfitName('');
+        setNewOutfitNotes('');
     }
 
     function closeCanvasEditModal() {
@@ -63,19 +65,22 @@ export default function Outfits({ display, sendOutfitToCanvas, itemToSearch, cle
     useEffect(() => {
         if (editModalOpen) {
             setNewOutfitName(modalOutfit.outfitName);
+            setNewOutfitNotes(modalOutfit.outfitNotes);
         }
     }, [editModalOpen, modalOutfit]);
 
     async function editOutfit(e) {
         e.preventDefault();
-        if (newOutfitName === modalOutfit.outfitName) {
+        if (newOutfitName === modalOutfit.outfitName &&
+            newOutfitNotes === modalOutfit.outfitNotes
+        ) {
             closeEditModal();
             return;
         }
 
         try {
             setLoading(true);
-            await api.patch(`/outfits/name/${client._id}/${modalOutfit._id}`, { outfitName: newOutfitName });
+            await api.patch(`/outfits/name/${client._id}/${modalOutfit._id}`, { outfitName: newOutfitName, outfitNotes: newOutfitNotes });
             await updateOutfits();
         } 
         catch (err) {
@@ -88,6 +93,23 @@ export default function Outfits({ display, sendOutfitToCanvas, itemToSearch, cle
             setLoading(false);
             closeEditModal();
         }        
+    }
+
+    async function toggleLiked(outfit) {
+        try {
+            setLoading(true);
+            await api.patch(`/outfits/liked/${client._id}/${outfit._id}`, { liked: !outfit.liked });
+            await updateOutfits();
+        }
+        catch (err) {
+            setError({
+                message: 'There was an error editing the outfit.',
+                status: err?.response?.status,
+            });
+        }
+        finally {
+            setLoading(false);
+        }
     }
 
     function canvasEditOutfit() {
@@ -189,6 +211,7 @@ export default function Outfits({ display, sendOutfitToCanvas, itemToSearch, cle
                                 setCanvasEditModalOpen={setCanvasEditModalOpen}
                                 setDeleteModalOpen={setDeleteModalOpen}
                                 setModalOutfit={setModalOutfit}
+                                toggleLiked={toggleLiked}
                                 key={outfit._id}
                             />
                         ))
@@ -215,7 +238,7 @@ export default function Outfits({ display, sendOutfitToCanvas, itemToSearch, cle
                 submitFn={editOutfit}
             >
                 <>
-                    <h2 className="modal-title">Edit Outfit Name</h2>
+                    <h2 className="modal-title">Edit Outfit</h2>
                     <div className="modal-content">
                         <Input
                             type="text"
@@ -223,6 +246,14 @@ export default function Outfits({ display, sendOutfitToCanvas, itemToSearch, cle
                             label="Outfit Name"
                             value={newOutfitName}
                             onChange={e => setNewOutfitName(e.target.value)}
+                        />
+                        <Input 
+                            type="textarea"
+                            id="outfit-notes"
+                            label="Notes &nbsp;"
+                            value={newOutfitNotes}
+                            onChange={e => setNewOutfitNotes(e.target.value)}
+                            required={false}
                         />
                         <img
                             src={modalOutfit.outfitUrl}

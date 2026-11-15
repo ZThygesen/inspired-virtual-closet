@@ -16,7 +16,8 @@ describe('clients', () => {
             email: 'janedeer11@gmail.com',
             credits: 350,
             isAdmin: true,
-            isSuperAdmin: true
+            isSuperAdmin: true,
+            disabled: false,
         }
 
         const collection = db.collection('clients');
@@ -69,7 +70,8 @@ describe('clients', () => {
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
                 credits: 350,
-                isAdmin: false
+                isAdmin: false,
+                disabled: false,
             };
         });
 
@@ -92,6 +94,28 @@ describe('clients', () => {
             expect(client.email).toBe(data.email);
             expect(client.credits).toBe(data.credits);
             expect(client.isAdmin).toBe(data.isAdmin);
+            expect(client.disabled).toBe(data.disabled);
+
+        });
+
+        it('should create new client with disabled = false', async () => {
+            data.isAdmin = true;
+            data.disabled = true;
+            // perform action to test
+            const response = await agent(app)
+                .post('/api/clients')
+                .send(data);
+            
+            // perform checks
+            expect(response.status).toBe(201);
+            expect(response.body.message).toBe('Success!');
+
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
+            const client = await collection.findOne({ firstName: 'John', lastName: 'Doe' });
+            expect(client).toBeTruthy();
+            expect(client).toHaveProperty('_id');
+            expect(client.disabled).toBe(false);
+
         });
 
         it('should fail with missing first name', async () => {
@@ -161,6 +185,17 @@ describe('clients', () => {
             expect(response.body.message).toBe('a role status is required for client creation');
             await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
         });
+
+        it('should fail with missing disabled status', async () => {
+            delete data.disabled;
+            const response = await agent(app)
+                .post('/api/clients')
+                .send(data);
+
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('a disabled status is required for client creation');
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(1);
+        });
     });
     
     describe('read', () => {        
@@ -172,7 +207,8 @@ describe('clients', () => {
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
                 credits: 350,
-                isAdmin: false
+                isAdmin: false,
+                disabled: false,
             };
             await collection.insertOne(data);
         });
@@ -193,6 +229,7 @@ describe('clients', () => {
             expect(client.email).toBe(data.email);
             expect(client.credits).toBe(data.credits);
             expect(client.isAdmin).toBe(data.isAdmin);
+            expect(client.disabled).toBe(data.disabled);
         });
 
         it('should get multiple clients', async () => {
@@ -227,7 +264,8 @@ describe('clients', () => {
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
                 credits: 350,
-                isAdmin: false
+                isAdmin: false,
+                disabled: false,
             };
             await collection.insertOne(data);
         });
@@ -248,6 +286,7 @@ describe('clients', () => {
             expect(client.email).toBe(data.email);
             expect(client.credits).toBe(data.credits);
             expect(client.isAdmin).toBe(data.isAdmin);
+            expect(client.disabled).toBe(data.disabled);
         });
 
         it('should fail with invalid client id', async () => {
@@ -278,7 +317,8 @@ describe('clients', () => {
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
                 credits: 350,
-                isAdmin: false
+                isAdmin: false,
+                disabled: false,
             };
             await collection.insertOne(data);
 
@@ -287,7 +327,8 @@ describe('clients', () => {
                 newLastName: 'Deer',
                 newEmail: 'jdeer@gmail.com',
                 newCredits: 450,
-                newIsAdmin: true
+                newIsAdmin: false,
+                newDisabled: true,
             };
         });
 
@@ -300,6 +341,7 @@ describe('clients', () => {
             expect(client.email).toBe(data.email);
             expect(client.credits).toBe(data.credits);
             expect(client.isAdmin).toBe(data.isAdmin);
+            expect(client.disabled).toBe(data.disabled);
 
             const response = await agent(app)
                 .patch(`/api/clients/${data._id.toString()}`)
@@ -317,6 +359,29 @@ describe('clients', () => {
             expect(client.email).toBe(patchData.newEmail);
             expect(client.credits).toBe(patchData.newCredits);
             expect(client.isAdmin).toBe(patchData.newIsAdmin);
+            expect(client.disabled).toBe(patchData.newDisabled);
+        }); 
+
+        it('should update client with disabled = false', async () => {
+            let client = await collection.findOne({ _id: data._id });
+            expect(client).toBeTruthy();
+            expect(client.isAdmin).toBe(data.isAdmin);
+            expect(client.disabled).toBe(data.disabled);
+
+            patchData.newIsAdmin = true;
+            const response = await agent(app)
+                .patch(`/api/clients/${data._id.toString()}`)
+                .send(patchData);
+
+            // perform checks
+            expect(response.status).toBe(200);
+            expect(response.body.message).toBe('Success!');
+
+            client = await collection.findOne({ _id: data._id });
+            expect(client).toBeTruthy();
+            expect(client._id).toEqual(data._id);
+            expect(client.isAdmin).toBe(patchData.newIsAdmin);
+            expect(client.disabled).toBe(false);
         }); 
 
         it('should fail with invalid client id in request', async () => {
@@ -353,6 +418,7 @@ describe('clients', () => {
             patchData.newEmail = data.email;
             patchData.newCredits = data.credits;
             patchData.newIsAdmin = data.isAdmin;
+            patchData.newDisabled = data.disabled;
 
             const response = await agent(app)
                 .patch(`/api/clients/${data._id.toString()}`)
@@ -456,6 +522,21 @@ describe('clients', () => {
             const client = await collection.findOne({ _id: data._id });
             expect(client).toStrictEqual(data);
         });
+
+        it('should fail with no disabled status', async () => {
+            patchData.newDisabled = null;
+            const response = await agent(app)
+                .patch(`/api/clients/${data._id.toString()}`)
+                .send(patchData);
+
+            // perform checks
+            expect(response.status).toBe(400);
+            expect(response.body.message).toBe('a disabled status is required for client update');
+
+            await expect(collection.find({ }).toArray()).resolves.toHaveLength(2);
+            const client = await collection.findOne({ _id: data._id });
+            expect(client).toStrictEqual(data);
+        });
     });
 
     describe('delete', () => {
@@ -467,7 +548,8 @@ describe('clients', () => {
                 lastName: 'Doe',
                 email: 'jdoe@gmail.com',
                 credits: 350,
-                isAdmin: false
+                isAdmin: false,
+                disabled: false,
             };
             await collection.insertOne(data);
         });

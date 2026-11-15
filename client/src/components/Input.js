@@ -2,7 +2,7 @@ import { TextInput, Checkbox, Color, Radio } from "./styles/Input";
 import { FormControlLabel, Radio as RD } from "@mui/material";
 import cuid from "cuid";
 
-export default function Input({ type, id, label, value, radioOptions = [], onChange, required = true, size = "small" }) {
+export default function Input({ type, id, label, value, radioOptions = [], onChange, required = true, size = "small", classList }) {
     return (
         type === 'text' ?
         <TextInput
@@ -15,6 +15,7 @@ export default function Input({ type, id, label, value, radioOptions = [], onCha
             fullWidth
             size={size}
             required={required}
+            className={classList}
         />
         :
         type === 'checkbox' ?
@@ -28,6 +29,7 @@ export default function Input({ type, id, label, value, radioOptions = [], onCha
                     variant="outlined"
                 />
             }
+            className={classList}
         />
         :
         type === 'textarea' ?
@@ -43,6 +45,7 @@ export default function Input({ type, id, label, value, radioOptions = [], onCha
             minRows={3}
             maxRows={3}
             required={required}
+            className={classList}
         />
         :
         type === 'color' ?
@@ -97,6 +100,7 @@ export default function Input({ type, id, label, value, radioOptions = [], onCha
                 type: 'number',
                 min: 0
             }}
+            className={classList}
         />
     );
 }

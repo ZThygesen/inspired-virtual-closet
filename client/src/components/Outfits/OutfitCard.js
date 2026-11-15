@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { useError } from '../../contexts/ErrorContext';
 import { Tooltip } from '@mui/material';
 import { OutfitCardContainer } from './OutfitsStyles';
@@ -10,6 +11,7 @@ export default function OutfitCard({
     setCanvasEditModalOpen,
     setDeleteModalOpen,
     setModalOutfit,
+    toggleLiked,
 }) {
     const { setError } = useError();
     const { user } = useUser();
@@ -33,9 +35,51 @@ export default function OutfitCard({
         } 
     }
 
+    const [notesExpanded, setNotesExpanded] = useState(false);
+    const [firstExpand, setFirstExpand] = useState(true);
+    const notesContainerRef = useRef();
+    const notesRef = useRef();
+    useEffect(() => {
+        const notesCurr = notesRef.current;
+        function handleAnimationStart() {
+            if (notesCurr) {
+                notesCurr.style.position = 'unset';
+            }
+        }
+        function handleAnimationEnd() {
+            if (notesCurr && !notesExpanded) {
+                notesCurr.style.position = 'absolute';
+            }
+            
+        }
+        if (notesCurr) {
+            notesCurr.addEventListener('animationstart', handleAnimationStart);
+            notesCurr.addEventListener('animationend', handleAnimationEnd);
+        }
+        return () => {
+            if (notesCurr) {
+                notesCurr.removeEventListener('animationstart', handleAnimationStart);
+                notesCurr.removeEventListener('animationend', handleAnimationEnd);
+            }
+        }
+    }, [notesExpanded])
+
+    function toggleNotes() {
+        setFirstExpand(false);
+        setNotesExpanded(current => !current);
+    }
+
     return (
         <>
             <OutfitCardContainer>
+                <Tooltip title={outfit.liked ? 'Unlike Outfit' : 'Like Outfit'}>
+                    <button
+                        className="material-icons like-btn"
+                        onClick={() => toggleLiked(outfit)}
+                    >
+                    {outfit.liked ? 'favorite' : 'favorite_border'}
+                    </button>
+                </Tooltip>
                 <p className="outfit-name">{outfit.outfitName}</p>
                 <div className="outfit-card-img">
                     <img
@@ -44,9 +88,32 @@ export default function OutfitCard({
                         onClick={() => { setModalOutfit(outfit); setImageModalOpen(true); }}
                     />
                 </div>
+                <div className={`outfit-notes-container ${firstExpand ? '' : notesExpanded ? 'expanded' : 'not-expanded'}`} ref={notesContainerRef}>
+                    { outfit.outfitNotes ?
+                        <>
+                            <Tooltip title="Expand Notes" placement="top">
+                                <button 
+                                    className="material-icons notes-dropdown-btn" 
+                                    onClick={toggleNotes}
+                                >
+                                    keyboard_arrow_down
+                                </button>
+                            </Tooltip>
+                            <div className="outfit-notes">
+                                <p className="outfit-notes-title" onClick={toggleNotes}>Notes</p>
+                                <p className="outfit-notes-details" ref={notesRef}>{outfit.outfitNotes}</p>
+                            </div>
+                        </>
+                        :
+                        <>
+                            <div className="outfit-notes">
+                                <p className="outfit-notes-title no-notes">No notes</p>
+                            </div>
+                        </>
+                    }
+                </div>
                 <div className="outfit-options">
                     { user?.isAdmin &&
-                    <>
                         <Tooltip title="Edit Outfit on Canvas">
                             <button 
                                 className='material-icons outfit-option important'
@@ -55,7 +122,8 @@ export default function OutfitCard({
                                 shortcut
                             </button>
                         </Tooltip>
-                        <Tooltip title="Edit Outfit Name">
+                    }
+                        <Tooltip title="Edit Outfit">
                             <button
                                 className='material-icons outfit-option'
                                 onClick={() => { setModalOutfit(outfit); setEditModalOpen(true); }}
@@ -63,6 +131,7 @@ export default function OutfitCard({
                                 edit
                             </button>
                         </Tooltip>
+                    { user?.isAdmin &&
                         <Tooltip title="Delete Outfit">
                             <button
                                 className='material-icons outfit-option'
@@ -71,7 +140,6 @@ export default function OutfitCard({
                                 delete
                             </button>
                         </Tooltip>
-                    </>
                     }
                     <Tooltip title="Download Outfit">
                         <button

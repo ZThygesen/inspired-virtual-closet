@@ -393,6 +393,7 @@ export default function Items({ display, addCanvasItem, canvasItems, searchOutfi
                             label="Item Name"
                             value={newItemName}
                             onChange={e => setNewItemName(e.target.value)}
+                            required={false}
                         />
                         <img
                             src={modalItem.smallFileUrl}

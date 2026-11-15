@@ -45,6 +45,7 @@ describe('outfits', () => {
                 fileSrc: 'file source string',
                 stageItems: '"state items string"',
                 outfitName: 'Blazin Blazer Blast',
+                outfitNotes: 'Amazing notes',
                 itemsUsed: ['file1', 'file2'],
             };
             req = { params, body, locals };
@@ -69,6 +70,7 @@ describe('outfits', () => {
                 clientId: params.clientId.toString(),
                 stageItems: body.stageItems,
                 outfitName: body.outfitName,
+                outfitNotes: body.outfitNotes,
                 itemsUsed: body.itemsUsed,
                 outfitUrl: gcsResponse,
                 gcsDest: `test/outfits/${idResponse}.png`,
@@ -158,6 +160,7 @@ describe('outfits', () => {
                 clientId: ObjectId().toString(),
                 stageItems: { stage: 'items', as: 'json' },
                 outfitName: 'Blazin Blazer Blast',
+                outfitNotes: 'Amazing notes',
                 itemsUsed: ['file1', 'file2'],
                 outfitUrl: 'outfit.file.url',
                 gcsDest: 'dev/outfits/id.png',
@@ -215,6 +218,7 @@ describe('outfits', () => {
                 fileSrc: 'file source string',
                 stageItems: 'stage items string',
                 outfitName: 'Blazin Blazer Blast',
+                outfitNotes: 'Amazing notes',
                 itemsUsed: ['file1', 'file2'],
                 gcsDest: 'dev/outfits/id.png'
             };
@@ -337,6 +341,50 @@ describe('outfits', () => {
             };
             body = { 
                 outfitName: 'Blazin Blazer Blast',
+                outfitNotes: 'Amazing notes',
+            };
+            req = { params, body, locals };
+        });
+
+        async function makeFunctionCall() {
+            await outfits.patchPartial(req, mockRes, mockNext);
+        }
+
+        it('should update outfit', async () => {
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockRes.status).toHaveBeenCalledWith(200);
+            expect(mockRes.json).toHaveBeenCalledWith({ message: 'Success!' });
+        });
+
+        it('should handle updateOne error', async () => {
+            err = new Error('updateOne error');
+            mockCollection.updateOne.mockRejectedValueOnce(err);
+            await makeFunctionCall();
+
+            expect(mockCollection.updateOne).toHaveBeenCalled();
+            expect(mockNext).toHaveBeenCalledWith(err);
+        });
+
+        it('should fail if outfit not updated', async () => {
+            mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 0 });
+            await makeFunctionCall();
+
+            expect(mockCreateError).toHaveBeenCalledWith('update failed: outfit not found with given outfit id', 404);
+            expect(mockNext).toHaveBeenCalledWith(unitHelpers.err);
+        });
+    });
+
+    describe('patchLiked', () => {
+        let params, body, req;
+        beforeEach(async () => {
+            params = {
+                clientId: ObjectId().toString(),
+                outfitId: ObjectId().toString(),
+            };
+            body = { 
+                liked: true,
             };
             req = { params, body, locals };
         });

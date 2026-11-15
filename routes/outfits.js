@@ -12,7 +12,7 @@ const outfits = {
             const { db, bucket } = req.locals;
             const collection = db.collection('outfits');
             const { clientId } = req.params;
-            const { fileSrc, stageItems, outfitName, itemsUsed } = req.body;
+            const { fileSrc, stageItems, outfitName, outfitNotes, itemsUsed } = req.body;
 
             // create GCS destinations
             let gcsDest = `outfits/${cuid2.createId()}.png`;
@@ -34,6 +34,7 @@ const outfits = {
                 clientId: clientId,
                 stageItems: stageItems,
                 outfitName: outfitName,
+                outfitNotes: outfitNotes,
                 itemsUsed: itemsUsed,
                 outfitUrl: url,
                 gcsDest: gcsDest,
@@ -70,7 +71,7 @@ const outfits = {
             const { db, bucket } = req.locals;
             const collection = db.collection('outfits');
             const { outfitId } = req.params;
-            const { fileSrc, stageItems, outfitName, itemsUsed, gcsDest } = req.body;
+            const { fileSrc, stageItems, outfitName, outfitNotes, itemsUsed, gcsDest } = req.body;
 
             // make sure outfit exists
             const outfit = await collection.findOne({ _id: outfitId });
@@ -100,6 +101,7 @@ const outfits = {
                     $set: {
                         stageItems: stageItems,
                         outfitName: outfitName,
+                        outfitNotes: outfitNotes,
                         outfitUrl: url,
                         itemsUsed: itemsUsed,
                         gcsDest: newGcsDest,
@@ -125,13 +127,40 @@ const outfits = {
             const { db } = req.locals;
             const collection = db.collection('outfits');
             const { outfitId } = req.params;
-            const { outfitName } = req.body;
+            const { outfitName, outfitNotes } = req.body;
 
             const result = await collection.updateOne(
                 { _id: outfitId },
                 { 
                     $set: {
                         outfitName: outfitName,
+                        outfitNotes: outfitNotes,
+                    }
+                }
+            );
+
+            if (result.modifiedCount === 0) {
+                throw helpers.createError('update failed: outfit not found with given outfit id', 404);
+            }
+    
+            res.status(200).json({ message: 'Success!' });
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    async patchLiked(req, res, next) {
+        try {
+            const { db } = req.locals;
+            const collection = db.collection('outfits');
+            const { outfitId } = req.params;
+            const { liked } = req.body;
+
+            const result = await collection.updateOne(
+                { _id: outfitId },
+                { 
+                    $set: {
+                        liked: liked,
                     }
                 }
             );
@@ -199,11 +228,17 @@ router.patch('/:clientId/:outfitId',
     outfits.patchFull,
 );
 router.patch('/name/:clientId/:outfitId', 
-    auth.requireAdmin, 
+    // auth.requireAdmin,
     auth.checkPermissions,
     schemaHelpers.validateParams(schema.patchPartial.params.schema),
     schemaHelpers.validateBody(schema.patchPartial.body.schema),
     outfits.patchPartial
+);
+router.patch('/liked/:clientId/:outfitId', 
+    auth.checkPermissions,
+    schemaHelpers.validateParams(schema.patchLiked.params.schema),
+    schemaHelpers.validateBody(schema.patchLiked.body.schema),
+    outfits.patchLiked
 );
 router.delete('/:clientId/:outfitId', 
     auth.requireAdmin, 

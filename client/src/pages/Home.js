@@ -17,6 +17,14 @@ export default function Home() {
     const navigate = useNavigate();
 
     useEffect(() => {
+        if (sessionStorage.getItem('disabled')) {
+            setUser(null);
+            setError({ message: 'Login access to your closet has been blocked', messageOnly: true });
+            sessionStorage.removeItem('disabled');
+        }
+    }, [setError, setUser]);
+
+    useEffect(() => {
         if (user) {
             setIsAuthenticated(true);
 
@@ -49,8 +57,15 @@ export default function Home() {
             else {
                 setUser(null);
             }
-        } catch (err) {
-            setError({ message: err.message, status: err.status }); 
+        } 
+        catch (err) {
+            let message = err.message;
+            let messageOnly = false;
+            if (err?.response?.data?.message === 'user is disabled') {
+                message = 'Login access to your closet has been blocked.';
+                messageOnly = true;
+            }
+            setError({ message: message, status: err.status, messageOnly: messageOnly }); 
         }
     }
 

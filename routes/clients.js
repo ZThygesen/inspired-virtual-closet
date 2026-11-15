@@ -30,12 +30,18 @@ const clients = {
                 throw helpers.createError('a role status is required for client creation', 400);
             }
 
+            const disabled = req?.body?.disabled;
+            if (disabled === null || disabled === undefined) {
+                throw helpers.createError('a disabled status is required for client creation', 400);
+            }
+
             const client = {
                 firstName: firstName,
                 lastName: lastName,
                 email: email,
                 credits: credits,
-                isAdmin: isAdmin
+                isAdmin: isAdmin,
+                disabled: disabled && !isAdmin,
             }
             
             const result = await collection.insertOne(client);
@@ -113,7 +119,11 @@ const clients = {
             if (isAdmin === null || isAdmin === undefined) {
                 throw helpers.createError('a role status is required for client update', 400);
             }
-            
+
+            const disabled = req?.body?.newDisabled;
+            if (disabled === null || disabled === undefined) {
+                throw helpers.createError('a disabled status is required for client update', 400);
+            }
             const result = await collection.updateOne(
                 { _id: ObjectId(clientId) },
                 {
@@ -122,7 +132,8 @@ const clients = {
                         lastName: lastName,
                         email: email,
                         credits: credits,
-                        isAdmin: isAdmin
+                        isAdmin: isAdmin,
+                        disabled: disabled && !isAdmin,
                     }
                 }
             );
