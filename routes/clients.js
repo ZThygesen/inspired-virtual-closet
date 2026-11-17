@@ -119,7 +119,7 @@ const clients = {
             if (isAdmin === null || isAdmin === undefined) {
                 throw helpers.createError('a role status is required for client update', 400);
             }
-
+            
             const disabled = req?.body?.newDisabled;
             if (disabled === null || disabled === undefined) {
                 throw helpers.createError('a disabled status is required for client update', 400);
