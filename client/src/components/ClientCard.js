@@ -12,8 +12,8 @@ export default function ClientCard({ client, editClient, deleteClient }) {
     const [newLastName, setNewLastName] = useState(client.lastName);
     const [newEmail, setNewEmail] = useState(client.email);
     const [newCredits, setNewCredits] = useState(client.credits);
-    const [newRole, setNewRole] = useState(client.isAdmin);
-    const [newDisabled, setNewDisabled] = useState(client.disabled);
+    const [newRole, setNewRole] = useState(client.isAdmin || false);
+    const [newDisabled, setNewDisabled] = useState(client.disabled || false);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
     const { user } = useUser();
@@ -31,9 +31,9 @@ export default function ClientCard({ client, editClient, deleteClient }) {
         setNewFirstName(client.firstName);
         setNewLastName(client.lastName);
         setNewEmail(client.email);
-        setNewRole(client.isAdmin);
+        setNewRole(client.isAdmin || false);
         setNewCredits(client.credits);
-        setNewDisabled(client.disabled);
+        setNewDisabled(client.disabled || false);
     }
 
     return (
