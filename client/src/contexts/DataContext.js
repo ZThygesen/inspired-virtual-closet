@@ -308,12 +308,9 @@ export const DataProvider = ({ children }) => {
         if (client) {
             try {
                 const response = await api.get(`/outfits/${client._id}`);
-
-                const liked = response?.data?.filter(outfit => outfit.liked);
-                const unliked = response?.data?.filter(outfit => !outfit.liked);
                 
                 // reverse outfits to show recently created first
-                setOutfits([...liked?.reverse(), ...unliked?.reverse()]);
+                setOutfits(response?.data?.reverse());
             }
             catch (err) {
                 setError({
